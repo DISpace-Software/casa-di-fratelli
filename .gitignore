@@ -47,3 +47,4 @@ backend/**/obj/
 *.db
 *.sqlite
 *.sqlite3
+.vercel
