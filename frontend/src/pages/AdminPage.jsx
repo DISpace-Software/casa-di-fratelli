@@ -1998,7 +1998,7 @@ function Panel({ title, subtitle, children, right }) {
   );
 }
 
-export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenuChanged }) {
+export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenuChanged, theme, onToggleTheme }) {
   const [activeTab, setActiveTab] = React.useState("home");
   const [adminLanguage, setAdminLanguage] = React.useState("bg");
   const [reservations, setReservations] = React.useState([]);
@@ -3470,6 +3470,15 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
             >
               {a.refresh}
             </button>
+            {onToggleTheme ? (
+              <button
+                type="button"
+                onClick={onToggleTheme}
+                className="ghost-button rounded-full px-5 py-3 text-sm font-semibold"
+              >
+                {theme === "light" ? "Dark" : "Light"}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onAdminLogout}

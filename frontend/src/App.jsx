@@ -16,6 +16,12 @@ const safeReadStoredLanguage = () => {
   return stored === "en" ? "en" : "bg";
 };
 
+const safeReadStoredTheme = () => {
+  if (typeof window === "undefined") return "dark";
+  const stored = window.localStorage.getItem("restaurant-theme");
+  return stored === "light" ? "light" : "dark";
+};
+
 const safeReadAdminToken = () => {
   if (typeof window === "undefined") return "";
   return window.sessionStorage.getItem("admin-token") || "";
@@ -339,6 +345,7 @@ function AdminLogin({ onLogin }) {
 
 export default function App() {
   const [language, setLanguage] = React.useState(safeReadStoredLanguage);
+  const [theme, setTheme] = React.useState(safeReadStoredTheme);
   const [currentPage, setCurrentPage] = React.useState(getInitialPage);
   const [cmsMenuItems, setCmsMenuItems] = React.useState([]);
   const [adminToken, setAdminToken] = React.useState(safeReadAdminToken);
@@ -375,6 +382,16 @@ export default function App() {
       document.documentElement.lang = language;
     }
   }, [language]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("restaurant-theme", theme);
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
+
+  const toggleTheme = React.useCallback(() => {
+    setTheme((currentTheme) => (currentTheme === "light" ? "dark" : "light"));
+  }, []);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -530,6 +547,8 @@ export default function App() {
           }}
           adminUser={adminUser}
           onMenuChanged={loadMenuItems}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
         <BackToTopButton />
       </>
@@ -546,6 +565,8 @@ export default function App() {
           onBack={() => setCurrentPage("home")}
           onOpenPrivacy={() => setCurrentPage("privacy")}
           onReservationComplete={() => setCurrentPage("home")}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
         <BackToTopButton />
       </>
@@ -564,6 +585,8 @@ export default function App() {
           onOpenSection={openHomeSection}
           onOpenPrivacy={() => setCurrentPage("privacy")}
           cmsMenuItems={cmsMenuItems}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
         <BackToTopButton />
       </>
@@ -581,6 +604,8 @@ export default function App() {
           onOpenMenu={() => setCurrentPage("menu")}
           onOpenSection={openHomeSection}
           onBackHome={() => setCurrentPage("home")}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
         <BackToTopButton />
       </>
@@ -598,6 +623,8 @@ export default function App() {
         onOpenSection={openHomeSection}
         onOpenPrivacy={() => setCurrentPage("privacy")}
         cmsMenuItems={cmsMenuItems}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
       <BackToTopButton />
     </>

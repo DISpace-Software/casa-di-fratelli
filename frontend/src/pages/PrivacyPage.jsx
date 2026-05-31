@@ -35,6 +35,8 @@ export default function PrivacyPage({
   onOpenMenu,
   onOpenSection,
   onBackHome,
+  theme,
+  onToggleTheme,
 }) {
   const policy = privacyPolicy[language] || privacyPolicy.bg;
 
@@ -48,6 +50,8 @@ export default function PrivacyPage({
         onOpenMenu={onOpenMenu}
         onOpenSection={onOpenSection}
         onGoHome={onBackHome}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
 
       <main className="mx-auto max-w-5xl px-6 pb-16 pt-8 md:pb-24 md:pt-12">

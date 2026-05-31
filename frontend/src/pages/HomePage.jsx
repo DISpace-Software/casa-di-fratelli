@@ -9,6 +9,7 @@ import ReviewsSection from "../components/home/ReviewsSection";
 import AwardsSection from "../components/home/AwardsSection";
 import EventsSection from "../components/home/EventsSection";
 import ContactSection from "../components/home/ContactSection";
+import DeliverySection from "../components/home/DeliverySection";
 
 export default function HomePage({
   t,
@@ -19,6 +20,8 @@ export default function HomePage({
   onOpenSection,
   onOpenPrivacy,
   cmsMenuItems,
+  theme,
+  onToggleTheme,
 }) {
   return (
     <div className="luxury-shell min-h-screen overflow-x-hidden text-stone-100">
@@ -30,6 +33,8 @@ export default function HomePage({
         onOpenMenu={onOpenMenu}
         onOpenSection={onOpenSection}
         onGoHome={() => {}}
+        theme={theme}
+        onToggleTheme={onToggleTheme}
       />
 
       <HeroSection
@@ -46,6 +51,7 @@ export default function HomePage({
         onOpenMenu={onOpenMenu}
         cmsMenuItems={cmsMenuItems}
       />
+      <DeliverySection language={language} />
       <GallerySection t={t} />
       <AwardsSection language={language} />
       <ReservationPreviewSection t={t} onOpenReservation={onOpenReservation} />

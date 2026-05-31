@@ -27,6 +27,8 @@ export default function Header({
   onGoHome,
   onOpenSection,
   isMenuPage = false,
+  theme = "dark",
+  onToggleTheme,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const locationUrl =
@@ -37,8 +39,9 @@ export default function Header({
     ["#about", t.navAbout, "01"],
     ["#gallery", t.navGallery, "02"],
     ["#awards", t.navAwards || (language === "bg" ? "Награди" : "Awards"), "03"],
-    ["#reviews", t.navReviews || (language === "bg" ? "Отзиви" : "Reviews"), "04"],
-    ["#events", t.navEvents || (language === "bg" ? "Събития" : "Events"), "05"],
+    ["#delivery", language === "bg" ? "Доставка" : "Delivery", "04"],
+    ["#reviews", t.navReviews || (language === "bg" ? "Отзиви" : "Reviews"), "05"],
+    ["#events", t.navEvents || (language === "bg" ? "Събития" : "Events"), "06"],
   ];
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -127,6 +130,16 @@ export default function Header({
                 EN
               </button>
             </div>
+
+            {onToggleTheme ? (
+              <button
+                type="button"
+                onClick={onToggleTheme}
+                className="flex h-10 min-w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-3 text-xs font-semibold text-stone-300 transition hover:border-[#c9a56a]/35 hover:text-white"
+              >
+                {theme === "light" ? "Dark" : "Light"}
+              </button>
+            ) : null}
           </div>
 
           <div className="nav-reveal nav-reveal-delay-1 flex items-center gap-2 md:hidden">
@@ -156,6 +169,16 @@ export default function Header({
                 </button>
               ))}
             </div>
+
+            {onToggleTheme ? (
+              <button
+                type="button"
+                onClick={onToggleTheme}
+                className="flex h-10 min-w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-2 text-[10px] font-semibold text-stone-300 transition active:scale-95"
+              >
+                {theme === "light" ? "Dark" : "Light"}
+              </button>
+            ) : null}
 
             <button
               type="button"

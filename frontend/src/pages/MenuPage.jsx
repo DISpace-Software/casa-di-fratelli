@@ -38,6 +38,8 @@ export default function MenuPage({
   onOpenSection,
   onOpenPrivacy,
   cmsMenuItems,
+  theme,
+  onToggleTheme,
 }) {
   const data = React.useMemo(
     () => buildMenuDataFromCms(cmsMenuItems, language, menuPageData[language]),
@@ -257,6 +259,8 @@ export default function MenuPage({
             onOpenSection={onOpenSection}
             onGoHome={onBackHome}
             isMenuPage
+            theme={theme}
+            onToggleTheme={onToggleTheme}
           />
 
           <MenuHero

@@ -795,7 +795,7 @@ function normalizeLayoutTables(items, area, fallback) {
   return normalized.length ? normalized : fallback;
 }
 
-export default function ReservationPage({ t, language, setLanguage, onBack, onOpenPrivacy, onReservationComplete }) {
+export default function ReservationPage({ t, language, setLanguage, onBack, onOpenPrivacy, onReservationComplete, theme, onToggleTheme }) {
   const today = React.useMemo(() => getTodayInputValue(), []);
 
   const [reservationDate, setReservationDate] = React.useState("");
@@ -1226,6 +1226,12 @@ if (bookingMode === "single") {
               <button type="button" onClick={() => setLanguage("en")} className={`rounded-full px-4 py-2 ${language === "en" ? "bg-[#c9a56a] text-black" : "border border-white/15 bg-white/5 text-white"}`}>
                 EN
               </button>
+
+              {onToggleTheme ? (
+                <button type="button" onClick={onToggleTheme} className="ghost-button rounded-full px-4 py-2">
+                  {theme === "light" ? "Dark" : "Light"}
+                </button>
+              ) : null}
 
               <button type="button" onClick={onBack} className="ghost-button rounded-full px-4 py-2">
                 {t.backToSite}

@@ -16,35 +16,35 @@ const menuPageData = {
           {
             name: "Салата Dei Fratelli",
             weight: "300 гр",
-            price: "18.60 лв",
+            price: "19.60 лв",
             description:
               "Със запечено козе сирене, лоло росо, рукола, бейби спанак, круша, орех пекан и малинов хайвер",
           },
           {
             name: "Салата от бурата",
             weight: "360 гр",
-            price: "19.56 лв",
+            price: "20.56 лв",
             description:
               "Чери домати, кедрови ядки, рукола, песто и домашна фокача",
           },
           {
             name: "Салата Цезар с пиле",
             weight: "380 гр",
-            price: "18.78 лв",
+            price: "19.77 лв",
             description:
               "Айсберг, пилешко филе, чери домати, пармезан, билкови крутони и сос Цезар",
           },
           {
             name: "Салата със сотирани тигрови скариди",
             weight: "350 гр",
-            price: "21.32 лв",
+            price: "22.32 лв",
             description:
               "Микс зелени салати, жулиени зеленчуци и дресинг песто",
           },
           {
             name: "Салата Фермата",
             weight: "350 гр",
-            price: "18.60 лв",
+            price: "19.60 лв",
             description:
               "Панирано фермерско сирене, сезонни плодове, меден дресинг, сос от нар и бейби спанак",
           },
@@ -78,13 +78,13 @@ const menuPageData = {
           {
             name: "Бейби калмари с манго сос",
             weight: "280 гр",
-            price: "21.91 лв",
+            price: "22.90 лв",
             description: "Крехки калмари с плодов акцент",
           },
           {
             name: "Скариди темпура",
             weight: "250 гр",
-            price: "21.32 лв",
+            price: "22.32 лв",
             description: "Поднесени с чипотле сос",
           },
           {
@@ -103,7 +103,7 @@ const menuPageData = {
           {
             name: "Ризото с диви гъби и трюфел",
             weight: "360 гр",
-            price: "19.36 лв",
+            price: "20.36 лв",
             description: "Кладница, манатарка и пармезан",
           },
           {
@@ -117,14 +117,14 @@ const menuPageData = {
           {
             name: "Талиателе песто и скариди",
             weight: "400 гр",
-            price: "21.31 лв",
+            price: "22.32 лв",
             description:
               "Босилеково песто, зехтин, пармезан, шамфъстък и скариди",
           },
           {
             name: "Талиатели с пистачио и панчета",
             weight: "400 гр",
-            price: "19.17 лв",
+            price: "20.16 лв",
             description:
               "Signature dish by Chef Yurukov — домашна паста с крем от шамфъстък и панчета",
             featured: true,
@@ -132,13 +132,13 @@ const menuPageData = {
           {
             name: "Талиатели Болонезе",
             weight: "400 гр",
-            price: "17.62 лв",
+            price: "18.60 лв",
             description: "Домашна паста с телешка кайма и пармезан",
           },
           {
             name: "Талиателе Карбонара",
             weight: "400 гр",
-            price: "19.38 лв",
+            price: "20.36 лв",
             description:
               "Домашна паста, панчета и класически сос от жълтък и грана падано",
           },
@@ -178,14 +178,14 @@ const menuPageData = {
           {
             name: "Филе от лаврак",
             weight: "400 гр",
-            price: "25.23 лв",
+            price: "26.23 лв",
             description:
               "С картофено пюре, броколи и beurre blanc сос",
           },
           {
             name: "Филе от сьомга със задушени зеленчуци",
             weight: "350 гр",
-            price: "26.40 лв",
+            price: "27.40 лв",
             description:
               "Бейби моркови, аспержи, тиквички и сос холандез",
           },
@@ -199,40 +199,40 @@ const menuPageData = {
           {
             name: "Маргарита",
             weight: "400 гр",
-            price: "13.91 лв",
+            price: "14.90 лв",
             description: "Доматен сос, моцарела, риган и босилек",
           },
           {
             name: "Прошуто фунги",
             weight: "450 гр",
-            price: "17.41 лв",
+            price: "18.40 лв",
             description: "Доматен сос, моцарела, гъби, кото и риган",
           },
           {
             name: "Капричоза",
             weight: "500 гр",
-            price: "19.36 лв",
+            price: "20.36 лв",
             description:
               "Доматен сос, моцарела, маслини каламата, артишок, кото и гъби",
           },
           {
             name: "Куатро формаджи",
             weight: "450 гр",
-            price: "17.40 лв",
+            price: "18.40 лв",
             description:
               "Сметана, моцарела, горгонзола, бри, пармезан и чери домати",
           },
           {
             name: "Прошуто крудо",
             weight: "450 гр",
-            price: "21.32 лв",
+            price: "22.32 лв",
             description:
               "Доматен сос, моцарела, крудо, рукола, чери домати и пармезан",
           },
           {
             name: "Джорджио",
             weight: "500 гр",
-            price: "23.27 лв",
+            price: "24.27 лв",
             description:
               "Моцарела, кото, шамфъстък, песто, бурата, босилек и лимонови кори",
           },
@@ -321,21 +321,21 @@ const menuPageData = {
           {
             name: "Dei Fratelli Salad",
             weight: "300 g",
-            price: "18.60 lv",
+            price: "19.60 lv",
             description:
               "Baked goat cheese, lollo rosso, arugula, baby spinach, pear, pecan, and raspberry caviar",
           },
           {
             name: "Burrata Salad",
             weight: "360 g",
-            price: "19.56 lv",
+            price: "20.56 lv",
             description:
               "Cherry tomatoes, pine nuts, arugula, pesto, and homemade focaccia",
           },
           {
             name: "Chicken Caesar Salad",
             weight: "380 g",
-            price: "18.78 lv",
+            price: "19.77 lv",
             description:
               "Iceberg lettuce, chicken fillet, cherry tomatoes, parmesan, croutons, and Caesar dressing",
           },
@@ -356,7 +356,7 @@ const menuPageData = {
           {
             name: "Tempura Shrimp",
             weight: "250 g",
-            price: "21.32 lv",
+            price: "22.32 lv",
             description: "Served with chipotle sauce",
           },
           {
@@ -375,7 +375,7 @@ const menuPageData = {
           {
             name: "Wild Mushroom and Truffle Risotto",
             weight: "360 g",
-            price: "19.36 lv",
+            price: "20.36 lv",
             description: "Oyster mushrooms, porcini, and parmesan",
           },
           {
@@ -389,14 +389,14 @@ const menuPageData = {
           {
             name: "Pesto Tagliatelle with Shrimp",
             weight: "400 g",
-            price: "21.31 lv",
+            price: "22.32 lv",
             description:
               "Basil pesto, olive oil, parmesan, pistachio, and shrimp",
           },
           {
             name: "Tagliatelle with Pistachio and Pancetta",
             weight: "400 g",
-            price: "19.17 lv",
+            price: "20.16 lv",
             description:
               "Signature dish by Chef Yurukov — homemade pasta with pistachio cream and pancetta",
             featured: true,
@@ -430,7 +430,7 @@ const menuPageData = {
           {
             name: "Sea Bass Fillet",
             weight: "400 g",
-            price: "25.23 lv",
+            price: "26.23 lv",
             description:
               "With mashed potatoes, broccoli, and beurre blanc sauce",
           },
@@ -444,27 +444,27 @@ const menuPageData = {
           {
             name: "Margherita",
             weight: "400 g",
-            price: "13.91 lv",
+            price: "14.90 lv",
             description: "Tomato sauce, mozzarella, oregano, and basil",
           },
           {
             name: "Capricciosa",
             weight: "500 g",
-            price: "19.36 lv",
+            price: "20.36 lv",
             description:
               "Tomato sauce, mozzarella, Kalamata olives, artichoke, cotto, and mushrooms",
           },
           {
             name: "Prosciutto Crudo",
             weight: "450 g",
-            price: "21.32 lv",
+            price: "22.32 lv",
             description:
               "Tomato sauce, mozzarella, crudo, arugula, cherry tomatoes, and parmesan",
           },
           {
             name: "Giorgio",
             weight: "500 g",
-            price: "23.27 lv",
+            price: "24.27 lv",
             description:
               "Mozzarella, cotto, pistachio, pesto, burrata, basil, and lemon zest",
           },
