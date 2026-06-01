@@ -394,7 +394,7 @@ export default function MenuPage({
       )}
 
       <div className={`sticky ${isOrderLink ? "top-[88px] md:top-[92px]" : "top-[124px] md:top-[152px]"} z-40 border-y border-white/10 bg-[#090705]/90 backdrop-blur-2xl`}>
-        <div className="mx-auto max-w-7xl px-4 py-2.5 md:px-6 md:py-3">
+        <div className="mx-auto max-w-7xl px-4 py-3 md:px-6 md:py-3">
           <div className="mb-2 flex items-center justify-between gap-3 md:hidden">
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.22em] text-[#d8b377]">
@@ -413,37 +413,57 @@ export default function MenuPage({
             </button>
           </div>
 
-          <div ref={categoryNavRef} className="flex gap-2 overflow-x-auto pb-1 scrollbar-none md:gap-3">
-            {data.categories.map((category) => {
-              const isActive = activeCategory === category.id;
+          <div className="menu-category-rail relative -mx-4 md:mx-0">
+            <div className="pointer-events-none absolute bottom-1 left-0 top-0 z-10 w-8 bg-gradient-to-r from-[#090705] to-transparent md:hidden" />
+            <div className="pointer-events-none absolute bottom-1 right-0 top-0 z-10 w-8 bg-gradient-to-l from-[#090705] to-transparent md:hidden" />
 
-              return (
+            <div
+              ref={categoryNavRef}
+              className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 scrollbar-none md:px-0 md:gap-3"
+            >
+              {data.categories.map((category, index) => {
+                const isActive = activeCategory === category.id;
+
+                return (
+                  <button
+                    key={category.id}
+                    ref={isActive ? activeCategoryButtonRef : null}
+                    type="button"
+                    aria-current={isActive ? "true" : undefined}
+                    onClick={() => handleCategoryClick(category.id)}
+                    className={`menu-category-chip min-w-[9.4rem] snap-start rounded-2xl border px-3.5 py-3 text-left transition active:scale-[0.98] md:min-w-0 md:rounded-full md:px-4 md:py-2 ${
+                      isActive
+                        ? "border-[#c9a56a]/45 bg-[#c9a56a] text-black shadow-lg shadow-[#c9a56a]/20"
+                        : "border-white/10 bg-white/5 text-white/75 hover:border-[#c9a56a]/30 hover:text-[#f2d3a0]"
+                    }`}
+                  >
+                    <span className={`block text-[10px] font-semibold uppercase tracking-[0.22em] md:hidden ${
+                      isActive ? "text-black/55" : "text-[#d8b377]"
+                    }`}>
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="mt-1 block truncate text-sm font-semibold md:mt-0 md:inline md:text-sm">
+                      {category.title}
+                    </span>
+                    <span className={`mt-1 block text-xs md:hidden ${
+                      isActive ? "text-black/60" : "text-white/45"
+                    }`}>
+                      {category.items.length} {language === "bg" ? "позиции" : "items"}
+                    </span>
+                  </button>
+                );
+              })}
+
+              {!isOrderLink && (
                 <button
-                  key={category.id}
-                  ref={isActive ? activeCategoryButtonRef : null}
                   type="button"
-                  aria-current={isActive ? "true" : undefined}
-                  onClick={() => handleCategoryClick(category.id)}
-                  className={`whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition active:scale-95 md:px-4 md:text-sm ${
-                    isActive
-                      ? "border-[#c9a56a]/40 bg-[#c9a56a] text-black shadow-lg shadow-[#c9a56a]/20"
-                      : "border-white/10 bg-white/5 text-white/75 hover:border-[#c9a56a]/30 hover:text-[#f2d3a0]"
-                  }`}
+                  onClick={onBackHome}
+                  className="ghost-button hidden whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium md:block"
                 >
-                  {category.title}
+                  {language === "bg" ? "Начало" : "Home"}
                 </button>
-              );
-            })}
-
-            {!isOrderLink && (
-              <button
-                type="button"
-                onClick={onBackHome}
-                className="ghost-button hidden whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium md:block"
-              >
-                {language === "bg" ? "Начало" : "Home"}
-              </button>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>

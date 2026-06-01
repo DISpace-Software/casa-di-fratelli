@@ -669,6 +669,17 @@ html[data-theme="light"] .menu-feature-panel .text-\[\#f2d39a\] {
   color: #f2d39a !important;
 }
 
+html[data-theme="light"] .menu-category-rail .from-\[\#090705\] {
+  --tw-gradient-from: rgba(235, 221, 201, 0.96) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(235, 221, 201, 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+html[data-theme="light"] .menu-category-chip:not([aria-current="true"]) {
+  background: rgba(255, 249, 239, 0.68) !important;
+  color: rgba(42, 28, 18, 0.78) !important;
+}
+
 html[data-theme="light"] .award-card {
   border-color: rgba(87, 55, 30, 0.22);
   background:

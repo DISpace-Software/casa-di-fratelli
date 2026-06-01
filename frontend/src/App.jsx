@@ -489,6 +489,7 @@ export default function App() {
 
   React.useEffect(() => {
     if (typeof window === "undefined" || currentPage === "admin") return undefined;
+    if (currentPage === "menu") return undefined;
 
     const pages = ["home", "menu", "reservation-map", "privacy"];
 
