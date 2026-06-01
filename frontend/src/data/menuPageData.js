@@ -197,30 +197,31 @@ const menuPageData = {
         title: "Пица",
         items: [
           {
-            name: "Маргарита",
+            name: "Пица с телешко FRATELLI",
             weight: "400 гр",
-            price: "14.90 лв",
-            description: "Доматен сос, моцарела, риган и босилек",
+            price: "24.27 лв",
+            description: "Доматен сос, топено сирене, моцарела и червен лук",
           },
           {
-            name: "Прошуто фунги",
-            weight: "450 гр",
-            price: "18.40 лв",
-            description: "Доматен сос, моцарела, гъби, кото и риган",
-          },
-          {
-            name: "Капричоза",
+            name: "Джорджио",
             weight: "500 гр",
-            price: "20.36 лв",
+            price: "24.27 лв",
             description:
-              "Доматен сос, моцарела, маслини каламата, артишок, кото и гъби",
+              "Доматен сос, моцарела, кото, шамфъстък, песто, бурата, босилек и лимонови кори",
           },
           {
-            name: "Куатро формаджи",
-            weight: "450 гр",
-            price: "18.40 лв",
+            name: "Пица бурата",
+            weight: "550 гр",
+            price: "22.90 лв",
             description:
-              "Сметана, моцарела, горгонзола, бри, пармезан и чери домати",
+              "Доматен сос, моцарела, пармезан, крудо, рукола, бурата, чери домати и песто",
+          },
+          {
+            name: "Пеперони специална",
+            weight: "500 гр",
+            price: "22.32 лв",
+            description:
+              "Доматен сос, моцарела, борд Филаделфия, пеперони и панчета",
           },
           {
             name: "Прошуто крудо",
@@ -230,11 +231,83 @@ const menuPageData = {
               "Доматен сос, моцарела, крудо, рукола, чери домати и пармезан",
           },
           {
-            name: "Джорджио",
-            weight: "500 гр",
-            price: "24.27 лв",
+            name: "Куатро стаджони",
+            weight: "450 гр",
+            price: "22.12 лв",
             description:
-              "Моцарела, кото, шамфъстък, песто, бурата, босилек и лимонови кори",
+              "Доматен сос, моцарела, прошуто кото, панчета, гъби, маслини таджаска и ементал",
+          },
+          {
+            name: "Пица бианка",
+            weight: "450 гр",
+            price: "21.53 лв",
+            description:
+              "Сметана, моцарела, пушено пуешко филе, царевица и топено сирене",
+          },
+          {
+            name: "Капричоза",
+            weight: "500 гр",
+            price: "20.36 лв",
+            description: "Доматен сос, моцарела, маслини таджаска, артишок и кото",
+          },
+          {
+            name: "Пеперони класик",
+            weight: "450 гр",
+            price: "19.58 лв",
+            description: "Доматен сос, моцарела, пеперони и халапеньо",
+          },
+          {
+            name: "Прошуто фунги",
+            weight: "450 гр",
+            price: "18.40 лв",
+            description: "Доматен сос, моцарела, гъби, кото и риган",
+          },
+          {
+            name: "Калцоне",
+            weight: "500 гр",
+            price: "18.40 лв",
+            description:
+              "Доматен сос, моцарела, гъби, кисели краставички, топено сирене и кото",
+          },
+          {
+            name: "Салами",
+            weight: "450 гр",
+            price: "18.40 лв",
+            description:
+              "Доматен сос, моцарела, вентричина, топено сирене и червен лук",
+          },
+          {
+            name: "Куатро формаджи",
+            weight: "450 гр",
+            price: "18.40 лв",
+            description:
+              "Сметана, моцарела, горгонзола, бри, пармезан и чери домати",
+          },
+          {
+            name: "Поло",
+            weight: "450 гр",
+            price: "18.40 лв",
+            description:
+              "Доматен сос, моцарела, пилешко филе, кисели краставички, царевица и топено сирене",
+          },
+          {
+            name: "Примавера",
+            weight: "450 гр",
+            price: "18.40 лв",
+            description: "Доматен сос, моцарела, прошуто кото, гъби и капия",
+          },
+          {
+            name: "Вегетариана",
+            weight: "400 гр",
+            price: "18.01 лв",
+            description:
+              "Доматен сос, моцарела, гъби, артишок, маслини таджаска и рукола",
+          },
+          {
+            name: "Маргарита",
+            weight: "400 гр",
+            price: "14.90 лв",
+            description: "Доматен сос, моцарела, риган и босилек",
           },
         ],
       },
@@ -442,17 +515,31 @@ const menuPageData = {
         title: "Pizza",
         items: [
           {
-            name: "Margherita",
+            name: "Beef FRATELLI Pizza",
             weight: "400 g",
-            price: "14.90 lv",
-            description: "Tomato sauce, mozzarella, oregano, and basil",
+            price: "24.27 lv",
+            description: "Tomato sauce, processed cheese, mozzarella, and red onion",
           },
           {
-            name: "Capricciosa",
+            name: "Giorgio",
             weight: "500 g",
-            price: "20.36 lv",
+            price: "24.27 lv",
             description:
-              "Tomato sauce, mozzarella, Kalamata olives, artichoke, cotto, and mushrooms",
+              "Tomato sauce, mozzarella, cotto, pistachio, pesto, burrata, basil, and lemon zest",
+          },
+          {
+            name: "Burrata Pizza",
+            weight: "550 g",
+            price: "22.90 lv",
+            description:
+              "Tomato sauce, mozzarella, parmesan, crudo, arugula, burrata, cherry tomatoes, and pesto",
+          },
+          {
+            name: "Special Pepperoni Pizza",
+            weight: "500 g",
+            price: "22.32 lv",
+            description:
+              "Tomato sauce, mozzarella, Philadelphia crust, pepperoni, and pancetta",
           },
           {
             name: "Prosciutto Crudo",
@@ -462,11 +549,83 @@ const menuPageData = {
               "Tomato sauce, mozzarella, crudo, arugula, cherry tomatoes, and parmesan",
           },
           {
-            name: "Giorgio",
-            weight: "500 g",
-            price: "24.27 lv",
+            name: "Quattro Stagioni",
+            weight: "450 g",
+            price: "22.12 lv",
             description:
-              "Mozzarella, cotto, pistachio, pesto, burrata, basil, and lemon zest",
+              "Tomato sauce, mozzarella, prosciutto cotto, pancetta, mushrooms, Taggiasca olives, and Emmental",
+          },
+          {
+            name: "Bianca Pizza",
+            weight: "450 g",
+            price: "21.53 lv",
+            description:
+              "Cream, mozzarella, smoked turkey fillet, corn, and processed cheese",
+          },
+          {
+            name: "Capricciosa",
+            weight: "500 g",
+            price: "20.36 lv",
+            description: "Tomato sauce, mozzarella, Taggiasca olives, artichoke, and cotto",
+          },
+          {
+            name: "Classic Pepperoni Pizza",
+            weight: "450 g",
+            price: "19.58 lv",
+            description: "Tomato sauce, mozzarella, pepperoni, and jalapeno",
+          },
+          {
+            name: "Prosciutto Funghi",
+            weight: "450 g",
+            price: "18.40 lv",
+            description: "Tomato sauce, mozzarella, mushrooms, cotto, and oregano",
+          },
+          {
+            name: "Calzone",
+            weight: "500 g",
+            price: "18.40 lv",
+            description:
+              "Tomato sauce, mozzarella, mushrooms, pickles, processed cheese, and cotto",
+          },
+          {
+            name: "Salami Pizza",
+            weight: "450 g",
+            price: "18.40 lv",
+            description:
+              "Tomato sauce, mozzarella, ventricina, processed cheese, and red onion",
+          },
+          {
+            name: "Quattro Formaggi",
+            weight: "450 g",
+            price: "18.40 lv",
+            description:
+              "Cream, mozzarella, gorgonzola, brie, parmesan, and cherry tomatoes",
+          },
+          {
+            name: "Pollo Pizza",
+            weight: "450 g",
+            price: "18.40 lv",
+            description:
+              "Tomato sauce, mozzarella, chicken fillet, pickles, corn, and processed cheese",
+          },
+          {
+            name: "Primavera Pizza",
+            weight: "450 g",
+            price: "18.40 lv",
+            description: "Tomato sauce, mozzarella, prosciutto cotto, mushrooms, and kapia pepper",
+          },
+          {
+            name: "Vegetariana",
+            weight: "400 g",
+            price: "18.01 lv",
+            description:
+              "Tomato sauce, mozzarella, mushrooms, artichoke, Taggiasca olives, and arugula",
+          },
+          {
+            name: "Margherita",
+            weight: "400 g",
+            price: "14.90 lv",
+            description: "Tomato sauce, mozzarella, oregano, and basil",
           },
         ],
       },
