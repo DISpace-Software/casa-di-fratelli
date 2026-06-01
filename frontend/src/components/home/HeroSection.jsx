@@ -65,17 +65,6 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
             </div>
           </div>
 
-          <div className="mt-10 flex max-w-2xl flex-wrap gap-3 text-sm text-stone-300">
-            <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-4 py-2 text-emerald-100">
-              Plovdiv
-            </span>
-            <span className="rounded-full border border-[#c9a56a]/24 bg-[#c9a56a]/10 px-4 py-2 text-[#f4dfbd]">
-              Grill · Pizza · Pasta
-            </span>
-            <span className="rounded-full border border-red-300/20 bg-red-500/10 px-4 py-2 text-red-100">
-              Sul N' Mir
-            </span>
-          </div>
         </div>
       </div>
     </section>

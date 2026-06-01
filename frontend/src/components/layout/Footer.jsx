@@ -7,7 +7,7 @@ export default function Footer({ t, onOpenPrivacy }) {
         className="brand-logo footer-logo mx-auto mb-5 h-16 w-[220px]"
       />
       <div className="mb-3 text-xs uppercase tracking-[0.24em] text-[#d8b377]">
-        Grill, Pizza, Pasta
+        Pizza, Pasta and Grill
       </div>
       <div className="mx-auto mb-5 h-px max-w-sm bg-gradient-to-r from-transparent via-[#c9a56a]/40 to-transparent" />
       <div>{t.footer}</div>
