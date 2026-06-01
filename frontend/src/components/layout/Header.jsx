@@ -73,7 +73,7 @@ export default function Header({
   };
 
   const mobileLinkClass =
-    "flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm font-semibold text-[#fff4df] transition active:scale-[0.98] hover:border-[#c9a56a]/35 hover:bg-[#c9a56a]/10";
+    "mobile-nav-link flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm font-semibold text-[#fff4df] transition active:scale-[0.98] hover:border-[#c9a56a]/35 hover:bg-[#c9a56a]/10";
 
   return (
     <>
@@ -265,7 +265,7 @@ export default function Header({
             mobileMenuOpen ? "mt-3 max-h-[440px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          <nav className="rounded-[26px] border border-white/10 bg-[#15110d]/92 p-2 shadow-2xl shadow-black/35 backdrop-blur-2xl">
+          <nav className="mobile-nav-panel rounded-[26px] border border-white/10 bg-[#15110d]/92 p-2 shadow-2xl shadow-black/35 backdrop-blur-2xl">
             {sectionLinks.map(([href, label], index) => (
               <a
                 key={href}

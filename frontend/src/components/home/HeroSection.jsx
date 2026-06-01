@@ -6,10 +6,10 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
         alt={t.interiorAlt}
         className="absolute inset-0 h-full w-full scale-[1.03] object-cover object-[56%_center] md:object-center"
       />
-      <div className="absolute inset-0 backdrop-blur-[0.6px]" />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,5,4,0.96)_0%,rgba(9,7,5,0.82)_42%,rgba(9,7,5,0.28)_75%,rgba(9,7,5,0.64)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_18%,rgba(201,165,106,0.18),transparent_24rem),radial-gradient(circle_at_16%_82%,rgba(36,115,78,0.2),transparent_24rem)]" />
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#090705] to-transparent" />
+      <div className="hero-soften absolute inset-0 backdrop-blur-[0.6px]" />
+      <div className="hero-shade absolute inset-0 bg-[linear-gradient(90deg,rgba(7,5,4,0.96)_0%,rgba(9,7,5,0.82)_42%,rgba(9,7,5,0.28)_75%,rgba(9,7,5,0.64)_100%)]" />
+      <div className="hero-warmth absolute inset-0 bg-[radial-gradient(circle_at_72%_18%,rgba(201,165,106,0.18),transparent_24rem),radial-gradient(circle_at_16%_82%,rgba(36,115,78,0.2),transparent_24rem)]" />
+      <div className="hero-bottom-fade absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#090705] to-transparent" />
 
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-92px)] max-w-7xl items-center px-6 py-16 md:py-20">
         <div className="max-w-3xl">

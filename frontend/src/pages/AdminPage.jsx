@@ -3421,7 +3421,7 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
     .slice(0, 5);
 
   return (
-    <div className="luxury-shell min-h-screen text-white">
+    <div className="admin-page luxury-shell min-h-screen text-white">
       <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-8">
         <div className={`luxury-panel mb-8 rounded-[28px] flex flex-col gap-5 md:flex-row md:items-center md:justify-between ${
           isDashboard ? "p-6 md:items-end md:p-8" : "p-4 md:p-5"

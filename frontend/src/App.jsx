@@ -450,9 +450,19 @@ export default function App() {
   }, [loadMenuItems]);
 
   const openHomeSection = React.useCallback((sectionId) => {
+    if (currentPage === "home") {
+      window.requestAnimationFrame(() => {
+        document.getElementById(sectionId)?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+      return;
+    }
+
     pendingHomeSectionRef.current = sectionId;
     setCurrentPage("home");
-  }, []);
+  }, [currentPage]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;

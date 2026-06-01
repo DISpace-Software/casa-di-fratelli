@@ -1198,7 +1198,7 @@ if (bookingMode === "single") {
 
   return (
     <>
-      <div className="luxury-shell min-h-screen px-4 pb-0 pt-4 text-white md:p-8">
+      <div className="reservation-page luxury-shell min-h-screen px-4 pb-0 pt-4 text-white md:p-8">
         <div className="mx-auto max-w-7xl space-y-8">
           <div className="luxury-panel rounded-[28px] p-5 md:p-7 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
