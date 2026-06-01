@@ -737,13 +737,20 @@ function getLiveReservationCandidates(reservations, now = new Date()) {
       if (!["Pending", "Approved"].includes(reservation.status) || reservation.isNoShow) return false;
 
       const minutes = getReservationMinutesFromNow(reservation, now);
-      return minutes !== null && minutes <= 30 && minutes >= -90;
+      return minutes !== null && minutes >= -90;
     })
     .sort((first, second) => {
       const firstMinutes = getReservationMinutesFromNow(first, now) ?? 9999;
       const secondMinutes = getReservationMinutesFromNow(second, now) ?? 9999;
 
-      return firstMinutes - secondMinutes;
+      const firstIsPast = firstMinutes < 0;
+      const secondIsPast = secondMinutes < 0;
+
+      if (firstIsPast !== secondIsPast) {
+        return firstIsPast ? 1 : -1;
+      }
+
+      return Math.abs(firstMinutes) - Math.abs(secondMinutes);
     });
 }
 

@@ -5,6 +5,7 @@ using CasaDiFratelli.Api.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CasaDiFratelli.Api.Services;
+using System.Net;
 using System.Security.Cryptography;
 
 namespace CasaDiFratelli.Api.Controllers;
@@ -83,6 +84,75 @@ public class ReservationsController : ControllerBase
         return reservation.Status != "Cancelled" &&
             reservation.Status != "Released" &&
             !reservation.IsNoShow;
+    }
+
+    private string GetFrontendUrl()
+    {
+        var configuredFrontendUrl = _configuration["FRONTEND_URL"];
+        var configuredAdminUrl = _configuration["ADMIN_URL"];
+
+        return (string.IsNullOrWhiteSpace(configuredFrontendUrl)
+                ? configuredAdminUrl?.Replace("/admin", "", StringComparison.OrdinalIgnoreCase)
+                : configuredFrontendUrl)
+            ?.TrimEnd('/') ?? "https://casadifratelli.bg";
+    }
+
+    private string GetReviewUrl()
+    {
+        return (_configuration["REVIEW_URL"] ?? $"{GetFrontendUrl()}/#reviews").Trim();
+    }
+
+    private async Task SendThankYouEmailAsync(Reservation reservation)
+    {
+        if (string.IsNullOrWhiteSpace(reservation.Email))
+            return;
+
+        var customer = await _db.CustomerProfiles.FirstOrDefaultAsync(x =>
+            (!string.IsNullOrWhiteSpace(reservation.Email) && x.Email == reservation.Email)
+            ||
+            (!string.IsNullOrWhiteSpace(reservation.Phone) && x.Phone == reservation.Phone)
+        );
+        var isFirstReservation = customer == null || customer.ReservationCount <= 1;
+        var guestName = WebUtility.HtmlEncode(reservation.GuestName);
+
+        if (isFirstReservation)
+        {
+            var reviewUrl = WebUtility.HtmlEncode(GetReviewUrl());
+
+            await _emailService.SendAsync(
+                reservation.Email,
+                "Благодарим Ви за посещението · Casa di Fratelli",
+                $"""
+                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+                  <h2>Благодарим Ви, че бяхте наши гости</h2>
+                  <p>Здравейте, {guestName},</p>
+                  <p>За нас беше удоволствие да Ви посрещнем в <strong>Casa di Fratelli</strong>.</p>
+                  <p>Ако храната, обслужването и атмосферата са Ви харесали, ще сме благодарни да ни оставите отзив. Това помага на повече гости да открият нашия ресторант.</p>
+                  <p>
+                    <a href="{reviewUrl}" style="display:inline-block;background:#c9a56a;color:#111827;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:700">
+                      Оставете отзив
+                    </a>
+                  </p>
+                  <p style="color:#6b7280">Очакваме Ви отново с удоволствие.</p>
+                </div>
+                """
+            );
+
+            return;
+        }
+
+        await _emailService.SendAsync(
+            reservation.Email,
+            "Благодарим Ви отново · Casa di Fratelli",
+            $"""
+            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+              <h2>Благодарим Ви отново</h2>
+              <p>Здравейте, {guestName},</p>
+              <p>Благодарим Ви, че отново избрахте <strong>Casa di Fratelli</strong>.</p>
+              <p>За нас е чест да Ви посрещаме и ще се радваме скоро пак да бъдете наши гости.</p>
+            </div>
+            """
+        );
     }
 
     [HttpGet]
@@ -655,7 +725,9 @@ await _db.SaveChangesAsync();
     [AdminAuthorize]
     public async Task<IActionResult> Release(int id)
     {
-        var reservation = await _db.Reservations.FindAsync(id);
+        var reservation = await _db.Reservations
+            .Include(x => x.Tables)
+            .FirstOrDefaultAsync(x => x.Id == id);
 
         if (reservation == null)
             return NotFound();
@@ -665,6 +737,7 @@ await _db.SaveChangesAsync();
         reservation.IsNoShow = false;
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "release", "Reservation", reservation.Id.ToString(), after: new { reservation.Id, reservation.Status });
+        await SendThankYouEmailAsync(reservation);
 
         return Ok(new
         {

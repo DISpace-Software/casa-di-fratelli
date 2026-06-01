@@ -20,6 +20,9 @@ public static class MenuSeedData
         new("salads", "Салата Dei Fratelli", "Dei Fratelli Salad", "Със запечено козе сирене, лоло росо, рукола, бейби спанак, круша, орех пекан и малинов хайвер", "Baked goat cheese, lollo rosso, arugula, baby spinach, pear, pecan, and raspberry caviar", "300 гр", 19.60m),
         new("salads", "Салата от бурата", "Burrata Salad", "Чери домати, кедрови ядки, рукола, песто и домашна фокача", "Cherry tomatoes, pine nuts, arugula, pesto, and homemade focaccia", "360 гр", 20.56m),
         new("salads", "Салата Цезар с пиле", "Chicken Caesar Salad", "Айсберг, пилешко филе, чери домати, пармезан, билкови крутони и сос Цезар", "Iceberg lettuce, chicken fillet, cherry tomatoes, parmesan, croutons, and Caesar dressing", "380 гр", 19.77m),
+        new("salads", "Салата с киноа и бейби спанак", "Quinoa and Baby Spinach Salad", "Чери домати, печена чушка, яйце, сирене и мус от орехи", "Cherry tomatoes, roasted pepper, egg, cheese, and walnut mousse", "350 гр", 17.20m),
+        new("salads", "Хориатики", "Choriatiki", "Класическа гръцка салата", "Classic Greek salad", "350 гр", 15.90m),
+        new("salads", "Домашна млечна салата", "Homemade Dairy Salad", "Свежа домашна млечна салата", "Fresh homemade dairy salad", "270 гр", 10.90m),
         new("salads", "Салата със сотирани тигрови скариди", "Tiger Shrimp Salad", "Микс зелени салати, жулиени зеленчуци и дресинг песто", "Mixed green salads, julienne vegetables, and pesto dressing", "350 гр", 22.32m),
         new("salads", "Салата Фермата", "Farm Salad", "Панирано фермерско сирене, сезонни плодове, меден дресинг, сос от нар и бейби спанак", "Breaded farm cheese, seasonal fruit, honey dressing, pomegranate sauce, and baby spinach", "350 гр", 19.60m),
 
