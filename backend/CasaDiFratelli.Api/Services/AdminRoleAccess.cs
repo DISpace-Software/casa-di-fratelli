@@ -29,6 +29,22 @@ public static class AdminRoleAccess
         return normalized is Owner or Developer;
     }
 
+    public static bool CanCreateRole(string? actorRole, string? newRole, bool developerExists = true)
+    {
+        var actor = Normalize(actorRole);
+        var target = Normalize(newRole);
+
+        return actor == Developer || (actor == Owner && (target != Developer || !developerExists));
+    }
+
+    public static bool CanModifyRole(string? actorRole, string? targetRole)
+    {
+        var actor = Normalize(actorRole);
+        var target = Normalize(targetRole);
+
+        return actor == Developer || (actor == Owner && target != Developer);
+    }
+
     public static bool CanClearOperationalData(string? role)
     {
         return Normalize(role) == Developer;

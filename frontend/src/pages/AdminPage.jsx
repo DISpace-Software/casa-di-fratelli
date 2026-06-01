@@ -421,6 +421,17 @@ function getAdminRoleLabel(role, language = "bg") {
   return adminRoleOptions.find((option) => option.value === normalized)?.labels[language] || normalized;
 }
 
+function getAdminUserId(user) {
+  return user?.id ?? user?.Id;
+}
+
+function canActorManageAdminUser(actorRole, targetRole) {
+  const actor = normalizeAdminRole(actorRole);
+  const target = normalizeAdminRole(targetRole);
+
+  return actor === "Developer" || (actor === "Owner" && target !== "Developer");
+}
+
 const emptyAdminReservation = {
   guestName: "",
   phone: "",
@@ -2234,10 +2245,22 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     password: "",
     role: "Administrator",
   });
+  const [editingAdminId, setEditingAdminId] = React.useState(null);
+  const [adminEditForm, setAdminEditForm] = React.useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "Administrator",
+    isActive: true,
+  });
   const currentAdminRole = normalizeAdminRole(adminUser?.role);
   const isWaiterRole = currentAdminRole === "Waiter";
   const canClearOperationalData = currentAdminRole === "Developer";
   const canManageAdmins = ["Owner", "Developer"].includes(currentAdminRole);
+  const hasDeveloperAdmin = adminUsers.some((user) => normalizeAdminRole(user.role || user.Role) === "Developer");
+  const availableAdminRoleOptions = adminRoleOptions.filter(
+    (role) => currentAdminRole === "Developer" || role.value !== "Developer" || !hasDeveloperAdmin
+  );
 
   const withAdminToken = React.useCallback(
     (options = {}) => ({
@@ -3216,6 +3239,65 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     setAdminUserForm({ name: "", email: "", password: "", role: "Administrator" });
     setAdminNotice(adminLanguage === "bg" ? "Админът е създаден." : "Admin created.");
+    await Promise.all([loadAdminUsers(), loadAuditLogs()]);
+  }
+
+  function startEditingAdminUser(user) {
+    setEditingAdminId(getAdminUserId(user));
+    setAdminEditForm({
+      name: user.name || user.Name || "",
+      email: user.email || user.Email || "",
+      password: "",
+      role: normalizeAdminRole(user.role || user.Role),
+      isActive: Boolean(user.isActive ?? user.IsActive ?? true),
+    });
+  }
+
+  async function saveAdminUser(userId) {
+    setAdminError("");
+    setAdminNotice("");
+
+    const response = await adminFetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(adminEditForm),
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to update admin."));
+      return;
+    }
+
+    setEditingAdminId(null);
+    setAdminEditForm({ name: "", email: "", password: "", role: "Administrator", isActive: true });
+    setAdminNotice(adminLanguage === "bg" ? "Админът е обновен." : "Admin updated.");
+    await Promise.all([loadAdminUsers(), loadAuditLogs()]);
+  }
+
+  async function deleteAdminUser(user) {
+    setAdminError("");
+    setAdminNotice("");
+
+    const userId = getAdminUserId(user);
+    const userName = user.name || user.Name || user.email || user.Email || "admin";
+    const confirmed = window.confirm(
+      adminLanguage === "bg"
+        ? `Да се изтрие ли админ акаунтът ${userName}?`
+        : `Delete admin account ${userName}?`
+    );
+
+    if (!confirmed) return;
+
+    const response = await adminFetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to delete admin."));
+      return;
+    }
+
+    setAdminNotice(adminLanguage === "bg" ? "Админът е изтрит." : "Admin deleted.");
     await Promise.all([loadAdminUsers(), loadAuditLogs()]);
   }
 
@@ -5913,7 +5995,7 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                             onChange={(event) => setAdminUserForm((prev) => ({ ...prev, role: event.target.value }))}
                             className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
                           >
-                            {adminRoleOptions.map((role) => (
+                            {availableAdminRoleOptions.map((role) => (
                               <option key={role.value} value={role.value}>
                                 {role.labels[adminLanguage]}
                               </option>
@@ -5930,14 +6012,96 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                       <div className="section-kicker">{adminLanguage === "bg" ? "Админ профили" : "Admin users"}</div>
                       <div className="mt-4 space-y-2">
                         {adminUsers.map((user) => (
-                          <div key={user.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                            <div className="font-semibold text-[#fff4df]">{user.name}</div>
-                            <div className="mt-1 text-sm text-white/50">
-                              {user.email} · {getAdminRoleLabel(user.role, adminLanguage)}
-                            </div>
-                            <div className="mt-1 text-xs text-white/35">
-                              {adminLanguage === "bg" ? "Последен вход" : "Last login"}: {user.lastLoginAtUtc || "—"}
-                            </div>
+                          <div key={getAdminUserId(user)} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                            {editingAdminId === getAdminUserId(user) ? (
+                              <div className="grid gap-3">
+                                <input
+                                  value={adminEditForm.name}
+                                  onChange={(event) => setAdminEditForm((prev) => ({ ...prev, name: event.target.value }))}
+                                  placeholder={adminLanguage === "bg" ? "Име" : "Name"}
+                                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/50"
+                                />
+                                <input
+                                  type="email"
+                                  value={adminEditForm.email}
+                                  onChange={(event) => setAdminEditForm((prev) => ({ ...prev, email: event.target.value }))}
+                                  placeholder="Email"
+                                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/50"
+                                />
+                                <input
+                                  type="password"
+                                  value={adminEditForm.password}
+                                  onChange={(event) => setAdminEditForm((prev) => ({ ...prev, password: event.target.value }))}
+                                  placeholder={adminLanguage === "bg" ? "Нова парола, ако искаш промяна" : "New password, only if changing"}
+                                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/50"
+                                />
+                                <select
+                                  value={adminEditForm.role}
+                                  onChange={(event) => setAdminEditForm((prev) => ({ ...prev, role: event.target.value }))}
+                                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/50"
+                                >
+                                  {availableAdminRoleOptions.map((role) => (
+                                    <option key={role.value} value={role.value}>
+                                      {role.labels[adminLanguage]}
+                                    </option>
+                                  ))}
+                                </select>
+                                <label className="flex items-center gap-2 text-sm text-white/70">
+                                  <input
+                                    type="checkbox"
+                                    checked={adminEditForm.isActive}
+                                    onChange={(event) => setAdminEditForm((prev) => ({ ...prev, isActive: event.target.checked }))}
+                                  />
+                                  {adminLanguage === "bg" ? "Активен акаунт" : "Active account"}
+                                </label>
+                                <div className="flex flex-wrap gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => saveAdminUser(getAdminUserId(user))}
+                                    className="luxury-button rounded-xl px-4 py-2 text-xs font-semibold"
+                                  >
+                                    {adminLanguage === "bg" ? "Запази" : "Save"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingAdminId(null)}
+                                    className="ghost-button rounded-xl px-4 py-2 text-xs font-semibold"
+                                  >
+                                    {adminLanguage === "bg" ? "Откажи" : "Cancel"}
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="font-semibold text-[#fff4df]">{user.name}</div>
+                                <div className="mt-1 text-sm text-white/50">
+                                  {user.email} · {getAdminRoleLabel(user.role, adminLanguage)}
+                                </div>
+                                <div className="mt-1 text-xs text-white/35">
+                                  {adminLanguage === "bg" ? "Последен вход" : "Last login"}: {user.lastLoginAtUtc || "—"}
+                                </div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {canActorManageAdminUser(currentAdminRole, user.role) && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => startEditingAdminUser(user)}
+                                        className="ghost-button rounded-xl px-3 py-2 text-xs font-semibold"
+                                      >
+                                        {adminLanguage === "bg" ? "Редактирай" : "Edit"}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => deleteAdminUser(user)}
+                                        className="rounded-xl border border-red-300/25 bg-red-500/15 px-3 py-2 text-xs font-semibold text-red-100"
+                                      >
+                                        {adminLanguage === "bg" ? "Изтрий" : "Delete"}
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </>
+                            )}
                           </div>
                         ))}
                       </div>

@@ -35,6 +35,7 @@ public class AdminAuthController : ControllerBase
     public sealed record RequestPasswordResetRequest(string Email);
     public sealed record ResetPasswordRequest(string Email, string Token, string Password);
     public sealed record CreateAdminRequest(string Name, string Email, string Password, string Role);
+    public sealed record UpdateAdminRequest(string Name, string Email, string? Password, string Role, bool IsActive);
     public sealed record DeviceLoginRequest(string CredentialToken);
     public sealed record DeviceRegisterRequest(string Label, string CredentialToken);
 
@@ -188,6 +189,11 @@ public class AdminAuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             return BadRequest(new { message = "Email and password are required." });
 
+        var requestedRole = AdminRoleAccess.Normalize(request.Role);
+        var developerExists = await _db.AdminUsers.AnyAsync(x => x.Role == AdminRoleAccess.Developer);
+        if (!AdminRoleAccess.CanCreateRole(current?.Role, requestedRole, developerExists))
+            return Forbid();
+
         var normalizedEmail = AdminAuthService.NormalizeEmail(request.Email);
         if (await _db.AdminUsers.AnyAsync(x => x.Email == normalizedEmail))
             return Conflict(new { message = "Admin already exists." });
@@ -197,7 +203,7 @@ public class AdminAuthController : ControllerBase
         {
             Name = string.IsNullOrWhiteSpace(request.Name) ? normalizedEmail : request.Name.Trim(),
             Email = normalizedEmail,
-            Role = AdminRoleAccess.Normalize(request.Role),
+            Role = requestedRole,
             PasswordHash = hash,
             PasswordSalt = salt,
             IsActive = true,
@@ -209,6 +215,92 @@ public class AdminAuthController : ControllerBase
         await _audit.RecordAsync(HttpContext, "create", "AdminUser", user.Id.ToString(), after: new { user.Id, user.Name, user.Email, user.Role });
 
         return Ok(new { user.Id, user.Name, user.Email, user.Role, user.IsActive });
+    }
+
+    [HttpPut("users/{id:int}")]
+    [AdminAuthorize]
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateAdminRequest request)
+    {
+        var current = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanManageAdmins(current?.Role))
+            return Forbid();
+
+        var user = await _db.AdminUsers.FirstOrDefaultAsync(x => x.Id == id);
+        if (user == null)
+            return NotFound();
+
+        if (!AdminRoleAccess.CanModifyRole(current?.Role, user.Role))
+            return Forbid();
+
+        var requestedRole = AdminRoleAccess.Normalize(request.Role);
+        var developerExists = await _db.AdminUsers.AnyAsync(x => x.Id != id && x.Role == AdminRoleAccess.Developer);
+        if (!AdminRoleAccess.CanCreateRole(current?.Role, requestedRole, developerExists))
+            return Forbid();
+
+        if (string.IsNullOrWhiteSpace(request.Email))
+            return BadRequest(new { message = "Email is required." });
+
+        var normalizedEmail = AdminAuthService.NormalizeEmail(request.Email);
+        if (await _db.AdminUsers.AnyAsync(x => x.Id != id && x.Email == normalizedEmail))
+            return Conflict(new { message = "Admin already exists." });
+
+        var before = new { user.Id, user.Name, user.Email, user.Role, user.IsActive };
+
+        user.Name = string.IsNullOrWhiteSpace(request.Name) ? normalizedEmail : request.Name.Trim();
+        user.Email = normalizedEmail;
+        user.Role = requestedRole;
+        user.IsActive = request.IsActive;
+
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            if (request.Password.Length < 8)
+                return BadRequest(new { message = "Password must be at least 8 characters." });
+
+            var (hash, salt) = AdminAuthService.HashPassword(request.Password);
+            user.PasswordHash = hash;
+            user.PasswordSalt = salt;
+            user.PasswordResetTokenHash = null;
+            user.PasswordResetTokenExpiresAtUtc = null;
+        }
+
+        if (!user.IsActive)
+        {
+            await _db.AdminSessions
+                .Where(x => x.AdminUserId == user.Id && x.RevokedAtUtc == null)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.RevokedAtUtc, DateTime.UtcNow));
+        }
+
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "update", "AdminUser", user.Id.ToString(), before, new { user.Id, user.Name, user.Email, user.Role, user.IsActive });
+
+        return Ok(new { user.Id, user.Name, user.Email, user.Role, user.IsActive });
+    }
+
+    [HttpDelete("users/{id:int}")]
+    [AdminAuthorize]
+    public async Task<IActionResult> DeleteUser(int id)
+    {
+        var current = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanManageAdmins(current?.Role))
+            return Forbid();
+
+        var user = await _db.AdminUsers.FirstOrDefaultAsync(x => x.Id == id);
+        if (user == null)
+            return NotFound();
+
+        if (!AdminRoleAccess.CanModifyRole(current?.Role, user.Role))
+            return Forbid();
+
+        var before = new { user.Id, user.Name, user.Email, user.Role, user.IsActive };
+
+        await _db.AdminDeviceCredentials.Where(x => x.AdminUserId == user.Id).ExecuteDeleteAsync();
+        await _db.AdminSessions.Where(x => x.AdminUserId == user.Id).ExecuteDeleteAsync();
+        _db.AdminUsers.Remove(user);
+
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "delete", "AdminUser", id.ToString(), before: before);
+
+        return Ok(new { id });
     }
 
     [HttpPost("devices")]
