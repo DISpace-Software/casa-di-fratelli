@@ -9,6 +9,7 @@ public class MenuItem
 
     public string DescriptionBg { get; set; } = string.Empty;
     public string DescriptionEn { get; set; } = string.Empty;
+    public string ImageUrl { get; set; } = string.Empty;
 
     public string Weight { get; set; } = string.Empty;
     public decimal Price { get; set; }

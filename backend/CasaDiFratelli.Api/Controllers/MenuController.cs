@@ -59,6 +59,7 @@ public class MenuController : ControllerBase
                 "NameEn" text NOT NULL DEFAULT '',
                 "DescriptionBg" text NOT NULL DEFAULT '',
                 "DescriptionEn" text NOT NULL DEFAULT '',
+                "ImageUrl" text NOT NULL DEFAULT '',
                 "Weight" text NOT NULL DEFAULT '',
                 "Price" numeric NOT NULL DEFAULT 0,
                 "Category" text NOT NULL DEFAULT 'main',
@@ -73,6 +74,7 @@ public class MenuController : ControllerBase
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "NameEn" text NOT NULL DEFAULT '';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "DescriptionBg" text NOT NULL DEFAULT '';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "DescriptionEn" text NOT NULL DEFAULT '';
+            ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "ImageUrl" text NOT NULL DEFAULT '';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "Weight" text NOT NULL DEFAULT '';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "Price" numeric NOT NULL DEFAULT 0;
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "Category" text NOT NULL DEFAULT 'main';
@@ -113,6 +115,7 @@ public class MenuController : ControllerBase
                 "NameEn",
                 "DescriptionBg",
                 "DescriptionEn",
+                "ImageUrl",
                 "Weight",
                 "Price",
                 "Category",
@@ -134,11 +137,12 @@ public class MenuController : ControllerBase
                 NameEn = reader.IsDBNull(2) ? string.Empty : reader.GetString(2),
                 DescriptionBg = reader.IsDBNull(3) ? string.Empty : reader.GetString(3),
                 DescriptionEn = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
-                Weight = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
-                Price = reader.IsDBNull(6) ? 0m : Convert.ToDecimal(reader.GetValue(6)),
-                Category = reader.IsDBNull(7) ? "main" : reader.GetString(7),
-                IsActive = ReadBoolean(reader, 8, true),
-                NotifySubscribers = ReadBoolean(reader, 9)
+                ImageUrl = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
+                Weight = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
+                Price = reader.IsDBNull(7) ? 0m : Convert.ToDecimal(reader.GetValue(7)),
+                Category = reader.IsDBNull(8) ? "main" : reader.GetString(8),
+                IsActive = ReadBoolean(reader, 9, true),
+                NotifySubscribers = ReadBoolean(reader, 10)
             });
         }
 
@@ -204,6 +208,7 @@ public class MenuController : ControllerBase
             item.NameEn = string.IsNullOrWhiteSpace(item.NameEn) ? item.NameBg : item.NameEn.Trim();
             item.DescriptionBg = item.DescriptionBg?.Trim() ?? string.Empty;
             item.DescriptionEn = item.DescriptionEn?.Trim() ?? string.Empty;
+            item.ImageUrl = item.ImageUrl?.Trim() ?? string.Empty;
             item.Weight = item.Weight?.Trim() ?? string.Empty;
             item.Category = string.IsNullOrWhiteSpace(item.Category) ? "main" : item.Category.Trim();
             item.CreatedAtUtc = DateTime.UtcNow;
@@ -211,15 +216,16 @@ public class MenuController : ControllerBase
             await using var command = _db.Database.GetDbConnection().CreateCommand();
             command.CommandText = """
                 INSERT INTO "MenuItems"
-                ("NameBg", "NameEn", "DescriptionBg", "DescriptionEn", "Weight", "Price", "Category", "IsActive", "NotifySubscribers", "CreatedAtUtc")
+                ("NameBg", "NameEn", "DescriptionBg", "DescriptionEn", "ImageUrl", "Weight", "Price", "Category", "IsActive", "NotifySubscribers", "CreatedAtUtc")
                 VALUES
-                (@nameBg, @nameEn, @descriptionBg, @descriptionEn, @weight, @price, @category, @isActive, @notifySubscribers, now())
+                (@nameBg, @nameEn, @descriptionBg, @descriptionEn, @imageUrl, @weight, @price, @category, @isActive, @notifySubscribers, now())
                 RETURNING "Id";
                 """;
             AddParameter(command, "@nameBg", item.NameBg);
             AddParameter(command, "@nameEn", item.NameEn);
             AddParameter(command, "@descriptionBg", item.DescriptionBg);
             AddParameter(command, "@descriptionEn", item.DescriptionEn);
+            AddParameter(command, "@imageUrl", item.ImageUrl);
             AddParameter(command, "@weight", item.Weight);
             AddParameter(command, "@price", item.Price);
             AddParameter(command, "@category", item.Category);
@@ -273,6 +279,7 @@ public class MenuController : ControllerBase
                 item.NameEn,
                 item.DescriptionBg,
                 item.DescriptionEn,
+                item.ImageUrl,
                 item.Weight,
                 item.Price,
                 item.Category,
@@ -302,6 +309,7 @@ public class MenuController : ControllerBase
                 "NameEn" = @nameEn,
                 "DescriptionBg" = @descriptionBg,
                 "DescriptionEn" = @descriptionEn,
+                "ImageUrl" = @imageUrl,
                 "Weight" = @weight,
                 "Price" = @price,
                 "Category" = @category,
@@ -315,6 +323,7 @@ public class MenuController : ControllerBase
         AddParameter(command, "@nameEn", string.IsNullOrWhiteSpace(updated.NameEn) ? updated.NameBg?.Trim() : updated.NameEn.Trim());
         AddParameter(command, "@descriptionBg", updated.DescriptionBg?.Trim() ?? string.Empty);
         AddParameter(command, "@descriptionEn", updated.DescriptionEn?.Trim() ?? string.Empty);
+        AddParameter(command, "@imageUrl", updated.ImageUrl?.Trim() ?? string.Empty);
         AddParameter(command, "@weight", updated.Weight?.Trim() ?? string.Empty);
         AddParameter(command, "@price", updated.Price);
         AddParameter(command, "@category", string.IsNullOrWhiteSpace(updated.Category) ? "main" : updated.Category.Trim());
@@ -334,6 +343,7 @@ public class MenuController : ControllerBase
             NameEn = updated.NameEn,
             DescriptionBg = updated.DescriptionBg,
             DescriptionEn = updated.DescriptionEn,
+            ImageUrl = updated.ImageUrl,
             Weight = updated.Weight,
             Price = updated.Price,
             Category = updated.Category,

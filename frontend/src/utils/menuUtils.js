@@ -86,6 +86,7 @@ export function buildMenuDataFromCms(items, language, fallbackData) {
       weight: getValue(item, "weight") || "",
       price: formatEuro(getValue(item, "price")),
       priceValue: Number(getValue(item, "price") || 0),
+      imageUrl: getValue(item, "imageUrl") || "",
       description:
         getValue(item, language === "bg" ? "descriptionBg" : "descriptionEn") ||
         getValue(item, "descriptionBg") ||

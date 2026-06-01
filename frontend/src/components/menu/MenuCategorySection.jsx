@@ -31,11 +31,23 @@ export default function MenuCategorySection({ category, language, orderEnabled =
         {category.items.map((item, index) => (
           <div
             key={item.id || item.name}
-            className={`luxury-panel menu-spark rounded-[22px] p-5 transition hover:-translate-y-1 hover:border-[#c9a56a]/30 ${
+            className={`group luxury-panel menu-spark overflow-hidden rounded-[22px] transition hover:-translate-y-1 hover:border-[#c9a56a]/30 ${
               item.featured ? "md:col-span-2" : ""
             }`}
           >
-            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            {item.imageUrl && (
+              <div className="relative h-48 overflow-hidden border-b border-white/10 bg-black/20 md:h-56">
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
+              </div>
+            )}
+
+            <div className="flex flex-col gap-4 p-5 md:flex-row md:items-start md:justify-between">
               <div className="max-w-3xl">
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[10px] font-semibold text-stone-400">

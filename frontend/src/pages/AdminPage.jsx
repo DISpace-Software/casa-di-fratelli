@@ -24,6 +24,7 @@ const emptyMenuItem = {
   nameEn: "",
   descriptionBg: "",
   descriptionEn: "",
+  imageUrl: "",
   weight: "",
   price: "",
   category: "Main",
@@ -156,6 +157,8 @@ const adminText = {
       category: "Категория",
       descriptionBg: "Състав / описание BG",
       descriptionEn: "Ingredients / description EN",
+      imageUrl: "Снимка",
+      imageHelp: "Поставете URL към снимка. Може да бъде https://... или локален път като /menu/photo.jpg.",
       active: "Активно в сайта",
       notify: "Изпрати към абонати",
       saveAdd: "Добави ястие",
@@ -299,6 +302,8 @@ const adminText = {
       category: "Category",
       descriptionBg: "Ingredients / description BG",
       descriptionEn: "Ingredients / description EN",
+      imageUrl: "Photo",
+      imageHelp: "Paste an image URL. It can be https://... or a local path like /menu/photo.jpg.",
       active: "Active on site",
       notify: "Notify subscribers",
       saveAdd: "Add dish",
@@ -4759,6 +4764,35 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                           </p>
                         </div>
                       </div>
+
+                      <div className="mt-4 grid gap-4 md:grid-cols-[1fr_180px]">
+                        <div>
+                          <label className="mb-2 block text-sm text-stone-400">{a.menu.imageUrl}</label>
+                          <input
+                            value={menuForm.imageUrl}
+                            onChange={(e) => setMenuForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
+                            placeholder="https://..."
+                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                          />
+                          <p className="mt-2 text-xs leading-5 text-stone-500">
+                            {a.menu.imageHelp}
+                          </p>
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                          {menuForm.imageUrl ? (
+                            <img
+                              src={menuForm.imageUrl}
+                              alt={menuForm.nameBg || a.menu.imageUrl}
+                              className="h-36 w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-36 items-center justify-center px-4 text-center text-xs text-stone-500">
+                              {adminLanguage === "bg" ? "Preview на снимката" : "Image preview"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-5 md:p-6">
@@ -4947,6 +4981,16 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {selectedCategoryItems.map((item) => (
                       <div key={item.id || item.Id} className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                        {(item.imageUrl || item.ImageUrl) && (
+                          <div className="-mx-1 mb-4 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
+                            <img
+                              src={item.imageUrl || item.ImageUrl}
+                              alt={item.nameBg || item.NameBg || ""}
+                              loading="lazy"
+                              className="h-40 w-full object-cover"
+                            />
+                          </div>
+                        )}
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <div className="text-lg font-semibold">{item.nameBg || item.NameBg}</div>
@@ -4990,6 +5034,7 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                                 nameEn: item.nameEn || item.NameEn || "",
                                 descriptionBg: item.descriptionBg || item.DescriptionBg || "",
                                 descriptionEn: item.descriptionEn || item.DescriptionEn || "",
+                                imageUrl: item.imageUrl || item.ImageUrl || "",
                                 weight: item.weight || item.Weight || "",
                                 price: item.price || item.Price || "",
                                 category: item.category || item.Category || "Main",
