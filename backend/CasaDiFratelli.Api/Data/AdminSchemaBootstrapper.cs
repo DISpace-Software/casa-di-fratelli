@@ -199,6 +199,60 @@ public static class AdminSchemaBootstrapper
                     SELECT 1
                     FROM information_schema.columns
                     WHERE table_name = 'MenuItems'
+                    AND column_name = 'Price'
+                    AND data_type = 'text'
+                ) THEN
+                    ALTER TABLE "MenuItems"
+                    ALTER COLUMN "Price" TYPE numeric
+                    USING COALESCE(
+                        NULLIF(
+                            regexp_replace(replace("Price", ',', '.'), '[^0-9.]', '', 'g'),
+                            ''
+                        )::numeric,
+                        0
+                    );
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_name = 'DiningOrders'
+                    AND column_name = 'TotalPrice'
+                    AND data_type = 'text'
+                ) THEN
+                    ALTER TABLE "DiningOrders"
+                    ALTER COLUMN "TotalPrice" TYPE numeric
+                    USING COALESCE(
+                        NULLIF(
+                            regexp_replace(replace("TotalPrice", ',', '.'), '[^0-9.]', '', 'g'),
+                            ''
+                        )::numeric,
+                        0
+                    );
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_name = 'DiningOrderItems'
+                    AND column_name = 'UnitPrice'
+                    AND data_type = 'text'
+                ) THEN
+                    ALTER TABLE "DiningOrderItems"
+                    ALTER COLUMN "UnitPrice" TYPE numeric
+                    USING COALESCE(
+                        NULLIF(
+                            regexp_replace(replace("UnitPrice", ',', '.'), '[^0-9.]', '', 'g'),
+                            ''
+                        )::numeric,
+                        0
+                    );
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_name = 'MenuItems'
                     AND column_name = 'CreatedAtUtc'
                     AND data_type = 'text'
                 ) THEN
