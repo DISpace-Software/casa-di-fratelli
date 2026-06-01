@@ -98,7 +98,7 @@ async function compressMenuImage(file) {
 const adminText = {
   bg: {
     appTitle: "Restaurant CRM",
-    appSubtitle: "Резервации, меню, клиенти, blacklist и маркетинг в една система.",
+    appSubtitle: "Резервации, поръчки, меню, клиенти, blacklist и маркетинг в една система.",
     refresh: "Обнови",
     language: "Език",
     stats: {
@@ -107,6 +107,7 @@ const adminText = {
       month: "Месец",
       year: "Година",
       allReservations: "Всички резервации",
+      orders: "Поръчки",
       pending: "Чакащи",
       approved: "Потвърдени",
       blacklist: "Blacklist",
@@ -245,7 +246,7 @@ const adminText = {
   },
   en: {
     appTitle: "Restaurant CRM",
-    appSubtitle: "Reservations, menu, guests, blacklist, and marketing in one system.",
+    appSubtitle: "Reservations, orders, menu, guests, blacklist, and marketing in one system.",
     refresh: "Refresh",
     language: "Language",
     stats: {
@@ -254,6 +255,7 @@ const adminText = {
       month: "Month",
       year: "Year",
       allReservations: "All reservations",
+      orders: "Orders",
       pending: "Pending",
       approved: "Approved",
       blacklist: "Blacklist",
@@ -2410,6 +2412,35 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     await loadDiningOrders();
   }
 
+  async function clearReservationsAndOrders() {
+    setAdminNotice("");
+    setAdminError("");
+
+    const confirmed = window.confirm(
+      adminLanguage === "bg"
+        ? "Да се изтрият ли всички резервации и поръчки? Менюто и настройките няма да бъдат променени."
+        : "Delete all reservations and orders? Menu and settings will not be changed."
+    );
+
+    if (!confirmed) return;
+
+    const response = await adminFetch(`${API_BASE_URL}/api/maintenance/clear-reservations-and-orders`, {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to clear reservations and orders."));
+      return;
+    }
+
+    await Promise.all([loadReservations(), loadDiningOrders()]);
+    setAdminNotice(
+      adminLanguage === "bg"
+        ? "Всички резервации и поръчки са изчистени."
+        : "All reservations and orders were cleared."
+    );
+  }
+
   async function addConsumptionItem(reservationId, item) {
     setAdminNotice("");
     setAdminError("");
@@ -3509,6 +3540,9 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
       return firstMinutes - secondMinutes;
     })
     .slice(0, 5);
+  const recentDashboardOrders = diningOrders
+    .filter((order) => !["Done", "Cancelled"].includes(order.status))
+    .slice(0, 5);
 
   return (
     <div className="admin-page luxury-shell min-h-screen text-white">
@@ -3599,8 +3633,9 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
               ))}
             </div>
 
-            <div className="mb-8 grid gap-4 md:grid-cols-4">
+            <div className="mb-8 grid gap-4 md:grid-cols-5">
               <StatCard label={a.stats.allReservations} value={statsReservations.length} />
+              <StatCard label={a.stats.orders} value={diningOrders.length} />
               <StatCard label={a.stats.pending} value={pendingCount} />
               <StatCard label={a.stats.approved} value={approvedCount} />
               <StatCard label={a.stats.blacklist} value={blacklistCount} />
@@ -3618,63 +3653,142 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
               ))}
             </div>
 
-            <div className="mb-8 rounded-[26px] border border-white/10 bg-black/20 p-4 md:p-5">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <div className="section-kicker">
-                    {adminLanguage === "bg" ? "Оперативен фокус" : "Operational focus"}
-                  </div>
-                  <h2 className="mt-2 text-2xl font-semibold text-[#fff4df]">
-                    {adminLanguage === "bg" ? "Следващите 5 резервации" : "Next 5 reservations"}
-                  </h2>
+            <div className="mb-8 flex flex-col gap-3 rounded-[22px] border border-amber-300/20 bg-amber-400/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#f2d39a]">
+                  {adminLanguage === "bg" ? "Тестова среда" : "Testing"}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("reservations")}
-                  className="ghost-button hidden rounded-full px-4 py-2 text-sm font-semibold sm:block"
-                >
-                  {a.tabs.reservations}
-                </button>
+                <p className="mt-1 text-sm text-white/60">
+                  {adminLanguage === "bg"
+                    ? "Изчиства само резервации и поръчки. Менюто, масите и админите остават."
+                    : "Clears only reservations and orders. Menu, tables, and admins stay intact."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={clearReservationsAndOrders}
+                className="rounded-2xl border border-red-300/25 bg-red-500/15 px-5 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-500/25"
+              >
+                {adminLanguage === "bg" ? "Изчисти резервации и поръчки" : "Clear reservations and orders"}
+              </button>
+            </div>
+
+            <div className="mb-8 grid gap-5 xl:grid-cols-2">
+              <div className="rounded-[26px] border border-white/10 bg-black/20 p-4 md:p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="section-kicker">
+                      {adminLanguage === "bg" ? "Резервации" : "Reservations"}
+                    </div>
+                    <h2 className="mt-2 text-2xl font-semibold text-[#fff4df]">
+                      {adminLanguage === "bg" ? "Следващите 5 резервации" : "Next 5 reservations"}
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("reservations")}
+                    className="ghost-button hidden rounded-full px-4 py-2 text-sm font-semibold sm:block"
+                  >
+                    {a.tabs.reservations}
+                  </button>
+                </div>
+
+                {upcomingDashboardReservations.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/55">
+                    {adminLanguage === "bg"
+                      ? "Няма предстоящи резервации за показване."
+                      : "No upcoming reservations to show."}
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {upcomingDashboardReservations.map((reservation) => (
+                      <button
+                        key={reservation.id}
+                        type="button"
+                        onClick={() => {
+                          setExpandedId(reservation.id);
+                          setSearch("");
+                          setStatusFilter("All");
+                          setActiveTab("reservations");
+                        }}
+                        className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="min-w-0 truncate text-base font-semibold text-[#fff4df]">
+                            {reservation.guestName}
+                          </span>
+                          <span className="shrink-0 rounded-full border border-[#f2d39a]/20 bg-[#c9a56a]/12 px-2.5 py-1 text-xs font-semibold text-[#f2d39a]">
+                            {reservation.reservedTime}
+                          </span>
+                        </div>
+                        <div className="mt-3 text-xs leading-5 text-white/50">
+                          {reservation.reservedDate} · {reservation.guestCount} {a.liveMap.guests}
+                        </div>
+                        <div className="mt-1 text-xs text-white/40">
+                          {a.liveMap.table} {reservation.tableIds.join(", ")}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {upcomingDashboardReservations.length === 0 ? (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/55">
-                  {adminLanguage === "bg"
-                    ? "Няма предстоящи резервации за показване."
-                    : "No upcoming reservations to show."}
+              <div className="rounded-[26px] border border-white/10 bg-black/20 p-4 md:p-5">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="section-kicker">
+                      {adminLanguage === "bg" ? "Поръчки" : "Orders"}
+                    </div>
+                    <h2 className="mt-2 text-2xl font-semibold text-[#fff4df]">
+                      {adminLanguage === "bg" ? "Активни поръчки" : "Active orders"}
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("orders")}
+                    className="ghost-button hidden rounded-full px-4 py-2 text-sm font-semibold sm:block"
+                  >
+                    {a.tabs.orders}
+                  </button>
                 </div>
-              ) : (
-                <div className="grid gap-3 lg:grid-cols-5">
-                  {upcomingDashboardReservations.map((reservation) => (
-                    <button
-                      key={reservation.id}
-                      type="button"
-                      onClick={() => {
-                        setExpandedId(reservation.id);
-                        setSearch("");
-                        setStatusFilter("All");
-                        setActiveTab("reservations");
-                      }}
-                      className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <span className="min-w-0 truncate text-base font-semibold text-[#fff4df]">
-                          {reservation.guestName}
-                        </span>
-                        <span className="shrink-0 rounded-full border border-[#f2d39a]/20 bg-[#c9a56a]/12 px-2.5 py-1 text-xs font-semibold text-[#f2d39a]">
-                          {reservation.reservedTime}
-                        </span>
-                      </div>
-                      <div className="mt-3 text-xs leading-5 text-white/50">
-                        {reservation.reservedDate} · {reservation.guestCount} {a.liveMap.guests}
-                      </div>
-                      <div className="mt-1 text-xs text-white/40">
-                        {a.liveMap.table} {reservation.tableIds.join(", ")}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+
+                {recentDashboardOrders.length === 0 ? (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/55">
+                    {adminLanguage === "bg"
+                      ? "Няма активни поръчки за показване."
+                      : "No active orders to show."}
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {recentDashboardOrders.map((order) => (
+                      <button
+                        key={order.id}
+                        type="button"
+                        onClick={() => {
+                          setExpandedOrderId(order.id);
+                          setActiveTab("orders");
+                        }}
+                        className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <span className="min-w-0 truncate text-base font-semibold text-[#fff4df]">
+                            {order.tableLabel}
+                          </span>
+                          <span className="shrink-0 rounded-full border border-emerald-300/20 bg-emerald-400/12 px-2.5 py-1 text-xs font-semibold text-emerald-100">
+                            {order.status}
+                          </span>
+                        </div>
+                        <div className="mt-3 truncate text-xs leading-5 text-white/50">
+                          {order.guestName || "—"} · {formatEuroAmount(order.totalPrice)}
+                        </div>
+                        <div className="mt-1 text-xs text-white/40">
+                          #{order.id}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </>
         ) : (
