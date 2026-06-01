@@ -37,6 +37,27 @@ public class MenuController : ControllerBase
         command.Parameters.Add(parameter);
     }
 
+    private static object? ToAuditSnapshot(MenuItem? item)
+    {
+        if (item == null) return null;
+
+        return new
+        {
+            item.Id,
+            item.NameBg,
+            item.NameEn,
+            item.DescriptionBg,
+            item.DescriptionEn,
+            HasImage = !string.IsNullOrWhiteSpace(item.ImageUrl),
+            ImageUrlLength = item.ImageUrl?.Length ?? 0,
+            item.Weight,
+            item.Price,
+            item.Category,
+            item.IsActive,
+            item.NotifySubscribers
+        };
+    }
+
     private async Task EnsureConnectionOpenAsync()
     {
         var connection = _db.Database.GetDbConnection();
@@ -233,7 +254,7 @@ public class MenuController : ControllerBase
             AddParameter(command, "@notifySubscribers", item.NotifySubscribers);
 
             item.Id = Convert.ToInt32(await command.ExecuteScalarAsync());
-            await _audit.RecordAsync(HttpContext, "create", "MenuItem", item.Id.ToString(), after: item);
+            await _audit.RecordAsync(HttpContext, "create", "MenuItem", item.Id.ToString(), after: ToAuditSnapshot(item));
 
             if (item.NotifySubscribers)
             {
@@ -334,7 +355,7 @@ public class MenuController : ControllerBase
         if (affectedRows == 0)
             return NotFound();
 
-        await _audit.RecordAsync(HttpContext, "update", "MenuItem", id.ToString(), before, updated);
+        await _audit.RecordAsync(HttpContext, "update", "MenuItem", id.ToString(), ToAuditSnapshot(before), ToAuditSnapshot(updated));
 
         return Ok(new
         {
@@ -370,7 +391,7 @@ public class MenuController : ControllerBase
         if (affectedRows == 0)
             return NotFound();
 
-        await _audit.RecordAsync(HttpContext, "delete", "MenuItem", id.ToString(), before);
+        await _audit.RecordAsync(HttpContext, "delete", "MenuItem", id.ToString(), ToAuditSnapshot(before));
 
         return Ok();
     }

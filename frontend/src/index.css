@@ -659,6 +659,16 @@ html[data-theme="light"] .award-image-wrap {
   background: #f8ead6;
 }
 
+html[data-theme="light"] .menu-feature-panel,
+html[data-theme="light"] .menu-feature-panel .text-white\/75,
+html[data-theme="light"] .menu-feature-panel .text-\[\#fff4df\] {
+  color: rgba(255, 244, 223, 0.96) !important;
+}
+
+html[data-theme="light"] .menu-feature-panel .text-\[\#f2d39a\] {
+  color: #f2d39a !important;
+}
+
 html[data-theme="light"] .award-card {
   border-color: rgba(87, 55, 30, 0.22);
   background:

@@ -35,6 +35,44 @@ const emptyMenuItem = {
 const priceHelperText =
   "Stored and shown in EUR. Use the final guest-facing price.";
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Could not read image."));
+    image.src = src;
+  });
+}
+
+async function compressMenuImage(file) {
+  if (!file?.type?.startsWith("image/")) {
+    throw new Error("Please choose an image file.");
+  }
+
+  const source = await readFileAsDataUrl(file);
+  const image = await loadImage(source);
+  const maxSide = 1400;
+  const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+  context.drawImage(image, 0, 0, width, height);
+
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
+
 const adminText = {
   bg: {
     appTitle: "Restaurant CRM",
@@ -158,7 +196,9 @@ const adminText = {
       descriptionBg: "Състав / описание BG",
       descriptionEn: "Ingredients / description EN",
       imageUrl: "Снимка",
-      imageHelp: "Поставете URL към снимка. Може да бъде https://... или локален път като /menu/photo.jpg.",
+      imageHelp: "Качете снимка от устройство или поставете URL. Снимката се оптимизира автоматично.",
+      uploadImage: "Качи снимка",
+      removeImage: "Махни снимката",
       active: "Активно в сайта",
       notify: "Изпрати към абонати",
       saveAdd: "Добави ястие",
@@ -303,7 +343,9 @@ const adminText = {
       descriptionBg: "Ingredients / description BG",
       descriptionEn: "Ingredients / description EN",
       imageUrl: "Photo",
-      imageHelp: "Paste an image URL. It can be https://... or a local path like /menu/photo.jpg.",
+      imageHelp: "Upload from device or paste a URL. The photo is optimized automatically.",
+      uploadImage: "Upload photo",
+      removeImage: "Remove photo",
       active: "Active on site",
       notify: "Notify subscribers",
       saveAdd: "Add dish",
@@ -2841,6 +2883,20 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     setAdminNotice(`Menu ready. Added ${result.created ?? result.Created ?? 0}, total ${result.total ?? result.Total ?? "—"}.`);
   }
 
+  async function handleMenuImageFileChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      const imageUrl = await compressMenuImage(file);
+      setMenuForm((prev) => ({ ...prev, imageUrl }));
+      setAdminError("");
+    } catch (error) {
+      setAdminError(error?.message || "Failed to load image.");
+    }
+  }
+
   async function createAdminReservation(event) {
     event.preventDefault();
 
@@ -4774,6 +4830,27 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                             placeholder="https://..."
                             className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
                           />
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <label className="ghost-button cursor-pointer rounded-2xl px-4 py-3 text-sm font-semibold">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                onChange={handleMenuImageFileChange}
+                                className="sr-only"
+                              />
+                              {a.menu.uploadImage}
+                            </label>
+                            {menuForm.imageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setMenuForm((prev) => ({ ...prev, imageUrl: "" }))}
+                                className="rounded-2xl border border-red-300/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-100"
+                              >
+                                {a.menu.removeImage}
+                              </button>
+                            )}
+                          </div>
                           <p className="mt-2 text-xs leading-5 text-stone-500">
                             {a.menu.imageHelp}
                           </p>
