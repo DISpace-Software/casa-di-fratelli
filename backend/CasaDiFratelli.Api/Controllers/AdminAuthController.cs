@@ -182,7 +182,7 @@ public class AdminAuthController : ControllerBase
     public async Task<IActionResult> CreateUser([FromBody] CreateAdminRequest request)
     {
         var current = AdminAuthService.Current(HttpContext);
-        if (!string.Equals(current?.Role, "Owner", StringComparison.OrdinalIgnoreCase))
+        if (!AdminRoleAccess.CanManageAdmins(current?.Role))
             return Forbid();
 
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
@@ -197,7 +197,7 @@ public class AdminAuthController : ControllerBase
         {
             Name = string.IsNullOrWhiteSpace(request.Name) ? normalizedEmail : request.Name.Trim(),
             Email = normalizedEmail,
-            Role = string.IsNullOrWhiteSpace(request.Role) ? "Manager" : request.Role.Trim(),
+            Role = AdminRoleAccess.Normalize(request.Role),
             PasswordHash = hash,
             PasswordSalt = salt,
             IsActive = true,

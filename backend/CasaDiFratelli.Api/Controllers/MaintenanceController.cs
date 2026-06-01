@@ -23,6 +23,10 @@ public class MaintenanceController : ControllerBase
     [HttpPost("clear-reservations-and-orders")]
     public async Task<IActionResult> ClearReservationsAndOrders()
     {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanClearOperationalData(admin?.Role))
+            return Forbid();
+
         var before = new
         {
             Reservations = await _db.Reservations.CountAsync(),

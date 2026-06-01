@@ -35,7 +35,7 @@ public class AdminAuthService
         {
             Name = "Owner",
             Email = _configuration["ADMIN_EMAIL"] ?? "admin@casadifratelli.local",
-            Role = "Owner",
+            Role = AdminRoleAccess.Owner,
             PasswordHash = hash,
             PasswordSalt = salt,
             IsActive = true,
@@ -117,7 +117,11 @@ public class AdminAuthService
 
         return session?.AdminUser == null
             ? null
-            : new AdminPrincipal(session.AdminUser.Id, session.AdminUser.Name, session.AdminUser.Email, session.AdminUser.Role);
+            : new AdminPrincipal(
+                session.AdminUser.Id,
+                session.AdminUser.Name,
+                session.AdminUser.Email,
+                AdminRoleAccess.Normalize(session.AdminUser.Role));
     }
 
     public async Task<bool> IsAuthorizedAsync(HttpRequest request)
@@ -194,7 +198,7 @@ public class AdminAuthService
         _db.AdminSessions.Add(session);
         await _db.SaveChangesAsync();
 
-        return new AdminLoginResult(token, new AdminPrincipal(user.Id, user.Name, user.Email, user.Role));
+        return new AdminLoginResult(token, new AdminPrincipal(user.Id, user.Name, user.Email, AdminRoleAccess.Normalize(user.Role)));
     }
 
     private static string? ReadToken(HttpRequest request)

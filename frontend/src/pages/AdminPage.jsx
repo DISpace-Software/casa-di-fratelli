@@ -193,6 +193,8 @@ const adminText = {
       saveMove: "Запази преместване",
       tableTodayTitle: "Резервации за днес",
       tableTodayEmpty: "Няма резервации за тази маса днес.",
+      ordersTitle: "Активни поръчки",
+      ordersEmpty: "Няма активни поръчки за тази маса.",
       openReservation: "Отвори резервацията",
       call: "Обади се",
       late: "закъснява",
@@ -341,6 +343,8 @@ const adminText = {
       saveMove: "Save move",
       tableTodayTitle: "Today's reservations",
       tableTodayEmpty: "No reservations for this table today.",
+      ordersTitle: "Active orders",
+      ordersEmpty: "No active orders for this table.",
       openReservation: "Open reservation",
       call: "Call",
       late: "late",
@@ -393,6 +397,29 @@ const adminText = {
     },
   },
 };
+
+const adminRoleOptions = [
+  { value: "Owner", labels: { bg: "Собственик", en: "Owner" } },
+  { value: "Administrator", labels: { bg: "Администратор", en: "Administrator" } },
+  { value: "Waiter", labels: { bg: "Сервитьор", en: "Waiter" } },
+  { value: "Developer", labels: { bg: "Програмист", en: "Developer" } },
+];
+
+function normalizeAdminRole(role) {
+  const normalized = String(role || "").trim().toLowerCase();
+
+  if (normalized === "owner") return "Owner";
+  if (["administrator", "admin", "manager"].includes(normalized)) return "Administrator";
+  if (["waiter", "staff", "server"].includes(normalized)) return "Waiter";
+  if (["developer", "dev", "programmer"].includes(normalized)) return "Developer";
+
+  return "Administrator";
+}
+
+function getAdminRoleLabel(role, language = "bg") {
+  const normalized = normalizeAdminRole(role);
+  return adminRoleOptions.find((option) => option.value === normalized)?.labels[language] || normalized;
+}
 
 const emptyAdminReservation = {
   guestName: "",
@@ -1102,7 +1129,9 @@ function ReservationOperationsMap({
   onMove,
   onNoShow,
   onOpenReservation,
+  onOpenOrder,
   onRelease,
+  ordersOnly = false,
 }) {
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState(null);
@@ -1179,6 +1208,8 @@ function ReservationOperationsMap({
     [getReservationTables]
   );
   const liveReservations = React.useMemo(() => {
+    if (ordersOnly) return [];
+
     const unique = new Map();
     areaTables.forEach((table) => {
       const reservation = liveByTable.get(table.id);
@@ -1191,7 +1222,7 @@ function ReservationOperationsMap({
 
       return firstMinutes - secondMinutes;
     });
-  }, [areaTables, liveByTable, now]);
+  }, [areaTables, liveByTable, now, ordersOnly]);
   const selectedReservation =
     liveReservations.find((reservation) => reservation.id === selectedReservationId) ||
     reservations.find((reservation) => reservation.id === selectedReservationId);
@@ -1210,6 +1241,7 @@ function ReservationOperationsMap({
   );
   const nextReservations = liveReservations.filter((reservation) => !reservation.isArrived);
   const todayReservationsForSelectedTable = React.useMemo(() => {
+    if (ordersOnly) return [];
     if (!selectedTableId) return [];
 
     const today = formatLocalDate(now);
@@ -1226,7 +1258,29 @@ function ReservationOperationsMap({
         return minutes !== null && minutes >= 0;
       })
       .sort((first, second) => String(first.reservedTime).localeCompare(String(second.reservedTime)));
-  }, [now, reservations, selectedArea, selectedTableId]);
+  }, [now, ordersOnly, reservations, selectedArea, selectedTableId]);
+  const activeOrdersByTable = React.useMemo(() => {
+    const byTable = new Map();
+
+    diningOrders
+      .filter((order) => !["Done", "Cancelled"].includes(order.status))
+      .forEach((order) => {
+        String(order.tableLabel || "")
+          .split(",")
+          .map((tableId) => tableId.replace(/table/gi, "").trim())
+          .filter(Boolean)
+          .forEach((tableId) => {
+            if (!byTable.has(tableId)) byTable.set(tableId, []);
+            byTable.get(tableId).push(order);
+          });
+      });
+
+    return byTable;
+  }, [diningOrders]);
+  const activeMapOrders = React.useMemo(
+    () => Array.from(activeOrdersByTable.values()).flat(),
+    [activeOrdersByTable]
+  );
   const moveUnavailableTableIds = React.useMemo(
     () => selectedReservation
       ? getUnavailableTableIdsForSlot(
@@ -1538,6 +1592,8 @@ function ReservationOperationsMap({
 
           {areaTables.map((table) => {
             const reservation = liveByTable.get(table.id);
+            const tableOrders = activeOrdersByTable.get(table.id) || [];
+            const hasTableOrders = tableOrders.length > 0;
             const minutes = reservation ? getReservationMinutesFromNow(reservation, now) : null;
             const isLate = reservation && !reservation.isArrived && minutes !== null && minutes <= -10;
             const isGroupTable = reservation?.tableIds?.length > 1;
@@ -1587,7 +1643,9 @@ function ReservationOperationsMap({
                       ? "border-[#f2d39a]/55 bg-[linear-gradient(145deg,#4a3728,#201711)] text-[#f2d39a] ring-2 ring-[#c9a56a]/20"
                       : isMoveMode && !isMoveAllowed
                       ? "cursor-not-allowed border-white/5 bg-black/20 text-white/25"
-                      : reservation?.isArrived
+                    : ordersOnly && hasTableOrders
+                      ? "border-emerald-300/60 bg-[linear-gradient(145deg,#246347,#10261d)] text-emerald-50 ring-2 ring-emerald-300/20"
+                    : reservation?.isArrived
                       ? "border-emerald-300/55 bg-[linear-gradient(145deg,#214f3b,#10261d)] text-emerald-50"
                       : isLate
                       ? "border-red-300/70 bg-[linear-gradient(145deg,#6b1f1f,#251010)] text-red-50"
@@ -1630,7 +1688,34 @@ function ReservationOperationsMap({
                       </button>
                     </div>
 
-                    {todayReservationsForSelectedTable.length === 0 ? (
+                    {ordersOnly ? (
+                      tableOrders.length === 0 ? (
+                        <p className="mt-3 text-sm leading-6 text-white/55">{text.ordersEmpty || text.tableTodayEmpty}</p>
+                      ) : (
+                        <div className="mt-3 space-y-2">
+                          {tableOrders.map((order) => (
+                            <button
+                              key={order.id}
+                              type="button"
+                              onClick={() => onOpenOrder?.(order.id)}
+                              className="w-full rounded-xl border border-emerald-300/20 bg-emerald-400/10 px-3 py-2 text-left transition hover:border-emerald-200/35"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <span className="min-w-0 truncate text-sm font-semibold text-emerald-100">
+                                  #{order.id} · {order.status}
+                                </span>
+                                <span className="shrink-0 text-xs text-emerald-100/65">
+                                  {formatEuroAmount(order.totalPrice)}
+                                </span>
+                              </div>
+                              <div className="mt-1 truncate text-xs text-white/45">
+                                {order.guestName || "—"}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )
+                    ) : todayReservationsForSelectedTable.length === 0 ? (
                       <p className="mt-3 text-sm leading-6 text-white/55">{text.tableTodayEmpty}</p>
                     ) : (
                       <div className="mt-3 space-y-2">
@@ -1664,8 +1749,31 @@ function ReservationOperationsMap({
 
         <div className="space-y-3">
           <div className="rounded-2xl border border-[#c9a56a]/18 bg-black/20 p-4">
-            <div className="section-kicker">{text.next}</div>
-            {nextReservations.length === 0 ? (
+            <div className="section-kicker">{ordersOnly ? text.ordersTitle || "Orders" : text.next}</div>
+            {ordersOnly ? (
+              activeMapOrders.length === 0 ? (
+                <p className="mt-3 text-sm text-white/55">{text.ordersEmpty || text.empty}</p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {activeMapOrders.slice(0, 12).map((order) => (
+                    <button
+                      key={order.id}
+                      type="button"
+                      onClick={() => onOpenOrder?.(order.id)}
+                      className="w-full rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-left transition hover:border-emerald-300/35 hover:bg-emerald-400/10"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-semibold text-[#fff4df]">{order.tableLabel}</span>
+                        <span className="text-xs text-emerald-100/70">{order.status}</span>
+                      </div>
+                      <div className="mt-1 text-xs text-white/45">
+                        #{order.id} · {order.guestName || "—"} · {formatEuroAmount(order.totalPrice)}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )
+            ) : nextReservations.length === 0 ? (
               <p className="mt-3 text-sm text-white/55">{text.empty}</p>
             ) : (
               <div className="mt-3 space-y-2">
@@ -2124,8 +2232,12 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     name: "",
     email: "",
     password: "",
-    role: "Manager",
+    role: "Administrator",
   });
+  const currentAdminRole = normalizeAdminRole(adminUser?.role);
+  const isWaiterRole = currentAdminRole === "Waiter";
+  const canClearOperationalData = currentAdminRole === "Developer";
+  const canManageAdmins = ["Owner", "Developer"].includes(currentAdminRole);
 
   const withAdminToken = React.useCallback(
     (options = {}) => ({
@@ -2225,16 +2337,18 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   }, [withAdminToken]);
 
   React.useEffect(() => {
-    loadReservations();
+    if (!isWaiterRole) {
+      loadReservations();
+      loadBlacklist();
+    }
     loadDiningOrders();
-    loadBlacklist();
     loadTableLayout();
-  }, [loadBlacklist, loadDiningOrders, loadReservations, loadTableLayout]);
+  }, [isWaiterRole, loadBlacklist, loadDiningOrders, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     setAdminError("");
 
-    if (activeTab === "menu") {
+    if (activeTab === "menu" && !isWaiterRole) {
       loadMenuItems();
     }
 
@@ -2243,7 +2357,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadMenuItems();
     }
 
-    if (activeTab === "blacklist") {
+    if (activeTab === "blacklist" && !isWaiterRole) {
       loadBlacklist();
     }
 
@@ -2256,14 +2370,18 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadMenuItems();
     }
 
-    if (activeTab === "admins") {
+    if (activeTab === "admins" && canManageAdmins) {
       loadAdminUsers();
       loadAuditLogs();
     }
-  }, [activeTab, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadMenuItems, loadTableLayout]);
+  }, [activeTab, canManageAdmins, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadMenuItems, loadTableLayout]);
 
   React.useEffect(() => {
-    const pages = ["home", "liveMap", "reservations", "orders", "block", "menu", "layout", "customers", "admins"];
+    const pages = isWaiterRole
+      ? ["home", "liveMap", "orders"]
+      : canManageAdmins
+      ? ["home", "liveMap", "reservations", "orders", "block", "menu", "layout", "customers", "admins"]
+      : ["home", "liveMap", "reservations", "orders", "block", "menu", "layout", "customers"];
 
     const handleTouchStart = (event) => {
       if (event.touches.length !== 1 || isInteractiveSwipeTarget(event.target)) {
@@ -2304,7 +2422,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [activeTab]);
+  }, [activeTab, canManageAdmins, isWaiterRole]);
 
   function updateTableLayoutItem(tableId, nextItem) {
     const normalized = normalizeLayoutItem(nextItem);
@@ -3096,7 +3214,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
-    setAdminUserForm({ name: "", email: "", password: "", role: "Manager" });
+    setAdminUserForm({ name: "", email: "", password: "", role: "Administrator" });
     setAdminNotice(adminLanguage === "bg" ? "Админът е създаден." : "Admin created.");
     await Promise.all([loadAdminUsers(), loadAuditLogs()]);
   }
@@ -3435,20 +3553,39 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
         items: [],
       }));
 
-  const tabs = [
-    ["liveMap", a.tabs.liveMap],
-    ["reservations", a.tabs.reservations],
-    ["orders", a.tabs.orders],
-    ["block", a.tabs.block],
-    ["menu", a.tabs.menu],
-    ["layout", a.tabs.layout],
-    ["customers", a.tabs.customers],
-    ["admins", adminLanguage === "bg" ? "Админи" : "Admins"],
-  ];
+  const tabs = React.useMemo(
+    () => isWaiterRole
+      ? [
+          ["liveMap", a.tabs.liveMap],
+          ["orders", a.tabs.orders],
+        ]
+      : [
+          ["liveMap", a.tabs.liveMap],
+          ["reservations", a.tabs.reservations],
+          ["orders", a.tabs.orders],
+          ["block", a.tabs.block],
+          ["menu", a.tabs.menu],
+          ["layout", a.tabs.layout],
+          ["customers", a.tabs.customers],
+          ...(canManageAdmins ? [["admins", adminLanguage === "bg" ? "Админи" : "Admins"]] : []),
+        ],
+    [a.tabs, adminLanguage, canManageAdmins, isWaiterRole]
+  );
+  const allowedTabKeys = React.useMemo(() => new Set(["home", ...tabs.map(([key]) => key)]), [tabs]);
+
+  React.useEffect(() => {
+    if (!allowedTabKeys.has(activeTab)) {
+      setActiveTab(isWaiterRole ? "orders" : "home");
+    }
+  }, [activeTab, allowedTabKeys, isWaiterRole]);
 
   const refreshActiveTab = React.useCallback(async ({ silent = false } = {}) => {
     if (activeTab === "home") {
-      await Promise.all([loadReservations({ silent }), loadDiningOrders(), loadBlacklist(), loadTableLayout()]);
+      await Promise.all([
+        ...(isWaiterRole ? [] : [loadReservations({ silent }), loadBlacklist()]),
+        loadDiningOrders(),
+        loadTableLayout(),
+      ]);
       return;
     }
 
@@ -3457,12 +3594,12 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
       return;
     }
 
-    if (activeTab === "menu") {
+    if (activeTab === "menu" && !isWaiterRole) {
       await loadMenuItems();
       return;
     }
 
-    if (activeTab === "blacklist") {
+    if (activeTab === "blacklist" && !isWaiterRole) {
       await loadBlacklist();
       return;
     }
@@ -3472,19 +3609,27 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
       return;
     }
 
-    if (activeTab === "admins") {
+    if (activeTab === "admins" && canManageAdmins) {
       await Promise.all([loadAdminUsers(), loadAuditLogs()]);
       return;
     }
 
     if (activeTab === "liveMap") {
-      await Promise.all([loadReservations({ silent }), loadDiningOrders(), loadMenuItems(), loadTableLayout()]);
+      await Promise.all([
+        ...(isWaiterRole ? [] : [loadReservations({ silent }), loadMenuItems()]),
+        loadDiningOrders(),
+        loadTableLayout(),
+      ]);
       return;
     }
 
-    await loadReservations({ silent });
+    if (!isWaiterRole) {
+      await loadReservations({ silent });
+    }
   }, [
     activeTab,
+    canManageAdmins,
+    isWaiterRole,
     loadAdminUsers,
     loadAuditLogs,
     loadBlacklist,
@@ -3633,12 +3778,12 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
               ))}
             </div>
 
-            <div className="mb-8 grid gap-4 md:grid-cols-5">
-              <StatCard label={a.stats.allReservations} value={statsReservations.length} />
+            <div className={`mb-8 grid gap-4 ${isWaiterRole ? "md:grid-cols-2" : "md:grid-cols-5"}`}>
+              {!isWaiterRole && <StatCard label={a.stats.allReservations} value={statsReservations.length} />}
               <StatCard label={a.stats.orders} value={diningOrders.length} />
-              <StatCard label={a.stats.pending} value={pendingCount} />
-              <StatCard label={a.stats.approved} value={approvedCount} />
-              <StatCard label={a.stats.blacklist} value={blacklistCount} />
+              {!isWaiterRole && <StatCard label={a.stats.pending} value={pendingCount} />}
+              {!isWaiterRole && <StatCard label={a.stats.approved} value={approvedCount} />}
+              {!isWaiterRole && <StatCard label={a.stats.blacklist} value={blacklistCount} />}
             </div>
 
             <div className="mb-8 grid grid-cols-2 gap-2 rounded-[22px] border border-white/10 bg-black/20 p-2 sm:grid-cols-3">
@@ -3653,6 +3798,7 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
               ))}
             </div>
 
+            {canClearOperationalData && (
             <div className="mb-8 flex flex-col gap-3 rounded-[22px] border border-amber-300/20 bg-amber-400/10 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#f2d39a]">
@@ -3672,8 +3818,10 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                 {adminLanguage === "bg" ? "Изчисти резервации и поръчки" : "Clear reservations and orders"}
               </button>
             </div>
+            )}
 
-            <div className="mb-8 grid gap-5 xl:grid-cols-2">
+            <div className={`mb-8 grid gap-5 ${isWaiterRole ? "" : "xl:grid-cols-2"}`}>
+              {!isWaiterRole && (
               <div className="rounded-[26px] border border-white/10 bg-black/20 p-4 md:p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
@@ -3732,6 +3880,7 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                   </div>
                 )}
               </div>
+              )}
 
               <div className="rounded-[26px] border border-white/10 bg-black/20 p-4 md:p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
@@ -3826,7 +3975,7 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
               <ReservationOperationsMap
                 text={a.liveMap}
                 layout={tableLayout}
-                reservations={reservations}
+                reservations={isWaiterRole ? [] : reservations}
                 diningOrders={diningOrders}
                 menuItems={menuItems}
                 selectedArea={reservationMapArea}
@@ -3838,7 +3987,12 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                 onMove={moveReservationFromMap}
                 onNoShow={markReservationNoShow}
                 onOpenReservation={openReservationFromMap}
+                onOpenOrder={(orderId) => {
+                  setExpandedOrderId(orderId);
+                  setActiveTab("orders");
+                }}
                 onRelease={releaseReservationTable}
+                ordersOnly={isWaiterRole}
               />
             )}
 
@@ -5753,15 +5907,17 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                           </label>
                         ))}
                         <label className="block text-sm text-white/60">
-                          Role
+                          {adminLanguage === "bg" ? "Роля" : "Role"}
                           <select
                             value={adminUserForm.role}
                             onChange={(event) => setAdminUserForm((prev) => ({ ...prev, role: event.target.value }))}
                             className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
                           >
-                            <option>Manager</option>
-                            <option>Owner</option>
-                            <option>Staff</option>
+                            {adminRoleOptions.map((role) => (
+                              <option key={role.value} value={role.value}>
+                                {role.labels[adminLanguage]}
+                              </option>
+                            ))}
                           </select>
                         </label>
                         <button type="submit" className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold">
@@ -5776,7 +5932,9 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                         {adminUsers.map((user) => (
                           <div key={user.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                             <div className="font-semibold text-[#fff4df]">{user.name}</div>
-                            <div className="mt-1 text-sm text-white/50">{user.email} · {user.role}</div>
+                            <div className="mt-1 text-sm text-white/50">
+                              {user.email} · {getAdminRoleLabel(user.role, adminLanguage)}
+                            </div>
                             <div className="mt-1 text-xs text-white/35">
                               {adminLanguage === "bg" ? "Последен вход" : "Last login"}: {user.lastLoginAtUtc || "—"}
                             </div>
