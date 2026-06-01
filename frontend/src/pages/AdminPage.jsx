@@ -60,17 +60,39 @@ async function compressMenuImage(file) {
 
   const source = await readFileAsDataUrl(file);
   const image = await loadImage(source);
-  const maxSide = 1400;
-  const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
-  const width = Math.max(1, Math.round(image.naturalWidth * scale));
-  const height = Math.max(1, Math.round(image.naturalHeight * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d");
-  context.drawImage(image, 0, 0, width, height);
+  const maxDataUrlLength = 650_000;
+  const attempts = [
+    [1100, 0.74],
+    [920, 0.68],
+    [760, 0.62],
+    [640, 0.56],
+  ];
 
-  return canvas.toDataURL("image/jpeg", 0.82);
+  let bestResult = "";
+
+  for (const [maxSide, quality] of attempts) {
+    const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+    const width = Math.max(1, Math.round(image.naturalWidth * scale));
+    const height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    context.drawImage(image, 0, 0, width, height);
+
+    const result = canvas.toDataURL("image/jpeg", quality);
+    bestResult = result;
+
+    if (result.length <= maxDataUrlLength) {
+      return result;
+    }
+  }
+
+  if (bestResult.length <= 900_000) {
+    return bestResult;
+  }
+
+  throw new Error("Image is too large. Please choose a smaller photo.");
 }
 
 const adminText = {

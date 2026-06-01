@@ -12,6 +12,7 @@ namespace CasaDiFratelli.Api.Controllers;
 [Route("api/[controller]")]
 public class MenuController : ControllerBase
 {
+    private const int MaxInlineImageLength = 900_000;
     private readonly AppDbContext _db;
     private readonly EmailService _emailService;
     private readonly ILogger<MenuController> _logger;
@@ -56,6 +57,17 @@ public class MenuController : ControllerBase
             item.IsActive,
             item.NotifySubscribers
         };
+    }
+
+    private static string NormalizeImageUrl(string? imageUrl)
+    {
+        return imageUrl?.Trim() ?? string.Empty;
+    }
+
+    private static bool IsImageUrlTooLarge(string imageUrl)
+    {
+        return imageUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase) &&
+            imageUrl.Length > MaxInlineImageLength;
     }
 
     private async Task EnsureConnectionOpenAsync()
@@ -229,7 +241,9 @@ public class MenuController : ControllerBase
             item.NameEn = string.IsNullOrWhiteSpace(item.NameEn) ? item.NameBg : item.NameEn.Trim();
             item.DescriptionBg = item.DescriptionBg?.Trim() ?? string.Empty;
             item.DescriptionEn = item.DescriptionEn?.Trim() ?? string.Empty;
-            item.ImageUrl = item.ImageUrl?.Trim() ?? string.Empty;
+            item.ImageUrl = NormalizeImageUrl(item.ImageUrl);
+            if (IsImageUrlTooLarge(item.ImageUrl))
+                return BadRequest(new { message = "Dish photo is too large. Please upload a smaller image." });
             item.Weight = item.Weight?.Trim() ?? string.Empty;
             item.Category = string.IsNullOrWhiteSpace(item.Category) ? "main" : item.Category.Trim();
             item.CreatedAtUtc = DateTime.UtcNow;
@@ -320,6 +334,10 @@ public class MenuController : ControllerBase
     public async Task<IActionResult> Update(int id, [FromBody] MenuItem updated)
     {
         await EnsureMenuStorageAsync();
+        var imageUrl = NormalizeImageUrl(updated.ImageUrl);
+        if (IsImageUrlTooLarge(imageUrl))
+            return BadRequest(new { message = "Dish photo is too large. Please upload a smaller image." });
+        updated.ImageUrl = imageUrl;
 
         var before = await _db.MenuItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
         await using var command = _db.Database.GetDbConnection().CreateCommand();
@@ -344,7 +362,7 @@ public class MenuController : ControllerBase
         AddParameter(command, "@nameEn", string.IsNullOrWhiteSpace(updated.NameEn) ? updated.NameBg?.Trim() : updated.NameEn.Trim());
         AddParameter(command, "@descriptionBg", updated.DescriptionBg?.Trim() ?? string.Empty);
         AddParameter(command, "@descriptionEn", updated.DescriptionEn?.Trim() ?? string.Empty);
-        AddParameter(command, "@imageUrl", updated.ImageUrl?.Trim() ?? string.Empty);
+        AddParameter(command, "@imageUrl", imageUrl);
         AddParameter(command, "@weight", updated.Weight?.Trim() ?? string.Empty);
         AddParameter(command, "@price", updated.Price);
         AddParameter(command, "@category", string.IsNullOrWhiteSpace(updated.Category) ? "main" : updated.Category.Trim());
