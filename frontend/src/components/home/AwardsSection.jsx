@@ -58,7 +58,7 @@ export default function AwardsSection({ language }) {
         {copy.awards.map((award, index) => (
           <article
             key={award.title}
-            className="award-card luxury-panel relative overflow-hidden rounded-[30px] p-6 md:p-8"
+            className="award-card relative overflow-hidden rounded-[30px] p-6 md:p-8"
           >
             <div className="award-card-glow" />
             <div className="relative grid gap-7 sm:grid-cols-[0.95fr_1fr] sm:items-center">
@@ -66,7 +66,7 @@ export default function AwardsSection({ language }) {
                 <img
                   src={award.image}
                   alt={award.alt}
-                  className={`award-trophy w-full max-w-[260px] object-contain drop-shadow-[0_24px_34px_rgba(0,0,0,0.28)] ${
+                  className={`award-trophy w-full max-w-[260px] object-contain ${
                     index === 1 ? "max-w-[252px]" : ""
                   }`}
                 />
@@ -79,7 +79,7 @@ export default function AwardsSection({ language }) {
                 <h3 className="text-2xl font-semibold leading-tight text-white">
                   {award.title}
                 </h3>
-                <p className="mt-4 text-sm leading-7 text-white/64">
+                <p className="award-text mt-4 text-sm leading-7 text-white/64">
                   {award.text}
                 </p>
                 <div className="mt-6 h-px w-full bg-gradient-to-r from-[#c9a56a]/60 via-white/18 to-transparent" />
