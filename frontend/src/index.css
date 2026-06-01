@@ -842,3 +842,204 @@ html[data-theme="light"] .admin-page .border-white\/20,
 html[data-theme="light"] .admin-page .border-white\/25 {
   border-color: rgba(78, 49, 27, 0.18) !important;
 }
+
+@media (max-width: 640px) {
+  .luxury-header .brand-logo {
+    width: 124px;
+    height: 38px;
+  }
+
+  .luxury-header .mx-auto {
+    padding-left: 0.875rem;
+    padding-right: 0.875rem;
+  }
+
+  .luxury-header + div[aria-hidden="true"] {
+    height: 108px;
+  }
+
+  .site-hero {
+    min-height: calc(100svh - 108px);
+  }
+
+  .site-hero > .relative {
+    min-height: calc(100svh - 108px);
+    padding-top: 2.25rem;
+    padding-bottom: 2.75rem;
+  }
+
+  .site-hero .hero-logo {
+    width: 220px;
+    height: 78px;
+    margin-bottom: 1.25rem;
+  }
+
+  .site-hero .section-kicker {
+    margin-bottom: 0.875rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+  }
+
+  .site-hero .hero-title {
+    max-width: 21rem;
+    font-size: 2.55rem;
+    line-height: 1.04;
+  }
+
+  .site-hero .hero-copy {
+    margin-top: 1.1rem;
+    max-width: 21rem;
+    font-size: 0.95rem;
+    line-height: 1.75;
+  }
+
+  .site-hero .mt-8 {
+    margin-top: 1.35rem;
+  }
+
+  .site-hero .mt-12 {
+    margin-top: 1.75rem;
+  }
+
+  .site-hero .mt-10 {
+    margin-top: 1.25rem;
+  }
+
+  .site-hero .luxury-panel {
+    padding: 0.75rem;
+    border-radius: 1rem;
+  }
+
+  .site-hero .text-2xl {
+    font-size: 1.2rem;
+  }
+
+  section.mx-auto,
+  section#delivery,
+  .reservation-page,
+  .admin-page {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  section.mx-auto {
+    padding-top: 3.25rem;
+    padding-bottom: 3.25rem;
+  }
+
+  #awards,
+  #menu,
+  #gallery,
+  #reviews,
+  #events {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  #delivery {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+
+  .luxury-panel,
+  .award-card {
+    border-radius: 1.25rem;
+  }
+
+  .award-card {
+    padding: 1rem;
+  }
+
+  .award-card .relative.grid {
+    gap: 1rem;
+  }
+
+  .award-trophy-stage {
+    border-radius: 1rem;
+  }
+
+  .award-trophy {
+    border-radius: 0.875rem;
+  }
+
+  .award-card h3 {
+    font-size: 1.35rem;
+  }
+
+  .award-card .award-text {
+    margin-top: 0.75rem;
+    line-height: 1.65;
+  }
+
+  .delivery-card {
+    border-radius: 1rem;
+    padding: 1rem;
+  }
+
+  .delivery-card .h-12 {
+    width: 2.6rem;
+    height: 2.6rem;
+  }
+
+  h1.text-4xl,
+  h2.text-3xl {
+    font-size: 2rem;
+    line-height: 1.12;
+  }
+
+  .text-3xl {
+    font-size: 1.85rem;
+  }
+
+  .text-2xl {
+    font-size: 1.35rem;
+  }
+
+  .rounded-\[28px\],
+  .rounded-\[30px\],
+  .rounded-\[32px\] {
+    border-radius: 1.35rem;
+  }
+
+  .p-6,
+  .p-7,
+  .p-8,
+  .p-9 {
+    padding: 1.1rem;
+  }
+
+  .px-6 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .py-24 {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .py-20 {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+
+  .gap-10 {
+    gap: 1.75rem;
+  }
+
+  .gap-6 {
+    gap: 1rem;
+  }
+
+  .mb-12 {
+    margin-bottom: 2rem;
+  }
+
+  .mt-12 {
+    margin-top: 2rem;
+  }
+
+  .mt-8 {
+    margin-top: 1.5rem;
+  }
+}
