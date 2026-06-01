@@ -333,62 +333,79 @@ public class MenuController : ControllerBase
     [AdminAuthorize]
     public async Task<IActionResult> Update(int id, [FromBody] MenuItem updated)
     {
-        await EnsureMenuStorageAsync();
-        var imageUrl = NormalizeImageUrl(updated.ImageUrl);
-        if (IsImageUrlTooLarge(imageUrl))
-            return BadRequest(new { message = "Dish photo is too large. Please upload a smaller image." });
-        updated.ImageUrl = imageUrl;
-
-        var before = await _db.MenuItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
-        await using var command = _db.Database.GetDbConnection().CreateCommand();
-        command.CommandText = """
-            UPDATE "MenuItems"
-            SET
-                "NameBg" = @nameBg,
-                "NameEn" = @nameEn,
-                "DescriptionBg" = @descriptionBg,
-                "DescriptionEn" = @descriptionEn,
-                "ImageUrl" = @imageUrl,
-                "Weight" = @weight,
-                "Price" = @price,
-                "Category" = @category,
-                "IsActive" = @isActive,
-                "NotifySubscribers" = @notifySubscribers,
-                "UpdatedAtUtc" = now()
-            WHERE "Id" = @id;
-            """;
-        AddParameter(command, "@id", id);
-        AddParameter(command, "@nameBg", updated.NameBg?.Trim() ?? string.Empty);
-        AddParameter(command, "@nameEn", string.IsNullOrWhiteSpace(updated.NameEn) ? updated.NameBg?.Trim() : updated.NameEn.Trim());
-        AddParameter(command, "@descriptionBg", updated.DescriptionBg?.Trim() ?? string.Empty);
-        AddParameter(command, "@descriptionEn", updated.DescriptionEn?.Trim() ?? string.Empty);
-        AddParameter(command, "@imageUrl", imageUrl);
-        AddParameter(command, "@weight", updated.Weight?.Trim() ?? string.Empty);
-        AddParameter(command, "@price", updated.Price);
-        AddParameter(command, "@category", string.IsNullOrWhiteSpace(updated.Category) ? "main" : updated.Category.Trim());
-        AddParameter(command, "@isActive", updated.IsActive);
-        AddParameter(command, "@notifySubscribers", updated.NotifySubscribers);
-
-        var affectedRows = await command.ExecuteNonQueryAsync();
-        if (affectedRows == 0)
-            return NotFound();
-
-        await _audit.RecordAsync(HttpContext, "update", "MenuItem", id.ToString(), ToAuditSnapshot(before), ToAuditSnapshot(updated));
-
-        return Ok(new
+        try
         {
-            Id = id,
-            NameBg = updated.NameBg,
-            NameEn = updated.NameEn,
-            DescriptionBg = updated.DescriptionBg,
-            DescriptionEn = updated.DescriptionEn,
-            ImageUrl = updated.ImageUrl,
-            Weight = updated.Weight,
-            Price = updated.Price,
-            Category = updated.Category,
-            IsActive = updated.IsActive,
-            NotifySubscribers = updated.NotifySubscribers
-        });
+            await AdminSchemaBootstrapper.EnsureAsync(_db);
+            await EnsureMenuStorageAsync();
+
+            var imageUrl = NormalizeImageUrl(updated.ImageUrl);
+            if (IsImageUrlTooLarge(imageUrl))
+                return BadRequest(new { message = "Dish photo is too large. Please upload a smaller image." });
+
+            updated.NameBg = updated.NameBg?.Trim() ?? string.Empty;
+            updated.NameEn = string.IsNullOrWhiteSpace(updated.NameEn) ? updated.NameBg : updated.NameEn.Trim();
+            updated.DescriptionBg = updated.DescriptionBg?.Trim() ?? string.Empty;
+            updated.DescriptionEn = updated.DescriptionEn?.Trim() ?? string.Empty;
+            updated.ImageUrl = imageUrl;
+            updated.Weight = updated.Weight?.Trim() ?? string.Empty;
+            updated.Category = string.IsNullOrWhiteSpace(updated.Category) ? "main" : updated.Category.Trim();
+
+            var before = await _db.MenuItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            await using var command = _db.Database.GetDbConnection().CreateCommand();
+            command.CommandText = """
+                UPDATE "MenuItems"
+                SET
+                    "NameBg" = @nameBg,
+                    "NameEn" = @nameEn,
+                    "DescriptionBg" = @descriptionBg,
+                    "DescriptionEn" = @descriptionEn,
+                    "ImageUrl" = @imageUrl,
+                    "Weight" = @weight,
+                    "Price" = @price,
+                    "Category" = @category,
+                    "IsActive" = @isActive,
+                    "NotifySubscribers" = @notifySubscribers,
+                    "UpdatedAtUtc" = now()
+                WHERE "Id" = @id;
+                """;
+            AddParameter(command, "@id", id);
+            AddParameter(command, "@nameBg", updated.NameBg);
+            AddParameter(command, "@nameEn", updated.NameEn);
+            AddParameter(command, "@descriptionBg", updated.DescriptionBg);
+            AddParameter(command, "@descriptionEn", updated.DescriptionEn);
+            AddParameter(command, "@imageUrl", updated.ImageUrl);
+            AddParameter(command, "@weight", updated.Weight);
+            AddParameter(command, "@price", updated.Price);
+            AddParameter(command, "@category", updated.Category);
+            AddParameter(command, "@isActive", updated.IsActive);
+            AddParameter(command, "@notifySubscribers", updated.NotifySubscribers);
+
+            var affectedRows = await command.ExecuteNonQueryAsync();
+            if (affectedRows == 0)
+                return NotFound();
+
+            await _audit.RecordAsync(HttpContext, "update", "MenuItem", id.ToString(), ToAuditSnapshot(before), ToAuditSnapshot(updated));
+
+            return Ok(new
+            {
+                Id = id,
+                updated.NameBg,
+                updated.NameEn,
+                updated.DescriptionBg,
+                updated.DescriptionEn,
+                updated.ImageUrl,
+                updated.Weight,
+                updated.Price,
+                updated.Category,
+                updated.IsActive,
+                updated.NotifySubscribers
+            });
+        }
+        catch (Exception error)
+        {
+            _logger.LogError(error, "Failed to update menu item {MenuItemId}.", id);
+            return StatusCode(500, new { message = "Failed to update menu item.", detail = error.Message });
+        }
     }
 
     [HttpDelete("{id}")]
