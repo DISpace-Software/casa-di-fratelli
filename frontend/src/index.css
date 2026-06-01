@@ -784,6 +784,50 @@ html[data-theme="light"] .mobile-nav-link:hover {
   background: rgba(238, 219, 190, 0.9) !important;
 }
 
+html[data-theme="light"] .events-giveaway-card {
+  border-color: rgba(120, 78, 36, 0.2) !important;
+  background:
+    linear-gradient(135deg, rgba(246, 232, 210, 0.94), rgba(255, 250, 240, 0.78)),
+    radial-gradient(circle at 78% 18%, rgba(198, 93, 68, 0.12), transparent 16rem) !important;
+  box-shadow: 0 24px 70px rgba(68, 43, 24, 0.12) !important;
+}
+
+html[data-theme="light"] .events-giveaway-pill {
+  border-color: rgba(78, 49, 27, 0.18) !important;
+  background: rgba(90, 68, 43, 0.16) !important;
+  color: #7a451d !important;
+}
+
+html[data-theme="light"] .events-giveaway-option {
+  border-color: rgba(78, 49, 27, 0.14) !important;
+  background: rgba(255, 252, 246, 0.76) !important;
+  color: #2a1c12 !important;
+}
+
+html[data-theme="light"] .events-giveaway-text {
+  color: rgba(42, 28, 18, 0.68) !important;
+}
+
+html[data-theme="light"] .reservation-photo-card,
+html[data-theme="light"] .zone-preview-card {
+  color: rgba(255, 244, 223, 0.96) !important;
+}
+
+html[data-theme="light"] .reservation-photo-card .bg-black\/45 {
+  background-color: rgba(8, 6, 5, 0.5) !important;
+}
+
+html[data-theme="light"] .reservation-photo-card h3,
+html[data-theme="light"] .reservation-photo-card p,
+html[data-theme="light"] .reservation-photo-card .text-stone-300,
+html[data-theme="light"] .reservation-photo-card .text-red-100,
+html[data-theme="light"] .reservation-photo-card .text-amber-100,
+html[data-theme="light"] .reservation-photo-card .text-emerald-100,
+html[data-theme="light"] .zone-preview-card .text-white\/70,
+html[data-theme="light"] .zone-preview-card .font-serif {
+  color: rgba(255, 244, 223, 0.94) !important;
+}
+
 html[data-theme="light"] .reservation-page {
   background:
     radial-gradient(circle at 18% 4%, rgba(125, 74, 29, 0.16), transparent 28rem),
@@ -829,18 +873,94 @@ html[data-theme="light"] .admin-page .bg-black\/50 {
   background-color: rgba(255, 248, 236, 0.68) !important;
 }
 
+html[data-theme="light"] .reservation-page .bg-black\/20,
+html[data-theme="light"] .reservation-page .bg-black\/25,
+html[data-theme="light"] .reservation-page .bg-white\/5,
+html[data-theme="light"] .reservation-page .bg-white\/10,
+html[data-theme="light"] .admin-page .bg-black\/20,
+html[data-theme="light"] .admin-page .bg-black\/25,
+html[data-theme="light"] .admin-page .bg-white\/5,
+html[data-theme="light"] .admin-page .bg-white\/10 {
+  background-color: rgba(255, 250, 242, 0.62) !important;
+}
+
 html[data-theme="light"] .reservation-page .text-white\/80,
 html[data-theme="light"] .reservation-page .text-white\/75,
+html[data-theme="light"] .reservation-page .text-white\/70,
+html[data-theme="light"] .reservation-page .text-white\/68,
+html[data-theme="light"] .reservation-page .text-white\/65,
+html[data-theme="light"] .reservation-page .text-white\/60,
+html[data-theme="light"] .reservation-page .text-white\/55,
+html[data-theme="light"] .reservation-page .text-white\/45,
 html[data-theme="light"] .admin-page .text-white\/80,
-html[data-theme="light"] .admin-page .text-white\/75 {
+html[data-theme="light"] .admin-page .text-white\/75,
+html[data-theme="light"] .admin-page .text-white\/70,
+html[data-theme="light"] .admin-page .text-white\/68,
+html[data-theme="light"] .admin-page .text-white\/65,
+html[data-theme="light"] .admin-page .text-white\/60,
+html[data-theme="light"] .admin-page .text-white\/55,
+html[data-theme="light"] .admin-page .text-white\/45 {
   color: rgba(42, 28, 18, 0.76) !important;
+}
+
+html[data-theme="light"] .reservation-page .info-row-label {
+  color: rgba(42, 28, 18, 0.58) !important;
+}
+
+html[data-theme="light"] .reservation-page .info-row-value {
+  color: #2a1c12 !important;
 }
 
 html[data-theme="light"] .reservation-page .border-white\/20,
 html[data-theme="light"] .reservation-page .border-white\/25,
+html[data-theme="light"] .reservation-page .border-white\/10,
+html[data-theme="light"] .reservation-page .border-white\/8,
 html[data-theme="light"] .admin-page .border-white\/20,
-html[data-theme="light"] .admin-page .border-white\/25 {
+html[data-theme="light"] .admin-page .border-white\/25,
+html[data-theme="light"] .admin-page .border-white\/10,
+html[data-theme="light"] .admin-page .border-white\/8 {
   border-color: rgba(78, 49, 27, 0.18) !important;
+}
+
+html[data-theme="light"] .reservation-page .reservation-map-surface {
+  border-color: rgba(103, 73, 38, 0.18) !important;
+  background:
+    radial-gradient(circle at top, rgba(205, 166, 105, 0.17), transparent 34%),
+    radial-gradient(circle at 18% 60%, rgba(143, 190, 176, 0.13), transparent 28%),
+    linear-gradient(180deg, rgba(248, 238, 220, 0.98), rgba(222, 207, 182, 0.96)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68), 0 18px 42px rgba(68, 43, 24, 0.1) !important;
+}
+
+html[data-theme="light"] .reservation-page .map-grid {
+  border-color: rgba(135, 95, 50, 0.16) !important;
+  background-image:
+    linear-gradient(90deg, rgba(106, 77, 44, 0.055) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(106, 77, 44, 0.055) 1px, transparent 1px) !important;
+}
+
+html[data-theme="light"] .reservation-page .garden-chair,
+html[data-theme="light"] .reservation-page .garden-special-chair,
+html[data-theme="light"] .reservation-page .indoor-chair {
+  border-color: rgba(133, 91, 47, 0.2) !important;
+  background: linear-gradient(145deg, #ead8bf, #cab18d) !important;
+}
+
+html[data-theme="light"] .reservation-page .garden-table-surface,
+html[data-theme="light"] .reservation-page .indoor-table-surface {
+  border-color: rgba(120, 78, 36, 0.36) !important;
+  background: linear-gradient(145deg, #fff4df, #d9bc8a) !important;
+  color: #2a1c12 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 10px 24px rgba(93, 61, 31, 0.18) !important;
+}
+
+html[data-theme="light"] .reservation-page .map-seat-label {
+  color: rgba(42, 28, 18, 0.62) !important;
+}
+
+html[data-theme="light"] .reservation-page .zone-preview-card,
+html[data-theme="light"] .reservation-page .zone-preview-card .text-white\/70,
+html[data-theme="light"] .reservation-page .zone-preview-card .font-serif {
+  color: rgba(255, 244, 223, 0.96) !important;
 }
 
 @media (max-width: 1024px) {

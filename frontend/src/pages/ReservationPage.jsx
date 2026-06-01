@@ -90,8 +90,8 @@ function ZoneCard({ title, subtitle, accent, children }) {
 function InfoRow({ label, value }) {
   return (
     <div className="flex items-center justify-between border-b border-white/8 pb-2">
-      <span className="text-white/55">{label}</span>
-      <span className="text-right text-white">{value}</span>
+      <span className="info-row-label text-white/55">{label}</span>
+      <span className="info-row-value text-right text-white">{value}</span>
     </div>
   );
 }
@@ -276,16 +276,16 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
         <div className="relative h-11 w-14">
           <div
             className={`absolute left-1/2 top-0 h-3.5 w-5 -translate-x-1/2 rounded-[7px] border border-[#c9a56a]/20 ${
-              reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"
+              reserved ? "garden-special-chair bg-[#3b1d1d]" : "garden-special-chair bg-[#2f241c]"
             }`}
           />
           <div
             className={`absolute bottom-0 left-1/2 h-3.5 w-5 -translate-x-1/2 rounded-[7px] border border-[#c9a56a]/20 ${
-              reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"
+              reserved ? "garden-special-chair bg-[#3b1d1d]" : "garden-special-chair bg-[#2f241c]"
             }`}
           />
           <div
-            className={`absolute left-1/2 top-1/2 flex h-8 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl border text-[10px] font-semibold shadow-lg ${
+            className={`garden-table-surface absolute left-1/2 top-1/2 flex h-8 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl border text-[10px] font-semibold shadow-lg ${
               selected
                 ? "border-[#d7b57f] bg-[linear-gradient(145deg,#f6d99e,#b88b4d)] text-black"
                 : reserved
@@ -313,7 +313,7 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
           (chair, index) => (
             <div
               key={index}
-              className={`absolute h-3.5 w-3.5 rounded-[6px] border shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),0_4px_10px_rgba(0,0,0,0.22)] ${
+              className={`garden-chair absolute h-3.5 w-3.5 rounded-[6px] border shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),0_4px_10px_rgba(0,0,0,0.22)] ${
                 reserved
                   ? "border-red-400/20 bg-[#3b1d1d]"
                   : "border-[#d8b377]/30 bg-[linear-gradient(145deg,#4a382b,#211914)]"
@@ -324,7 +324,7 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
         )}
 
         <div
-          className={`absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[15px] text-[11px] font-semibold transition-all duration-300 ${
+          className={`garden-table-surface absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[15px] text-[11px] font-semibold transition-all duration-300 ${
             selected
               ? "bg-[linear-gradient(145deg,#f6d99e,#b88b4d)] text-black shadow-[0_14px_30px_rgba(201,165,106,0.3)] ring-4 ring-[#d7b57f]/15"
               : reserved
@@ -342,8 +342,8 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
 
 function OpenTerraceMap({ tables, allTables, selectedIds, onSelect, labels }) {
   return (
-    <div className="relative min-h-[440px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))] shadow-inner md:min-h-[520px]">
-      <div className="absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
+    <div className="reservation-map-surface open-terrace-map relative min-h-[440px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))] shadow-inner md:min-h-[520px]">
+      <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
       <MapWindow className="left-5 right-5 top-3 h-4" label={labels.openSky} />
       <div className="pointer-events-none absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-full border border-emerald-200/20 bg-emerald-300/10 px-3 py-1 text-[8px] font-bold uppercase tracking-[0.22em] text-emerald-100/80 backdrop-blur">
         {labels.openTerraceTitle}
@@ -366,8 +366,8 @@ function OpenTerraceMap({ tables, allTables, selectedIds, onSelect, labels }) {
 
 function GardenMap({ tables, allTables, selectedIds, onSelect, labels }) {
   return (
-    <div className="relative min-h-[560px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] shadow-inner md:min-h-[800px]">
-      <div className="absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
+    <div className="reservation-map-surface garden-map relative min-h-[560px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] shadow-inner md:min-h-[800px]">
+      <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
       <MapWindow className="left-5 right-5 top-3 h-4" label={labels.windows} />
       <MapWindow className="bottom-5 left-3 top-5 w-4" label={labels.windows} vertical />
       <MapWindow className="bottom-5 right-3 top-5 w-4" label={labels.windows} vertical />
@@ -394,14 +394,14 @@ function SixSeatChairs({ reserved }) {
       {[0, 1, 2].map((i) => (
         <div
           key={`top-${i}`}
-          className={`absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`}
+          className={`indoor-chair absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`}
           style={{ left: i * 18 + 10, top: -8 }}
         />
       ))}
       {[0, 1, 2].map((i) => (
         <div
           key={`bottom-${i}`}
-          className={`absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`}
+          className={`indoor-chair absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`}
           style={{ left: i * 18 + 10, top: 36 }}
         />
       ))}
@@ -412,10 +412,10 @@ function SixSeatChairs({ reserved }) {
 function FourSeatChairs({ reserved }) {
   return (
     <>
-      <div className={`absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ left: "50%", top: -8, transform: "translateX(-50%)" }} />
-      <div className={`absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ left: "50%", top: 36, transform: "translateX(-50%)" }} />
-      <div className={`absolute h-4 w-3 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ left: 0, top: 14 }} />
-      <div className={`absolute h-4 w-3 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ right: 0, top: 14 }} />
+      <div className={`indoor-chair absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ left: "50%", top: -8, transform: "translateX(-50%)" }} />
+      <div className={`indoor-chair absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ left: "50%", top: 36, transform: "translateX(-50%)" }} />
+      <div className={`indoor-chair absolute h-4 w-3 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ left: 0, top: 14 }} />
+      <div className={`indoor-chair absolute h-4 w-3 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ right: 0, top: 14 }} />
     </>
   );
 }
@@ -440,7 +440,7 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
         {table.seats === 4 && <FourSeatChairs reserved={reserved} />}
 
         <div
-          className={`flex items-center justify-center rounded-xl font-semibold transition-all duration-300 ${
+          className={`indoor-table-surface flex items-center justify-center rounded-xl font-semibold transition-all duration-300 ${
             table.wide ? "h-[40px] w-[70px]" : "h-[40px] w-[50px]"
           } ${
             selected
@@ -453,7 +453,7 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
           {table.id}
         </div>
 
-        <div className="mt-2 text-center text-[10px] text-white/45">
+        <div className="map-seat-label mt-2 text-center text-[10px] text-white/45">
   {table.seats} {labels.seats}
 </div>
       </div>
@@ -463,8 +463,8 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
 
 function IndoorMap({ tables, allTables, selectedIds, onSelect, labels }) {
   return (
-    <div className="relative min-h-[760px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[830px]">
-      <div className="absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
+    <div className="reservation-map-surface indoor-map relative min-h-[760px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[830px]">
+      <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
       <MapWindow className="left-3 top-5 h-[50%] w-4" label={labels.windows} vertical />
       <MapWindow className="bottom-5 left-3 top-[70%] w-4" label={labels.windows} vertical />
       <SideEntry label={labels.entrance} />
@@ -1387,7 +1387,7 @@ if (bookingMode === "single") {
                 </div>
               )}
 
-              <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-[24px] border border-white/10 bg-[#1a1411] shadow-2xl shadow-black/25">
+              <div className="zone-preview-card relative mb-4 aspect-[4/3] overflow-hidden rounded-[24px] border border-white/10 bg-[#1a1411] shadow-2xl shadow-black/25">
                 <img src={zonePreviewImage} alt="Restaurant zone preview" className="absolute inset-0 h-full w-full scale-[1.04] object-cover object-center opacity-55 blur-[1px] transition duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4">

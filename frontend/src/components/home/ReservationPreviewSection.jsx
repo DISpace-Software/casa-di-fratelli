@@ -29,7 +29,7 @@ export default function ReservationPreviewSection({ t, onOpenReservation }) {
           </div>
         </div>
 
-        <div className="reveal-up relative overflow-hidden rounded-[28px] border border-white/10 bg-[#0d1511] p-3 shadow-2xl shadow-black/30">
+        <div className="reservation-photo-card reveal-up relative overflow-hidden rounded-[28px] border border-white/10 bg-[#0d1511] p-3 shadow-2xl shadow-black/30">
           <img
             src="/restaurant-interior.webp"
             alt="Restaurant table"
