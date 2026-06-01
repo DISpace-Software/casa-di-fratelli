@@ -1,6 +1,6 @@
 export default function HeroSection({ t, onOpenReservation, onOpenMenu, language }) {
   return (
-    <section className="relative min-h-[calc(100vh-92px)] overflow-hidden">
+    <section className="site-hero relative min-h-[calc(100vh-92px)] overflow-hidden">
       <img
         src="/restaurant-terrace.jpg"
         alt={t.interiorAlt}
@@ -16,17 +16,17 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
           <img
             src="/casa-di-fratelli-logo.svg"
             alt={t.brand}
-            className="brand-logo mb-8 h-24 w-[270px] object-left md:h-32 md:w-[390px]"
+            className="brand-logo hero-logo mb-8 h-24 w-[270px] object-left md:h-32 md:w-[390px]"
           />
           <p className="section-kicker mb-5">
             {t.heroTag}
           </p>
 
-          <h1 className="max-w-3xl text-5xl font-semibold leading-[1.02] text-[#fff4df] md:text-7xl">
+          <h1 className="hero-title max-w-3xl text-5xl font-semibold leading-[1.02] text-[#fff4df] md:text-7xl">
             {t.heroTitle}
           </h1>
 
-          <p className="mt-6 max-w-2xl text-base leading-8 text-stone-200 md:text-lg">
+          <p className="hero-copy mt-6 max-w-2xl text-base leading-8 text-stone-200 md:text-lg">
             {t.heroText}
           </p>
 

@@ -500,62 +500,88 @@ button:disabled {
 
 html[data-theme="light"] {
   color-scheme: light;
-  background: #f4eee5;
+  background: #e7dbca;
 }
 
 html[data-theme="light"] body {
   background:
-    radial-gradient(circle at 14% -8%, rgba(198, 84, 71, 0.14), transparent 28rem),
-    radial-gradient(circle at 86% 0%, rgba(201, 165, 106, 0.22), transparent 30rem),
-    linear-gradient(135deg, #fbf6ee 0%, #efe4d4 50%, #e7efe7 100%);
-  color: #241a12;
+    radial-gradient(circle at 12% -8%, rgba(130, 38, 36, 0.16), transparent 30rem),
+    radial-gradient(circle at 88% 0%, rgba(142, 98, 42, 0.22), transparent 32rem),
+    radial-gradient(circle at 88% 84%, rgba(55, 94, 66, 0.14), transparent 28rem),
+    linear-gradient(135deg, #f2e6d4 0%, #dcc9ae 48%, #d9dfcf 100%);
+  color: #2a1c12;
 }
 
 html[data-theme="light"] .luxury-shell {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.12)),
-    radial-gradient(circle at 50% 0%, rgba(201, 165, 106, 0.18), transparent 36rem);
+    linear-gradient(180deg, rgba(255, 250, 241, 0.62), rgba(255, 255, 255, 0.06)),
+    radial-gradient(circle at 50% 0%, rgba(133, 79, 42, 0.18), transparent 36rem);
 }
 
 html[data-theme="light"] .luxury-panel,
 html[data-theme="light"] .delivery-card {
-  border-color: rgba(96, 63, 36, 0.16);
+  border-color: rgba(78, 49, 27, 0.2);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 250, 241, 0.68)),
-    rgba(255, 255, 255, 0.74);
-  box-shadow: 0 24px 70px rgba(86, 58, 32, 0.12);
+    linear-gradient(145deg, rgba(255, 251, 244, 0.92), rgba(238, 223, 202, 0.72)),
+    rgba(255, 247, 236, 0.78);
+  box-shadow: 0 24px 70px rgba(68, 43, 24, 0.18);
 }
 
 html[data-theme="light"] .luxury-header {
-  border-color: rgba(96, 63, 36, 0.14);
-  background: rgba(251, 246, 238, 0.9);
-  box-shadow: 0 18px 70px rgba(86, 58, 32, 0.12);
+  border-color: rgba(78, 49, 27, 0.18);
+  background: rgba(235, 221, 201, 0.94);
+  box-shadow: 0 18px 70px rgba(68, 43, 24, 0.16);
 }
 
 html[data-theme="light"] .luxury-header::before {
   background:
-    linear-gradient(120deg, rgba(251, 246, 238, 0.96), rgba(244, 232, 216, 0.94), rgba(224, 236, 222, 0.86)),
-    linear-gradient(100deg, transparent, rgba(201, 165, 106, 0.16), transparent);
+    linear-gradient(120deg, rgba(239, 224, 202, 0.96), rgba(223, 202, 174, 0.96), rgba(218, 225, 206, 0.9)),
+    linear-gradient(100deg, transparent, rgba(133, 79, 42, 0.18), transparent);
 }
 
-html[data-theme="light"] .brand-logo {
-  filter: invert(8%) sepia(22%) saturate(840%) hue-rotate(344deg) brightness(90%) contrast(93%);
+html[data-theme="light"] .header-logo,
+html[data-theme="light"] .brand-logo:not(.hero-logo):not(.footer-logo) {
+  filter: invert(7%) sepia(25%) saturate(980%) hue-rotate(341deg) brightness(88%) contrast(94%);
+  animation: none;
+}
+
+html[data-theme="light"] .brand-led::before,
+html[data-theme="light"] .brand-led::after {
+  opacity: 0.18;
+}
+
+html[data-theme="light"] .hero-logo,
+html[data-theme="light"] .footer-logo {
+  filter: invert(93%) sepia(18%) saturate(555%) hue-rotate(344deg) brightness(104%) contrast(93%);
 }
 
 html[data-theme="light"] .ghost-button {
-  border-color: rgba(96, 63, 36, 0.16);
-  background: rgba(255, 255, 255, 0.58);
-  color: #3a281b;
+  border-color: rgba(78, 49, 27, 0.24);
+  background: rgba(255, 249, 239, 0.62);
+  color: #332114;
+  box-shadow: 0 10px 24px rgba(68, 43, 24, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+html[data-theme="light"] .ghost-button:hover {
+  border-color: rgba(146, 92, 41, 0.42);
+  background: rgba(255, 242, 219, 0.84);
+}
+
+html[data-theme="light"] .luxury-button {
+  border-color: rgba(84, 49, 20, 0.28);
+  background: linear-gradient(135deg, #8a4f25 0%, #b87a35 48%, #e2b56e 100%);
+  color: #fffaf0;
+  box-shadow: 0 16px 36px rgba(101, 56, 24, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 html[data-theme="light"] .section-kicker {
-  color: #b37a2d;
+  color: #87521f;
 }
 
 html[data-theme="light"] .text-white,
 html[data-theme="light"] .text-\[\#fff4df\],
 html[data-theme="light"] .text-stone-100 {
-  color: #241a12 !important;
+  color: #2a1c12 !important;
 }
 
 html[data-theme="light"] .text-white\/70,
@@ -565,30 +591,76 @@ html[data-theme="light"] .text-white\/60,
 html[data-theme="light"] .text-stone-300,
 html[data-theme="light"] .text-stone-400,
 html[data-theme="light"] .text-stone-500 {
-  color: rgba(36, 26, 18, 0.68) !important;
+  color: rgba(42, 28, 18, 0.7) !important;
 }
 
 html[data-theme="light"] .text-\[\#f2d39a\] {
-  color: #986a28 !important;
+  color: #7d4a1d !important;
 }
 
 html[data-theme="light"] .bg-white\/\[0\.06\],
 html[data-theme="light"] .bg-white\/\[0\.055\],
 html[data-theme="light"] .bg-white\/5,
 html[data-theme="light"] .bg-black\/20 {
-  background-color: rgba(255, 255, 255, 0.58) !important;
+  background-color: rgba(255, 249, 239, 0.62) !important;
 }
 
 html[data-theme="light"] .border-white\/10,
 html[data-theme="light"] .border-white\/15,
 html[data-theme="light"] .border-white\/8 {
-  border-color: rgba(96, 63, 36, 0.14) !important;
+  border-color: rgba(78, 49, 27, 0.16) !important;
 }
 
 html[data-theme="light"] .award-image-wrap {
-  background: #fffaf2;
+  background: #f8ead6;
 }
 
 html[data-theme="light"] .delivery-section {
-  background: linear-gradient(90deg, rgba(255, 249, 240, 0.72), rgba(238, 229, 216, 0.6));
+  background: linear-gradient(90deg, rgba(235, 218, 194, 0.76), rgba(216, 205, 185, 0.64));
+}
+
+html[data-theme="light"] .site-hero .luxury-panel {
+  border-color: rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.035)),
+    rgba(15, 11, 8, 0.64);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+}
+
+html[data-theme="light"] .site-hero .hero-title,
+html[data-theme="light"] .site-hero .text-\[\#fff4df\],
+html[data-theme="light"] .site-hero .text-white,
+html[data-theme="light"] .site-hero .text-stone-300 {
+  color: #fff7e8 !important;
+  text-shadow: 0 3px 22px rgba(0, 0, 0, 0.42);
+}
+
+html[data-theme="light"] .site-hero .hero-copy,
+html[data-theme="light"] .site-hero .text-stone-200,
+html[data-theme="light"] .site-hero .text-stone-400 {
+  color: rgba(255, 247, 232, 0.84) !important;
+}
+
+html[data-theme="light"] .site-hero .section-kicker {
+  color: #f0c980;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.36);
+}
+
+html[data-theme="light"] .site-hero .ghost-button {
+  border-color: rgba(255, 244, 223, 0.28);
+  background: rgba(18, 12, 8, 0.38);
+  color: #fff7e8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html[data-theme="light"] .site-footer {
+  background:
+    linear-gradient(180deg, rgba(11, 8, 6, 0.78), rgba(7, 5, 4, 0.92)),
+    url("/restaurant-interior.webp") center/cover;
+  color: rgba(255, 244, 223, 0.72);
+}
+
+html[data-theme="light"] .site-footer .text-\[\#d8b377\],
+html[data-theme="light"] .site-footer button {
+  color: #d8b377 !important;
 }

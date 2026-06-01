@@ -91,7 +91,7 @@ export default function Header({
             <img
               src="/casa-di-fratelli-logo.svg"
               alt={t.brand}
-              className="brand-logo h-11 w-[142px] object-left md:h-16 md:w-[210px]"
+              className="brand-logo header-logo h-11 w-[142px] object-left md:h-16 md:w-[210px]"
             />
           </button>
 
