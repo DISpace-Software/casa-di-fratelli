@@ -498,6 +498,37 @@ button:disabled {
   scrollbar-width: none;
 }
 
+.award-card {
+  isolation: isolate;
+}
+
+.award-card-glow {
+  pointer-events: none;
+  position: absolute;
+  inset: -28% -18% auto;
+  height: 58%;
+  background:
+    radial-gradient(circle at 28% 42%, rgba(242, 211, 154, 0.2), transparent 38%),
+    radial-gradient(circle at 68% 28%, rgba(255, 255, 255, 0.1), transparent 34%);
+  filter: blur(4px);
+  opacity: 0.9;
+}
+
+.award-trophy-stage {
+  background:
+    radial-gradient(ellipse at 50% 88%, rgba(201, 165, 106, 0.24), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+}
+
+.award-trophy {
+  transform-origin: bottom center;
+  transition: transform 220ms ease, filter 220ms ease;
+}
+
+.award-card:hover .award-trophy {
+  transform: translateY(-4px) scale(1.015);
+}
+
 html[data-theme="light"] {
   color-scheme: light;
   background: #e7dbca;
@@ -613,6 +644,18 @@ html[data-theme="light"] .border-white\/8 {
 
 html[data-theme="light"] .award-image-wrap {
   background: #f8ead6;
+}
+
+html[data-theme="light"] .award-trophy-stage {
+  background:
+    radial-gradient(ellipse at 50% 88%, rgba(135, 82, 31, 0.22), transparent 45%),
+    linear-gradient(180deg, rgba(255, 250, 241, 0.68), rgba(231, 211, 183, 0.34));
+}
+
+html[data-theme="light"] .award-card-glow {
+  background:
+    radial-gradient(circle at 28% 42%, rgba(135, 82, 31, 0.18), transparent 38%),
+    radial-gradient(circle at 68% 28%, rgba(255, 255, 255, 0.34), transparent 34%);
 }
 
 html[data-theme="light"] .delivery-section {
