@@ -62,13 +62,11 @@ export default function AwardsSection({ language }) {
           >
             <div className="award-card-glow" />
             <div className="relative grid gap-7 sm:grid-cols-[0.95fr_1fr] sm:items-center">
-              <div className="award-trophy-stage flex min-h-[360px] items-end justify-center rounded-[26px] px-4 pt-6">
+              <div className="award-trophy-stage rounded-[26px]">
                 <img
                   src={award.image}
                   alt={award.alt}
-                  className={`award-trophy w-full max-w-[260px] object-contain ${
-                    index === 1 ? "max-w-[252px]" : ""
-                  }`}
+                  className="award-trophy block aspect-[2/3] w-full rounded-[22px] object-cover"
                 />
               </div>
 

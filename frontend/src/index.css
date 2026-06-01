@@ -521,15 +521,17 @@ button:disabled {
 }
 
 .award-trophy-stage {
-  background:
-    radial-gradient(ellipse at 50% 88%, rgba(201, 165, 106, 0.24), transparent 44%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  overflow: hidden;
+  background: #090705;
+  box-shadow:
+    0 24px 42px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .award-trophy {
   filter:
-    drop-shadow(0 24px 28px rgba(0, 0, 0, 0.3))
-    drop-shadow(0 0 1px rgba(255, 244, 223, 0.34));
+    saturate(1.02)
+    contrast(1.02);
   transform-origin: bottom center;
   transition: transform 220ms ease, filter 220ms ease;
 }
@@ -664,13 +666,10 @@ html[data-theme="light"] .award-card {
 }
 
 html[data-theme="light"] .award-trophy-stage {
-  background:
-    radial-gradient(ellipse at 50% 92%, rgba(97, 59, 27, 0.18), transparent 43%),
-    radial-gradient(circle at 50% 22%, rgba(255, 251, 242, 0.5), transparent 48%),
-    linear-gradient(180deg, rgba(224, 205, 176, 0.58), rgba(194, 172, 142, 0.26));
+  background: #1a1612;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    inset 0 -1px 0 rgba(91, 58, 31, 0.08);
+    0 24px 42px rgba(65, 43, 25, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 html[data-theme="light"] .award-card-glow {
@@ -693,8 +692,8 @@ html[data-theme="light"] .award-card .text-\[\#f2d39a\] {
 
 html[data-theme="light"] .award-trophy {
   filter:
-    drop-shadow(0 24px 24px rgba(65, 43, 25, 0.28))
-    drop-shadow(0 0 1px rgba(93, 59, 31, 0.16));
+    saturate(1.03)
+    contrast(1.02);
 }
 
 html[data-theme="light"] .delivery-section {
