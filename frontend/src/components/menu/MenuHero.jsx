@@ -5,22 +5,22 @@ export default function MenuHero({ data, onOpenReservation, language }) {
     <section className="relative overflow-hidden border-b border-white/10">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(201,165,106,0.2),transparent_32rem),radial-gradient(circle_at_90%_10%,rgba(40,160,116,0.14),transparent_28rem)]" />
 
-      <div className="mx-auto grid max-w-7xl items-center gap-10 px-6 py-10 md:grid-cols-2 md:py-24">
+      <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-7 md:grid-cols-2 md:px-6 md:py-24">
         <div className="relative z-10">
           <img
             src="/casa-di-fratelli-logo.svg"
             alt="Casa di Fratelli"
-            className="brand-logo mb-7 h-20 w-[260px] object-left"
+            className="brand-logo mb-5 h-16 w-[210px] object-left md:mb-7 md:h-20 md:w-[260px]"
           />
           <div className="section-kicker mb-4">
             {data.heroBadge}
           </div>
 
-          <h1 className="max-w-2xl text-5xl font-semibold leading-tight text-[#fff4df] md:text-7xl">
+          <h1 className="max-w-2xl text-4xl font-semibold leading-tight text-[#fff4df] md:text-7xl">
             {data.heroTitle}
           </h1>
 
-          <p className="mt-6 max-w-xl text-base leading-8 text-white/70 md:text-lg">
+          <p className="mt-4 max-w-xl text-sm leading-7 text-white/70 md:mt-6 md:text-lg md:leading-8">
             {data.heroText}
           </p>
 

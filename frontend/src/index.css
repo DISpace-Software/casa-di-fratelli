@@ -1096,6 +1096,20 @@ html[data-theme="light"] .menu-page .bg-white\/\[0\.045\] {
   background-color: rgba(255, 250, 242, 0.72) !important;
 }
 
+html[data-theme="light"] .menu-page .dish-card,
+html[data-theme="light"] .menu-page .menu-digest-card {
+  background:
+    linear-gradient(135deg, rgba(255, 250, 242, 0.86), rgba(244, 232, 212, 0.78)) !important;
+  box-shadow: 0 18px 50px rgba(83, 58, 33, 0.14);
+}
+
+html[data-theme="light"] .menu-page .dish-image,
+html[data-theme="light"] .menu-page .menu-digest-image {
+  background:
+    radial-gradient(circle at 50% 24%, rgba(255, 255, 255, 0.9), transparent 58%),
+    rgba(238, 222, 197, 0.62) !important;
+}
+
 html[data-theme="light"] .menu-page .text-white\/55,
 html[data-theme="light"] .menu-page .text-white\/70 {
   color: rgba(42, 28, 18, 0.66) !important;

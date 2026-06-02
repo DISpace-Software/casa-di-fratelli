@@ -33,95 +33,67 @@ function MenuExperienceStrip({ data, language, onCategoryClick }) {
   const signatureItems = data.categories
     .flatMap((category) => category.items.map((item) => ({ ...item, categoryTitle: category.title, categoryId: category.id })))
     .filter((item) => item.featured || item.imageUrl)
-    .slice(0, 4);
+    .slice(0, 6);
+  const smallItems = signatureItems.length > 0
+    ? signatureItems
+    : data.categories.flatMap((category) => category.items.map((item) => ({ ...item, categoryTitle: category.title, categoryId: category.id }))).slice(0, 6);
 
-  const heroItem = signatureItems[0] || data.categories[0]?.items?.[0];
-  const smallItems = signatureItems.slice(1, 4);
-
-  if (!heroItem) return null;
+  if (data.categories.length === 0) return null;
 
   return (
-    <section className="menu-experience mx-auto grid max-w-7xl gap-4 px-4 pt-8 md:grid-cols-[1.15fr_0.85fr] md:px-6 md:pt-10">
-      <button
-        type="button"
-        onClick={() => heroItem.categoryId && onCategoryClick(heroItem.categoryId)}
-        className="menu-feature-panel menu-spark group relative min-h-[420px] overflow-hidden rounded-[32px] border border-white/10 bg-[#120e0b] text-left shadow-2xl shadow-black/30"
-      >
-        {heroItem.imageUrl ? (
-          <img
-            src={heroItem.imageUrl}
-            alt={heroItem.name}
-            className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-          />
-        ) : (
-          <img
-            src="/restaurant-interior.webp"
-            alt="Casa di Fratelli"
-            className="absolute inset-0 h-full w-full object-cover opacity-55 transition duration-700 group-hover:scale-[1.04]"
-          />
-        )}
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(7,5,4,0.86),rgba(7,5,4,0.22)),linear-gradient(0deg,rgba(0,0,0,0.62),transparent_58%)]" />
-        <div className="relative flex min-h-[420px] flex-col justify-end p-6 md:p-8">
-          <div className="mb-4 inline-flex w-fit rounded-full border border-[#c9a56a]/35 bg-black/35 px-4 py-2 text-xs uppercase tracking-[0.24em] text-[#f2d39a] backdrop-blur">
-            {language === "bg" ? "Авторска селекция" : "Signature plate"}
-          </div>
-          <h2 className="max-w-2xl text-4xl font-semibold leading-tight text-[#fff4df] md:text-6xl">
-            {heroItem.name}
-          </h2>
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-white/75 md:text-base">
-            {heroItem.description}
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <span className="rounded-full border border-white/15 bg-black/35 px-4 py-2 text-sm text-white/75 backdrop-blur">
-              {heroItem.categoryTitle}
-            </span>
-            <span className="rounded-full bg-[#c9a56a] px-4 py-2 text-sm font-semibold text-black">
-              {heroItem.price}
-            </span>
-          </div>
+    <section className="menu-experience mx-auto hidden max-w-7xl gap-5 px-6 pt-10 md:grid md:grid-cols-[0.86fr_1.14fr]">
+      <div className="menu-feature-panel menu-spark rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(201,165,106,0.16),rgba(255,255,255,0.045)),radial-gradient(circle_at_88%_10%,rgba(46,139,99,0.16),transparent_18rem)] p-6 shadow-2xl shadow-black/20">
+        <div className="section-kicker">
+          {language === "bg" ? "Меню навигация" : "Menu navigation"}
         </div>
-      </button>
+        <h2 className="mt-3 text-4xl font-semibold leading-tight text-[#fff4df]">
+          {language === "bg" ? "Избери секция, виж всичко ясно." : "Choose a section, see everything clearly."}
+        </h2>
+        <p className="mt-4 max-w-xl text-sm leading-7 text-white/64">
+          {language === "bg"
+            ? "Компактно меню с пълни снимки, ясни цени и бързо движение между категориите."
+            : "A compact menu with complete photos, clear prices, and fast category movement."}
+        </p>
 
-      <div className="grid gap-4">
-        <div className="rounded-[30px] border border-white/10 bg-white/[0.045] p-5 shadow-xl shadow-black/15 backdrop-blur">
-          <div className="section-kicker">
-            {language === "bg" ? "Навигация с вкус" : "Taste navigation"}
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            {data.categories.slice(0, 8).map((category) => (
-              <button
-                key={category.id}
-                type="button"
-                onClick={() => onCategoryClick(category.id)}
-                className="rounded-2xl border border-white/10 bg-black/20 px-3 py-3 text-left transition hover:border-[#c9a56a]/35 hover:bg-[#c9a56a]/10"
-              >
-                <div className="truncate text-sm font-semibold text-[#fff4df]">{category.title}</div>
-                <div className="mt-1 text-xs text-white/45">
-                  {category.items.length} {language === "bg" ? "позиции" : "items"}
-                </div>
-              </button>
-            ))}
-          </div>
+        <div className="mt-6 grid grid-cols-2 gap-2">
+          {data.categories.slice(0, 8).map((category, index) => (
+            <button
+              key={category.id}
+              type="button"
+              onClick={() => onCategoryClick(category.id)}
+              className="rounded-2xl border border-white/10 bg-black/20 px-3 py-3 text-left transition hover:border-[#c9a56a]/35 hover:bg-[#c9a56a]/10"
+            >
+              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d8b377]">
+                {String(index + 1).padStart(2, "0")}
+              </div>
+              <div className="mt-1 truncate text-sm font-semibold text-[#fff4df]">{category.title}</div>
+              <div className="mt-1 text-xs text-white/45">
+                {category.items.length} {language === "bg" ? "позиции" : "items"}
+              </div>
+            </button>
+          ))}
         </div>
+      </div>
 
+      <div className="grid grid-cols-3 gap-3">
         {smallItems.map((item) => (
           <button
             key={`${item.categoryId}-${item.name}`}
             type="button"
             onClick={() => onCategoryClick(item.categoryId)}
-            className="group grid grid-cols-[96px_1fr] overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.045] text-left shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:border-[#c9a56a]/35"
+            className="group menu-digest-card rounded-[24px] border border-white/10 bg-white/[0.045] p-3 text-left shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:border-[#c9a56a]/35"
           >
-            <div className="h-full min-h-[118px] bg-black/25">
+            <div className="menu-digest-image flex aspect-square items-center justify-center overflow-hidden rounded-[18px] border border-white/10 bg-[#0e0b08]">
               {item.imageUrl ? (
-                <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.05]" />
+                <img src={item.imageUrl} alt={item.name} className="h-full w-full object-contain p-1 transition duration-500 group-hover:scale-[1.04]" />
               ) : (
                 <div className="h-full w-full bg-[radial-gradient(circle_at_50%_20%,rgba(201,165,106,0.26),transparent_60%),linear-gradient(135deg,#211812,#090705)]" />
               )}
             </div>
-            <div className="p-4">
+            <div className="px-1 pb-1 pt-3">
               <div className="text-xs uppercase tracking-[0.18em] text-[#d8b377]">{item.categoryTitle}</div>
-              <div className="mt-2 text-base font-semibold leading-snug text-[#fff4df]">{item.name}</div>
-              <div className="mt-3 text-sm text-white/55">{item.price}</div>
+              <div className="mt-2 line-clamp-2 text-base font-semibold leading-snug text-[#fff4df]">{item.name}</div>
+              <div className="mt-2 text-sm text-white/55">{item.price}</div>
             </div>
           </button>
         ))}
@@ -348,7 +320,7 @@ export default function MenuPage({
   }
 
   return (
-    <div className={`luxury-shell min-h-screen text-white ${orderEnabled ? "pb-40" : ""}`}>
+    <div className={`menu-page luxury-shell min-h-screen text-white ${orderEnabled ? "pb-40" : ""}`}>
       {!isOrderLink && (
         <>
           <Header
@@ -477,7 +449,7 @@ export default function MenuPage({
       )}
 
       <div className="flex flex-col">
-        <div className={`${isOrderLink ? "order-1" : "order-2"} mx-auto grid max-w-7xl gap-10 px-4 pb-12 pt-8 md:gap-14 md:px-6 md:pb-20 md:pt-10`}>
+        <div className={`${isOrderLink ? "order-1" : "order-2"} mx-auto grid max-w-7xl gap-6 px-3 pb-10 pt-5 md:gap-12 md:px-6 md:pb-20 md:pt-10`}>
           {data.categories.map((category) => (
             <MenuCategorySection
               key={category.id}
@@ -489,7 +461,7 @@ export default function MenuPage({
           ))}
         </div>
 
-        {!isOrderLink && <div className="order-1">
+        {!isOrderLink && <div className="order-1 hidden md:block">
           <ChefHighlight data={data} />
         </div>}
       </div>
