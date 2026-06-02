@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.casadifratelli.bg/sitemap.xml
+Sitemap: https://casadifratelli.bg/sitemap.xml

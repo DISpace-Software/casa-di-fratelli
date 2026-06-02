@@ -51,7 +51,7 @@ public class AdminAuthController : ControllerBase
             !configuredAdminUrl.Contains("vercel.app", StringComparison.OrdinalIgnoreCase))
             return configuredAdminUrl.TrimEnd('/');
 
-        return "https://www.casadifratelli.bg/admin";
+        return "https://casadifratelli.bg/admin";
     }
 
     [HttpPost("login")]

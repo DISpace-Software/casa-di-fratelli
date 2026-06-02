@@ -103,7 +103,7 @@ public class ReservationsController : ControllerBase
         var configuredFrontendUrl = _configuration["FRONTEND_URL"];
 
         return string.IsNullOrWhiteSpace(configuredFrontendUrl)
-            ? "https://www.casadifratelli.bg"
+            ? "https://casadifratelli.bg"
             : configuredFrontendUrl.TrimEnd('/');
     }
 
