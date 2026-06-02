@@ -101,12 +101,10 @@ public class ReservationsController : ControllerBase
     private string GetFrontendUrl()
     {
         var configuredFrontendUrl = _configuration["FRONTEND_URL"];
-        var configuredAdminUrl = _configuration["ADMIN_URL"];
 
-        return (string.IsNullOrWhiteSpace(configuredFrontendUrl)
-                ? configuredAdminUrl?.Replace("/admin", "", StringComparison.OrdinalIgnoreCase)
-                : configuredFrontendUrl)
-            ?.TrimEnd('/') ?? "https://casadifratelli.bg";
+        return string.IsNullOrWhiteSpace(configuredFrontendUrl)
+            ? "https://www.casadifratelli.bg"
+            : configuredFrontendUrl.TrimEnd('/');
     }
 
     private string GetReviewUrl()
@@ -421,7 +419,7 @@ await _db.SaveChangesAsync();
         }
 
         var adminEmail = _configuration["ADMIN_EMAIL"];
-        var adminUrl = _configuration["ADMIN_URL"] ?? "https://casa-di-fratelli.vercel.app/admin";
+        var adminUrl = $"{GetFrontendUrl()}/admin";
 
         if (!string.IsNullOrWhiteSpace(adminEmail))
         {
@@ -608,13 +606,7 @@ await _db.SaveChangesAsync();
 
         if (!string.IsNullOrWhiteSpace(reservation.Email))
         {
-            var configuredFrontendUrl = _configuration["FRONTEND_URL"];
-            var configuredAdminUrl = _configuration["ADMIN_URL"];
-            var frontendUrl = (string.IsNullOrWhiteSpace(configuredFrontendUrl)
-                    ? configuredAdminUrl?.Replace("/admin", "", StringComparison.OrdinalIgnoreCase)
-                    : configuredFrontendUrl)
-                ?.TrimEnd('/') ?? "https://casa-di-fratelli.vercel.app";
-            var menuUrl = $"{frontendUrl}/menu?reservation={reservation.Id}&token={Uri.EscapeDataString(reservation.OrderAccessToken)}";
+            var menuUrl = $"{GetFrontendUrl()}/menu?reservation={reservation.Id}&token={Uri.EscapeDataString(reservation.OrderAccessToken)}";
 
             await _emailService.SendAsync(
                 reservation.Email,

@@ -39,6 +39,21 @@ public class AdminAuthController : ControllerBase
     public sealed record DeviceLoginRequest(string CredentialToken);
     public sealed record DeviceRegisterRequest(string Label, string CredentialToken);
 
+    private string GetAdminUrl()
+    {
+        var configuredFrontendUrl = _configuration["FRONTEND_URL"];
+        var configuredAdminUrl = _configuration["ADMIN_URL"];
+
+        if (!string.IsNullOrWhiteSpace(configuredFrontendUrl))
+            return $"{configuredFrontendUrl.TrimEnd('/')}/admin";
+
+        if (!string.IsNullOrWhiteSpace(configuredAdminUrl) &&
+            !configuredAdminUrl.Contains("vercel.app", StringComparison.OrdinalIgnoreCase))
+            return configuredAdminUrl.TrimEnd('/');
+
+        return "https://www.casadifratelli.bg/admin";
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] AdminLoginRequest request)
     {
@@ -82,7 +97,7 @@ public class AdminAuthController : ControllerBase
                 user.PasswordResetTokenExpiresAtUtc = DateTime.UtcNow.AddMinutes(30);
                 await _db.SaveChangesAsync();
 
-                var adminUrl = (_configuration["ADMIN_URL"] ?? "https://casa-di-fratelli.vercel.app/admin").TrimEnd('/');
+                var adminUrl = GetAdminUrl();
                 var resetUrl = $"{adminUrl}?resetToken={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
 
                 await _emailService.SendAsync(

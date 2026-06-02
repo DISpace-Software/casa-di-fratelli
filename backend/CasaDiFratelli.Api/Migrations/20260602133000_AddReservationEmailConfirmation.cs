@@ -5,6 +5,7 @@
 namespace CasaDiFratelli.Api.Migrations
 {
     /// <inheritdoc />
+    [Migration("20260602133000_AddReservationEmailConfirmation")]
     public partial class AddReservationEmailConfirmation : Migration
     {
         /// <inheritdoc />
