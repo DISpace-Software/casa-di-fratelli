@@ -33,21 +33,21 @@ export default function MenuCategorySection({ category, language, orderEnabled =
       </div>
 
       <div className="grid gap-2.5 md:grid-cols-2 md:gap-3">
-        {category.items.map((item, index) => (
+        {category.items.map((item) => (
           <div
             key={item.id || item.name}
-            className="dish-card group menu-spark grid grid-cols-[82px_1fr] overflow-hidden rounded-[18px] border border-white/10 bg-white/[0.045] shadow-xl shadow-black/10 transition duration-300 hover:-translate-y-0.5 hover:border-[#c9a56a]/35 md:grid-cols-[128px_1fr] md:rounded-[22px]"
+            className="dish-card group menu-spark grid grid-cols-[2fr_3fr] overflow-hidden rounded-[18px] border border-white/10 bg-white/[0.045] shadow-xl shadow-black/10 transition duration-300 hover:-translate-y-0.5 hover:border-[#c9a56a]/35 md:rounded-[22px]"
           >
-            <div className="dish-image flex min-h-[112px] items-center justify-center border-r border-white/10 bg-[radial-gradient(circle_at_50%_28%,rgba(201,165,106,0.16),transparent_58%),rgba(0,0,0,0.22)] p-1.5 md:min-h-[154px] md:p-2">
+            <div className="dish-image flex min-h-[128px] items-center justify-center border-r border-white/10 bg-[radial-gradient(circle_at_50%_28%,rgba(201,165,106,0.16),transparent_58%),rgba(0,0,0,0.22)] p-2 md:min-h-[220px] md:p-4">
               {item.imageUrl ? (
                 <img
                   src={item.imageUrl}
                   alt={item.name}
                   loading="lazy"
-                  className="h-full max-h-[104px] w-full object-contain transition duration-500 group-hover:scale-[1.035] md:max-h-[138px]"
+                  className="h-full max-h-[120px] w-full object-contain transition duration-500 group-hover:scale-[1.035] md:max-h-[190px]"
                 />
               ) : (
-                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-[#c9a56a]/20 bg-[#c9a56a]/10 text-xs font-semibold uppercase tracking-[0.16em] text-[#d8b377] md:h-20 md:w-20">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#c9a56a]/20 bg-[#c9a56a]/10 text-xs font-semibold uppercase tracking-[0.16em] text-[#d8b377] md:h-28 md:w-28">
                   Casa
                 </div>
               )}
@@ -55,26 +55,26 @@ export default function MenuCategorySection({ category, language, orderEnabled =
 
             <div className="flex min-h-full flex-col justify-between gap-3 p-3.5 md:p-5">
               <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-white/10 bg-black/25 px-2 py-0.5 text-[10px] font-semibold text-stone-400">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  {item.featured && (
+                {item.featured && (
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="floating-glow rounded-full border border-[#c9a56a]/30 bg-[#c9a56a]/10 px-2.5 py-0.5 text-[9px] uppercase tracking-[0.18em] text-[#d8b377]">
                       Signature
                     </span>
-                  )}
-                </div>
+                  </div>
+                )}
 
-                <h3 className="mt-2 text-[1rem] font-semibold leading-snug text-white md:text-xl">{item.name}</h3>
+                <h3 className={`${item.featured ? "mt-2" : ""} text-[1rem] font-semibold leading-snug text-white md:text-xl`}>{item.name}</h3>
 
                 <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-white/64 md:mt-2 md:line-clamp-3 md:text-sm md:leading-6">
                   {item.description}
                 </p>
 
-                <div className="mt-3 flex flex-wrap gap-1.5 md:gap-2">
+                <div className="mt-3 flex flex-wrap items-center gap-1.5 md:gap-2">
                   <div className="inline-flex rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-xs text-white/55 md:text-sm">
                     {item.weight}
+                  </div>
+                  <div className="rounded-full border border-[#c9a56a]/25 bg-[#c9a56a]/10 px-3 py-1 text-xs font-semibold text-[#f2d3a0] md:px-4 md:py-1.5 md:text-sm">
+                    {item.price}
                   </div>
                   <div className="prepared-badge hidden rounded-full border border-[#c9a56a]/20 bg-[#c9a56a]/10 px-2.5 py-1 text-xs text-[#f2d3a0] md:inline-flex md:text-sm">
                     {language === "bg" ? "Приготвя се на момента" : "Prepared to order"}
@@ -82,11 +82,8 @@ export default function MenuCategorySection({ category, language, orderEnabled =
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-3">
-                <div className="rounded-full border border-[#c9a56a]/25 bg-[#c9a56a]/10 px-3 py-1.5 text-sm font-semibold text-[#f2d3a0] md:px-4 md:py-2 md:text-base">
-                  {item.price}
-                </div>
-                {orderEnabled && (
+              {orderEnabled && (
+                <div className="flex items-center justify-end gap-2 border-t border-white/10 pt-3">
                   <button
                     type="button"
                     onClick={() => onAddToOrder?.(item)}
@@ -94,8 +91,8 @@ export default function MenuCategorySection({ category, language, orderEnabled =
                   >
                     {language === "bg" ? "Добави" : "Add"}
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         ))}

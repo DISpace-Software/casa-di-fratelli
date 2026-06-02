@@ -30,13 +30,18 @@ function formatOrderPrice(value) {
 }
 
 function MenuExperienceStrip({ data, language, onCategoryClick }) {
-  const signatureItems = data.categories
+  const pizzaCategory = data.categories.find((category) => category.id === "pizza");
+  const pizzaItems = pizzaCategory?.items
+    ?.filter((item) => item.imageUrl)
+    .slice(0, 6)
+    .map((item) => ({ ...item, categoryTitle: pizzaCategory.title, categoryId: pizzaCategory.id })) || [];
+  const fallbackItems = data.categories
     .flatMap((category) => category.items.map((item) => ({ ...item, categoryTitle: category.title, categoryId: category.id })))
-    .filter((item) => item.featured || item.imageUrl)
+    .filter((item) => item.imageUrl)
     .slice(0, 6);
-  const smallItems = signatureItems.length > 0
-    ? signatureItems
-    : data.categories.flatMap((category) => category.items.map((item) => ({ ...item, categoryTitle: category.title, categoryId: category.id }))).slice(0, 6);
+  const smallItems = Array.from(
+    new Map([...pizzaItems, ...fallbackItems].map((item) => [item.id || item.name, item])).values()
+  ).slice(0, 6);
 
   if (data.categories.length === 0) return null;
 
@@ -56,17 +61,14 @@ function MenuExperienceStrip({ data, language, onCategoryClick }) {
         </p>
 
         <div className="mt-6 grid grid-cols-2 gap-2">
-          {data.categories.slice(0, 8).map((category, index) => (
+          {data.categories.slice(0, 8).map((category) => (
             <button
               key={category.id}
               type="button"
               onClick={() => onCategoryClick(category.id)}
               className="rounded-2xl border border-white/10 bg-black/20 px-3 py-3 text-left transition hover:border-[#c9a56a]/35 hover:bg-[#c9a56a]/10"
             >
-              <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#d8b377]">
-                {String(index + 1).padStart(2, "0")}
-              </div>
-              <div className="mt-1 truncate text-sm font-semibold text-[#fff4df]">{category.title}</div>
+              <div className="truncate text-sm font-semibold text-[#fff4df]">{category.title}</div>
               <div className="mt-1 text-xs text-white/45">
                 {category.items.length} {language === "bg" ? "позиции" : "items"}
               </div>
@@ -393,7 +395,7 @@ export default function MenuPage({
               ref={categoryNavRef}
               className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 scrollbar-none md:px-0 md:gap-3"
             >
-              {data.categories.map((category, index) => {
+              {data.categories.map((category) => {
                 const isActive = activeCategory === category.id;
 
                 return (
@@ -409,12 +411,7 @@ export default function MenuPage({
                         : "border-white/10 bg-white/5 text-white/75 hover:border-[#c9a56a]/30 hover:text-[#f2d3a0]"
                     }`}
                   >
-                    <span className={`block text-[10px] font-semibold uppercase tracking-[0.22em] md:hidden ${
-                      isActive ? "text-black/55" : "text-[#d8b377]"
-                    }`}>
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    <span className="mt-1 block truncate text-sm font-semibold md:mt-0 md:inline md:text-sm">
+                    <span className="block truncate text-sm font-semibold md:inline md:text-sm">
                       {category.title}
                     </span>
                     <span className={`mt-1 block text-xs md:hidden ${
