@@ -20,7 +20,9 @@ export default function ReservationPreviewSection({ t, onOpenReservation }) {
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
               <span className="font-semibold text-white">{t.phone}:</span>{" "}
-              088 821 8318
+              <a href="tel:+359888218318" className="transition hover:text-[#f2d39a]">
+                088 821 8318
+              </a>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
               <span className="font-semibold text-white">{t.hours}:</span>{" "}

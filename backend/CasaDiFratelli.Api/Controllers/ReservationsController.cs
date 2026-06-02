@@ -116,7 +116,8 @@ public class ReservationsController : ControllerBase
 
     private string GetReviewUrl()
     {
-        return (_configuration["REVIEW_URL"] ?? $"{GetFrontendUrl()}/#reviews").Trim();
+        return (_configuration["REVIEW_URL"] ??
+            "https://www.google.com/maps/search/?api=1&query=Casa%20di%20Fratelli%20Vechernitsa%209%20Plovdiv").Trim();
     }
 
     private async Task SendReservationConfirmationEmailAsync(Reservation reservation, string token)

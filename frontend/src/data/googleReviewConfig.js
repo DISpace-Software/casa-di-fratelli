@@ -1,2 +1,2 @@
-export const googleReviewLink = 
-    "https://www.google.com/search?sa=X&sca_esv=c886fa4b6d8c3132&rlz=1C5CHFA_enBG1037BG1039&sxsrf=ANbL-n5-XxOZSzoziKlyd8pX7q7UX4GTqg:1775399205392&q=Casa+di+Fratelli+-+Grill,+Pizza,+Pasta+Restaurant+%D0%9E%D1%82%D0%B7%D1%8B%D0%B2%D1%8B&rflfq=1&num=20&stick=H4sIAAAAAAAAAONgkxIxNLAwMDI3sjAyNzQxMDe0NDUxM97AyPiK0c45sThRISVTwa0osSQ1JydTQVfBvSgzJ0dHISCzqioRSCUWlyQqBKUCydKixLwShQvzLjZd2H6x-8Kmi92LWCk0AAB4nbELnQAAAA&rldimm=10802728271407195463&tbm=lcl&hl=ru-BG&ved=2ahUKEwjF8OK39daTAxUVgv0HHaYQBOMQ9fQKegQIbRAG&biw=2560&bih=1352&dpr=1#lkt=LocalPoiReviews";
+export const googleReviewLink =
+  "https://www.google.com/maps/search/?api=1&query=Casa%20di%20Fratelli%20Vechernitsa%209%20Plovdiv";
