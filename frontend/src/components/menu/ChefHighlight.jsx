@@ -7,15 +7,15 @@ export default function ChefHighlight({ data }) {
     <section className="relative mx-auto max-w-7xl overflow-hidden px-6 py-20">
       <div className="absolute left-1/2 top-10 h-72 w-72 -translate-x-1/2 rounded-full bg-[#c9a56a]/10 blur-3xl" />
       <div className="grid items-center gap-10 lg:grid-cols-[0.95fr_1.05fr]">
-        <div className="relative min-h-[520px] overflow-hidden lg:min-h-[620px]">
-          <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#090705] via-[#090705]/72 to-transparent" />
-          <div className="absolute left-1/2 top-8 h-[560px] w-[78%] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(201,165,106,0.24),transparent_62%)] blur-2xl" />
+        <div className="chef-cutout-stage relative min-h-[500px] overflow-visible lg:min-h-[620px]">
+          <div className="absolute left-1/2 top-8 h-[520px] w-[82%] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(201,165,106,0.2),rgba(164,96,42,0.11)_38%,transparent_68%)] blur-2xl" />
+          <div className="absolute bottom-8 left-1/2 h-24 w-[72%] -translate-x-1/2 rounded-full bg-black/30 blur-2xl" />
           <img
-            src="/chef-yurukov.jpg"
+            src="/chef-yurukov-cutout.png"
             alt="Chef Yurukov"
-            className="chef-float absolute inset-x-0 bottom-0 mx-auto h-[560px] w-full max-w-[500px] object-cover object-[50%_18%] drop-shadow-[0_34px_80px_rgba(0,0,0,0.55)] lg:h-[660px]"
+            className="chef-cutout absolute inset-x-0 bottom-0 mx-auto h-[500px] w-full max-w-[580px] object-contain object-bottom drop-shadow-[0_34px_80px_rgba(0,0,0,0.58)] lg:h-[650px]"
           />
-          <div className="absolute bottom-8 left-0 right-0 mx-auto w-fit rounded-full border border-[#c9a56a]/25 bg-black/35 px-5 py-2 text-xs uppercase tracking-[0.28em] text-[#f2d39a] backdrop-blur">
+          <div className="absolute bottom-6 left-0 right-0 mx-auto w-fit rounded-full border border-[#c9a56a]/25 bg-black/35 px-5 py-2 text-xs uppercase tracking-[0.28em] text-[#f2d39a] backdrop-blur">
             Chef Yurukov
           </div>
         </div>
