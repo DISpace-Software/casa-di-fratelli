@@ -185,6 +185,7 @@ const adminText = {
       noConsumption: "Още няма добавена консумация.",
       addConsumption: "Добави към поръчката",
       searchDish: "Търси ястие...",
+      allDishes: "Всички",
       close: "Затвори",
       moveTitle: "Премести резервацията",
       bestOptions: "Най-добри свободни варианти",
@@ -334,6 +335,7 @@ const adminText = {
       noConsumption: "No consumption has been added yet.",
       addConsumption: "Add to order",
       searchDish: "Search dish...",
+      allDishes: "All",
       close: "Close",
       moveTitle: "Move reservation",
       bestOptions: "Best free options",
@@ -491,6 +493,33 @@ function normalizeCategory(value) {
 function getCategoryLabel(category, language) {
   const normalized = normalizeCategory(category);
   return categoryDisplayNames[language]?.[normalized] || normalized;
+}
+
+function getMenuItemName(item, language = "bg") {
+  return getValue(item, language === "bg" ? "nameBg" : "nameEn") || getValue(item, "nameBg") || getValue(item, "nameEn") || "";
+}
+
+function getMenuCategoryGroups(items, language = "bg") {
+  const grouped = new Map();
+
+  (items || [])
+    .filter((item) => (getValue(item, "isActive") ?? true) === true)
+    .forEach((item) => {
+      const category = normalizeCategory(getValue(item, "category"));
+      if (!grouped.has(category)) {
+        grouped.set(category, {
+          id: category,
+          label: getCategoryLabel(category, language),
+          items: [],
+        });
+      }
+
+      grouped.get(category).items.push(item);
+    });
+
+  return Array.from(grouped.values()).sort((first, second) =>
+    first.label.localeCompare(second.label, language === "bg" ? "bg" : "en")
+  );
 }
 
 function canUseAdminTableSelection(area, tableIds, options = {}) {
@@ -1125,6 +1154,7 @@ function TableLayoutEditor({
 
 function ReservationOperationsMap({
   text,
+  language = "bg",
   layout,
   reservations,
   diningOrders,
@@ -1147,6 +1177,7 @@ function ReservationOperationsMap({
   const [moveDraft, setMoveDraft] = React.useState({ area: "indoor", tableIds: [], guestCount: 0 });
   const [showConsumption, setShowConsumption] = React.useState(false);
   const [consumptionSearch, setConsumptionSearch] = React.useState("");
+  const [consumptionCategory, setConsumptionCategory] = React.useState("all");
   const [shouldScrollMovePanel, setShouldScrollMovePanel] = React.useState(false);
   const movePanelRef = React.useRef(null);
   const consumptionPanelRef = React.useRef(null);
@@ -1216,8 +1247,6 @@ function ReservationOperationsMap({
     [getReservationTables]
   );
   const liveReservations = React.useMemo(() => {
-    if (ordersOnly) return [];
-
     const unique = new Map();
     areaTables.forEach((table) => {
       const reservation = liveByTable.get(table.id);
@@ -1230,7 +1259,7 @@ function ReservationOperationsMap({
 
       return firstMinutes - secondMinutes;
     });
-  }, [areaTables, liveByTable, now, ordersOnly]);
+  }, [areaTables, liveByTable, now]);
   const selectedReservation =
     liveReservations.find((reservation) => reservation.id === selectedReservationId) ||
     reservations.find((reservation) => reservation.id === selectedReservationId);
@@ -1289,6 +1318,23 @@ function ReservationOperationsMap({
     () => Array.from(activeOrdersByTable.values()).flat(),
     [activeOrdersByTable]
   );
+  const consumptionMenuGroups = React.useMemo(
+    () => getMenuCategoryGroups(menuItems, language),
+    [language, menuItems]
+  );
+  const filteredConsumptionMenuItems = React.useMemo(() => {
+    const search = consumptionSearch.trim().toLowerCase();
+
+    return menuItems
+      .filter((item) => (getValue(item, "isActive") ?? true) === true)
+      .filter((item) => consumptionCategory === "all" || normalizeCategory(getValue(item, "category")) === consumptionCategory)
+      .filter((item) => {
+        if (!search) return true;
+        const haystack = `${getMenuItemName(item, "bg")} ${getMenuItemName(item, "en")} ${getValue(item, "descriptionBg") || ""}`.toLowerCase();
+        return haystack.includes(search);
+      })
+      .slice(0, search ? 18 : 30);
+  }, [consumptionCategory, consumptionSearch, menuItems]);
   const moveUnavailableTableIds = React.useMemo(
     () => selectedReservation
       ? getUnavailableTableIdsForSlot(
@@ -1389,6 +1435,7 @@ function ReservationOperationsMap({
 
   function openConsumptionPanel() {
     setConsumptionSearch("");
+    setConsumptionCategory("all");
     setShowConsumption(true);
   }
 
@@ -1841,9 +1888,11 @@ function ReservationOperationsMap({
                     {text.call}
                   </a>
                 )}
-                <button type="button" onClick={() => onOpenReservation(selectedReservation)} className="ghost-button rounded-xl px-4 py-3 text-sm font-semibold">
-                  {text.openReservation}
-                </button>
+                {onOpenReservation && (
+                  <button type="button" onClick={() => onOpenReservation(selectedReservation)} className="ghost-button rounded-xl px-4 py-3 text-sm font-semibold">
+                    {text.openReservation}
+                  </button>
+                )}
               </div>
 
               {moveReservationId === selectedReservation.id && (
@@ -1992,24 +2041,47 @@ function ReservationOperationsMap({
                     <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#f2d39a]">
                       {text.addConsumption}
                     </div>
+                    <div className="-mx-1 mb-3 flex snap-x gap-2 overflow-x-auto px-1 pb-1">
+                      {[
+                        { id: "all", label: text.allDishes || "All", count: menuItems.filter((item) => (getValue(item, "isActive") ?? true) === true).length },
+                        ...consumptionMenuGroups.map((group) => ({ ...group, count: group.items.length })),
+                      ].map((category) => (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => {
+                            setConsumptionCategory(category.id);
+                            setConsumptionSearch("");
+                          }}
+                          className={`min-w-[8rem] snap-start rounded-2xl border px-3 py-2 text-left transition active:scale-[0.98] ${
+                            consumptionCategory === category.id
+                              ? "border-[#f2d39a]/60 bg-[#c9a56a]/24 text-[#fff4df]"
+                              : "border-white/10 bg-black/22 text-white/68 hover:border-[#c9a56a]/35"
+                          }`}
+                        >
+                          <span className="block truncate text-sm font-semibold">{category.label}</span>
+                          <span className="mt-1 block text-[11px] text-white/45">
+                            {category.count} {language === "bg" ? "позиции" : "items"}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                     <input
                       value={consumptionSearch}
                       onChange={(event) => setConsumptionSearch(event.target.value)}
                       placeholder={text.searchDish}
                       className="mb-2 w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/50"
                     />
-                    <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                      {menuItems
-                        .filter((item) => (item.isActive ?? item.IsActive ?? true) === true)
-                        .filter((item) => {
-                          if (!consumptionSearch.trim()) return false;
-                          const haystack = `${getValue(item, "nameBg") || ""} ${getValue(item, "nameEn") || ""}`.toLowerCase();
-                          return haystack.includes(consumptionSearch.trim().toLowerCase());
-                        })
-                        .slice(0, 12)
-                        .map((item) => {
-                          const name = getValue(item, "nameBg") || getValue(item, "nameEn") || "";
+                    <div className="max-h-[26rem] space-y-2 overflow-y-auto pr-1">
+                      {filteredConsumptionMenuItems.length === 0 ? (
+                        <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-4 text-sm text-white/55">
+                          {language === "bg" ? "Няма намерени ястия." : "No dishes found."}
+                        </div>
+                      ) : filteredConsumptionMenuItems.map((item) => {
+                          const name = getMenuItemName(item, language);
                           const price = Number(getValue(item, "price") || 0);
+                          const imageUrl = getValue(item, "imageUrl") || "";
+                          const weight = getValue(item, "weight") || "";
                           return (
                             <button
                               key={getValue(item, "id") || name}
@@ -2020,10 +2092,26 @@ function ReservationOperationsMap({
                                 unitPrice: price,
                                 quantity: 1,
                               })}
-                              className="flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-left transition hover:border-[#c9a56a]/40"
+                              className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-2 text-left transition hover:border-[#c9a56a]/40 active:scale-[0.99]"
                             >
-                              <span className="min-w-0 truncate text-sm text-white/80">{name}</span>
-                              <span className="shrink-0 text-xs font-semibold text-[#f2d39a]">{formatEuroAmount(price)}</span>
+                              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/25">
+                                {imageUrl ? (
+                                  <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center text-[9px] font-semibold uppercase tracking-[0.18em] text-[#f2d39a]/70">
+                                    Casa
+                                  </div>
+                                )}
+                              </div>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-semibold text-white/86">{name}</span>
+                                <span className="mt-1 block text-xs text-white/45">
+                                  {weight ? `${weight} · ` : ""}{formatEuroAmount(price)}
+                                </span>
+                              </span>
+                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f2d39a]/25 bg-[#c9a56a]/14 text-lg font-semibold text-[#f2d39a]">
+                                +
+                              </span>
                             </button>
                           );
                         })}
@@ -2348,7 +2436,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       if (isWaiterRole) {
         setLoading(true);
         setAdminError("");
-        await Promise.all([loadDiningOrders(), loadTableLayout(), loadMenuItems()]);
+        await Promise.all([loadReservations(), loadDiningOrders(), loadTableLayout(), loadMenuItems()]);
         if (!cancelled) {
           setLoading(false);
         }
@@ -2394,6 +2482,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
 
     if (activeTab === "liveMap") {
+      loadReservations({ silent: true });
       loadDiningOrders();
       loadMenuItems();
     }
@@ -4117,8 +4206,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             {activeTab === "liveMap" && (
               <ReservationOperationsMap
                 text={a.liveMap}
+                language={adminLanguage}
                 layout={tableLayout}
-                reservations={isWaiterRole ? [] : reservations}
+                reservations={reservations}
                 diningOrders={diningOrders}
                 menuItems={menuItems}
                 selectedArea={reservationMapArea}
@@ -4128,13 +4218,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 onUpdateConsumptionItem={updateConsumptionItem}
                 onMove={moveReservationFromMap}
                 onNoShow={markReservationNoShow}
-                onOpenReservation={openReservationFromMap}
+                onOpenReservation={isWaiterRole ? null : openReservationFromMap}
                 onOpenOrder={(orderId) => {
                   setExpandedOrderId(orderId);
                   setActiveTab("orders");
                 }}
                 onRelease={releaseReservationTable}
-                ordersOnly={isWaiterRole}
+                ordersOnly={false}
               />
             )}
 
