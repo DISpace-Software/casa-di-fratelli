@@ -16,7 +16,9 @@ import {
 } from "../domain/reservations/tableRules";
 import {
   getAvailableReservationTimesForDate,
+  getDateInputValueAfterDays,
   getTodayInputValue,
+  isDateBeyondReservationWindow,
   isPastTimeForDate,
   isWithinReservationBuffer,
 } from "../domain/reservations/dateTimeRules";
@@ -797,6 +799,8 @@ function normalizeLayoutTables(items, area, fallback) {
 
 export default function ReservationPage({ t, language, setLanguage, onBack, onOpenPrivacy, onReservationComplete, theme, onToggleTheme }) {
   const today = React.useMemo(() => getTodayInputValue(), []);
+  const maxReservationDate = React.useMemo(() => getDateInputValueAfterDays(10), []);
+  const adminPhone = "088 821 8318";
 
   const [reservationDate, setReservationDate] = React.useState("");
   const [guestCount, setGuestCount] = React.useState("");
@@ -869,6 +873,15 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   const availableReservationTimes = reservationDate
     ? getAvailableReservationTimesForDate(reservationTimes, reservationDate)
     : reservationTimes;
+  const todayReservationTimes = React.useMemo(
+    () => getAvailableReservationTimesForDate(reservationTimes, today),
+    [today]
+  );
+  const isTodayBookable = todayReservationTimes.length > 0;
+  const distantDateMessage =
+    language === "bg"
+      ? `Онлайн резервации се приемат до 10 дни напред. За по-далечна дата се обадете на ${adminPhone}.`
+      : `Online reservations are available up to 10 days ahead. For a later date, please call ${adminPhone}.`;
 
   const labels = {
     perimeter: language === "bg" ? "Периметър" : "Garden perimeter",
@@ -1075,6 +1088,12 @@ if (bookingMode === "single") {
     setIsSubmitting(true);
     setSubmitError("");
     setSubmitSuccess("");
+
+    if (isDateBeyondReservationWindow(reservationDate, 10)) {
+      setIsSubmitting(false);
+      setSubmitError(distantDateMessage);
+      return;
+    }
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/reservations`, {
@@ -1286,17 +1305,29 @@ if (bookingMode === "single") {
                   <input
                     type="date"
                     min={today}
+                    max={maxReservationDate}
                     value={reservationDate}
                     onChange={(e) => {
-                      setReservationDate(e.target.value);
+                      const nextDate = e.target.value;
+                      if (isDateBeyondReservationWindow(nextDate, 10)) {
+                        setSubmitError(distantDateMessage);
+                        setReservationDate("");
+                        setSelectedTime("");
+                        setSelectedTables([]);
+                        return;
+                      }
+
+                      setSubmitError("");
+                      setReservationDate(nextDate);
                       setSelectedTime("");
                       setSelectedTables([]);
                     }}
                     className="quiet-input w-full cursor-pointer rounded-2xl px-4 py-3 [color-scheme:dark]"
                   />
+                  <p className="mt-2 text-xs leading-5 text-white/45">{distantDateMessage}</p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     {[
-                      [today, language === "bg" ? "Днес" : "Today"],
+                      [today, language === "bg" ? "Днес" : "Today", !isTodayBookable],
                       [
                         (() => {
                           const tomorrow = new Date();
@@ -1304,12 +1335,16 @@ if (bookingMode === "single") {
                           return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`;
                         })(),
                         language === "bg" ? "Утре" : "Tomorrow",
+                        false,
                       ],
-                    ].map(([value, label]) => (
+                    ].map(([value, label, disabled]) => (
                       <button
                         key={value}
                         type="button"
+                        disabled={disabled}
                         onClick={() => {
+                          if (disabled) return;
+                          setSubmitError("");
                           setReservationDate(value);
                           setSelectedTime("");
                           setSelectedTables([]);
@@ -1317,6 +1352,8 @@ if (bookingMode === "single") {
                         className={`rounded-xl px-3 py-2 text-sm transition ${
                           reservationDate === value
                             ? "luxury-button"
+                            : disabled
+                            ? "cursor-not-allowed border border-white/8 bg-white/[0.02] text-white/30"
                             : "border border-white/10 bg-white/[0.04] text-white/70 hover:border-[#c9a56a]/40"
                         }`}
                       >

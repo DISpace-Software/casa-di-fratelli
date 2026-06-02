@@ -21,11 +21,14 @@ public class MaintenanceController : ControllerBase
     }
 
     [HttpPost("clear-reservations-and-orders")]
-    public async Task<IActionResult> ClearReservationsAndOrders()
+    public async Task<IActionResult> ClearReservationsAndOrders([FromBody] ClearReservationsAndOrdersRequest? request)
     {
         var admin = AdminAuthService.Current(HttpContext);
         if (!AdminRoleAccess.CanClearOperationalData(admin?.Role))
             return Forbid();
+
+        if (request?.ConfirmationCode != "2215")
+            return BadRequest(new { message = "Invalid confirmation code." });
 
         var before = new
         {
@@ -61,3 +64,5 @@ public class MaintenanceController : ControllerBase
         });
     }
 }
+
+public sealed record ClearReservationsAndOrdersRequest(string? ConfirmationCode);

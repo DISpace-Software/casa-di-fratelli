@@ -15,6 +15,7 @@ namespace CasaDiFratelli.Api.Controllers;
 public class ReservationsController : ControllerBase
 {
     private const int PublicDailyContactReservationLimit = 2;
+    private const int PublicMaxReservationDaysAhead = 10;
     private readonly AppDbContext _db;
     private readonly EmailService _emailService;
     private readonly IConfiguration _configuration;
@@ -234,6 +235,10 @@ public class ReservationsController : ControllerBase
 
         if (IsPastReservationTime(request.ReservedDate, request.ReservedTime))
             return BadRequest("Reservation date or time has already passed.");
+
+        var today = DateOnly.FromDateTime(GetRestaurantNow());
+        if (!request.CreatedByAdmin && request.ReservedDate > today.AddDays(PublicMaxReservationDaysAhead))
+            return BadRequest("Online reservations are available up to 10 days ahead. For a later date, please call 088 821 8318.");
 
         var guestName = request.GuestName.Trim();
         var phone = request.Phone.Trim();

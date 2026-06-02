@@ -458,7 +458,7 @@ export default function MenuPage({
           ))}
         </div>
 
-        {!isOrderLink && <div className="order-1 hidden md:block">
+        {!isOrderLink && <div className="order-1">
           <ChefHighlight data={data} />
         </div>}
       </div>

@@ -40,6 +40,17 @@ export function getTodayInputValue(now = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+export function getDateInputValueAfterDays(days, now = new Date()) {
+  const date = new Date(now);
+  date.setDate(date.getDate() + days);
+  return getTodayInputValue(date);
+}
+
+export function isDateBeyondReservationWindow(dateValue, maxDays = 10, now = new Date()) {
+  if (!dateValue) return false;
+  return dateValue > getDateInputValueAfterDays(maxDays, now);
+}
+
 export function isPastTimeForDate(dateValue, timeValue, now = new Date()) {
   if (!dateValue || !timeValue) return false;
 

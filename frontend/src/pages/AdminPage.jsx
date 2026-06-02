@@ -122,6 +122,7 @@ const adminText = {
       layout: "Карта",
       blacklist: "Blacklist",
       customers: "Клиенти",
+      reports: "Отчети",
     },
     reservations: {
       title: "Резервации",
@@ -272,6 +273,7 @@ const adminText = {
       layout: "Map",
       blacklist: "Blacklist",
       customers: "Customers",
+      reports: "Reports",
     },
     reservations: {
       title: "Reservations",
@@ -2360,13 +2362,31 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   }, [withAdminToken]);
 
   React.useEffect(() => {
-    if (!isWaiterRole) {
+    let cancelled = false;
+
+    async function loadInitialData() {
+      if (isWaiterRole) {
+        setLoading(true);
+        setAdminError("");
+        await Promise.all([loadDiningOrders(), loadTableLayout(), loadMenuItems()]);
+        if (!cancelled) {
+          setLoading(false);
+        }
+        return;
+      }
+
       loadReservations();
       loadBlacklist();
+      loadDiningOrders();
+      loadTableLayout();
     }
-    loadDiningOrders();
-    loadTableLayout();
-  }, [isWaiterRole, loadBlacklist, loadDiningOrders, loadReservations, loadTableLayout]);
+
+    loadInitialData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isWaiterRole, loadBlacklist, loadDiningOrders, loadMenuItems, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     setAdminError("");
@@ -2378,6 +2398,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     if (activeTab === "orders") {
       loadDiningOrders();
       loadMenuItems();
+    }
+
+    if ((activeTab === "customers" || activeTab === "reports") && !isWaiterRole) {
+      loadReservations({ silent: true });
+      loadDiningOrders();
     }
 
     if (activeTab === "blacklist" && !isWaiterRole) {
@@ -2397,14 +2422,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadAdminUsers();
       loadAuditLogs();
     }
-  }, [activeTab, canManageAdmins, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadMenuItems, loadTableLayout]);
+  }, [activeTab, canManageAdmins, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadMenuItems, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     const pages = isWaiterRole
       ? ["home", "liveMap", "orders"]
       : canManageAdmins
-      ? ["home", "liveMap", "reservations", "orders", "block", "menu", "layout", "customers", "admins"]
-      : ["home", "liveMap", "reservations", "orders", "block", "menu", "layout", "customers"];
+      ? ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "layout", "customers", "admins"]
+      : ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "layout", "customers"];
 
     const handleTouchStart = (event) => {
       if (event.touches.length !== 1 || isInteractiveSwipeTarget(event.target)) {
@@ -2565,8 +2590,21 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     if (!confirmed) return;
 
+    const confirmationCode = window.prompt(
+      adminLanguage === "bg"
+        ? "Въведете код за потвърждение."
+        : "Enter the confirmation code."
+    );
+
+    if (confirmationCode !== "2215") {
+      setAdminError(adminLanguage === "bg" ? "Грешен код за потвърждение." : "Wrong confirmation code.");
+      return;
+    }
+
     const response = await adminFetch(`${API_BASE_URL}/api/maintenance/clear-reservations-and-orders`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirmationCode }),
     });
 
     if (!response.ok) {
@@ -3350,35 +3388,75 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   }
 
   function isInStatsPeriod(dateValue) {
-  if (!dateValue) return false;
+    if (!dateValue) return false;
 
-  const reservationDate = new Date(dateValue);
-  const now = new Date();
+    const reservationDate = new Date(dateValue);
+    const now = new Date();
 
-  const start = new Date(now);
+    const start = new Date(now);
 
-  if (statsPeriod === "today") {
-    start.setHours(0, 0, 0, 0);
+    if (statsPeriod === "today") {
+      start.setHours(0, 0, 0, 0);
+    }
+
+    if (statsPeriod === "week") {
+      start.setDate(now.getDate() - 7);
+    }
+
+    if (statsPeriod === "month") {
+      start.setMonth(now.getMonth() - 1);
+    }
+
+    if (statsPeriod === "year") {
+      start.setFullYear(now.getFullYear() - 1);
+    }
+
+    return reservationDate >= start;
   }
 
-  if (statsPeriod === "week") {
-    start.setDate(now.getDate() - 7);
+  function isActiveCustomerReservation(reservation) {
+    return reservation.status !== "Cancelled" && !reservation.isNoShow;
   }
 
-  if (statsPeriod === "month") {
-    start.setMonth(now.getMonth() - 1);
+  function isOrderInStatsPeriod(order) {
+    const createdAt = order.createdAtUtc ? new Date(order.createdAtUtc) : null;
+    if (!createdAt || Number.isNaN(createdAt.getTime())) return false;
+    return isInStatsPeriod(createdAt.toISOString().slice(0, 10));
   }
 
-  if (statsPeriod === "year") {
-    start.setFullYear(now.getFullYear() - 1);
-  }
+  const statsReservations = reservations.filter((r) =>
+    isInStatsPeriod(r.reservedDate)
+  );
 
-  return reservationDate >= start;
-}
-
-const statsReservations = reservations.filter((r) =>
-  isInStatsPeriod(r.reservedDate)
-);
+  const reportsReservations = statsReservations.filter(isActiveCustomerReservation);
+  const reportsOrders = diningOrders.filter((order) => order.status !== "Cancelled" && isOrderInStatsPeriod(order));
+  const reportMetrics = [
+    {
+      label: adminLanguage === "bg" ? "Резервации" : "Reservations",
+      value: reportsReservations.length,
+      detail: adminLanguage === "bg" ? "активни за периода" : "active for the period",
+    },
+    {
+      label: adminLanguage === "bg" ? "През системата" : "Via system",
+      value: reportsReservations.filter((reservation) => !reservation.createdByAdmin).length,
+      detail: adminLanguage === "bg" ? "направени от гости" : "made by guests",
+    },
+    {
+      label: adminLanguage === "bg" ? "Създадени от админ" : "Created by admin",
+      value: reportsReservations.filter((reservation) => reservation.createdByAdmin).length,
+      detail: adminLanguage === "bg" ? "ръчно въведени" : "entered manually",
+    },
+    {
+      label: adminLanguage === "bg" ? "Онлайн поръчки" : "Online orders",
+      value: reportsOrders.length,
+      detail: formatEuroAmount(reportsOrders.reduce((total, order) => total + order.totalPrice, 0)),
+    },
+    {
+      label: adminLanguage === "bg" ? "Гости общо" : "Total guests",
+      value: reportsReservations.reduce((total, reservation) => total + Number(reservation.guestCount || 0), 0),
+      detail: adminLanguage === "bg" ? "по резервации" : "by reservations",
+    },
+  ];
 
   const filteredReservations = reservations.filter((r) => {
     const matchesStatus = statusFilter === "All" || r.status === statusFilter;
@@ -3387,8 +3465,8 @@ const statsReservations = reservations.filter((r) =>
     return matchesStatus && haystack.includes(search.toLowerCase());
   });
 
-const pendingCount = statsReservations.filter((r) => r.status === "Pending").length;
-const approvedCount = statsReservations.filter((r) => r.status === "Approved").length;
+  const pendingCount = statsReservations.filter((r) => r.status === "Pending").length;
+  const approvedCount = statsReservations.filter((r) => r.status === "Approved").length;
   const blacklistCount = blacklist.length;
   const blacklistKeys = new Set(
     blacklist.flatMap((entry) => [
@@ -3400,6 +3478,10 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
   const customers = Object.values(
     reservations.reduce((acc, r) => {
       if (r.createdByAdmin && (r.phone === "admin" || r.guestName === "Admin block")) {
+        return acc;
+      }
+
+      if (!isActiveCustomerReservation(r)) {
         return acc;
       }
 
@@ -3444,6 +3526,21 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
       return acc;
     }, {})
   ).sort((a, b) => b.count - a.count);
+
+  const ordersByReservationId = React.useMemo(() => {
+    const grouped = new Map();
+
+    diningOrders.forEach((order) => {
+      if (!order.reservationId || order.status === "Cancelled") return;
+      const key = Number(order.reservationId);
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+      grouped.get(key).push(order);
+    });
+
+    return grouped;
+  }, [diningOrders]);
 
   function isInCustomerPeriod(dateValue) {
     if (customerPeriod === "all") return true;
@@ -3645,6 +3742,7 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
           ["liveMap", a.tabs.liveMap],
           ["reservations", a.tabs.reservations],
           ["orders", a.tabs.orders],
+          ["reports", a.tabs.reports],
           ["block", a.tabs.block],
           ["menu", a.tabs.menu],
           ["layout", a.tabs.layout],
@@ -3676,6 +3774,11 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
       return;
     }
 
+    if (activeTab === "reports" && !isWaiterRole) {
+      await Promise.all([loadReservations({ silent }), loadDiningOrders()]);
+      return;
+    }
+
     if (activeTab === "menu" && !isWaiterRole) {
       await loadMenuItems();
       return;
@@ -3698,7 +3801,7 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
 
     if (activeTab === "liveMap") {
       await Promise.all([
-        ...(isWaiterRole ? [] : [loadReservations({ silent }), loadMenuItems()]),
+        ...(isWaiterRole ? [loadMenuItems()] : [loadReservations({ silent }), loadMenuItems()]),
         loadDiningOrders(),
         loadTableLayout(),
       ]);
@@ -3879,28 +3982,6 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                 </button>
               ))}
             </div>
-
-            {canClearOperationalData && (
-            <div className="mb-8 flex flex-col gap-3 rounded-[22px] border border-amber-300/20 bg-amber-400/10 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#f2d39a]">
-                  {adminLanguage === "bg" ? "Тестова среда" : "Testing"}
-                </div>
-                <p className="mt-1 text-sm text-white/60">
-                  {adminLanguage === "bg"
-                    ? "Изчиства само резервации и поръчки. Менюто, масите и админите остават."
-                    : "Clears only reservations and orders. Menu, tables, and admins stay intact."}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={clearReservationsAndOrders}
-                className="rounded-2xl border border-red-300/25 bg-red-500/15 px-5 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-500/25"
-              >
-                {adminLanguage === "bg" ? "Изчисти резервации и поръчки" : "Clear reservations and orders"}
-              </button>
-            </div>
-            )}
 
             <div className={`mb-8 grid gap-5 ${isWaiterRole ? "" : "xl:grid-cols-2"}`}>
               {!isWaiterRole && (
@@ -5646,6 +5727,94 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
               </Panel>
             )}
 
+            {activeTab === "reports" && (
+              <Panel
+                title={adminLanguage === "bg" ? "Отчети" : "Reports"}
+                subtitle={
+                  adminLanguage === "bg"
+                    ? "Бърз оперативен отчет за резервации, онлайн поръчки и гости."
+                    : "Quick operating report for reservations, online orders, and guests."
+                }
+                right={
+                  <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
+                    {[
+                      ["today", adminLanguage === "bg" ? "Днес" : "Today"],
+                      ["week", adminLanguage === "bg" ? "Седмица" : "Week"],
+                      ["month", adminLanguage === "bg" ? "Месец" : "Month"],
+                    ].map(([key, label]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setStatsPeriod(key)}
+                        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                          statsPeriod === key ? "luxury-button" : "text-white/70 hover:text-white"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                }
+              >
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                  {reportMetrics.map((metric) => (
+                    <div key={metric.label} className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                      <div className="text-xs uppercase tracking-[0.22em] text-[#f2d39a]/70">{metric.label}</div>
+                      <div className="mt-3 text-4xl font-semibold text-[#fff4df]">{metric.value}</div>
+                      <div className="mt-2 text-sm text-white/45">{metric.detail}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 grid gap-4 xl:grid-cols-2">
+                  <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
+                    <div className="section-kicker">
+                      {adminLanguage === "bg" ? "Резервации по източник" : "Reservations by source"}
+                    </div>
+                    <div className="mt-4 space-y-3 text-sm text-white/70">
+                      <div className="flex justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                        <span>{adminLanguage === "bg" ? "През сайта" : "Website"}</span>
+                        <strong className="text-[#fff4df]">{reportsReservations.filter((reservation) => !reservation.createdByAdmin).length}</strong>
+                      </div>
+                      <div className="flex justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                        <span>{adminLanguage === "bg" ? "От админ" : "Admin created"}</span>
+                        <strong className="text-[#fff4df]">{reportsReservations.filter((reservation) => reservation.createdByAdmin).length}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
+                    <div className="section-kicker">
+                      {adminLanguage === "bg" ? "Последни онлайн поръчки" : "Recent online orders"}
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      {reportsOrders.slice(0, 6).map((order) => (
+                        <button
+                          key={order.id}
+                          type="button"
+                          onClick={() => {
+                            setExpandedOrderId(order.id);
+                            setActiveTab("orders");
+                          }}
+                          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm transition hover:border-[#c9a56a]/35"
+                        >
+                          <span className="min-w-0 truncate text-[#fff4df]">
+                            #{order.id} · {order.guestName} · {order.tableLabel}
+                          </span>
+                          <span className="shrink-0 text-[#f2d39a]">{formatEuroAmount(order.totalPrice)}</span>
+                        </button>
+                      ))}
+                      {reportsOrders.length === 0 && (
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/45">
+                          {adminLanguage === "bg" ? "Няма поръчки за периода." : "No orders for the period."}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Panel>
+            )}
+
             {activeTab === "customers" && (
               <Panel
                 title={adminLanguage === "bg" ? "Клиенти" : "Customers"}
@@ -5936,12 +6105,31 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
                                   {adminLanguage === "bg" ? "Последни резервации" : "Recent reservations"}
                                 </div>
                                 <div className="mt-3 space-y-2">
-                                  {c.reservations.slice(0, 6).map((reservation) => (
-                                    <div key={reservation.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm">
-                                      <span className="text-[#fff4df]">{reservation.reservedDate} · {reservation.reservedTime}</span>
-                                      <span className="text-stone-400">{reservation.tableIds.join(", ")}</span>
-                                    </div>
-                                  ))}
+                                  {c.reservations.slice(0, 6).map((reservation) => {
+                                    const reservationOrders = ordersByReservationId.get(Number(reservation.id)) || [];
+                                    const firstOrder = reservationOrders[0];
+
+                                    return (
+                                      <div key={reservation.id} className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                          <span className="text-[#fff4df]">{reservation.reservedDate} · {reservation.reservedTime}</span>
+                                          <span className="ml-2 text-stone-400">{reservation.tableIds.join(", ")}</span>
+                                        </div>
+                                        {firstOrder && (
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setExpandedOrderId(firstOrder.id);
+                                              setActiveTab("orders");
+                                            }}
+                                            className="rounded-full border border-[#c9a56a]/25 bg-[#c9a56a]/12 px-3 py-1 text-xs font-semibold text-[#f2d39a] transition hover:bg-[#c9a56a]/20"
+                                          >
+                                            {adminLanguage === "bg" ? "Виж поръчката" : "View order"} · {formatEuroAmount(firstOrder.totalPrice)}
+                                          </button>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </div>
                             </div>
@@ -5970,6 +6158,26 @@ const approvedCount = statsReservations.filter((r) => r.status === "Approved").l
               >
                 <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
                   <div className="space-y-4">
+                    {canClearOperationalData && (
+                      <div className="rounded-3xl border border-red-300/20 bg-red-500/10 p-5">
+                        <div className="section-kicker text-red-100/80">
+                          {adminLanguage === "bg" ? "Developer действие" : "Developer action"}
+                        </div>
+                        <p className="mt-3 text-sm leading-6 text-red-50/75">
+                          {adminLanguage === "bg"
+                            ? "Изчиства само резервации и поръчки. Менюто, масите, клиентските настройки и админите остават."
+                            : "Clears only reservations and orders. Menu, tables, customer settings, and admins stay intact."}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={clearReservationsAndOrders}
+                          className="mt-4 w-full rounded-2xl border border-red-300/30 bg-red-500/20 px-5 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-500/30"
+                        >
+                          {adminLanguage === "bg" ? "Изчисти резервации и поръчки" : "Clear reservations and orders"}
+                        </button>
+                      </div>
+                    )}
+
                     <form onSubmit={createAdminUser} className="rounded-3xl border border-white/10 bg-black/20 p-5">
                       <div className="section-kicker">{adminLanguage === "bg" ? "Нов админ" : "New admin"}</div>
                       <div className="mt-4 grid gap-3">
