@@ -1,6 +1,7 @@
 using CasaDiFratelli.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using CasaDiFratelli.Api.Services;
+using Npgsql;
 using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,8 +15,9 @@ builder.Services.AddScoped<ReservationConflictService>();
 builder.Services.AddScoped<AdminAuthService>();
 builder.Services.AddScoped<AuditService>();
 
+var databaseConnectionString = ResolveDatabaseConnectionString(builder.Configuration);
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(databaseConnectionString));
 
 builder.Services.AddCors(options =>
 {
@@ -80,3 +82,46 @@ using (var scope = app.Services.CreateScope())
 app.MapControllers();
 
 app.Run();
+
+static string ResolveDatabaseConnectionString(IConfiguration configuration)
+{
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        return connectionString;
+    }
+
+    var databaseUrl =
+        configuration["DATABASE_URL"] ??
+        configuration["POSTGRES_URL"] ??
+        configuration["POSTGRESQL_URL"];
+
+    if (string.IsNullOrWhiteSpace(databaseUrl))
+    {
+        throw new InvalidOperationException(
+            "Database connection is not configured. Set ConnectionStrings__DefaultConnection or DATABASE_URL.");
+    }
+
+    return ConvertPostgresUrl(databaseUrl);
+}
+
+static string ConvertPostgresUrl(string databaseUrl)
+{
+    if (!Uri.TryCreate(databaseUrl, UriKind.Absolute, out var uri))
+    {
+        return databaseUrl;
+    }
+
+    var credentials = uri.UserInfo.Split(':', 2);
+
+    return new NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.IsDefaultPort ? 5432 : uri.Port,
+        Database = uri.AbsolutePath.TrimStart('/'),
+        Username = credentials.Length > 0 ? Uri.UnescapeDataString(credentials[0]) : string.Empty,
+        Password = credentials.Length > 1 ? Uri.UnescapeDataString(credentials[1]) : string.Empty,
+        SslMode = SslMode.Require,
+        TrustServerCertificate = true
+    }.ConnectionString;
+}
