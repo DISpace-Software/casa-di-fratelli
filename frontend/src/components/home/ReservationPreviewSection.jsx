@@ -2,7 +2,7 @@ export default function ReservationPreviewSection({ t, onOpenReservation }) {
   return (
     <section id="reservation" className="mx-auto max-w-7xl px-6 py-24">
       <div className="grid gap-6 md:grid-cols-[0.85fr_1.15fr]">
-        <div className="luxury-panel reveal-up rounded-[28px] p-8 md:p-10">
+        <div className="reservation-preview-panel luxury-panel reveal-up rounded-[28px] p-8 md:p-10">
           <p className="section-kicker">
             {t.reservationTag}
           </p>

@@ -643,7 +643,7 @@ function BookingModal({
               />
             </div>
 
-            <div className="sm:col-span-2 rounded-[1.5rem] border border-amber-400/25 bg-amber-500/10 p-5">
+            <div className="birthday-panel sm:col-span-2 rounded-[1.5rem] border border-amber-400/25 bg-amber-500/10 p-5">
               <label className="mb-2 block text-sm text-amber-100">
                 {language === "bg" ? "Рожден ден (опционално)" : "Birthday (optional)"}
               </label>
@@ -697,7 +697,7 @@ function BookingModal({
               />
             </div>
 
-            <div className="sm:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="reservation-consent-card marketing-consent-card sm:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4">
               <label className="flex items-start gap-3 text-sm text-stone-300">
                 <input name="marketingConsent" type="checkbox" className="mt-1" />
                 <span>
@@ -708,7 +708,7 @@ function BookingModal({
               </label>
             </div>
 
-            <div className="sm:col-span-2 rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-4">
+            <div className="reservation-consent-card privacy-consent-card sm:col-span-2 rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-4">
               <label className="flex items-start gap-3 text-sm leading-6 text-stone-200">
                 <input name="privacyConsent" type="checkbox" required className="mt-1" />
                 <span>
@@ -1436,7 +1436,7 @@ if (bookingMode === "single") {
                 }}
                 className={`mt-6 hidden w-full rounded-2xl lg:block py-3 font-medium transition-transform ${
                   !canOpenForm
-                    ? "cursor-not-allowed bg-white/10 text-white/40"
+                    ? "reservation-disabled-submit cursor-not-allowed bg-white/10 text-white/40"
                     : "luxury-button"
                 }`}
               >

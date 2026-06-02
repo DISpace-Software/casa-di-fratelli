@@ -47,7 +47,7 @@ export default function ReviewsSection({ language }) {
   }, []);
 
   return (
-    <section id="reviews" className="mx-auto max-w-7xl px-6 py-20">
+    <section id="reviews" className="reviews-section mx-auto max-w-7xl px-6 py-20">
       <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm uppercase tracking-[0.35em] text-amber-300">
@@ -64,7 +64,7 @@ export default function ReviewsSection({ language }) {
           href={googleReviewLink}
           target="_blank"
           rel="noreferrer"
-          className="rounded-2xl border border-[#c9a56a]/30 bg-[#c9a56a]/10 px-5 py-3 text-sm font-medium text-[#f2d3a0] transition hover:bg-[#c9a56a]/20"
+          className="review-link rounded-2xl border border-[#c9a56a]/30 bg-[#c9a56a]/10 px-5 py-3 text-sm font-medium text-[#f2d3a0] transition hover:bg-[#c9a56a]/20"
         >
           {language === "bg"
             ? "Остави отзив в Google"
@@ -89,7 +89,7 @@ export default function ReviewsSection({ language }) {
           {reviews.map((review) => (
             <div
               key={review.reviewId}
-              className="rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-xl"
+              className="review-card rounded-[2rem] border border-white/10 bg-white/5 p-6 shadow-xl"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>

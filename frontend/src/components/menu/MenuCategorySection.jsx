@@ -91,7 +91,7 @@ export default function MenuCategorySection({ category, language, orderEnabled =
                   <div className="inline-flex rounded-full border border-white/10 bg-white/[0.045] px-3 py-1.5 text-sm text-white/55">
                     {item.weight}
                   </div>
-                  <div className="inline-flex rounded-full border border-[#c9a56a]/20 bg-[#c9a56a]/10 px-3 py-1.5 text-sm text-[#f2d3a0]">
+                  <div className="prepared-badge inline-flex rounded-full border border-[#c9a56a]/20 bg-[#c9a56a]/10 px-3 py-1.5 text-sm text-[#f2d3a0]">
                     {language === "bg" ? "Приготвя се на момента" : "Prepared to order"}
                   </div>
                 </div>
