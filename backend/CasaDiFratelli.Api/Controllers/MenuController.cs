@@ -12,7 +12,7 @@ namespace CasaDiFratelli.Api.Controllers;
 [Route("api/[controller]")]
 public class MenuController : ControllerBase
 {
-    private const int MaxInlineImageLength = 900_000;
+    private const int MaxInlineImageLength = 650_000;
     private readonly AppDbContext _db;
     private readonly EmailService _emailService;
     private readonly ILogger<MenuController> _logger;
@@ -230,6 +230,7 @@ public class MenuController : ControllerBase
         try
         {
             await AdminSchemaBootstrapper.EnsureAsync(_db);
+            await EnsureMenuStorageAsync();
 
             if (string.IsNullOrWhiteSpace(item.NameBg))
                 return BadRequest(new { message = "Dish name is required." });
@@ -243,7 +244,7 @@ public class MenuController : ControllerBase
             item.DescriptionEn = item.DescriptionEn?.Trim() ?? string.Empty;
             item.ImageUrl = NormalizeImageUrl(item.ImageUrl);
             if (IsImageUrlTooLarge(item.ImageUrl))
-                return BadRequest(new { message = "Dish photo is too large. Please upload a smaller image." });
+                return StatusCode(StatusCodes.Status413PayloadTooLarge, new { message = "Dish photo is too large. Please upload a smaller image." });
             item.Weight = item.Weight?.Trim() ?? string.Empty;
             item.Category = string.IsNullOrWhiteSpace(item.Category) ? "main" : item.Category.Trim();
             item.CreatedAtUtc = DateTime.UtcNow;
@@ -340,7 +341,7 @@ public class MenuController : ControllerBase
 
             var imageUrl = NormalizeImageUrl(updated.ImageUrl);
             if (IsImageUrlTooLarge(imageUrl))
-                return BadRequest(new { message = "Dish photo is too large. Please upload a smaller image." });
+                return StatusCode(StatusCodes.Status413PayloadTooLarge, new { message = "Dish photo is too large. Please upload a smaller image." });
 
             updated.NameBg = updated.NameBg?.Trim() ?? string.Empty;
             updated.NameEn = string.IsNullOrWhiteSpace(updated.NameEn) ? updated.NameBg : updated.NameEn.Trim();

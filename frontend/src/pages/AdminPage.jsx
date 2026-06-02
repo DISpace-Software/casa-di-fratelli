@@ -60,12 +60,12 @@ async function compressMenuImage(file) {
 
   const source = await readFileAsDataUrl(file);
   const image = await loadImage(source);
-  const maxDataUrlLength = 650_000;
+  const maxDataUrlLength = 420_000;
   const attempts = [
-    [1100, 0.74],
-    [920, 0.68],
+    [900, 0.68],
     [760, 0.62],
-    [640, 0.56],
+    [620, 0.56],
+    [520, 0.5],
   ];
 
   let bestResult = "";
@@ -88,7 +88,7 @@ async function compressMenuImage(file) {
     }
   }
 
-  if (bestResult.length <= 900_000) {
+  if (bestResult.length <= maxDataUrlLength) {
     return bestResult;
   }
 

@@ -24,11 +24,17 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .WithOrigins(
-                "https://casa-di-fratelli.vercel.app",
-                "https://casadifratelli.bg",
-                "https://www.casadifratelli.bg"
-            )
+            .SetIsOriginAllowed(origin =>
+            {
+                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                {
+                    return false;
+                }
+
+                return uri.Host.Equals("casa-di-fratelli.vercel.app", StringComparison.OrdinalIgnoreCase) ||
+                    uri.Host.Equals("casadifratelli.bg", StringComparison.OrdinalIgnoreCase) ||
+                    uri.Host.Equals("www.casadifratelli.bg", StringComparison.OrdinalIgnoreCase);
+            })
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -80,6 +86,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapControllers();
+app.MapMethods("{*path}", new[] { "OPTIONS" }, () => Results.Ok()).RequireCors("AllowFrontend");
 
 app.Run();
 
