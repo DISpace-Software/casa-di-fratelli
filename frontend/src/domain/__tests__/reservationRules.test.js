@@ -120,10 +120,10 @@ test("admin table selection accepts only configured combinations per area", () =
   assert.equal(canUseAdminTableSelection("openTerrace", ["46", "49"]), false);
 });
 
-test("availability excludes approved and pending reservations within the 3 hour buffer", () => {
+test("availability excludes only confirmed reservations within the 3 hour buffer", () => {
   const reservations = [
     { id: 1, status: "Approved", reservedDate: "2026-05-14", reservedTime: "19:00", tableIds: ["20", "21"] },
-    { id: 2, status: "Pending", reservedDate: "2026-05-14", reservedTime: "19:00", tableIds: ["22"] },
+    { id: 2, status: "AwaitingEmailConfirmation", reservedDate: "2026-05-14", reservedTime: "19:00", tableIds: ["22"] },
     { id: 3, status: "Cancelled", reservedDate: "2026-05-14", reservedTime: "19:30", tableIds: ["23"] },
     { id: 4, status: "Approved", reservedDate: "2026-05-15", reservedTime: "19:00", tableIds: ["24"] },
     { id: 5, status: "Approved", reservedDate: "2026-05-14", reservedTime: "22:29", tableIds: ["25"] },
@@ -135,8 +135,8 @@ test("availability excludes approved and pending reservations within the 3 hour 
 
   const unavailable = getUnavailableTableIdsForSlot(reservations, "2026-05-14", "19:30");
 
-  assert.deepEqual([...unavailable].sort(), ["20", "21", "22", "25"]);
-  assert.deepEqual(getUnavailableSelectedTableIds(["20", "20", "22", "25"], unavailable), ["20", "22", "25"]);
+  assert.deepEqual([...unavailable].sort(), ["20", "21", "25"]);
+  assert.deepEqual(getUnavailableSelectedTableIds(["20", "20", "22", "25"], unavailable), ["20", "25"]);
   assert.equal(getUnavailableTableIdsForSlot(reservations, "2026-05-14", "19:30", 1).has("20"), false);
   assert.equal(getUnavailableTableIdsForSlot(reservations, "", "19:30").size, 0);
   assert.equal(getUnavailableTableIdsForSlot(reservations, "2026-05-14", "").size, 0);

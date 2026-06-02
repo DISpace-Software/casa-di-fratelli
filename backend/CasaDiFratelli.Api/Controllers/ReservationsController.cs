@@ -16,6 +16,11 @@ public class ReservationsController : ControllerBase
 {
     private const int PublicDailyContactReservationLimit = 2;
     private const int PublicMaxReservationDaysAhead = 10;
+    private const string ReservationStatusAwaitingEmailConfirmation = "AwaitingEmailConfirmation";
+    private const string ReservationStatusPending = "Pending";
+    private const string ReservationStatusApproved = "Approved";
+    private const string ReservationStatusCancelled = "Cancelled";
+    private const string ReservationStatusReleased = "Released";
     private readonly AppDbContext _db;
     private readonly EmailService _emailService;
     private readonly IConfiguration _configuration;
@@ -93,8 +98,10 @@ public class ReservationsController : ControllerBase
 
     private static bool IsActiveReservationForDailyLimit(Reservation reservation)
     {
-        return reservation.Status != "Cancelled" &&
-            reservation.Status != "Released" &&
+        return reservation.Status != ReservationStatusAwaitingEmailConfirmation &&
+            !(reservation.Status == ReservationStatusPending && reservation.EmailConfirmedAtUtc == null) &&
+            reservation.Status != ReservationStatusCancelled &&
+            reservation.Status != ReservationStatusReleased &&
             !reservation.IsNoShow;
     }
 
@@ -201,12 +208,102 @@ public class ReservationsController : ControllerBase
         );
     }
 
+    private async Task UpsertCustomerProfileForConfirmedReservationAsync(Reservation reservation)
+    {
+        var email = reservation.Email ?? string.Empty;
+        var phone = reservation.Phone ?? string.Empty;
+
+        var customer = await _db.CustomerProfiles.FirstOrDefaultAsync(x =>
+            (!string.IsNullOrWhiteSpace(email) && x.Email == email)
+            ||
+            (!string.IsNullOrWhiteSpace(phone) && x.Phone == phone)
+        );
+
+        if (customer == null)
+        {
+            customer = new CustomerProfile
+            {
+                GuestName = reservation.GuestName,
+                Email = email,
+                Phone = phone,
+                BirthDate = reservation.BirthDate,
+                MarketingConsent = reservation.MarketingConsent,
+                ReservationCount = 1,
+                FirstReservationAtUtc = DateTime.UtcNow,
+                LastReservationAtUtc = DateTime.UtcNow
+            };
+
+            _db.CustomerProfiles.Add(customer);
+            return;
+        }
+
+        customer.GuestName = string.IsNullOrWhiteSpace(customer.GuestName)
+            ? reservation.GuestName
+            : customer.GuestName;
+        customer.Email = string.IsNullOrWhiteSpace(customer.Email) ? email : customer.Email;
+        customer.Phone = string.IsNullOrWhiteSpace(customer.Phone) ? phone : customer.Phone;
+        customer.BirthDate ??= reservation.BirthDate;
+        customer.MarketingConsent = customer.MarketingConsent || reservation.MarketingConsent;
+        customer.ReservationCount += 1;
+        customer.LastReservationAtUtc = DateTime.UtcNow;
+
+        if (customer.ReservationCount >= 5)
+        {
+            customer.IsRegularCustomer = true;
+            reservation.IsRegularCustomer = true;
+        }
+    }
+
+    private async Task MarkReservationBlacklistFlagAsync(Reservation reservation)
+    {
+        reservation.IsBlacklisted = await _db.BlacklistEntries.AnyAsync(x =>
+            (!string.IsNullOrWhiteSpace(x.Email) && x.Email == reservation.Email)
+            ||
+            (!string.IsNullOrWhiteSpace(x.Phone) && x.Phone == reservation.Phone)
+        );
+    }
+
+    private async Task SendAdminReservationEmailAsync(Reservation reservation)
+    {
+        var adminEmail = _configuration["ADMIN_EMAIL"];
+        if (string.IsNullOrWhiteSpace(adminEmail))
+            return;
+
+        var adminUrl = $"{GetFrontendUrl()}/admin";
+
+        await _emailService.SendAsync(
+            adminEmail,
+            $"Нова потвърдена резервация: {reservation.GuestName} · {reservation.ReservedDate} {reservation.ReservedTime}",
+            $"""
+            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+              <h2>Нова потвърдена резервация в Casa di Fratelli</h2>
+              <p><strong>Гост:</strong> {reservation.GuestName}</p>
+              <p><strong>Телефон:</strong> {reservation.Phone}</p>
+              <p><strong>Email:</strong> {reservation.Email}</p>
+              <p><strong>Дата:</strong> {reservation.ReservedDate}</p>
+              <p><strong>Час:</strong> {reservation.ReservedTime}</p>
+              <p><strong>Маси:</strong> {string.Join(", ", reservation.Tables.Select(t => t.TableCode))}</p>
+              <p><strong>Гости:</strong> {reservation.GuestCount}</p>
+              <p><strong>Специални изисквания:</strong> {reservation.Notes}</p>
+              <p>
+                <a href="{adminUrl}" style="display:inline-block;background:#c9a56a;color:#111827;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:700">
+                  Отвори админ панела
+                </a>
+              </p>
+            </div>
+            """
+        );
+    }
+
     [HttpGet]
     [AdminAuthorize]
     public async Task<IActionResult> GetAll()
     {
         var reservations = await _db.Reservations
             .Include(x => x.Tables)
+            .Where(x =>
+                x.Status != ReservationStatusAwaitingEmailConfirmation &&
+                !(x.Status == ReservationStatusPending && x.EmailConfirmedAtUtc == null))
             .OrderByDescending(x => x.CreatedAtUtc)
             .Select(x => new
             {
@@ -242,7 +339,7 @@ public class ReservationsController : ControllerBase
     {
         var blocked = await _db.Reservations
             .Include(x => x.Tables)
-            .Where(x => x.Status == "Approved" || x.Status == "Pending")
+            .Where(x => x.Status == ReservationStatusApproved)
             .Select(x => new
             {
                 x.ReservedDate,
@@ -308,6 +405,7 @@ public class ReservationsController : ControllerBase
                     Email = x.Email,
                     Phone = x.Phone,
                     Status = x.Status,
+                    EmailConfirmedAtUtc = x.EmailConfirmedAtUtc,
                     IsNoShow = x.IsNoShow
                 })
                 .ToListAsync();
@@ -336,7 +434,10 @@ public class ReservationsController : ControllerBase
         var hasConfirmedReservationWithEmail = !string.IsNullOrWhiteSpace(normalizedEmail) &&
             await _db.Reservations.AnyAsync(x =>
                 (x.Email ?? string.Empty).ToLower() == normalizedEmail &&
-                (x.Status == "Approved" || x.Status == "Released" || x.IsArrived || x.EmailConfirmedAtUtc != null));
+                (x.Status == ReservationStatusApproved ||
+                    x.Status == ReservationStatusReleased ||
+                    x.IsArrived ||
+                    x.EmailConfirmedAtUtc != null));
         var requiresEmailConfirmation = !request.CreatedByAdmin && !hasConfirmedReservationWithEmail;
         var confirmationToken = requiresEmailConfirmation ? CreateEmailConfirmationToken() : null;
 
@@ -353,7 +454,7 @@ public class ReservationsController : ControllerBase
             MarketingConsent = request.MarketingConsent,
             PrivacyConsent = request.CreatedByAdmin || request.PrivacyConsent,
             Notes = request.Notes,
-            Status = requiresEmailConfirmation ? "Pending" : "Approved",
+            Status = requiresEmailConfirmation ? ReservationStatusAwaitingEmailConfirmation : ReservationStatusApproved,
             CreatedAtUtc = DateTime.UtcNow,
             CreatedByAdmin = request.CreatedByAdmin,
             InternalNote = request.InternalNote,
@@ -369,83 +470,17 @@ public class ReservationsController : ControllerBase
         _db.Reservations.Add(reservation);
         await _db.SaveChangesAsync();
 
-        var customer = await _db.CustomerProfiles.FirstOrDefaultAsync(x =>
-    (!string.IsNullOrWhiteSpace(email) && x.Email == email)
-    ||
-    (!string.IsNullOrWhiteSpace(phone) && x.Phone == phone)
-);
-
-if (customer == null)
-{
-    customer = new CustomerProfile
-    {
-        GuestName = guestName,
-        Email = email,
-        Phone = phone,
-        BirthDate = request.BirthDate,
-        MarketingConsent = request.MarketingConsent,
-        ReservationCount = 1,
-        FirstReservationAtUtc = DateTime.UtcNow,
-        LastReservationAtUtc = DateTime.UtcNow
-    };
-
-    _db.CustomerProfiles.Add(customer);
-}
-else
-{
-    customer.ReservationCount += 1;
-    customer.LastReservationAtUtc = DateTime.UtcNow;
-
-    if (customer.ReservationCount >= 5)
-    {
-        customer.IsRegularCustomer = true;
-        reservation.IsRegularCustomer = true;
-    }
-}
-
-var isBlacklisted = await _db.BlacklistEntries.AnyAsync(x =>
-    (!string.IsNullOrWhiteSpace(x.Email) && x.Email == email)
-    ||
-    (!string.IsNullOrWhiteSpace(x.Phone) && x.Phone == phone)
-);
-
-reservation.IsBlacklisted = isBlacklisted;
-
-await _db.SaveChangesAsync();
+        if (!requiresEmailConfirmation)
+        {
+            await UpsertCustomerProfileForConfirmedReservationAsync(reservation);
+            await MarkReservationBlacklistFlagAsync(reservation);
+            await _db.SaveChangesAsync();
+            _ = SendAdminReservationEmailAsync(reservation);
+        }
 
         if (requiresEmailConfirmation && confirmationToken != null)
         {
             _ = SendReservationConfirmationEmailAsync(reservation, confirmationToken);
-        }
-
-        var adminEmail = _configuration["ADMIN_EMAIL"];
-        var adminUrl = $"{GetFrontendUrl()}/admin";
-
-        if (!string.IsNullOrWhiteSpace(adminEmail))
-        {
-            _ = _emailService.SendAsync(
-                adminEmail,
-                $"Нова резервация: {reservation.GuestName} · {reservation.ReservedDate} {reservation.ReservedTime}",
-        $"""
-        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-          <h2>Нова резервация в Casa di Fratelli</h2>
-          <p><strong>Статус:</strong> {(requiresEmailConfirmation ? "Очаква потвърждение от госта" : "Потвърдена автоматично")}</p>
-          <p><strong>Гост:</strong> {reservation.GuestName}</p>
-          <p><strong>Телефон:</strong> {reservation.Phone}</p>
-          <p><strong>Email:</strong> {reservation.Email}</p>
-          <p><strong>Дата:</strong> {reservation.ReservedDate}</p>
-          <p><strong>Час:</strong> {reservation.ReservedTime}</p>
-          <p><strong>Маси:</strong> {string.Join(", ", reservation.Tables.Select(t => t.TableCode))}</p>
-          <p><strong>Гости:</strong> {reservation.GuestCount}</p>
-          <p><strong>Специални изисквания:</strong> {reservation.Notes}</p>
-          <p>
-            <a href="{adminUrl}" style="display:inline-block;background:#c9a56a;color:#111827;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:700">
-              Отвори админ панела
-            </a>
-          </p>
-        </div>
-        """
-            );
         }
 
         return Ok(new
@@ -464,6 +499,12 @@ await _db.SaveChangesAsync();
             reservation.Notes,
             reservation.Status,
             RequiresEmailConfirmation = requiresEmailConfirmation,
+            IsReturningCustomer = !requiresEmailConfirmation && !request.CreatedByAdmin && hasConfirmedReservationWithEmail,
+            Message = requiresEmailConfirmation
+                ? "Please confirm your reservation from the email we sent."
+                : !request.CreatedByAdmin && hasConfirmedReservationWithEmail
+                    ? $"Добре дошли отново, {reservation.GuestName}! Вашата резервация е автоматично потвърдена, защото вече сте клиент на нашия ресторант."
+                    : "Reservation confirmed.",
             reservation.CreatedAtUtc,
             TableIds = reservation.Tables.Select(t => t.TableCode).ToList()
         });
@@ -483,7 +524,7 @@ await _db.SaveChangesAsync();
         if (reservation == null)
             return NotFound(new { message = "Confirmation link is invalid." });
 
-        if (reservation.Status == "Cancelled")
+        if (reservation.Status == ReservationStatusCancelled)
             return BadRequest(new { message = "This reservation was cancelled." });
 
         if (reservation.EmailConfirmationExpiresAtUtc.HasValue &&
@@ -493,7 +534,7 @@ await _db.SaveChangesAsync();
             return BadRequest(new { message = "Confirmation link has expired. Please make a new reservation or call us." });
         }
 
-        if (reservation.Status != "Approved")
+        if (reservation.Status != ReservationStatusApproved)
         {
             var tableIds = reservation.Tables.Select(t => t.TableCode).ToList();
             var conflict = await _reservationConflictService.FindTableConflictAsync(
@@ -507,14 +548,17 @@ await _db.SaveChangesAsync();
                 return Conflict(ReservationConflictService.ToConflictResponse(conflict));
             }
 
-            reservation.Status = "Approved";
+            reservation.Status = ReservationStatusApproved;
         }
 
         reservation.IsNoShow = false;
         reservation.EmailConfirmedAtUtc ??= DateTime.UtcNow;
         reservation.EmailConfirmationTokenHash = null;
         reservation.EmailConfirmationExpiresAtUtc = null;
+        await UpsertCustomerProfileForConfirmedReservationAsync(reservation);
+        await MarkReservationBlacklistFlagAsync(reservation);
         await _db.SaveChangesAsync();
+        _ = SendAdminReservationEmailAsync(reservation);
 
         return Ok(new
         {

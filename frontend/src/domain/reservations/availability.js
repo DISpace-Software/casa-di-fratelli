@@ -11,7 +11,7 @@ export function getUnavailableTableIdsForSlot(
   return new Set(
     reservations
       .filter((reservation) => {
-        if (!["Approved", "Pending"].includes(reservation.status)) return false;
+        if (reservation.status !== "Approved") return false;
         if (excludeReservationId && reservation.id === excludeReservationId) return false;
         if (!Array.isArray(reservation.tableIds) || reservation.tableIds.length === 0) return false;
 

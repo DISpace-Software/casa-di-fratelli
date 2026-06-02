@@ -809,6 +809,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   const [submitError, setSubmitError] = React.useState("");
   const [submitSuccess, setSubmitSuccess] = React.useState("");
   const [emailConfirmationNotice, setEmailConfirmationNotice] = React.useState(null);
+  const [autoConfirmationNotice, setAutoConfirmationNotice] = React.useState(null);
   const [dailyLimitNotice, setDailyLimitNotice] = React.useState(false);
   const [selectedArea, setSelectedArea] = React.useState("indoor");
   const [selectedTables, setSelectedTables] = React.useState([]);
@@ -1133,6 +1134,8 @@ if (bookingMode === "single") {
       }
 
       const requiresEmailConfirmation = Boolean(result?.requiresEmailConfirmation || result?.RequiresEmailConfirmation);
+      const isReturningCustomer = Boolean(result?.isReturningCustomer || result?.IsReturningCustomer);
+      const guestName = result?.guestName || result?.GuestName || payload.guestName;
 
       setSubmitError("");
       setSubmitSuccess(
@@ -1152,6 +1155,19 @@ if (bookingMode === "single") {
           email: payload.email,
           date: reservationDate,
           time: selectedTime,
+        });
+        setShowBookingForm(false);
+        setSelectedTables([]);
+        setSelectedTime("");
+        return;
+      }
+
+      if (isReturningCustomer) {
+        setAutoConfirmationNotice({
+          guestName,
+          date: reservationDate,
+          time: selectedTime,
+          tables: selectedTables.map((table) => table.id).join(", "),
         });
         setShowBookingForm(false);
         setSelectedTables([]);
@@ -1695,6 +1711,43 @@ if (bookingMode === "single") {
               className="luxury-button mt-6 w-full rounded-2xl px-5 py-3 text-sm font-semibold"
             >
               {language === "bg" ? "Разбрах" : "Got it"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {autoConfirmationNotice && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 px-4 backdrop-blur-md" role="dialog" aria-modal="true">
+          <div className="luxury-panel w-full max-w-md rounded-[30px] p-6 text-center text-white shadow-2xl md:p-8">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-400/12 text-3xl text-emerald-200">
+              ✓
+            </div>
+            <p className="section-kicker mt-5">Casa di Fratelli</p>
+            <h2 className="mt-3 text-2xl font-semibold text-[#fff4df]">
+              {language === "bg"
+                ? `Добре дошли отново, ${autoConfirmationNotice.guestName}!`
+                : `Welcome back, ${autoConfirmationNotice.guestName}!`}
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-stone-300">
+              {language === "bg"
+                ? "Вашата резервация е автоматично потвърдена, защото вече сте клиент на нашия ресторант."
+                : "Your reservation is automatically confirmed because you are already a guest of our restaurant."}
+            </p>
+            <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-stone-300">
+              {autoConfirmationNotice.date} · {autoConfirmationNotice.time}
+              {autoConfirmationNotice.tables ? ` · ${language === "bg" ? "Маси" : "Tables"} ${autoConfirmationNotice.tables}` : ""}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setAutoConfirmationNotice(null);
+                setSubmitSuccess("");
+                setSubmitError("");
+                onReservationComplete?.();
+              }}
+              className="luxury-button mt-6 w-full rounded-2xl px-5 py-3 text-sm font-semibold"
+            >
+              {language === "bg" ? "Готово" : "Done"}
             </button>
           </div>
         </div>
