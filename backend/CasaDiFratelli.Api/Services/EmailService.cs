@@ -6,6 +6,7 @@ namespace CasaDiFratelli.Api.Services;
 
 public class EmailService
 {
+    private const string DefaultFromEmail = "Casa di Fratelli <noreply@mail.casadifratelli.bg>";
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
@@ -27,9 +28,14 @@ public class EmailService
             var apiKey = _configuration["RESEND_API_KEY"];
             var fromEmail = _configuration["FROM_EMAIL"];
 
-            if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(fromEmail))
+            if (string.IsNullOrWhiteSpace(fromEmail))
             {
-                _logger.LogWarning("Email was not sent because RESEND_API_KEY or FROM_EMAIL is missing.");
+                fromEmail = DefaultFromEmail;
+            }
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                _logger.LogWarning("Email was not sent because RESEND_API_KEY is missing.");
                 return;
             }
 
@@ -61,7 +67,10 @@ public class EmailService
             {
                 var error = await response.Content.ReadAsStringAsync();
                 _logger.LogError("Failed to send email via Resend. Status: {Status}. Body: {Body}", response.StatusCode, error);
+                return;
             }
+
+            _logger.LogInformation("Email sent via Resend to {Recipient} with subject {Subject}.", to, subject);
         }
         catch (Exception error)
         {
