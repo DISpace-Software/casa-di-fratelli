@@ -29,24 +29,44 @@ const menuPageData = {
           },
           {
             name: "Салата Цезар с пиле",
-            weight: "380 гр",
+            weight: "350 гр",
             price: "19.77 лв",
             description:
-              "Айсберг, пилешко филе, чери домати, пармезан, билкови крутони и сос Цезар",
+              "Айсберг, пилешко филе, чери домати, пармезан, билкови крутони, сос Цезар и чипс от прошуто",
+          },
+          {
+            name: "Салата с киноа и бейби спанак",
+            weight: "350 гр",
+            price: "18.40 лв",
+            description:
+              "Киноа, бейби спанак, чери домати, печена чушка, мус от сирене и орехи",
           },
           {
             name: "Салата със сотирани тигрови скариди",
             weight: "350 гр",
             price: "22.32 лв",
             description:
-              "Микс зелени салати, жулиени зеленчуци и дресинг песто",
+              "Сотирани скариди върху канапе от микс зеленолистни салати и жулиени от зеленчуци, овкусени с дресинг",
           },
           {
             name: "Салата Фермата",
             weight: "350 гр",
             price: "19.60 лв",
             description:
-              "Панирано фермерско сирене, сезонни плодове, меден дресинг, сос от нар и бейби спанак",
+              "Фермерско краве сирене, сезонни плодове, меден дресинг, сос от нар, бейби спанак, зелена и червена маруля",
+          },
+          {
+            name: "Салата Пирамида",
+            weight: "350 гр",
+            price: "18.60 лв",
+            description:
+              "Палитра от шайби домати, тиквичка, патладжан, печена чушка и краве сирене",
+          },
+          {
+            name: "Домашна млечна салата",
+            weight: "270 гр",
+            price: "12.73 лв",
+            description: "Свежа домашна млечна салата",
           },
         ],
       },
@@ -105,6 +125,12 @@ const menuPageData = {
             weight: "360 гр",
             price: "20.36 лв",
             description: "Кладница, манатарка и пармезан",
+          },
+          {
+            name: "Ризото Верде с филе от лаврак",
+            weight: "360 гр",
+            price: "25.25 лв",
+            description: "Зелено ризото, аспержи, лаврак и лимон",
           },
           {
             name: "Ризото с рибай “Талиата”",
@@ -338,7 +364,31 @@ const menuPageData = {
             name: "Комбинирана пърленка със сирене и кашкавал",
             weight: "350 гр",
             price: "7.63 лв",
-            description: "Богат вкус и аромат",
+            description: "Комбинирана пърленка с кашкавал и сирене",
+          },
+          {
+            name: "Пърленка с кашкавал",
+            weight: "320 гр",
+            price: "6.49 лв",
+            description: "Пърленка с кашкавал",
+          },
+          {
+            name: "Пърленка със сирене",
+            weight: "320 гр",
+            price: "6.49 лв",
+            description: "Пърленка със сирене",
+          },
+          {
+            name: "Пърленка с чесново масло",
+            weight: "250 гр",
+            price: "5.87 лв",
+            description: "Пърленка с чесново масло",
+          },
+          {
+            name: "Пърленка с масло",
+            weight: "250 гр",
+            price: "5.67 лв",
+            description: "Пърленка с масло",
           },
         ],
       },
@@ -358,6 +408,18 @@ const menuPageData = {
             weight: "200 гр",
             price: "10.95 лв",
             description: "Класически италиански десерт",
+          },
+          {
+            name: "Пица Нутела",
+            weight: "300 гр",
+            price: "14.88 лв",
+            description: "Нутела, пудра захар, портокалови кори и ягоди",
+          },
+          {
+            name: "Спаначена торта",
+            weight: "150 гр",
+            price: "12.73 лв",
+            description: "Спаначена торта с шам фъстък и боровинки",
           },
           {
             name: "Шоколадов мус by Chef Yurukov",
@@ -407,10 +469,44 @@ const menuPageData = {
           },
           {
             name: "Chicken Caesar Salad",
-            weight: "380 g",
+            weight: "350 g",
             price: "19.77 lv",
             description:
-              "Iceberg lettuce, chicken fillet, cherry tomatoes, parmesan, croutons, and Caesar dressing",
+              "Iceberg lettuce, chicken fillet, cherry tomatoes, parmesan, herb croutons, Caesar dressing, and prosciutto crisp",
+          },
+          {
+            name: "Quinoa and Baby Spinach Salad",
+            weight: "350 g",
+            price: "18.40 lv",
+            description:
+              "Quinoa, baby spinach, cherry tomatoes, roasted pepper, cheese mousse, and walnuts",
+          },
+          {
+            name: "Tiger Shrimp Salad",
+            weight: "350 g",
+            price: "22.32 lv",
+            description:
+              "Sauteed shrimp over mixed leafy greens and vegetable juliennes with dressing",
+          },
+          {
+            name: "Farm Salad",
+            weight: "350 g",
+            price: "19.60 lv",
+            description:
+              "Farm cow cheese, seasonal fruit, honey dressing, pomegranate sauce, baby spinach, green and red lettuce",
+          },
+          {
+            name: "Pyramid Salad",
+            weight: "350 g",
+            price: "18.60 lv",
+            description:
+              "Layers of tomato, zucchini, eggplant, roasted pepper, and cow cheese",
+          },
+          {
+            name: "Homemade Dairy Salad",
+            weight: "270 g",
+            price: "12.73 lv",
+            description: "Fresh homemade dairy salad",
           },
         ],
       },
@@ -450,6 +546,12 @@ const menuPageData = {
             weight: "360 g",
             price: "20.36 lv",
             description: "Oyster mushrooms, porcini, and parmesan",
+          },
+          {
+            name: "Verde Risotto with Sea Bass Fillet",
+            weight: "360 g",
+            price: "25.25 lv",
+            description: "Green risotto, asparagus, sea bass, and lemon",
           },
           {
             name: "Ribeye Tagliata Risotto",
@@ -646,6 +748,42 @@ const menuPageData = {
             price: "5.67 lv",
             description: "Classic focaccia",
           },
+          {
+            name: "Homemade Bread Roll with Philadelphia",
+            weight: "250 g",
+            price: "7.63 lv",
+            description: "Soft bread roll with cream cheese",
+          },
+          {
+            name: "Flatbread with White and Yellow Cheese",
+            weight: "350 g",
+            price: "7.63 lv",
+            description: "Flatbread with yellow cheese and white cheese",
+          },
+          {
+            name: "Flatbread with Yellow Cheese",
+            weight: "320 g",
+            price: "6.49 lv",
+            description: "Flatbread with yellow cheese",
+          },
+          {
+            name: "Flatbread with White Cheese",
+            weight: "320 g",
+            price: "6.49 lv",
+            description: "Flatbread with white cheese",
+          },
+          {
+            name: "Flatbread with Garlic Butter",
+            weight: "250 g",
+            price: "5.87 lv",
+            description: "Flatbread with garlic butter",
+          },
+          {
+            name: "Flatbread with Butter",
+            weight: "250 g",
+            price: "5.67 lv",
+            description: "Flatbread with butter",
+          },
         ],
       },
 
@@ -664,6 +802,18 @@ const menuPageData = {
             weight: "200 g",
             price: "10.95 lv",
             description: "Classic Italian dessert",
+          },
+          {
+            name: "Nutella Pizza",
+            weight: "300 g",
+            price: "14.88 lv",
+            description: "Nutella, powdered sugar, orange zest, and strawberries",
+          },
+          {
+            name: "Spinach Cake",
+            weight: "150 g",
+            price: "12.73 lv",
+            description: "Spinach cake with pistachio and blueberries",
           },
           {
             name: "Chocolate Mousse by Chef Yurukov",

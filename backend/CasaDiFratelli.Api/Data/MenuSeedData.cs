@@ -19,12 +19,13 @@ public static class MenuSeedData
     {
         new("salads", "Салата Dei Fratelli", "Dei Fratelli Salad", "Със запечено козе сирене, лоло росо, рукола, бейби спанак, круша, орех пекан и малинов хайвер", "Baked goat cheese, lollo rosso, arugula, baby spinach, pear, pecan, and raspberry caviar", "300 гр", 19.60m),
         new("salads", "Салата от бурата", "Burrata Salad", "Чери домати, кедрови ядки, рукола, песто и домашна фокача", "Cherry tomatoes, pine nuts, arugula, pesto, and homemade focaccia", "360 гр", 20.56m),
-        new("salads", "Салата Цезар с пиле", "Chicken Caesar Salad", "Айсберг, пилешко филе, чери домати, пармезан, билкови крутони и сос Цезар", "Iceberg lettuce, chicken fillet, cherry tomatoes, parmesan, croutons, and Caesar dressing", "380 гр", 19.77m),
-        new("salads", "Салата с киноа и бейби спанак", "Quinoa and Baby Spinach Salad", "Чери домати, печена чушка, яйце, сирене и мус от орехи", "Cherry tomatoes, roasted pepper, egg, cheese, and walnut mousse", "350 гр", 17.20m),
+        new("salads", "Салата Цезар с пиле", "Chicken Caesar Salad", "Айсберг, пилешко филе, чери домати, пармезан, билкови крутони, сос Цезар и чипс от прошуто", "Iceberg lettuce, chicken fillet, cherry tomatoes, parmesan, herb croutons, Caesar dressing, and prosciutto crisp", "350 гр", 19.77m),
+        new("salads", "Салата с киноа и бейби спанак", "Quinoa and Baby Spinach Salad", "Киноа, бейби спанак, чери домати, печена чушка, мус от сирене и орехи", "Quinoa, baby spinach, cherry tomatoes, roasted pepper, cheese mousse, and walnuts", "350 гр", 18.40m),
         new("salads", "Хориатики", "Choriatiki", "Класическа гръцка салата", "Classic Greek salad", "350 гр", 15.90m),
-        new("salads", "Домашна млечна салата", "Homemade Dairy Salad", "Свежа домашна млечна салата", "Fresh homemade dairy salad", "270 гр", 10.90m),
-        new("salads", "Салата със сотирани тигрови скариди", "Tiger Shrimp Salad", "Микс зелени салати, жулиени зеленчуци и дресинг песто", "Mixed green salads, julienne vegetables, and pesto dressing", "350 гр", 22.32m),
-        new("salads", "Салата Фермата", "Farm Salad", "Панирано фермерско сирене, сезонни плодове, меден дресинг, сос от нар и бейби спанак", "Breaded farm cheese, seasonal fruit, honey dressing, pomegranate sauce, and baby spinach", "350 гр", 19.60m),
+        new("salads", "Домашна млечна салата", "Homemade Dairy Salad", "Свежа домашна млечна салата", "Fresh homemade dairy salad", "270 гр", 12.73m),
+        new("salads", "Салата със сотирани тигрови скариди", "Tiger Shrimp Salad", "Сотирани скариди върху канапе от микс зеленолистни салати и жулиени от зеленчуци, овкусени с дресинг", "Sauteed shrimp over mixed leafy greens and vegetable juliennes with dressing", "350 гр", 22.32m),
+        new("salads", "Салата Фермата", "Farm Salad", "Фермерско краве сирене, сезонни плодове, меден дресинг, сос от нар, бейби спанак, зелена и червена маруля", "Farm cow cheese, seasonal fruit, honey dressing, pomegranate sauce, baby spinach, green and red lettuce", "350 гр", 19.60m),
+        new("salads", "Салата Пирамида", "Pyramid Salad", "Палитра от шайби домати, тиквичка, патладжан, печена чушка и краве сирене", "Layers of tomato, zucchini, eggplant, roasted pepper, and cow cheese", "350 гр", 18.60m),
 
         new("starters", "Антипасти за двама", "Antipasti for Two", "Плато от италиански колбаси, маслини каламата, сирена и изпечена фокача", "Italian cold cuts, Kalamata olives, cheeses, and baked focaccia", "300 гр", 27.38m),
         new("starters", "Трио разядки с домашен хляб", "Trio of Spreads with Homemade Bread", "Тирокафтери, катък с чушка и млечна салата", "Tirokafteri, katak with pepper, and milk salad", "300 гр", 15.45m),
@@ -34,6 +35,7 @@ public static class MenuSeedData
         new("starters", "Телешки език с манатарка и скаморца", "Beef Tongue with Porcini and Scamorza", "Богат вкус и кремообразен завършек", "Deep savory flavor with creamy finish", "330 гр", 21.32m),
 
         new("pasta-risotto", "Ризото с диви гъби и трюфел", "Wild Mushroom and Truffle Risotto", "Кладница, манатарка и пармезан", "Oyster mushrooms, porcini, and parmesan", "360 гр", 20.36m),
+        new("pasta-risotto", "Ризото Верде с филе от лаврак", "Verde Risotto with Sea Bass Fillet", "Зелено ризото, аспержи, лаврак и лимон", "Green risotto, asparagus, sea bass, and lemon", "360 гр", 25.25m),
         new("pasta-risotto", "Ризото с рибай “Талиата”", "Ribeye Tagliata Risotto", "Signature dish by Chef Yurukov — ризото с шафран, рибай, спанак и чипс от пармезан", "Signature dish by Chef Yurukov — saffron risotto, ribeye, spinach, and parmesan chips", "380 гр", 29.14m, true),
         new("pasta-risotto", "Талиателе песто и скариди", "Pesto Tagliatelle with Shrimp", "Босилеково песто, зехтин, пармезан, шамфъстък и скариди", "Basil pesto, olive oil, parmesan, pistachio, and shrimp", "400 гр", 22.32m),
         new("pasta-risotto", "Талиатели с пистачио и панчета", "Tagliatelle with Pistachio and Pancetta", "Signature dish by Chef Yurukov — домашна паста с крем от шамфъстък и панчета", "Signature dish by Chef Yurukov — homemade pasta with pistachio cream and pancetta", "400 гр", 20.16m, true),
@@ -68,10 +70,16 @@ public static class MenuSeedData
         new("bread", "Цял домашен хляб", "Whole Homemade Bread", "Прясно изпечен домашен хляб", "Freshly baked homemade bread", "450 гр", 11.54m),
         new("bread", "Фокача на парче", "Focaccia Slice", "Класическа фокача", "Classic focaccia", "150 гр", 5.67m),
         new("bread", "Домашна питка с Филаделфия", "Homemade Bread Roll with Philadelphia", "Мека питка с крема сирене", "Soft bread roll with cream cheese", "250 гр", 7.63m),
-        new("bread", "Комбинирана пърленка със сирене и кашкавал", "Flatbread with White and Yellow Cheese", "Богат вкус и аромат", "Rich taste and aroma", "350 гр", 7.63m),
+        new("bread", "Комбинирана пърленка със сирене и кашкавал", "Flatbread with White and Yellow Cheese", "Комбинирана пърленка с кашкавал и сирене", "Flatbread with yellow cheese and white cheese", "350 гр", 7.63m),
+        new("bread", "Пърленка с кашкавал", "Flatbread with Yellow Cheese", "Пърленка с кашкавал", "Flatbread with yellow cheese", "320 гр", 6.49m),
+        new("bread", "Пърленка със сирене", "Flatbread with White Cheese", "Пърленка със сирене", "Flatbread with white cheese", "320 гр", 6.49m),
+        new("bread", "Пърленка с чесново масло", "Flatbread with Garlic Butter", "Пърленка с чесново масло", "Flatbread with garlic butter", "250 гр", 5.87m),
+        new("bread", "Пърленка с масло", "Flatbread with Butter", "Пърленка с масло", "Flatbread with butter", "250 гр", 5.67m),
 
         new("desserts", "Пистачио чийзкейк", "Pistachio Cheesecake", "Кремообразен десерт с шамфъстък", "Creamy pistachio dessert", "150 гр", 11.45m),
         new("desserts", "Тирамису", "Tiramisu", "Класически италиански десерт", "Classic Italian dessert", "200 гр", 10.95m),
+        new("desserts", "Пица Нутела", "Nutella Pizza", "Нутела, пудра захар, портокалови кори и ягоди", "Nutella, powdered sugar, orange zest, and strawberries", "300 гр", 14.88m),
+        new("desserts", "Спаначена торта", "Spinach Cake", "Спаначена торта с шам фъстък и боровинки", "Spinach cake with pistachio and blueberries", "150 гр", 12.73m),
         new("desserts", "Шоколадов мус by Chef Yurukov", "Chocolate Mousse by Chef Yurukov", "Авторски шоколадов финал", "Signature chocolate finish", "170 гр", 12.01m, true),
         new("desserts", "Шоколадово суфле със сметанов сладолед", "Chocolate Souffle with Cream Ice Cream", "Топъл десерт с кремообразен център", "Warm dessert with a creamy center", "150 гр", 10.17m)
     };
