@@ -46,6 +46,10 @@ const getInitialPage = () => {
     return "privacy";
   }
 
+  if (window.location.pathname === "/reservation-confirm") {
+    return "reservation-confirm";
+  }
+
   return "home";
 };
 
@@ -343,6 +347,100 @@ function AdminLogin({ onLogin }) {
   );
 }
 
+function ReservationConfirmPage({ onBackHome }) {
+  const [status, setStatus] = React.useState("loading");
+  const [message, setMessage] = React.useState("");
+  const [reservation, setReservation] = React.useState(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function confirmReservation() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("token") || "";
+
+      if (!token) {
+        setStatus("error");
+        setMessage("Линкът за потвърждение е невалиден.");
+        return;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/reservations/confirm?token=${encodeURIComponent(token)}`);
+        const payload = await response.json().catch(() => null);
+
+        if (cancelled) return;
+
+        if (!response.ok) {
+          setStatus("error");
+          setMessage(payload?.message || "Не успяхме да потвърдим резервацията.");
+          return;
+        }
+
+        setReservation(payload);
+        setStatus("success");
+        setMessage("Вашата резервация е потвърдена успешно.");
+      } catch {
+        if (cancelled) return;
+        setStatus("error");
+        setMessage("Неуспешна връзка със сървъра. Опитайте отново.");
+      }
+    }
+
+    confirmReservation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div className="luxury-shell flex min-h-screen items-center justify-center px-5 py-10 text-white">
+      <div className="luxury-panel w-full max-w-lg rounded-[32px] p-6 text-center md:p-9">
+        <img
+          src="/casa-di-fratelli-logo.svg"
+          alt="Casa di Fratelli"
+          className="brand-logo mx-auto mb-7 h-16 w-[230px] object-center"
+        />
+        <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full border text-3xl ${
+          status === "success"
+            ? "border-emerald-300/35 bg-emerald-400/12 text-emerald-200"
+            : status === "error"
+            ? "border-red-300/35 bg-red-500/12 text-red-100"
+            : "border-[#c9a56a]/30 bg-[#c9a56a]/12 text-[#f2d39a]"
+        }`}>
+          {status === "loading" ? "…" : status === "success" ? "✓" : "!"}
+        </div>
+        <p className="section-kicker mt-6">Casa di Fratelli</p>
+        <h1 className="mt-3 text-3xl font-semibold text-[#fff4df]">
+          {status === "loading"
+            ? "Потвърждаваме резервацията..."
+            : status === "success"
+            ? "Резервацията е потвърдена"
+            : "Проблем с потвърждението"}
+        </h1>
+        <p className="mt-4 text-sm leading-7 text-stone-300">{message}</p>
+
+        {reservation && (
+          <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 px-5 py-4 text-left text-sm text-stone-300">
+            <div><strong className="text-[#fff4df]">Дата:</strong> {reservation.reservedDate || reservation.ReservedDate}</div>
+            <div className="mt-2"><strong className="text-[#fff4df]">Час:</strong> {reservation.reservedTime || reservation.ReservedTime}</div>
+            <div className="mt-2"><strong className="text-[#fff4df]">Маси:</strong> {(reservation.tableIds || reservation.TableIds || []).join(", ")}</div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={onBackHome}
+          className="luxury-button mt-7 w-full rounded-2xl px-5 py-4 text-sm font-semibold"
+        >
+          Към началото
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [language, setLanguage] = React.useState(safeReadStoredLanguage);
   const [theme, setTheme] = React.useState(safeReadStoredTheme);
@@ -401,6 +499,7 @@ export default function App() {
       "reservation-map": "/reservation",
       menu: "/menu",
       privacy: "/privacy",
+      "reservation-confirm": "/reservation-confirm",
       home: "/",
     };
     const nextPath = pagePaths[currentPage] || "/";
@@ -432,6 +531,11 @@ export default function App() {
 
       if (path === "/privacy") {
         setCurrentPage("privacy");
+        return;
+      }
+
+      if (path === "/reservation-confirm") {
+        setCurrentPage("reservation-confirm");
         return;
       }
 
@@ -618,6 +722,15 @@ export default function App() {
           theme={theme}
           onToggleTheme={toggleTheme}
         />
+        <BackToTopButton />
+      </>
+    );
+  }
+
+  if (currentPage === "reservation-confirm") {
+    return (
+      <>
+        <ReservationConfirmPage onBackHome={() => setCurrentPage("home")} />
         <BackToTopButton />
       </>
     );

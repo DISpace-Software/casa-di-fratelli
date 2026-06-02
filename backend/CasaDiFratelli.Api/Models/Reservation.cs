@@ -48,4 +48,10 @@ public class Reservation
     public bool IsRegularCustomer { get; set; } = false;
 
     public string? OrderAccessToken { get; set; }
+
+    public string? EmailConfirmationTokenHash { get; set; }
+
+    public DateTime? EmailConfirmationExpiresAtUtc { get; set; }
+
+    public DateTime? EmailConfirmedAtUtc { get; set; }
 }

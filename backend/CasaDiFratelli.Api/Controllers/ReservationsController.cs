@@ -75,6 +75,17 @@ public class ReservationsController : ControllerBase
         return Convert.ToHexString(RandomNumberGenerator.GetBytes(24)).ToLowerInvariant();
     }
 
+    private static string CreateEmailConfirmationToken()
+    {
+        return Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
+    }
+
+    private static string HashToken(string token)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(token);
+        return Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+    }
+
     private static string NormalizePhoneForLimit(string phone)
     {
         return new string((phone ?? string.Empty).Where(char.IsDigit).ToArray());
@@ -101,6 +112,42 @@ public class ReservationsController : ControllerBase
     private string GetReviewUrl()
     {
         return (_configuration["REVIEW_URL"] ?? $"{GetFrontendUrl()}/#reviews").Trim();
+    }
+
+    private async Task SendReservationConfirmationEmailAsync(Reservation reservation, string token)
+    {
+        if (string.IsNullOrWhiteSpace(reservation.Email))
+            return;
+
+        var guestName = WebUtility.HtmlEncode(reservation.GuestName);
+        var confirmUrl = WebUtility.HtmlEncode($"{GetFrontendUrl()}/reservation-confirm?token={Uri.EscapeDataString(token)}");
+
+        await _emailService.SendAsync(
+            reservation.Email,
+            "Потвърдете резервацията си · Casa di Fratelli",
+            $"""
+            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937;background:#f8f3ea;padding:28px">
+              <div style="max-width:620px;margin:0 auto;background:#fffaf2;border:1px solid #ead8bd;border-radius:22px;padding:28px">
+                <p style="letter-spacing:0.22em;text-transform:uppercase;color:#9a682d;font-size:12px;font-weight:700;margin:0 0 12px">Casa di Fratelli</p>
+                <h2 style="margin:0 0 14px;color:#2b1d15;font-size:28px">Потвърдете Вашата резервация</h2>
+                <p>Здравейте, {guestName},</p>
+                <p>Получихме заявката Ви за резервация. За да пазим масите коректно за всички гости, моля потвърдете резервацията от бутона по-долу.</p>
+                <div style="background:#fff3df;border:1px solid #ead8bd;border-radius:16px;padding:16px;margin:20px 0">
+                  <p style="margin:0"><strong>Дата:</strong> {reservation.ReservedDate}</p>
+                  <p style="margin:6px 0 0"><strong>Час:</strong> {reservation.ReservedTime}</p>
+                  <p style="margin:6px 0 0"><strong>Маси:</strong> {string.Join(", ", reservation.Tables.Select(t => t.TableCode))}</p>
+                  <p style="margin:6px 0 0"><strong>Гости:</strong> {reservation.GuestCount}</p>
+                </div>
+                <p>
+                  <a href="{confirmUrl}" style="display:inline-block;background:#c9a56a;color:#111827;padding:14px 22px;border-radius:14px;text-decoration:none;font-weight:800">
+                    Потвърждавам резервацията
+                  </a>
+                </p>
+                <p style="color:#6b7280;font-size:14px">Ако не сте направили тази резервация, просто игнорирайте това писмо.</p>
+              </div>
+            </div>
+            """
+        );
     }
 
     private async Task SendThankYouEmailAsync(Reservation reservation)
@@ -197,7 +244,7 @@ public class ReservationsController : ControllerBase
     {
         var blocked = await _db.Reservations
             .Include(x => x.Tables)
-            .Where(x => x.Status == "Approved")
+            .Where(x => x.Status == "Approved" || x.Status == "Pending")
             .Select(x => new
             {
                 x.ReservedDate,
@@ -288,6 +335,13 @@ public class ReservationsController : ControllerBase
             return Conflict(ReservationConflictService.ToConflictResponse(conflict));
         }
 
+        var hasConfirmedReservationWithEmail = !string.IsNullOrWhiteSpace(normalizedEmail) &&
+            await _db.Reservations.AnyAsync(x =>
+                (x.Email ?? string.Empty).ToLower() == normalizedEmail &&
+                (x.Status == "Approved" || x.Status == "Released" || x.IsArrived || x.EmailConfirmedAtUtc != null));
+        var requiresEmailConfirmation = !request.CreatedByAdmin && !hasConfirmedReservationWithEmail;
+        var confirmationToken = requiresEmailConfirmation ? CreateEmailConfirmationToken() : null;
+
         var reservation = new Reservation
         {
             GuestName = guestName,
@@ -301,10 +355,13 @@ public class ReservationsController : ControllerBase
             MarketingConsent = request.MarketingConsent,
             PrivacyConsent = request.CreatedByAdmin || request.PrivacyConsent,
             Notes = request.Notes,
-            Status = "Pending",
+            Status = requiresEmailConfirmation ? "Pending" : "Approved",
             CreatedAtUtc = DateTime.UtcNow,
             CreatedByAdmin = request.CreatedByAdmin,
             InternalNote = request.InternalNote,
+            EmailConfirmationTokenHash = confirmationToken == null ? null : HashToken(confirmationToken),
+            EmailConfirmationExpiresAtUtc = confirmationToken == null ? null : DateTime.UtcNow.AddDays(2),
+            EmailConfirmedAtUtc = requiresEmailConfirmation ? null : DateTime.UtcNow,
             Tables = tableIds.Select(id => new ReservationTable
             {
                 TableCode = id
@@ -358,6 +415,11 @@ reservation.IsBlacklisted = isBlacklisted;
 
 await _db.SaveChangesAsync();
 
+        if (requiresEmailConfirmation && confirmationToken != null)
+        {
+            _ = SendReservationConfirmationEmailAsync(reservation, confirmationToken);
+        }
+
         var adminEmail = _configuration["ADMIN_EMAIL"];
         var adminUrl = _configuration["ADMIN_URL"] ?? "https://casa-di-fratelli.vercel.app/admin";
 
@@ -369,6 +431,7 @@ await _db.SaveChangesAsync();
         $"""
         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
           <h2>Нова резервация в Casa di Fratelli</h2>
+          <p><strong>Статус:</strong> {(requiresEmailConfirmation ? "Очаква потвърждение от госта" : "Потвърдена автоматично")}</p>
           <p><strong>Гост:</strong> {reservation.GuestName}</p>
           <p><strong>Телефон:</strong> {reservation.Phone}</p>
           <p><strong>Email:</strong> {reservation.Email}</p>
@@ -402,7 +465,66 @@ await _db.SaveChangesAsync();
             reservation.PrivacyConsent,
             reservation.Notes,
             reservation.Status,
+            RequiresEmailConfirmation = requiresEmailConfirmation,
             reservation.CreatedAtUtc,
+            TableIds = reservation.Tables.Select(t => t.TableCode).ToList()
+        });
+    }
+
+    [HttpGet("confirm")]
+    public async Task<IActionResult> ConfirmByEmail([FromQuery] string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return BadRequest(new { message = "Confirmation token is required." });
+
+        var tokenHash = HashToken(token.Trim());
+        var reservation = await _db.Reservations
+            .Include(x => x.Tables)
+            .FirstOrDefaultAsync(x => x.EmailConfirmationTokenHash == tokenHash);
+
+        if (reservation == null)
+            return NotFound(new { message = "Confirmation link is invalid." });
+
+        if (reservation.Status == "Cancelled")
+            return BadRequest(new { message = "This reservation was cancelled." });
+
+        if (reservation.EmailConfirmationExpiresAtUtc.HasValue &&
+            reservation.EmailConfirmationExpiresAtUtc.Value < DateTime.UtcNow &&
+            reservation.EmailConfirmedAtUtc == null)
+        {
+            return BadRequest(new { message = "Confirmation link has expired. Please make a new reservation or call us." });
+        }
+
+        if (reservation.Status != "Approved")
+        {
+            var tableIds = reservation.Tables.Select(t => t.TableCode).ToList();
+            var conflict = await _reservationConflictService.FindTableConflictAsync(
+                reservation.ReservedDate,
+                reservation.ReservedTime,
+                tableIds,
+                reservation.Id);
+
+            if (conflict != null)
+            {
+                return Conflict(ReservationConflictService.ToConflictResponse(conflict));
+            }
+
+            reservation.Status = "Approved";
+        }
+
+        reservation.IsNoShow = false;
+        reservation.EmailConfirmedAtUtc ??= DateTime.UtcNow;
+        reservation.EmailConfirmationTokenHash = null;
+        reservation.EmailConfirmationExpiresAtUtc = null;
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            message = "Reservation confirmed.",
+            reservation.Id,
+            reservation.GuestName,
+            reservation.ReservedDate,
+            reservation.ReservedTime,
             TableIds = reservation.Tables.Select(t => t.TableCode).ToList()
         });
     }

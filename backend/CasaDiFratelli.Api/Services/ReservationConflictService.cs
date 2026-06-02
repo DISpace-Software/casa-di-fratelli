@@ -86,7 +86,7 @@ public class ReservationConflictService
         var candidates = await _db.Reservations
             .Include(x => x.Tables)
             .Where(x =>
-                x.Status == "Approved" &&
+                (x.Status == "Approved" || x.Status == "Pending") &&
                 x.ReservedDate == reservedDate &&
                 (!excludeReservationId.HasValue || x.Id != excludeReservationId.Value) &&
                 x.Tables.Any(t => tableIds.Contains(t.TableCode)))

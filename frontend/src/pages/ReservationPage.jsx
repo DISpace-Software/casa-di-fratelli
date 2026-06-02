@@ -808,6 +808,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState("");
   const [submitSuccess, setSubmitSuccess] = React.useState("");
+  const [emailConfirmationNotice, setEmailConfirmationNotice] = React.useState(null);
   const [dailyLimitNotice, setDailyLimitNotice] = React.useState(false);
   const [selectedArea, setSelectedArea] = React.useState("indoor");
   const [selectedTables, setSelectedTables] = React.useState([]);
@@ -1131,14 +1132,32 @@ if (bookingMode === "single") {
         return;
       }
 
+      const requiresEmailConfirmation = Boolean(result?.requiresEmailConfirmation || result?.RequiresEmailConfirmation);
+
       setSubmitError("");
       setSubmitSuccess(
-        language === "bg"
+        requiresEmailConfirmation
+          ? language === "bg"
+            ? "Изпратихме Ви имейл за потвърждение."
+            : "We sent you a confirmation email."
+          : language === "bg"
           ? "Резервацията беше изпратена успешно. Връщаме Ви към началото..."
           : "Reservation submitted successfully. Taking you back to the home page..."
       );
 
       form?.reset?.();
+
+      if (requiresEmailConfirmation) {
+        setEmailConfirmationNotice({
+          email: payload.email,
+          date: reservationDate,
+          time: selectedTime,
+        });
+        setShowBookingForm(false);
+        setSelectedTables([]);
+        setSelectedTime("");
+        return;
+      }
 
       setTimeout(() => {
         setShowBookingForm(false);
@@ -1644,6 +1663,39 @@ if (bookingMode === "single") {
                 Разбрах
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {emailConfirmationNotice && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 px-4 backdrop-blur-md" role="dialog" aria-modal="true">
+          <div className="luxury-panel w-full max-w-md rounded-[30px] p-6 text-center text-white shadow-2xl md:p-8">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-[#c9a56a]/30 bg-[#c9a56a]/12 text-3xl text-[#f2d39a]">
+              ✓
+            </div>
+            <p className="section-kicker mt-5">Casa di Fratelli</p>
+            <h2 className="mt-3 text-2xl font-semibold text-[#fff4df]">
+              {language === "bg" ? "Потвърдете от имейла" : "Confirm from your email"}
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-stone-300">
+              {language === "bg"
+                ? `Изпратихме писмо на ${emailConfirmationNotice.email}. Отворете го и натиснете бутона за потвърждение, за да запазим резервацията окончателно.`
+                : `We sent an email to ${emailConfirmationNotice.email}. Open it and press the confirmation button to finalize your reservation.`}
+            </p>
+            <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-stone-300">
+              {emailConfirmationNotice.date} · {emailConfirmationNotice.time}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setEmailConfirmationNotice(null);
+                setSubmitSuccess("");
+                onReservationComplete?.();
+              }}
+              className="luxury-button mt-6 w-full rounded-2xl px-5 py-3 text-sm font-semibold"
+            >
+              {language === "bg" ? "Разбрах" : "Got it"}
+            </button>
           </div>
         </div>
       )}

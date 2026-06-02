@@ -135,7 +135,6 @@ const adminText = {
       guests: "Гости",
       status: "Статус",
       actions: "Действия",
-      approve: "Потвърди",
       cancel: "Откажи",
       noShow: "No-show",
       contact: "Контакт",
@@ -180,7 +179,6 @@ const adminText = {
       empty: "Няма резервации до 30 минути в тази зона.",
       arrived: "Пристигна",
       noShow: "Не дойде",
-      approve: "Потвърди",
       move: "Премести",
       release: "Освободена",
       consumption: "Консумация",
@@ -286,7 +284,6 @@ const adminText = {
       guests: "Guests",
       status: "Status",
       actions: "Actions",
-      approve: "Approve",
       cancel: "Cancel",
       noShow: "No-show",
       contact: "Contact",
@@ -331,7 +328,6 @@ const adminText = {
       empty: "No reservations due in the next 30 minutes for this area.",
       arrived: "Arrived",
       noShow: "No-show",
-      approve: "Approve",
       move: "Move",
       release: "Released",
       consumption: "Consumption",
@@ -1135,7 +1131,6 @@ function ReservationOperationsMap({
   menuItems,
   selectedArea,
   onAreaChange,
-  onApprove,
   onArrived,
   onAddConsumptionItem,
   onUpdateConsumptionItem,
@@ -1475,7 +1470,6 @@ function ReservationOperationsMap({
             const isLate = !reservation.isArrived && minutes !== null && minutes <= -10;
             const isSelected = reservation.id === selectedReservationId;
             const canNoShow = !reservation.isArrived && minutes !== null && minutes <= -10;
-            const canApprove = reservation.status === "Pending";
             const canMarkArrived = !reservation.isArrived;
             const popoverPosition = bounds.labelTop > 72 ? "sm:top-auto sm:bottom-11" : "sm:top-11";
             const mobilePopoverOffset =
@@ -1534,16 +1528,7 @@ function ReservationOperationsMap({
                       <div className="mt-1 text-xs text-white/50">
                         {reservation.reservedTime} · {reservation.guestCount} {text.guests} · {reservation.tableIds.join(", ")}
                       </div>
-                      <div className={`mt-3 grid gap-2 ${canApprove || canNoShow ? "grid-cols-2" : "grid-cols-1"}`}>
-                        {canApprove && (
-                          <button
-                            type="button"
-                            onClick={() => onApprove(reservation)}
-                            className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/20 px-3 py-2 text-xs font-semibold text-[#f2d39a]"
-                          >
-                            {text.approve}
-                          </button>
-                        )}
+                      <div className={`mt-3 grid gap-2 ${canNoShow ? "grid-cols-2" : "grid-cols-1"}`}>
                         {canMarkArrived && (
                           <button
                             type="button"
@@ -1832,11 +1817,6 @@ function ReservationOperationsMap({
                 {!selectedReservation.isArrived && (
                   <button type="button" onClick={() => onArrived(selectedReservation)} className="luxury-button rounded-xl py-3 pl-3 pr-4 text-left text-sm">
                     {text.arrived}
-                  </button>
-                )}
-                {selectedReservation.status === "Pending" && (
-                  <button type="button" onClick={() => onApprove(selectedReservation)} className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-4 py-3 text-sm font-semibold text-[#f2d39a]">
-                    {text.approve}
                   </button>
                 )}
                 {!selectedReservation.isArrived && (getReservationMinutesFromNow(selectedReservation, now) ?? 9999) <= -10 && (
@@ -4143,7 +4123,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 menuItems={menuItems}
                 selectedArea={reservationMapArea}
                 onAreaChange={setReservationMapArea}
-                onApprove={(reservation) => updateStatus(reservation.id, "approve")}
                 onArrived={markReservationArrived}
                 onAddConsumptionItem={addConsumptionItem}
                 onUpdateConsumptionItem={updateConsumptionItem}
@@ -4486,13 +4465,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
                             <div className="mt-4 flex flex-wrap gap-2">
                               <button
-                                onClick={() => updateStatus(r.id, "approve")}
-                                disabled={r.status === "Approved"}
-                                className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-medium text-white disabled:opacity-40"
-                              >
-                                {a.reservations.approve}
-                              </button>
-                              <button
                                 onClick={() => updateStatus(r.id, "cancel")}
                                 disabled={r.status === "Cancelled"}
                                 className="rounded-xl bg-red-500 px-3 py-2 text-xs font-medium text-white disabled:opacity-40"
@@ -4648,14 +4620,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
                               <td className="p-4">
                                 <div className="flex flex-wrap gap-2">
-                                  <button
-                                    onClick={() => updateStatus(r.id, "approve")}
-                                    disabled={r.status === "Approved"}
-                                    className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-medium text-white disabled:opacity-40"
-                                  >
-                                    {a.reservations.approve}
-                                  </button>
-
                                   <button
                                     onClick={() => updateStatus(r.id, "cancel")}
                                     disabled={r.status === "Cancelled"}
