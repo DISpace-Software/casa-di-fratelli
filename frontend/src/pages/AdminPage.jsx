@@ -4427,10 +4427,24 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   return (
     <div className="admin-page luxury-shell min-h-screen text-white">
       <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-8">
-        <div className={`luxury-panel mb-8 rounded-[28px] flex flex-col gap-5 md:flex-row md:items-center md:justify-between ${
-          isDashboard ? "p-6 md:items-end md:p-8" : "p-4 md:p-5"
+        <div className={`luxury-panel relative mb-8 rounded-[28px] flex flex-col gap-5 ${
+          isDashboard ? "p-6 pr-24 md:p-8 md:pr-28" : "p-4 pr-20 md:p-5 md:pr-24"
         }`}>
-          <div>
+          <button
+            type="button"
+            onClick={() => setActiveTab("profile")}
+            className={`absolute right-5 top-5 flex h-16 w-12 items-center justify-center rounded-[22px] border p-1 transition md:right-6 md:top-6 ${
+              activeTab === "profile"
+                ? "border-[#f2d39a]/60 bg-[#c9a56a]/18 text-[#f2d39a]"
+                : "border-white/10 bg-black/20 text-white/75 hover:border-[#c9a56a]/35 hover:text-[#f2d39a]"
+            }`}
+            title={adminLanguage === "bg" ? "Моят профил" : "My profile"}
+            aria-label={adminLanguage === "bg" ? "Моят профил" : "My profile"}
+          >
+            <RoleProfileIcon role={adminUser?.role} className="h-full w-full rounded-[18px]" />
+          </button>
+
+          <div className={isDashboard ? "max-w-[760px]" : ""}>
             <img
               src="/casa-di-fratelli-logo.svg"
               alt="Casa di Fratelli"
@@ -4451,7 +4465,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             )}
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className={`flex w-full items-center gap-3 ${isDashboard ? "mt-1 justify-between md:justify-end" : "justify-between md:justify-end"}`}>
             <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
               {["bg", "en"].map((lang) => (
                 <button
@@ -4468,39 +4482,28 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={() => refreshActiveTab()}
-              className="ghost-button flex h-12 w-12 items-center justify-center rounded-full text-white/80"
-              title={a.refresh}
-              aria-label={a.refresh}
-            >
-              <RefreshIcon />
-            </button>
-            {onToggleTheme ? (
+            <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={onToggleTheme}
+                onClick={() => refreshActiveTab()}
                 className="ghost-button flex h-12 w-12 items-center justify-center rounded-full text-white/80"
-                title={theme === "light" ? "Dark" : "Light"}
-                aria-label={theme === "light" ? "Dark" : "Light"}
+                title={a.refresh}
+                aria-label={a.refresh}
               >
-                <ThemeIcon theme={theme} />
+                <RefreshIcon />
               </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setActiveTab("profile")}
-              className={`flex h-16 w-12 items-center justify-center rounded-[22px] border p-1 transition ${
-                activeTab === "profile"
-                  ? "border-[#f2d39a]/60 bg-[#c9a56a]/18 text-[#f2d39a]"
-                  : "border-white/10 bg-black/20 text-white/75 hover:border-[#c9a56a]/35 hover:text-[#f2d39a]"
-              }`}
-              title={adminLanguage === "bg" ? "Моят профил" : "My profile"}
-              aria-label={adminLanguage === "bg" ? "Моят профил" : "My profile"}
-            >
-              <RoleProfileIcon role={adminUser?.role} className="h-full w-full rounded-[18px]" />
-            </button>
+              {onToggleTheme ? (
+                <button
+                  type="button"
+                  onClick={onToggleTheme}
+                  className="ghost-button flex h-12 w-12 items-center justify-center rounded-full text-white/80"
+                  title={theme === "light" ? "Dark" : "Light"}
+                  aria-label={theme === "light" ? "Dark" : "Light"}
+                >
+                  <ThemeIcon theme={theme} />
+                </button>
+              ) : null}
+            </div>
           </div>
         </div>
         {isDashboard ? (
