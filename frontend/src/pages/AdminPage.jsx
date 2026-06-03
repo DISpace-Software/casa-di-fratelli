@@ -186,6 +186,10 @@ const adminText = {
       markSeen: "Видяна",
       preparing: "Приготвя се",
       done: "Готова",
+      paid: "Платена",
+      served: "Сервирано",
+      kitchenReady: "Готово от кухнята",
+      waitingKitchen: "Чака кухня",
     },
     liveMap: {
       title: "Карта на резервациите",
@@ -336,6 +340,10 @@ const adminText = {
       markSeen: "Seen",
       preparing: "Preparing",
       done: "Done",
+      paid: "Paid",
+      served: "Served",
+      kitchenReady: "Ready from kitchen",
+      waitingKitchen: "Waiting kitchen",
     },
     liveMap: {
       title: "Reservation map",
@@ -2424,6 +2432,23 @@ function formatEuroAmount(value) {
   }).format(Number(value || 0));
 }
 
+function getDiningItemStatusLabel(status, language) {
+  const labels = {
+    New: language === "bg" ? "Чака кухня" : "Waiting kitchen",
+    Seen: language === "bg" ? "Видяно от кухня" : "Seen by kitchen",
+    Preparing: language === "bg" ? "Приготвя се" : "Preparing",
+    Ready: language === "bg" ? "Готово от кухнята" : "Ready from kitchen",
+    Done: language === "bg" ? "Сервирано" : "Served",
+    Cancelled: language === "bg" ? "Отказано" : "Cancelled",
+  };
+
+  return labels[status] || status || labels.New;
+}
+
+function hasReadyDiningItems(order) {
+  return (order.items || []).some((item) => item.status === "Ready");
+}
+
 function formatBirthday(value, language) {
   if (!value) return "—";
 
@@ -4356,6 +4381,12 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         ],
     [a.tabs, adminLanguage, canManageAdmins, isKitchenRole, isWaiterRole]
   );
+  const readyWaiterItemsCount = React.useMemo(
+    () => isWaiterRole
+      ? diningOrders.reduce((count, order) => count + (order.items || []).filter((item) => item.status === "Ready").length, 0)
+      : 0,
+    [diningOrders, isWaiterRole]
+  );
   const allowedTabKeys = React.useMemo(() => new Set(["home", "profile", ...tabs.map(([key]) => key)]), [tabs]);
   const dashboardNavigationGroups = React.useMemo(() => {
     const operationKeys = new Set(["liveMap", "reservations", "block", "orders"]);
@@ -4695,7 +4726,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         key={key}
                         type="button"
                         onClick={() => setActiveTab(key)}
-                        className="group flex min-h-[82px] items-center gap-3 rounded-[20px] border border-white/10 bg-white/[0.035] p-3 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10"
+                        className={`group flex min-h-[82px] items-center gap-3 rounded-[20px] border border-white/10 bg-white/[0.035] p-3 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10 ${
+                          key === "orders" && readyWaiterItemsCount > 0 ? "waiter-ready-alert" : ""
+                        }`}
                       >
                         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/20 text-[#f2d39a] transition group-hover:border-[#f2d39a]/30 group-hover:bg-[#c9a56a]/12">
                           <AdminNavIcon type={key} className="h-6 w-6" />
@@ -4814,7 +4847,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           setExpandedOrderId(order.id);
                           setActiveTab("orders");
                         }}
-                        className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10"
+                        className={`rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10 ${
+                          isWaiterRole && hasReadyDiningItems(order) ? "waiter-ready-alert" : ""
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <span className="min-w-0 truncate text-base font-semibold text-[#fff4df]">
@@ -4827,9 +4862,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <div className="mt-3 truncate text-xs leading-5 text-white/50">
                           {order.guestName || "—"} · {formatEuroAmount(order.totalPrice)}
                         </div>
-                        <div className="mt-1 text-xs text-white/40">
-                          #{order.id}
-                        </div>
+                        {isWaiterRole && hasReadyDiningItems(order) && (
+                          <div className="mt-2 inline-flex rounded-full border border-emerald-300/30 bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-100">
+                            {adminLanguage === "bg" ? "Има готово блюдо" : "Ready dish"}
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -5644,6 +5681,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     {diningOrders.map((order) => {
                       const expanded = isKitchenRole || expandedOrderId === order.id;
                       const detailsId = `dining-order-${order.id}-details`;
+                      const hasReadyItems = hasReadyDiningItems(order);
+                      const visibleOrderItems = isWaiterRole
+                        ? order.items.filter((item) => item.status !== "Done" && item.status !== "Cancelled")
+                        : order.items;
 
                       return (
                         <article
@@ -5651,6 +5692,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           className={`rounded-[24px] border p-4 ${
                             isKitchenRole && order.status === "New"
                               ? "new-kitchen-order border-amber-300/45 bg-amber-400/10 shadow-[0_0_34px_rgba(251,191,36,0.14)]"
+                              : isWaiterRole && hasReadyItems
+                              ? "waiter-ready-alert border-emerald-300/35 bg-emerald-400/10"
                               : "border-white/10 bg-white/[0.04]"
                           }`}
                         >
@@ -5680,11 +5723,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   </span>
                                 )}
                               </div>
-                              <div className="mt-1 text-xs text-white/40">
-                                {order.assignedWaiterName
-                                  ? `${adminLanguage === "bg" ? "Сервитьор" : "Waiter"}: ${order.assignedWaiterName}`
-                                  : adminLanguage === "bg" ? "Непоета поръчка" : "Unclaimed order"}
-                              </div>
+                              {!isWaiterRole && (
+                                <div className="mt-1 text-xs text-white/40">
+                                  {order.assignedWaiterName
+                                    ? `${adminLanguage === "bg" ? "Сервитьор" : "Waiter"}: ${order.assignedWaiterName}`
+                                    : adminLanguage === "bg" ? "Непоета поръчка" : "Unclaimed order"}
+                                </div>
+                              )}
                             </div>
                             <div className="flex items-center justify-between gap-3 md:justify-end">
                               <div className="text-left md:text-right">
@@ -5705,19 +5750,23 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             <div id={detailsId} className="mt-4 border-t border-white/10 pt-4">
                               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <span className="rounded-full border border-[#c9a56a]/25 bg-[#c9a56a]/12 px-3 py-1 text-xs font-semibold text-[#f2d39a]">
-                                    #{order.id}
-                                  </span>
-                                  <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs text-white/65">
-                                    {a.orders.status}: {order.status}
-                                  </span>
-                                  <span className="rounded-full border border-sky-300/20 bg-sky-400/10 px-3 py-1 text-xs text-sky-100">
-                                    {order.source === "Waiter"
-                                      ? adminLanguage === "bg" ? "От сервитьор" : "Waiter order"
-                                      : order.source === "Admin"
-                                      ? adminLanguage === "bg" ? "От админ" : "Admin order"
-                                      : adminLanguage === "bg" ? "Онлайн" : "Online"}
-                                  </span>
+                                  {!isWaiterRole && (
+                                    <>
+                                      <span className="rounded-full border border-[#c9a56a]/25 bg-[#c9a56a]/12 px-3 py-1 text-xs font-semibold text-[#f2d39a]">
+                                        #{order.id}
+                                      </span>
+                                      <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs text-white/65">
+                                        {a.orders.status}: {order.status}
+                                      </span>
+                                      <span className="rounded-full border border-sky-300/20 bg-sky-400/10 px-3 py-1 text-xs text-sky-100">
+                                        {order.source === "Waiter"
+                                          ? adminLanguage === "bg" ? "От сервитьор" : "Waiter order"
+                                          : order.source === "Admin"
+                                          ? adminLanguage === "bg" ? "От админ" : "Admin order"
+                                          : adminLanguage === "bg" ? "Онлайн" : "Online"}
+                                      </span>
+                                    </>
+                                  )}
                                   {order.notes && (
                                     <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-xs text-amber-100">
                                       {a.orders.notes}: {order.notes}
@@ -5744,7 +5793,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                       {adminLanguage === "bg" ? "Вземи поръчка" : "Claim order"}
                                     </button>
                                   )}
-                                  {!isKitchenRole && (
+                                  {isWaiterRole ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => updateDiningOrderStatus(order.id, "Done")}
+                                      className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100"
+                                    >
+                                      {a.orders.paid}
+                                    </button>
+                                  ) : !isKitchenRole && (
                                     <>
                                       <button
                                         type="button"
@@ -5773,18 +5830,29 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               </div>
 
                               <div className="mt-4 grid gap-2 md:grid-cols-2">
-                                {order.items.map((item) => (
-                                  <div key={item.id || item.name} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                                {visibleOrderItems.map((item) => (
+                                  <div
+                                    key={item.id || item.name}
+                                    className={`rounded-2xl border p-3 ${
+                                      isWaiterRole && item.status === "Ready"
+                                        ? "waiter-ready-dish border-emerald-300/35 bg-emerald-400/12"
+                                        : "border-white/10 bg-black/20"
+                                    }`}
+                                  >
                                     <div className="flex items-start justify-between gap-3">
                                       <div className="min-w-0">
                                         <div className="font-semibold text-white">{item.name}</div>
                                         {item.notes && <div className="mt-1 text-xs text-white/45">{item.notes}</div>}
+                                        <div className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                                          item.status === "Ready"
+                                            ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-100"
+                                            : "border-white/10 bg-black/25 text-white/55"
+                                        }`}>
+                                          {getDiningItemStatusLabel(item.status, adminLanguage)}
+                                        </div>
                                       </div>
                                       <div className="shrink-0 text-right">
                                         <div className="mb-1 text-xs text-white/45">{formatEuroAmount(item.unitPrice * item.quantity)}</div>
-                                        <span className="mb-2 inline-flex rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[11px] text-white/65">
-                                          {item.status}
-                                        </span>
                                         {isKitchenRole ? (
                                           <button
                                             type="button"
@@ -5794,11 +5862,26 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                           >
                                             {item.status === "Ready" || item.status === "Done"
                                               ? adminLanguage === "bg" ? "Готово" : "Ready"
-                                              : adminLanguage === "bg" ? "Готово" : "Ready"}
+                                            : adminLanguage === "bg" ? "Готово" : "Ready"}
                                           </button>
+                                        ) : isWaiterRole ? (
+                                          <div className="space-y-2">
+                                            <div className="inline-flex items-center rounded-full border border-white/10 bg-black/20 px-3 py-1 text-sm text-white">
+                                              × {item.quantity}
+                                            </div>
+                                            {item.status === "Ready" && (
+                                              <button
+                                                type="button"
+                                                onClick={() => updateDiningOrderItemStatus(item.id, "Done")}
+                                                className="block rounded-full border border-emerald-300/25 bg-emerald-400/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-100"
+                                              >
+                                                {a.orders.served}
+                                              </button>
+                                            )}
+                                          </div>
                                         ) : (
                                           <div className="flex items-center overflow-hidden rounded-full border border-white/10">
-                                            <button type="button" onClick={() => updateConsumptionItem(item.id, item.quantity - 1)} className="px-3 py-1 text-[#f2d39a]" aria-label={`${a.orders.remove} ${item.name}`}>-</button>
+                                            <button type="button" onClick={() => updateConsumptionItem(item.id, item.quantity - 1)} className="px-3 py-1 text-[#f2d39a]" aria-label={`${a.orders.addItem} ${item.name}`}>-</button>
                                             <span className="min-w-8 text-center text-sm text-white">{item.quantity}</span>
                                             <button type="button" onClick={() => updateConsumptionItem(item.id, item.quantity + 1)} className="px-3 py-1 text-[#f2d39a]" aria-label={`${a.orders.addItem} ${item.name}`}>+</button>
                                           </div>

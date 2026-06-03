@@ -436,7 +436,7 @@ public class DiningOrdersController : ControllerBase
     public async Task<IActionResult> UpdateItemStatus(int itemId, [FromBody] UpdateDiningOrderItemStatusRequest request)
     {
         var admin = AdminAuthService.Current(HttpContext);
-        if (!IsKitchenOrManager(admin))
+        if (admin == null)
             return Forbid();
 
         var item = await _db.DiningOrderItems
@@ -450,6 +450,19 @@ public class DiningOrdersController : ControllerBase
         var nextStatus = string.IsNullOrWhiteSpace(request.Status) ? "New" : request.Status.Trim();
         if (!new[] { "New", "Seen", "Preparing", "Ready", "Done", "Cancelled" }.Contains(nextStatus))
             return BadRequest(new { message = "Invalid item status." });
+
+        var role = AdminRoleAccess.Normalize(admin.Role);
+        if (role == AdminRoleAccess.Waiter)
+        {
+            if (nextStatus != "Done" || !CanWorkWithOrder(admin, item.DiningOrder))
+                return Forbid();
+
+            AssignToWaiterIfNeeded(item.DiningOrder, admin);
+        }
+        else if (!IsKitchenOrManager(admin))
+        {
+            return Forbid();
+        }
 
         var previousStatus = item.Status;
         item.Status = nextStatus;
