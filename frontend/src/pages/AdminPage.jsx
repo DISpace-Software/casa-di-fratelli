@@ -4465,7 +4465,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             )}
           </div>
 
-          <div className={`flex w-full items-center gap-3 ${isDashboard ? "mt-1 justify-between md:justify-end" : "justify-between md:justify-end"}`}>
+          <div
+            className={`flex w-full items-center gap-3 ${
+              isDashboard
+                ? "mt-1 justify-between md:justify-end lg:absolute lg:right-28 lg:bottom-20 lg:mt-0 lg:w-auto"
+                : "justify-between md:justify-end"
+            }`}
+          >
             <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
               {["bg", "en"].map((lang) => (
                 <button
