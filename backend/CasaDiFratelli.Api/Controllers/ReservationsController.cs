@@ -552,6 +552,41 @@ public class ReservationsController : ControllerBase
         if (conflict != null)
             return Conflict(ReservationConflictService.ToConflictResponse(conflict));
 
+        var nextReservation = await _db.Reservations
+            .Include(x => x.Tables)
+            .Where(x =>
+                x.ReservedDate == reservedDate &&
+                x.Status != ReservationStatusCancelled &&
+                x.Status != ReservationStatusReleased &&
+                !x.IsNoShow &&
+                !x.IsArrived &&
+                x.Tables.Any(t => tableIds.Contains(t.TableCode)))
+            .ToListAsync();
+
+        var tooSoonReservation = nextReservation
+            .Select(x => new
+            {
+                Reservation = x,
+                Time = TimeOnly.TryParse(x.ReservedTime, out var parsedTime) ? parsedTime : (TimeOnly?)null
+            })
+            .Where(x => x.Time.HasValue)
+            .Select(x => new
+            {
+                x.Reservation,
+                Minutes = (x.Reservation.ReservedDate.ToDateTime(x.Time!.Value) - now).TotalMinutes
+            })
+            .Where(x => x.Minutes > 0 && x.Minutes < 90)
+            .OrderBy(x => x.Minutes)
+            .FirstOrDefault();
+
+        if (tooSoonReservation != null)
+        {
+            return Conflict(new
+            {
+                message = $"Walk-in seating is blocked because the next reservation starts in {Math.Ceiling(tooSoonReservation.Minutes)} minutes."
+            });
+        }
+
         var reservation = new Reservation
         {
             GuestName = "Walk-in",

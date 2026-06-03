@@ -1149,6 +1149,19 @@ html[data-theme="light"] .menu-page .text-white\/70 {
   z-index: 4;
 }
 
+.new-kitchen-order {
+  animation: kitchen-order-glow 1.6s ease-in-out infinite alternate;
+}
+
+@keyframes kitchen-order-glow {
+  from {
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.1);
+  }
+  to {
+    box-shadow: 0 0 42px rgba(251, 191, 36, 0.24);
+  }
+}
+
 @media (max-width: 640px) {
   .admin-page .admin-header-controls {
     left: 1.2rem !important;

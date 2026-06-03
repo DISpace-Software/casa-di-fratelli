@@ -96,6 +96,23 @@ async function compressMenuImage(file) {
   throw new Error("Image is too large. Please choose a smaller photo.");
 }
 
+function showBrowserNotification(title, body) {
+  if (typeof window === "undefined" || !("Notification" in window)) return;
+
+  if (Notification.permission === "granted") {
+    new Notification(title, { body, icon: "/favicon.svg" });
+    return;
+  }
+
+  if (Notification.permission === "default") {
+    Notification.requestPermission().then((permission) => {
+      if (permission === "granted") {
+        new Notification(title, { body, icon: "/favicon.svg" });
+      }
+    });
+  }
+}
+
 const adminText = {
   bg: {
     appTitle: "Restaurant CRM",
@@ -1182,6 +1199,7 @@ function ReservationOperationsMap({
   const [showConsumption, setShowConsumption] = React.useState(false);
   const [consumptionSearch, setConsumptionSearch] = React.useState("");
   const [consumptionCategory, setConsumptionCategory] = React.useState("all");
+  const [walkInDraft, setWalkInDraft] = React.useState(null);
   const [shouldScrollMovePanel, setShouldScrollMovePanel] = React.useState(false);
   const movePanelRef = React.useRef(null);
   const consumptionPanelRef = React.useRef(null);
@@ -1462,6 +1480,30 @@ function ReservationOperationsMap({
     setShowConsumption(true);
   }
 
+  function openWalkInModal(table) {
+    setWalkInDraft({
+      area: selectedArea,
+      tableId: table.id,
+      seats: table.seats,
+      guestCount: Math.min(Number(table.seats || 2), 4),
+    });
+  }
+
+  function closeWalkInModal() {
+    setWalkInDraft(null);
+  }
+
+  async function submitWalkInModal(event) {
+    event.preventDefault();
+    if (!walkInDraft) return;
+
+    const seated = await onSeatWalkIn?.(walkInDraft);
+    if (seated === false) return;
+
+    closeWalkInModal();
+    setSelectedTableId(null);
+  }
+
   React.useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60000);
     return () => window.clearInterval(timer);
@@ -1472,6 +1514,7 @@ function ReservationOperationsMap({
     setSelectedReservationId(null);
     setSelectedTableId(null);
     setShowConsumption(false);
+    setWalkInDraft(null);
   }, [moveReservationId, selectedArea]);
 
   React.useEffect(() => {
@@ -1797,10 +1840,13 @@ function ReservationOperationsMap({
                         {onSeatWalkIn && (
                           <button
                             type="button"
-                            onClick={() => onSeatWalkIn({ area: selectedArea, tableId: table.id, seats: table.seats })}
-                            className="w-full rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100"
+                            onClick={() => openWalkInModal(table)}
+                            disabled={nextSoonReservationForSelectedTable?.minutes < 90}
+                            className="w-full rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.04] disabled:text-white/35"
                           >
-                            {language === "bg" ? "Настани без резервация" : "Seat walk-in"}
+                            {nextSoonReservationForSelectedTable?.minutes < 90
+                              ? language === "bg" ? "Скоро има резервация" : "Reservation soon"
+                              : language === "bg" ? "Настани без резервация" : "Seat walk-in"}
                           </button>
                         )}
                       </div>
@@ -1835,10 +1881,13 @@ function ReservationOperationsMap({
                         {onSeatWalkIn && (
                           <button
                             type="button"
-                            onClick={() => onSeatWalkIn({ area: selectedArea, tableId: table.id, seats: table.seats })}
-                            className="w-full rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100"
+                            onClick={() => openWalkInModal(table)}
+                            disabled={nextSoonReservationForSelectedTable?.minutes < 90}
+                            className="w-full rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.04] disabled:text-white/35"
                           >
-                            {language === "bg" ? "Настани без резервация" : "Seat walk-in"}
+                            {nextSoonReservationForSelectedTable?.minutes < 90
+                              ? language === "bg" ? "Скоро има резервация" : "Reservation soon"
+                              : language === "bg" ? "Настани без резервация" : "Seat walk-in"}
                           </button>
                         )}
                       </div>
@@ -2204,6 +2253,77 @@ function ReservationOperationsMap({
                       </div>
                     </div>
                   </div>
+                </div>
+              ), document.body)}
+
+              {walkInDraft && typeof document !== "undefined" && createPortal((
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/72 p-4 backdrop-blur-md" role="dialog" aria-modal="true">
+                  <form
+                    onSubmit={submitWalkInModal}
+                    className="w-full max-w-md overflow-hidden rounded-[28px] border border-emerald-300/20 bg-[#15110e] shadow-[0_32px_120px_rgba(0,0,0,0.72)]"
+                  >
+                    <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5">
+                      <div className="section-kicker">
+                        {language === "bg" ? "Настаняване" : "Walk-in"}
+                      </div>
+                      <h3 className="mt-2 text-2xl font-semibold text-[#fff4df]">
+                        {language === "bg" ? `Маса ${walkInDraft.tableId}` : `Table ${walkInDraft.tableId}`}
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-white/55">
+                        {language === "bg"
+                          ? "Въведете броя гости. Резервацията ще бъде създадена без клиентски данни и ще е готова за консумация."
+                          : "Enter guest count. The table will be seated without customer details and ready for consumption."}
+                      </p>
+                    </div>
+
+                    <div className="p-5">
+                      <label className="text-sm font-semibold text-white/70">
+                        {language === "bg" ? "Брой гости" : "Guests"}
+                        <div className="mt-3 flex items-center overflow-hidden rounded-2xl border border-white/10 bg-black/25">
+                          <button
+                            type="button"
+                            onClick={() => setWalkInDraft((prev) => ({ ...prev, guestCount: Math.max(1, Number(prev.guestCount || 1) - 1) }))}
+                            className="h-14 w-14 text-xl font-semibold text-[#f2d39a]"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            max="40"
+                            value={walkInDraft.guestCount}
+                            onChange={(event) =>
+                              setWalkInDraft((prev) => ({
+                                ...prev,
+                                guestCount: Math.max(1, Math.min(40, Number(event.target.value || 1))),
+                              }))
+                            }
+                            className="h-14 min-w-0 flex-1 bg-transparent text-center text-2xl font-semibold text-white outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setWalkInDraft((prev) => ({ ...prev, guestCount: Math.min(40, Number(prev.guestCount || 1) + 1) }))}
+                            className="h-14 w-14 text-xl font-semibold text-[#f2d39a]"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </label>
+
+                      <div className="mt-5 grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={closeWalkInModal}
+                          className="ghost-button rounded-2xl px-4 py-3 text-sm font-semibold"
+                        >
+                          {text.close}
+                        </button>
+                        <button className="luxury-button rounded-2xl px-4 py-3 text-sm font-semibold">
+                          {language === "bg" ? "Настани" : "Seat"}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
                 </div>
               ), document.body)}
             </div>
@@ -2936,7 +3056,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     await loadDiningOrders();
   }
 
-  async function seatWalkInFromMap({ area, tableId, seats }) {
+  async function seatWalkInFromMap({ area, tableId, seats, guestCount: requestedGuestCount }) {
     setAdminNotice("");
     setAdminError("");
 
@@ -2951,19 +3071,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           ? "Настаняване без резервация е възможно само в работното време на ресторанта: 10:00-23:30."
           : "Walk-in seating is available only during restaurant working hours: 10:00-23:30."
       );
-      return;
+      return false;
     }
 
-    const guestCountInput = window.prompt(
-      adminLanguage === "bg"
-        ? `Колко гости да настаним на маса ${tableId}?`
-        : `How many guests should be seated at table ${tableId}?`,
-      String(Math.min(Number(seats || 2), 4))
-    );
-
-    if (guestCountInput === null) return;
-
-    const guestCount = Math.max(1, Math.min(40, Number.parseInt(guestCountInput, 10) || 2));
+    const guestCount = Math.max(1, Math.min(40, Number.parseInt(requestedGuestCount ?? Math.min(Number(seats || 2), 4), 10) || 2));
     const response = await adminFetch(`${API_BASE_URL}/api/reservations/walk-in`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -2976,11 +3087,12 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     if (!response.ok) {
       setAdminError(await readErrorMessage(response, "Failed to seat walk-in guest."));
-      return;
+      return false;
     }
 
     setAdminNotice(adminLanguage === "bg" ? "Гостът е настанен без резервация." : "Walk-in guest seated.");
     await Promise.all([loadReservations(), loadDiningOrders()]);
+    return true;
   }
 
   async function clearReservationsAndOrders() {
@@ -4376,7 +4488,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
       activeOrderIds.forEach((id) => seenKitchenOrderIdsRef.current.add(id));
       if (hadSeenOrders && newOrderIds.length > 0) {
-        setAdminNotice(adminLanguage === "bg" ? "Нова поръчка за кухнята." : "New kitchen order.");
+        const firstOrder = diningOrders.find((order) => order.id === newOrderIds[0]);
+        const title = adminLanguage === "bg" ? "Нова поръчка за кухнята" : "New kitchen order";
+        const body = firstOrder
+          ? `${adminLanguage === "bg" ? "Маса" : "Table"} ${firstOrder.tableLabel} · #${firstOrder.id}`
+          : title;
+        setAdminNotice(`${title}${firstOrder ? ` · ${body}` : "."}`);
+        showBrowserNotification(title, body);
       }
     }
 
@@ -4396,6 +4514,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           adminLanguage === "bg"
             ? `Готово блюдо: ${first.name} · маса ${first.tableLabel}`
             : `Ready dish: ${first.name} · table ${first.tableLabel}`
+        );
+        showBrowserNotification(
+          adminLanguage === "bg" ? "Готово блюдо" : "Dish ready",
+          `${first.name} · ${adminLanguage === "bg" ? "маса" : "table"} ${first.tableLabel}`
         );
       }
     }
@@ -5510,17 +5632,25 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 ) : (
                   <div className="grid gap-4">
                     {diningOrders.map((order) => {
-                      const expanded = expandedOrderId === order.id;
+                      const expanded = isKitchenRole || expandedOrderId === order.id;
                       const detailsId = `dining-order-${order.id}-details`;
 
                       return (
-                        <article key={order.id} className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+                        <article
+                          key={order.id}
+                          className={`rounded-[24px] border p-4 ${
+                            isKitchenRole && order.status === "New"
+                              ? "new-kitchen-order border-amber-300/45 bg-amber-400/10 shadow-[0_0_34px_rgba(251,191,36,0.14)]"
+                              : "border-white/10 bg-white/[0.04]"
+                          }`}
+                        >
                           <button
                             type="button"
                             aria-expanded={expanded}
                             aria-controls={detailsId}
+                            disabled={isKitchenRole}
                             onClick={() => setExpandedOrderId(expanded ? null : order.id)}
-                            className="grid w-full gap-3 text-left md:grid-cols-[1fr_1fr_auto] md:items-center"
+                            className="grid w-full gap-3 text-left md:grid-cols-[1fr_1fr_auto] md:items-center disabled:cursor-default"
                           >
                             <div>
                               <div className="text-xs uppercase tracking-[0.2em] text-[#c9a56a]">
@@ -5528,13 +5658,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               </div>
                               <div className="mt-1 text-xl font-semibold text-[#fff4df]">{order.tableLabel}</div>
                             </div>
-                            <div>
+                            <div className={isKitchenRole ? "hidden md:block" : ""}>
                               <div className="text-xs uppercase tracking-[0.2em] text-white/35">
-                                {a.orders.guest}
+                                {isKitchenRole ? (adminLanguage === "bg" ? "Поръчка" : "Order") : a.orders.guest}
                               </div>
                               <div className="mt-1 text-base font-semibold text-white">
-                                {order.guestName}
-                                {order.reservation?.isWalkIn && (
+                                {isKitchenRole ? `#${order.id}` : order.guestName}
+                                {!isKitchenRole && order.reservation?.isWalkIn && (
                                   <span className="ml-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-emerald-100">
                                     Walk-in
                                   </span>
@@ -5549,13 +5679,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             <div className="flex items-center justify-between gap-3 md:justify-end">
                               <div className="text-left md:text-right">
                                 <div className="text-xs uppercase tracking-[0.2em] text-white/35">
-                                  {a.orders.total}
+                                  {isKitchenRole ? a.orders.status : a.orders.total}
                                 </div>
-                                <div className="mt-1 text-xl font-semibold text-[#f2d39a]">{formatEuroAmount(order.totalPrice)}</div>
+                                <div className="mt-1 text-xl font-semibold text-[#f2d39a]">
+                                  {isKitchenRole ? order.status : formatEuroAmount(order.totalPrice)}
+                                </div>
                               </div>
-                              <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs text-white/65">
+                              {!isKitchenRole && <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs text-white/65">
                                 {expanded ? a.reservations.close : a.reservations.open}
-                              </span>
+                              </span>}
                             </div>
                           </button>
 
@@ -5584,6 +5716,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
+                                  {isKitchenRole && order.status === "New" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => updateDiningOrderStatus(order.id, "Seen")}
+                                      className="luxury-button rounded-xl px-4 py-2 text-xs font-semibold"
+                                    >
+                                      {adminLanguage === "bg" ? "Приета" : "Accepted"}
+                                    </button>
+                                  )}
                                   {isWaiterRole && !order.assignedWaiterId && (
                                     <button
                                       type="button"
@@ -5635,26 +5776,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                           {item.status}
                                         </span>
                                         {isKitchenRole ? (
-                                          <div className="flex flex-wrap justify-end gap-1">
-                                            {[
-                                              ["Seen", adminLanguage === "bg" ? "Видяна" : "Seen"],
-                                              ["Preparing", adminLanguage === "bg" ? "Готви се" : "Preparing"],
-                                              ["Ready", adminLanguage === "bg" ? "Готово" : "Ready"],
-                                            ].map(([status, label]) => (
-                                              <button
-                                                key={status}
-                                                type="button"
-                                                onClick={() => updateDiningOrderItemStatus(item.id, status)}
-                                                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                                                  item.status === status
-                                                    ? "border-[#f2d39a]/55 bg-[#c9a56a]/20 text-[#f2d39a]"
-                                                    : "border-white/10 bg-black/20 text-white/60"
-                                                }`}
-                                              >
-                                                {label}
-                                              </button>
-                                            ))}
-                                          </div>
+                                          <button
+                                            type="button"
+                                            onClick={() => updateDiningOrderItemStatus(item.id, "Ready")}
+                                            disabled={item.status === "Ready" || item.status === "Done"}
+                                            className="rounded-full border border-emerald-300/25 bg-emerald-400/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-100 disabled:cursor-default disabled:border-white/10 disabled:bg-white/[0.04] disabled:text-white/40"
+                                          >
+                                            {item.status === "Ready" || item.status === "Done"
+                                              ? adminLanguage === "bg" ? "Готово" : "Ready"
+                                              : adminLanguage === "bg" ? "Готово" : "Ready"}
+                                          </button>
                                         ) : (
                                           <div className="flex items-center overflow-hidden rounded-full border border-white/10">
                                             <button type="button" onClick={() => updateConsumptionItem(item.id, item.quantity - 1)} className="px-3 py-1 text-[#f2d39a]" aria-label={`${a.orders.remove} ${item.name}`}>-</button>

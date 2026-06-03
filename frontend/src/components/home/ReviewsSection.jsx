@@ -1,6 +1,9 @@
 import React from "react";
 import { googleReviewLink } from "../../data/googleReviewConfig";
 
+const tripadvisorReviewLink =
+  "https://www.tripadvisor.com/Restaurant_Review-g295391-d34311639-Reviews-Casa_di_Fratelli-Plovdiv_Plovdiv_Province.html";
+
 function Stars({ rating }) {
   return (
     <div className="flex gap-1 text-amber-300">
@@ -60,16 +63,24 @@ export default function ReviewsSection({ language }) {
           </h2>
         </div>
 
-        <a
-          href={googleReviewLink}
-          target="_blank"
-          rel="noreferrer"
-          className="review-link rounded-2xl border border-[#c9a56a]/30 bg-[#c9a56a]/10 px-5 py-3 text-sm font-medium text-[#f2d3a0] transition hover:bg-[#c9a56a]/20"
-        >
-          {language === "bg"
-            ? "Остави отзив в Google"
-            : "Leave a review on Google"}
-        </a>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href={googleReviewLink}
+            target="_blank"
+            rel="noreferrer"
+            className="review-link rounded-2xl border border-[#c9a56a]/30 bg-[#c9a56a]/10 px-5 py-3 text-sm font-medium text-[#f2d3a0] transition hover:bg-[#c9a56a]/20"
+          >
+            {language === "bg" ? "Остави отзив в Google" : "Leave a review on Google"}
+          </a>
+          <a
+            href={tripadvisorReviewLink}
+            target="_blank"
+            rel="noreferrer"
+            className="review-link rounded-2xl border border-emerald-300/25 bg-emerald-400/10 px-5 py-3 text-sm font-medium text-emerald-100 transition hover:border-emerald-200/45 hover:bg-emerald-400/16"
+          >
+            {language === "bg" ? "Виж Tripadvisor" : "View Tripadvisor"}
+          </a>
+        </div>
       </div>
 
       {loading ? (
