@@ -533,6 +533,18 @@ public class ReservationsController : ControllerBase
             return BadRequest(new { message = "Selected tables do not have enough seats." });
 
         var now = GetRestaurantNow();
+        var openingTime = new TimeOnly(10, 0);
+        var latestWalkInTime = new TimeOnly(23, 30);
+        var currentTime = TimeOnly.FromDateTime(now);
+
+        if (currentTime < openingTime || currentTime > latestWalkInTime)
+        {
+            return BadRequest(new
+            {
+                message = "Walk-in seating is available only during restaurant working hours: 10:00-23:30."
+            });
+        }
+
         var reservedDate = DateOnly.FromDateTime(now);
         var reservedTime = $"{now.Hour:00}:{now.Minute:00}";
         var conflict = await _reservationConflictService.FindTableConflictAsync(reservedDate, reservedTime, tableIds);

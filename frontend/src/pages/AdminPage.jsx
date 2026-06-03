@@ -1300,6 +1300,25 @@ function ReservationOperationsMap({
       })
       .sort((first, second) => String(first.reservedTime).localeCompare(String(second.reservedTime)));
   }, [now, ordersOnly, reservations, selectedArea, selectedTableId]);
+  const nextSoonReservationForSelectedTable = React.useMemo(() => {
+    if (ordersOnly || !selectedTableId) return null;
+
+    const today = formatLocalDate(now);
+
+    return reservations
+      .map((reservation) => ({
+        reservation,
+        minutes: getReservationMinutesFromNow(reservation, now),
+      }))
+      .filter(({ reservation, minutes }) => {
+        if (reservation.area !== selectedArea) return false;
+        if (reservation.reservedDate !== today) return false;
+        if (!reservation.tableIds.includes(selectedTableId)) return false;
+        if (reservation.isNoShow || reservation.isArrived || ["Cancelled", "Released"].includes(reservation.status)) return false;
+        return minutes !== null && minutes > 0 && minutes < 180;
+      })
+      .sort((first, second) => first.minutes - second.minutes)[0] || null;
+  }, [now, ordersOnly, reservations, selectedArea, selectedTableId]);
   const activeOrdersByTable = React.useMemo(() => {
     const byTable = new Map();
 
@@ -1768,6 +1787,13 @@ function ReservationOperationsMap({
                     ) : todayReservationsForSelectedTable.length === 0 ? (
                       <div className="mt-3 space-y-3">
                         <p className="text-sm leading-6 text-white/55">{text.tableTodayEmpty}</p>
+                        {nextSoonReservationForSelectedTable && (
+                          <div className="rounded-xl border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-xs leading-5 text-amber-100">
+                            {language === "bg"
+                              ? `Има резервация след ${nextSoonReservationForSelectedTable.minutes} мин.`
+                              : `Reservation in ${nextSoonReservationForSelectedTable.minutes} min.`}
+                          </div>
+                        )}
                         {onSeatWalkIn && (
                           <button
                             type="button"
@@ -1799,6 +1825,22 @@ function ReservationOperationsMap({
                             </span>
                           </button>
                         ))}
+                        {nextSoonReservationForSelectedTable && (
+                          <div className="rounded-xl border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-xs leading-5 text-amber-100">
+                            {language === "bg"
+                              ? `Има резервация след ${nextSoonReservationForSelectedTable.minutes} мин.`
+                              : `Reservation in ${nextSoonReservationForSelectedTable.minutes} min.`}
+                          </div>
+                        )}
+                        {onSeatWalkIn && (
+                          <button
+                            type="button"
+                            onClick={() => onSeatWalkIn({ area: selectedArea, tableId: table.id, seats: table.seats })}
+                            className="w-full rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100"
+                          >
+                            {language === "bg" ? "Настани без резервация" : "Seat walk-in"}
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -2755,6 +2797,20 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   async function seatWalkInFromMap({ area, tableId, seats }) {
     setAdminNotice("");
     setAdminError("");
+
+    const now = new Date();
+    const minutesNow = now.getHours() * 60 + now.getMinutes();
+    const opensAt = 10 * 60;
+    const latestWalkIn = 23 * 60 + 30;
+
+    if (minutesNow < opensAt || minutesNow > latestWalkIn) {
+      setAdminError(
+        adminLanguage === "bg"
+          ? "Настаняване без резервация е възможно само в работното време на ресторанта: 10:00-23:30."
+          : "Walk-in seating is available only during restaurant working hours: 10:00-23:30."
+      );
+      return;
+    }
 
     const guestCountInput = window.prompt(
       adminLanguage === "bg"
