@@ -1307,6 +1307,15 @@ function ReservationOperationsMap({
     (total, item) => total + Number(item.unitPrice || 0) * Number(item.quantity || 0),
     0
   );
+  const newOrderReservationIds = React.useMemo(
+    () => new Set(
+      diningOrders
+        .filter((order) => hasNewDiningItems(order))
+        .map((order) => Number(order.reservationId))
+        .filter(Number.isFinite)
+    ),
+    [diningOrders]
+  );
   const nextReservations = liveReservations.filter((reservation) => !reservation.isArrived);
   const todayReservationsForSelectedTable = React.useMemo(() => {
     if (ordersOnly) return [];
@@ -1613,8 +1622,9 @@ function ReservationOperationsMap({
 
             const minutes = getReservationMinutesFromNow(reservation, now);
             const isLate = !reservation.isArrived && minutes !== null && minutes <= -10;
-            const isSelected = reservation.id === selectedReservationId;
-            const canNoShow = !reservation.isArrived && minutes !== null && minutes <= -10;
+	            const isSelected = reservation.id === selectedReservationId;
+	            const hasNewOrderItems = newOrderReservationIds.has(Number(reservation.id));
+	            const canNoShow = !reservation.isArrived && minutes !== null && minutes <= -10;
             const canMarkArrived = !reservation.isArrived;
             const popoverPosition = bounds.labelTop > 72 ? "sm:top-auto sm:bottom-11" : "sm:top-11";
             const mobilePopoverOffset =
@@ -1653,9 +1663,11 @@ function ReservationOperationsMap({
                   <button
                     type="button"
                     onClick={() => setSelectedReservationId(isSelected ? null : reservation.id)}
-                    className={`relative z-40 min-w-[96px] rounded-full border px-2.5 py-1 text-[9px] font-semibold shadow-2xl backdrop-blur transition hover:scale-[1.03] sm:min-w-[112px] sm:px-3 sm:py-1.5 sm:text-[10px] lg:min-w-[128px] lg:text-[11px] ${
-                      reservation.isArrived
-                        ? "border-emerald-300/40 bg-emerald-400/20 text-emerald-100"
+	                    className={`relative z-40 min-w-[96px] rounded-full border px-2.5 py-1 text-[9px] font-semibold shadow-2xl backdrop-blur transition hover:scale-[1.03] sm:min-w-[112px] sm:px-3 sm:py-1.5 sm:text-[10px] lg:min-w-[128px] lg:text-[11px] ${
+	                      hasNewOrderItems
+	                        ? "waiter-new-alert border-amber-300/55 bg-amber-400/22 text-amber-50"
+	                      : reservation.isArrived
+	                        ? "border-emerald-300/40 bg-emerald-400/20 text-emerald-100"
                         : isLate
                         ? "border-red-300/50 bg-red-500/25 text-red-100"
                         : "border-[#f2d39a]/45 bg-[#2f241b]/90 text-[#fff4df]"
@@ -1694,11 +1706,15 @@ function ReservationOperationsMap({
                         )}
                         {reservation.isArrived && (
                           <>
-                            <button
-                              type="button"
-                              onClick={openConsumptionPanel}
-                              className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100"
-                            >
+	                            <button
+	                              type="button"
+	                              onClick={openConsumptionPanel}
+	                              className={`rounded-xl border px-3 py-2 text-xs font-semibold ${
+	                                hasNewOrderItems
+	                                  ? "waiter-new-alert border-amber-300/30 bg-amber-400/15 text-amber-100"
+	                                  : "border-emerald-300/25 bg-emerald-400/15 text-emerald-100"
+	                              }`}
+	                            >
                               {text.consumption}
                             </button>
                             <button
@@ -2174,15 +2190,33 @@ function ReservationOperationsMap({
                             <p className="text-sm leading-6 text-white/55">{text.noConsumption}</p>
                           ) : (
                             <div className="space-y-1.5 pr-1">
-                              {selectedConsumptionItems.map((item) => (
-                                <div key={`${item.orderId}-${item.id}`} className="rounded-xl border border-white/10 bg-black/22 p-2.5">
-                                  <div className="flex items-center justify-between gap-3">
-                                    <div className="min-w-0">
-                                      <div className="truncate text-sm font-semibold text-[#fff4df]">{item.name}</div>
-                                      <div className="text-xs text-white/45">
-                                        {formatEuroAmount(item.unitPrice)} · {formatEuroAmount(item.unitPrice * item.quantity)}
-                                      </div>
-                                    </div>
+	                              {selectedConsumptionItems.map((item) => (
+	                                <div
+	                                  key={`${item.orderId}-${item.id}`}
+	                                  className={`rounded-xl border p-2.5 ${
+	                                    item.status === "New"
+	                                      ? "waiter-new-dish border-amber-300/35 bg-amber-400/12"
+	                                      : item.status === "Ready"
+	                                      ? "waiter-ready-dish border-emerald-300/35 bg-emerald-400/12"
+	                                      : "border-white/10 bg-black/22"
+	                                  }`}
+	                                >
+	                                  <div className="flex items-center justify-between gap-3">
+	                                    <div className="min-w-0">
+	                                      <div className="truncate text-sm font-semibold text-[#fff4df]">{item.name}</div>
+	                                      <div className="text-xs text-white/45">
+	                                        {formatEuroAmount(item.unitPrice)} · {formatEuroAmount(item.unitPrice * item.quantity)}
+	                                      </div>
+	                                      <div className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+	                                        item.status === "New"
+	                                          ? "border-amber-300/35 bg-amber-400/12 text-amber-100"
+	                                          : item.status === "Ready"
+	                                          ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-100"
+	                                          : "border-white/10 bg-black/25 text-white/50"
+	                                      }`}>
+	                                        {getDiningItemStatusLabel(item.status, language)}
+	                                      </div>
+	                                    </div>
                                     <div className="flex shrink-0 items-center overflow-hidden rounded-full border border-white/10">
                                       <button type="button" onClick={() => onUpdateConsumptionItem(item.id, item.quantity - 1)} className="px-2.5 py-1 text-[#f2d39a]">-</button>
                                       <span className="min-w-8 text-center text-sm text-white/80">{item.quantity}</span>
@@ -2455,6 +2489,14 @@ function hasReadyDiningItems(order) {
   return (order.items || []).some((item) => item.status === "Ready");
 }
 
+function hasNewDiningItems(order) {
+  return (order.items || []).some((item) => item.status === "New");
+}
+
+function hasWaiterAttentionItems(order) {
+  return hasNewDiningItems(order) || hasReadyDiningItems(order);
+}
+
 function formatBirthday(value, language) {
   if (!value) return "—";
 
@@ -2679,6 +2721,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [selectedMenuCategory, setSelectedMenuCategory] = React.useState("");
   const menuItemsRef = React.useRef(null);
   const seenKitchenOrderIdsRef = React.useRef(new Set());
+  const seenKitchenItemIdsRef = React.useRef(new Set());
   const seenReadyItemIdsRef = React.useRef(new Set());
   const [blacklistMode, setBlacklistMode] = React.useState("list");
   const [customersMode, setCustomersMode] = React.useState("customers");
@@ -4420,6 +4463,12 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       : 0,
     [diningOrders, isWaiterRole]
   );
+  const newWaiterItemsCount = React.useMemo(
+    () => isWaiterRole
+      ? diningOrders.reduce((count, order) => count + (order.items || []).filter((item) => item.status === "New").length, 0)
+      : 0,
+    [diningOrders, isWaiterRole]
+  );
   const allowedTabKeys = React.useMemo(() => new Set(["home", "profile", ...tabs.map(([key]) => key)]), [tabs]);
   const dashboardNavigationGroups = React.useMemo(() => {
     const operationKeys = new Set(["liveMap", "reservations", "block", "orders"]);
@@ -4568,6 +4617,23 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           ? `${adminLanguage === "bg" ? "Маса" : "Table"} ${firstOrder.tableLabel} · #${firstOrder.id}`
           : title;
         setAdminNotice(`${title}${firstOrder ? ` · ${body}` : "."}`);
+        showBrowserNotification(title, body);
+      }
+
+      const newKitchenItems = diningOrders.flatMap((order) =>
+        (order.items || [])
+          .filter((item) => item.status === "New")
+          .map((item) => ({ id: item.id, name: item.name, tableLabel: order.tableLabel }))
+      );
+      const unseenKitchenItems = newKitchenItems.filter((item) => !seenKitchenItemIdsRef.current.has(item.id));
+      const hadSeenKitchenItems = seenKitchenItemIdsRef.current.size > 0;
+
+      newKitchenItems.forEach((item) => seenKitchenItemIdsRef.current.add(item.id));
+      if (hadSeenKitchenItems && unseenKitchenItems.length > 0) {
+        const first = unseenKitchenItems[0];
+        const title = adminLanguage === "bg" ? "Нова позиция за кухнята" : "New kitchen item";
+        const body = `${first.name} · ${adminLanguage === "bg" ? "маса" : "table"} ${first.tableLabel}`;
+        setAdminNotice(`${title} · ${body}`);
         showBrowserNotification(title, body);
       }
     }
@@ -4758,10 +4824,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       <button
                         key={key}
                         type="button"
-                        onClick={() => setActiveTab(key)}
-                        className={`group flex min-h-[82px] items-center gap-3 rounded-[20px] border border-white/10 bg-white/[0.035] p-3 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10 ${
-                          key === "orders" && readyWaiterItemsCount > 0 ? "waiter-ready-alert" : ""
-                        }`}
+	                        onClick={() => setActiveTab(key)}
+	                        className={`group flex min-h-[82px] items-center gap-3 rounded-[20px] border border-white/10 bg-white/[0.035] p-3 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10 ${
+	                          key === "liveMap" && newWaiterItemsCount > 0
+	                            ? "waiter-new-alert"
+	                            : key === "orders" && readyWaiterItemsCount > 0
+	                            ? "waiter-ready-alert"
+	                            : ""
+	                        }`}
                       >
                         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/20 text-[#f2d39a] transition group-hover:border-[#f2d39a]/30 group-hover:bg-[#c9a56a]/12">
                           <AdminNavIcon type={key} className="h-6 w-6" />
@@ -4880,9 +4950,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           setExpandedOrderId(order.id);
                           setActiveTab("orders");
                         }}
-                        className={`rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10 ${
-                          isWaiterRole && hasReadyDiningItems(order) ? "waiter-ready-alert" : ""
-                        }`}
+	                        className={`rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10 ${
+	                          isWaiterRole && hasNewDiningItems(order)
+	                            ? "waiter-new-alert"
+	                            : isWaiterRole && hasReadyDiningItems(order)
+	                            ? "waiter-ready-alert"
+	                            : ""
+	                        }`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <span className="min-w-0 truncate text-base font-semibold text-[#fff4df]">
@@ -4895,11 +4969,17 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <div className="mt-3 truncate text-xs leading-5 text-white/50">
                           {order.guestName || "—"} · {formatEuroAmount(order.totalPrice)}
                         </div>
-                        {isWaiterRole && hasReadyDiningItems(order) && (
-                          <div className="mt-2 inline-flex rounded-full border border-emerald-300/30 bg-emerald-400/15 px-2.5 py-1 text-[11px] font-semibold text-emerald-100">
-                            {adminLanguage === "bg" ? "Има готово блюдо" : "Ready dish"}
-                          </div>
-                        )}
+	                        {isWaiterRole && hasWaiterAttentionItems(order) && (
+	                          <div className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+	                            hasNewDiningItems(order)
+	                              ? "border-amber-300/30 bg-amber-400/15 text-amber-100"
+	                              : "border-emerald-300/30 bg-emerald-400/15 text-emerald-100"
+	                          }`}>
+	                            {hasNewDiningItems(order)
+	                              ? adminLanguage === "bg" ? "Нова добавка" : "New addition"
+	                              : adminLanguage === "bg" ? "Има готово блюдо" : "Ready dish"}
+	                          </div>
+	                        )}
                       </button>
                     ))}
                   </div>
@@ -5735,8 +5815,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 ) : (
                   <div className="grid gap-4">
                     {diningOrders.map((order) => {
-                      const detailsId = `dining-order-${order.id}-details`;
-                      const hasReadyItems = hasReadyDiningItems(order);
+	                      const detailsId = `dining-order-${order.id}-details`;
+	                      const hasReadyItems = hasReadyDiningItems(order);
+	                      const hasNewItems = hasNewDiningItems(order);
                       const visibleOrderItems = isWaiterRole
                         ? order.items.filter((item) => item.status !== "Done" && item.status !== "Cancelled")
                         : order.items;
@@ -5755,12 +5836,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <article
                           key={order.id}
                           className={`rounded-[24px] border p-4 ${
-                            kitchenOrderComplete
-                              ? "border-emerald-300/20 bg-emerald-400/[0.06]"
-                            : isKitchenRole && order.status === "New"
-                              ? "new-kitchen-order border-amber-300/45 bg-amber-400/10 shadow-[0_0_34px_rgba(251,191,36,0.14)]"
-                              : isWaiterRole && hasReadyItems
-                              ? "waiter-ready-alert border-emerald-300/35 bg-emerald-400/10"
+	                            kitchenOrderComplete
+	                              ? "border-emerald-300/20 bg-emerald-400/[0.06]"
+	                            : isKitchenRole && order.status === "New"
+	                              ? "new-kitchen-order border-amber-300/45 bg-amber-400/10 shadow-[0_0_34px_rgba(251,191,36,0.14)]"
+	                              : isWaiterRole && hasNewItems
+	                              ? "waiter-new-alert border-amber-300/35 bg-amber-400/10"
+	                              : isWaiterRole && hasReadyItems
+	                              ? "waiter-ready-alert border-emerald-300/35 bg-emerald-400/10"
                               : "border-white/10 bg-white/[0.04]"
                           }`}
                         >
@@ -5926,8 +6009,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   <div
                                     key={item.id || item.name}
                                     className={`rounded-2xl border p-3 ${
-                                      isWaiterRole && item.status === "Ready"
-                                        ? "waiter-ready-dish border-emerald-300/35 bg-emerald-400/12"
+	                                      item.status === "New"
+	                                        ? "waiter-new-dish border-amber-300/35 bg-amber-400/12"
+	                                        : isWaiterRole && item.status === "Ready"
+	                                        ? "waiter-ready-dish border-emerald-300/35 bg-emerald-400/12"
                                         : "border-white/10 bg-black/20"
                                     }`}
                                   >

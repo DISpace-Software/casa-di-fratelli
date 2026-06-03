@@ -40,6 +40,7 @@ public class DiningOrdersController : ControllerBase
         var quantity = Math.Min(request.Quantity, 99);
         var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
         var existingItem = order.Items.FirstOrDefault(x =>
+            x.Status == "New" &&
             x.MenuItemId == request.MenuItemId &&
             x.Name.Equals(name, StringComparison.OrdinalIgnoreCase) &&
             x.UnitPrice == request.UnitPrice &&
@@ -61,6 +62,7 @@ public class DiningOrdersController : ControllerBase
             existingItem.Quantity = Math.Min(existingItem.Quantity + quantity, 99);
         }
 
+        order.Status = "New";
         order.TotalPrice = order.Items.Sum(x => x.UnitPrice * x.Quantity);
     }
 
