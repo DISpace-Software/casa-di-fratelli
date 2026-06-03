@@ -34,6 +34,7 @@ public class AdminAuthController : ControllerBase
     public sealed record AdminLoginRequest(string Email, string Password);
     public sealed record RequestPasswordResetRequest(string Email);
     public sealed record ResetPasswordRequest(string Email, string Token, string Password);
+    public sealed record ChangeOwnPasswordRequest(string CurrentPassword, string NewPassword);
     public sealed record CreateAdminRequest(string Name, string Email, string Password, string Role);
     public sealed record UpdateAdminRequest(string Name, string Email, string? Password, string Role, bool IsActive);
     public sealed record DeviceLoginRequest(string CredentialToken);
@@ -170,6 +171,39 @@ public class AdminAuthController : ControllerBase
     public IActionResult Me()
     {
         return Ok(AdminAuthService.Current(HttpContext));
+    }
+
+    [HttpPatch("me/password")]
+    [AdminAuthorize]
+    public async Task<IActionResult> ChangeOwnPassword([FromBody] ChangeOwnPasswordRequest request)
+    {
+        var current = AdminAuthService.Current(HttpContext);
+        if (current == null)
+            return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword) || string.IsNullOrWhiteSpace(request.NewPassword))
+            return BadRequest(new { message = "Current password and new password are required." });
+
+        if (request.NewPassword.Length < 8)
+            return BadRequest(new { message = "Password must be at least 8 characters." });
+
+        var user = await _db.AdminUsers.FirstOrDefaultAsync(x => x.Id == current.Id && x.IsActive);
+        if (user == null)
+            return NotFound();
+
+        if (!AdminAuthService.VerifyPassword(request.CurrentPassword, user.PasswordHash, user.PasswordSalt))
+            return BadRequest(new { message = "Current password is incorrect." });
+
+        var (hash, salt) = AdminAuthService.HashPassword(request.NewPassword);
+        user.PasswordHash = hash;
+        user.PasswordSalt = salt;
+        user.PasswordResetTokenHash = null;
+        user.PasswordResetTokenExpiresAtUtc = null;
+
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "change-own-password", "AdminUser", user.Id.ToString(), after: new { user.Id, user.Email });
+
+        return Ok(new { message = "Password was changed." });
     }
 
     [HttpGet("users")]
