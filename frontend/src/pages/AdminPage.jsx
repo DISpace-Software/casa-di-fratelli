@@ -2416,6 +2416,87 @@ function RoleProfileIcon({ role, className = "h-12 w-12" }) {
   );
 }
 
+function AdminNavIcon({ type, className = "h-6 w-6" }) {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.8,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  };
+
+  return (
+    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
+      {type === "liveMap" && (
+        <>
+          <path d="M5 8l7-3 8 3 7-3v19l-7 3-8-3-7 3z" {...common} />
+          <path d="M12 5v19M20 8v19" {...common} />
+          <circle cx="16" cy="15" r="3" {...common} />
+        </>
+      )}
+      {type === "reservations" && (
+        <>
+          <rect x="6" y="7" width="20" height="20" rx="4" {...common} />
+          <path d="M10 5v5M22 5v5M6 13h20" {...common} />
+          <path d="M11 18h4M18 18h3M11 23h7" {...common} />
+        </>
+      )}
+      {type === "block" && (
+        <>
+          <rect x="6" y="8" width="20" height="18" rx="4" {...common} />
+          <path d="M10 13h12M10 18h8" {...common} />
+          <path d="M21 23l5-5M26 23l-5-5" {...common} />
+        </>
+      )}
+      {type === "orders" && (
+        <>
+          <path d="M9 24h14" {...common} />
+          <path d="M8 22c1-7 5-11 8-11s7 4 8 11z" {...common} />
+          <path d="M16 8v3" {...common} />
+          <path d="M11 6h10" {...common} />
+        </>
+      )}
+      {type === "reports" && (
+        <>
+          <path d="M7 25h18" {...common} />
+          <path d="M10 21v-7M16 21V9M22 21v-4" {...common} />
+          <path d="M8 8l5 4 5-5 5 3" {...common} />
+        </>
+      )}
+      {type === "menu" && (
+        <>
+          <path d="M9 6v20M23 6v20" {...common} />
+          <path d="M12 9h7M12 14h7M12 19h7" {...common} />
+          <path d="M7 6h18v20H7z" {...common} />
+        </>
+      )}
+      {type === "layout" && (
+        <>
+          <rect x="6" y="7" width="8" height="7" rx="2" {...common} />
+          <rect x="18" y="7" width="8" height="7" rx="2" {...common} />
+          <rect x="6" y="18" width="8" height="7" rx="2" {...common} />
+          <rect x="18" y="18" width="8" height="7" rx="2" {...common} />
+        </>
+      )}
+      {type === "customers" && (
+        <>
+          <circle cx="13" cy="12" r="4" {...common} />
+          <path d="M6 25c1.5-6 5-9 7-9s5.5 3 7 9" {...common} />
+          <circle cx="22" cy="14" r="3" {...common} />
+          <path d="M19 20c2.5.5 4.5 2.3 5.5 5" {...common} />
+        </>
+      )}
+      {type === "admins" && (
+        <>
+          <circle cx="16" cy="11" r="4" {...common} />
+          <path d="M8 25c2-7 6-10 8-10s6 3 8 10" {...common} />
+          <path d="M24 8l2 2 4-5" {...common} />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function Panel({ title, subtitle, children, right }) {
   return (
     <div className="luxury-panel rounded-[26px] p-5 md:p-6">
@@ -4167,6 +4248,34 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     [a.tabs, adminLanguage, canManageAdmins, isKitchenRole, isWaiterRole]
   );
   const allowedTabKeys = React.useMemo(() => new Set(["home", "profile", ...tabs.map(([key]) => key)]), [tabs]);
+  const dashboardNavigationGroups = React.useMemo(() => {
+    const operationKeys = new Set(["liveMap", "reservations", "block", "orders"]);
+    const operationTabs = tabs.filter(([key]) => operationKeys.has(key));
+    const managementTabs = tabs.filter(([key]) => !operationKeys.has(key));
+
+    return [
+      {
+        key: "operations",
+        title: adminLanguage === "bg" ? "Резервации и поръчки" : "Reservations and orders",
+        subtitle:
+          adminLanguage === "bg"
+            ? "Бърз достъп до залата, календарите и текущите консумации."
+            : "Fast access to the floor, calendars, and live consumption.",
+        icon: "reservations",
+        tabs: operationTabs,
+      },
+      {
+        key: "management",
+        title: adminLanguage === "bg" ? "Управление" : "Management",
+        subtitle:
+          adminLanguage === "bg"
+            ? "Меню, клиенти, отчети, разпределение и админ настройки."
+            : "Menu, guests, reports, layout, and admin settings.",
+        icon: "layout",
+        tabs: managementTabs,
+      },
+    ].filter((group) => group.tabs.length > 0);
+  }, [adminLanguage, tabs]);
 
   React.useEffect(() => {
     if (!allowedTabKeys.has(activeTab)) {
@@ -4432,15 +4541,50 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               {!isOperationalRole && <StatCard label={a.stats.pending} value={pendingCount} />}
             </div>
 
-            <div className="mb-8 grid grid-cols-2 gap-2 rounded-[22px] border border-white/10 bg-black/20 p-2 sm:grid-cols-3">
-              {tabs.map(([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveTab(key)}
-                  className="ghost-button rounded-2xl px-4 py-3 text-center text-sm text-white/80 transition"
+            <div className="mb-8 grid gap-4 xl:grid-cols-2">
+              {dashboardNavigationGroups.map((group) => (
+                <section
+                  key={group.key}
+                  className="relative overflow-hidden rounded-[28px] border border-white/10 bg-black/20 p-4 shadow-2xl shadow-black/15"
                 >
-                  {label}
-                </button>
+                  <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full border border-[#c9a56a]/10 bg-[#c9a56a]/5" />
+                  <div className="relative mb-4 flex items-start gap-3">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#f2d39a]/18 bg-[#c9a56a]/10 text-[#f2d39a]">
+                      <AdminNavIcon type={group.icon} />
+                    </div>
+                    <div>
+                      <div className="section-kicker">{group.title}</div>
+                      <p className="mt-2 text-sm leading-5 text-white/45">
+                        {group.subtitle}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="relative grid gap-2 sm:grid-cols-2">
+                    {group.tabs.map(([key, label]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setActiveTab(key)}
+                        className="group flex min-h-[82px] items-center gap-3 rounded-[20px] border border-white/10 bg-white/[0.035] p-3 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10"
+                      >
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/20 text-[#f2d39a] transition group-hover:border-[#f2d39a]/30 group-hover:bg-[#c9a56a]/12">
+                          <AdminNavIcon type={key} className="h-6 w-6" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold text-[#fff4df]">
+                            {label}
+                          </span>
+                          <span className="mt-1 block text-xs uppercase tracking-[0.16em] text-white/35">
+                            {group.key === "operations"
+                              ? adminLanguage === "bg" ? "Оперативно" : "Operations"
+                              : adminLanguage === "bg" ? "Контрол" : "Control"}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
 
