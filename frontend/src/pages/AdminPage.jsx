@@ -2004,19 +2004,19 @@ function ReservationOperationsMap({
 
               {showConsumption && selectedReservation.isArrived && (
                 <div
-                  className="fixed inset-0 z-[140] flex items-end justify-center bg-black/72 px-3 py-3 backdrop-blur-md md:items-center md:px-5 md:py-6"
+                  className="fixed inset-0 z-[140] flex items-stretch justify-center bg-black/72 p-2 backdrop-blur-md sm:p-3 md:items-center md:p-4"
                   role="dialog"
                   aria-modal="true"
                 >
                   <div
                     ref={consumptionPanelRef}
-                    className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl min-w-0 flex-col overflow-hidden rounded-[26px] border border-emerald-300/20 bg-[#15110e] shadow-[0_32px_120px_rgba(0,0,0,0.72)] md:max-h-[calc(100dvh-3rem)]"
+                    className="flex h-[calc(100svh-1rem)] max-h-[calc(100svh-1rem)] w-full max-w-5xl min-w-0 flex-col overflow-hidden rounded-[22px] border border-emerald-300/20 bg-[#15110e] shadow-[0_32px_120px_rgba(0,0,0,0.72)] sm:h-[calc(100svh-1.5rem)] sm:max-h-[calc(100svh-1.5rem)] md:h-[min(760px,calc(100svh-2rem))] md:max-h-[calc(100svh-2rem)] md:rounded-[26px]"
                   >
-                    <div className="shrink-0 border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-4 md:p-5">
+                    <div className="shrink-0 border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-3 md:p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <div className="section-kicker">{text.consumption}</div>
-                          <div className="mt-2 truncate text-lg font-semibold text-[#fff4df] md:text-2xl">
+                          <div className="mt-1 truncate text-base font-semibold text-[#fff4df] sm:text-lg md:text-2xl">
                             {selectedReservation.guestName} · {formatEuroAmount(selectedConsumptionTotal)}
                           </div>
                           <div className="mt-1 text-xs text-white/45">
@@ -2026,25 +2026,25 @@ function ReservationOperationsMap({
                         <button
                           type="button"
                           onClick={() => setShowConsumption(false)}
-                          className="shrink-0 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold text-white/75 transition hover:border-white/25 hover:text-white"
+                          className="shrink-0 rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-semibold text-white/75 transition hover:border-white/25 hover:text-white sm:px-4"
                         >
                           {text.close}
                         </button>
                       </div>
                     </div>
 
-                    <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">
-                      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                        <div className="min-w-0 rounded-2xl border border-white/10 bg-black/20 p-3 md:p-4">
-                          <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#f2d39a]">
+                    <div className="min-h-0 flex-1 overflow-hidden p-2.5 sm:p-3 md:p-4">
+                      <div className="grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2.5 sm:gap-3 lg:grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)] lg:grid-rows-1">
+                        <div className="min-h-0 min-w-0 rounded-2xl border border-white/10 bg-black/20 p-2.5 sm:p-3 md:p-4">
+                          <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#f2d39a] sm:text-xs">
                             {language === "bg" ? "Текуща консумация" : "Current consumption"}
                           </div>
                           {selectedConsumptionItems.length === 0 ? (
                             <p className="text-sm leading-6 text-white/55">{text.noConsumption}</p>
                           ) : (
-                            <div className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
+                            <div className="max-h-[7.5rem] space-y-1.5 overflow-y-auto pr-1 lg:max-h-[calc(100%-2rem)]">
                               {selectedConsumptionItems.map((item) => (
-                                <div key={`${item.orderId}-${item.id}`} className="rounded-xl border border-white/10 bg-black/22 p-3">
+                                <div key={`${item.orderId}-${item.id}`} className="rounded-xl border border-white/10 bg-black/22 p-2.5">
                                   <div className="flex items-center justify-between gap-3">
                                     <div className="min-w-0">
                                       <div className="truncate text-sm font-semibold text-[#fff4df]">{item.name}</div>
@@ -2053,9 +2053,9 @@ function ReservationOperationsMap({
                                       </div>
                                     </div>
                                     <div className="flex shrink-0 items-center overflow-hidden rounded-full border border-white/10">
-                                      <button type="button" onClick={() => onUpdateConsumptionItem(item.id, item.quantity - 1)} className="px-3 py-1 text-[#f2d39a]">-</button>
+                                      <button type="button" onClick={() => onUpdateConsumptionItem(item.id, item.quantity - 1)} className="px-2.5 py-1 text-[#f2d39a]">-</button>
                                       <span className="min-w-8 text-center text-sm text-white/80">{item.quantity}</span>
-                                      <button type="button" onClick={() => onUpdateConsumptionItem(item.id, item.quantity + 1)} className="px-3 py-1 text-[#f2d39a]">+</button>
+                                      <button type="button" onClick={() => onUpdateConsumptionItem(item.id, item.quantity + 1)} className="px-2.5 py-1 text-[#f2d39a]">+</button>
                                     </div>
                                   </div>
                                 </div>
@@ -2064,11 +2064,11 @@ function ReservationOperationsMap({
                           )}
                         </div>
 
-                        <div className="min-w-0 rounded-2xl border border-emerald-300/16 bg-emerald-400/8 p-3 md:p-4">
-                          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#f2d39a]">
+                        <div className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-emerald-300/16 bg-emerald-400/8 p-2.5 sm:p-3 md:p-4">
+                          <div className="mb-2 shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#f2d39a] sm:text-xs">
                             {text.addConsumption}
                           </div>
-                          <div className="-mx-1 mb-3 flex max-w-full snap-x gap-2 overflow-x-auto px-1 pb-1">
+                          <div className="-mx-1 mb-2 flex max-w-full shrink-0 snap-x gap-2 overflow-x-auto px-1 pb-1">
                             {[
                               { id: "all", label: text.allDishes || "All", count: menuItems.filter((item) => (getValue(item, "isActive") ?? true) === true).length },
                               ...consumptionMenuGroups.map((group) => ({ ...group, count: group.items.length })),
@@ -2086,8 +2086,8 @@ function ReservationOperationsMap({
                                     : "border-white/10 bg-black/22 text-white/68 hover:border-[#c9a56a]/35"
                                 }`}
                               >
-                                <span className="block truncate text-sm font-semibold">{category.label}</span>
-                                <span className="mt-1 block text-[11px] text-white/45">
+                                <span className="block truncate text-xs font-semibold sm:text-sm">{category.label}</span>
+                                <span className="mt-0.5 block text-[10px] text-white/45 sm:text-[11px]">
                                   {category.count} {language === "bg" ? "позиции" : "items"}
                                 </span>
                               </button>
@@ -2097,9 +2097,9 @@ function ReservationOperationsMap({
                             value={consumptionSearch}
                             onChange={(event) => setConsumptionSearch(event.target.value)}
                             placeholder={text.searchDish}
-                            className="mb-3 w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/50"
+                            className="mb-2 w-full shrink-0 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/50"
                           />
-                          <div className="max-h-[32rem] space-y-2 overflow-y-auto pr-1">
+                          <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
                             {filteredConsumptionMenuItems.length === 0 ? (
                               <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-4 text-sm text-white/55">
                                 {language === "bg" ? "Няма намерени ястия." : "No dishes found."}
@@ -2119,9 +2119,9 @@ function ReservationOperationsMap({
                                       unitPrice: price,
                                       quantity: 1,
                                     })}
-                                    className="flex w-full min-w-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-2 text-left transition hover:border-[#c9a56a]/40 active:scale-[0.99]"
+                                    className="flex w-full min-w-0 items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.035] p-2 text-left transition hover:border-[#c9a56a]/40 active:scale-[0.99]"
                                   >
-                                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/25 sm:h-16 sm:w-16">
+                                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/25 sm:h-14 sm:w-14">
                                       {imageUrl ? (
                                         <img src={imageUrl} alt="" className="h-full w-full object-cover" />
                                       ) : (
@@ -2132,11 +2132,11 @@ function ReservationOperationsMap({
                                     </div>
                                     <span className="min-w-0 flex-1">
                                       <span className="block truncate text-sm font-semibold text-white/86">{name}</span>
-                                      <span className="mt-1 block text-xs text-white/45">
+                                      <span className="mt-0.5 block text-xs text-white/45">
                                         {weight ? `${weight} · ` : ""}{formatEuroAmount(price)}
                                       </span>
                                     </span>
-                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f2d39a]/25 bg-[#c9a56a]/14 text-lg font-semibold text-[#f2d39a]">
+                                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#f2d39a]/25 bg-[#c9a56a]/14 text-lg font-semibold text-[#f2d39a]">
                                       +
                                     </span>
                                   </button>
