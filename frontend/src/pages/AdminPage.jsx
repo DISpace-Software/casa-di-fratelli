@@ -2346,6 +2346,76 @@ function StatusBadge({ status }) {
   );
 }
 
+function RefreshIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M20 11a8 8 0 0 0-14.2-4.9" />
+      <path d="M5 3v4.8h4.8" />
+      <path d="M4 13a8 8 0 0 0 14.2 4.9" />
+      <path d="M19 21v-4.8h-4.8" />
+    </svg>
+  );
+}
+
+function RoleProfileIcon({ role, className = "h-12 w-12" }) {
+  const normalized = normalizeAdminRole(role);
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.55,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+  };
+
+  return (
+    <svg viewBox="0 0 64 80" className={className} aria-hidden="true">
+      <circle cx="32" cy="20" r="9" {...common} />
+      <path d="M18 55c2-12 8-18 14-18s12 6 14 18" {...common} />
+
+      {normalized === "Kitchen" && (
+        <>
+          <path d="M18 15c-2-7 7-12 12-6 5-7 16-2 14 6 5 0 8 7 3 11H17c-5-4-2-11 3-11z" {...common} />
+          <path d="M20 28h24" {...common} />
+        </>
+      )}
+
+      {normalized === "Waiter" && (
+        <>
+          <path d="M45 38c7 0 11 4 11 9H34c0-5 4-9 11-9z" {...common} />
+          <path d="M45 34v4" {...common} />
+          <path d="M42 34h6" {...common} />
+          <path d="M16 42c5 3 8 7 9 13" {...common} />
+        </>
+      )}
+
+      {normalized === "Administrator" && (
+        <>
+          <path d="M43 38h13v18H39V42a4 4 0 0 1 4-4z" {...common} />
+          <path d="M43 44h10M43 49h8" {...common} />
+          <path d="M14 50l10-10 4 4-10 10-6 2z" {...common} />
+        </>
+      )}
+
+      {normalized === "Owner" && (
+        <>
+          <path d="M14 58h38" {...common} />
+          <path d="M20 47c7 5 17 5 24 0" {...common} />
+          <path d="M20 47l-8 7M44 47l8 7" {...common} />
+          <path d="M23 39c5 5 13 5 18 0" {...common} />
+        </>
+      )}
+
+      {normalized === "Developer" && (
+        <>
+          <path d="M25 20h-5a4 4 0 0 0 0 8h5M39 20h5a4 4 0 0 1 0 8h-5M25 24h14" {...common} />
+          <path d="M17 48h30l4 10H13z" {...common} />
+          <path d="M28 52h8" {...common} />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function Panel({ title, subtitle, children, right }) {
   return (
     <div className="luxury-panel rounded-[26px] p-5 md:p-6">
@@ -2417,7 +2487,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     currentPassword: "",
     newPassword: "",
   });
-  const [showProfilePanel, setShowProfilePanel] = React.useState(false);
   const [editingAdminId, setEditingAdminId] = React.useState(null);
   const [adminEditForm, setAdminEditForm] = React.useState({
     name: "",
@@ -4099,7 +4168,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         ],
     [a.tabs, adminLanguage, canManageAdmins, isKitchenRole, isWaiterRole]
   );
-  const allowedTabKeys = React.useMemo(() => new Set(["home", ...tabs.map(([key]) => key)]), [tabs]);
+  const allowedTabKeys = React.useMemo(() => new Set(["home", "profile", ...tabs.map(([key]) => key)]), [tabs]);
 
   React.useEffect(() => {
     if (!allowedTabKeys.has(activeTab)) {
@@ -4239,7 +4308,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   }, [adminLanguage, diningOrders, isKitchenRole, isWaiterRole]);
 
   const isDashboard = activeTab === "home";
-  const activeTabLabel = tabs.find(([key]) => key === activeTab)?.[1] || a.appTitle;
+  const activeTabLabel =
+    activeTab === "profile"
+      ? (adminLanguage === "bg" ? "Моят профил" : "My profile")
+      : tabs.find(([key]) => key === activeTab)?.[1] || a.appTitle;
   const upcomingDashboardReservations = reservations
     .filter((reservation) => {
       if (!["Pending", "Approved"].includes(reservation.status)) return false;
@@ -4303,10 +4375,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             </div>
 
             <button
+              type="button"
               onClick={() => refreshActiveTab()}
-              className="ghost-button rounded-full px-5 py-3 text-sm font-semibold"
+              className="ghost-button flex h-12 w-12 items-center justify-center rounded-full text-white/80"
+              title={a.refresh}
+              aria-label={a.refresh}
             >
-              {a.refresh}
+              <RefreshIcon />
             </button>
             {onToggleTheme ? (
               <button
@@ -4319,73 +4394,19 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             ) : null}
             <button
               type="button"
-              onClick={() => setShowProfilePanel((isOpen) => !isOpen)}
-              className="ghost-button rounded-full px-5 py-3 text-sm font-semibold text-white/80"
+              onClick={() => setActiveTab("profile")}
+              className={`flex h-14 w-14 items-center justify-center rounded-full border transition ${
+                activeTab === "profile"
+                  ? "border-[#f2d39a]/60 bg-[#c9a56a]/18 text-[#f2d39a]"
+                  : "border-white/10 bg-black/20 text-white/75 hover:border-[#c9a56a]/35 hover:text-[#f2d39a]"
+              }`}
+              title={adminLanguage === "bg" ? "Моят профил" : "My profile"}
+              aria-label={adminLanguage === "bg" ? "Моят профил" : "My profile"}
             >
-              {adminLanguage === "bg" ? "Моят профил" : "My profile"}
+              <RoleProfileIcon role={adminUser?.role} className="h-10 w-10" />
             </button>
           </div>
         </div>
-        {showProfilePanel && (
-          <div className="-mt-4 mb-8 rounded-[24px] border border-white/10 bg-black/30 p-4 shadow-2xl shadow-black/25 md:p-5">
-            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-              <div>
-                <div className="section-kicker">
-                  {adminLanguage === "bg" ? "Профил" : "Profile"}
-                </div>
-                <h2 className="mt-2 text-xl font-semibold text-[#fff4df]">
-                  {adminUser?.name || adminUser?.email || (adminLanguage === "bg" ? "Моят профил" : "My profile")}
-                </h2>
-                <div className="mt-1 text-sm text-white/45">
-                  {adminUser?.email} · {getAdminRoleLabel(adminUser?.role, adminLanguage)}
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowProfilePanel(false)}
-                  className="ghost-button rounded-full px-4 py-2 text-sm font-semibold"
-                >
-                  {adminLanguage === "bg" ? "Затвори" : "Close"}
-                </button>
-                <button
-                  type="button"
-                  onClick={onAdminLogout}
-                  className="rounded-full border border-red-300/25 bg-red-500/12 px-4 py-2 text-sm font-semibold text-red-100"
-                >
-                  {adminLanguage === "bg" ? "Изход" : "Logout"}
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={changeOwnPassword} className="rounded-2xl border border-white/10 bg-black/20 p-3 md:p-4">
-              <div className="mb-3 text-sm font-semibold text-[#fff4df]">
-                {adminLanguage === "bg" ? "Смяна на парола" : "Change password"}
-              </div>
-              <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  value={ownPasswordForm.currentPassword}
-                  onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
-                  placeholder={adminLanguage === "bg" ? "Текуща парола" : "Current password"}
-                  className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-300"
-                />
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  value={ownPasswordForm.newPassword}
-                  onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))}
-                  placeholder={adminLanguage === "bg" ? "Нова парола" : "New password"}
-                  className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-300"
-                />
-                <button className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold">
-                  {adminLanguage === "bg" ? "Смени" : "Change"}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
         {isDashboard ? (
           <>
             <div className="mb-4 flex flex-wrap gap-2">
@@ -4578,6 +4599,82 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           <Panel title="Loading">Loading...</Panel>
         ) : !isDashboard ? (
           <>
+            {activeTab === "profile" && (
+              <Panel
+                title={adminLanguage === "bg" ? "Моят профил" : "My profile"}
+                subtitle={
+                  adminLanguage === "bg"
+                    ? "Личен достъп, смяна на парола и изход от системата."
+                    : "Personal access, password change, and logout."
+                }
+                right={
+                  <button
+                    type="button"
+                    onClick={onAdminLogout}
+                    className="rounded-2xl border border-red-300/25 bg-red-500/12 px-5 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-500/20"
+                  >
+                    {adminLanguage === "bg" ? "Изход" : "Logout"}
+                  </button>
+                }
+              >
+                <div className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr]">
+                  <div className="rounded-[26px] border border-white/10 bg-black/20 p-5 text-center md:p-6">
+                    <div className="mx-auto flex h-36 w-28 items-center justify-center rounded-[32px] border border-[#c9a56a]/24 bg-[#c9a56a]/8 text-[#f2d39a]">
+                      <RoleProfileIcon role={adminUser?.role} className="h-28 w-24" />
+                    </div>
+                    <h3 className="mt-5 text-2xl font-semibold text-[#fff4df]">
+                      {adminUser?.name || adminUser?.email || "Admin"}
+                    </h3>
+                    <div className="mt-2 text-sm text-white/45">{adminUser?.email}</div>
+                    <div className="mt-4 inline-flex rounded-full border border-[#f2d39a]/20 bg-[#c9a56a]/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#f2d39a]">
+                      {getAdminRoleLabel(adminUser?.role, adminLanguage)}
+                    </div>
+                  </div>
+
+                  <form onSubmit={changeOwnPassword} className="rounded-[26px] border border-white/10 bg-black/20 p-5 md:p-6">
+                    <div className="section-kicker">
+                      {adminLanguage === "bg" ? "Сигурност" : "Security"}
+                    </div>
+                    <h3 className="mt-2 text-2xl font-semibold text-[#fff4df]">
+                      {adminLanguage === "bg" ? "Смяна на парола" : "Change password"}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-white/45">
+                      {adminLanguage === "bg"
+                        ? "Въведете текущата парола и нова парола с поне 8 символа."
+                        : "Enter your current password and a new password with at least 8 characters."}
+                    </p>
+
+                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+                      <label className="block text-sm text-white/60">
+                        {adminLanguage === "bg" ? "Текуща парола" : "Current password"}
+                        <input
+                          type="password"
+                          autoComplete="current-password"
+                          value={ownPasswordForm.currentPassword}
+                          onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
+                          className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-300"
+                        />
+                      </label>
+                      <label className="block text-sm text-white/60">
+                        {adminLanguage === "bg" ? "Нова парола" : "New password"}
+                        <input
+                          type="password"
+                          autoComplete="new-password"
+                          value={ownPasswordForm.newPassword}
+                          onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))}
+                          className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-300"
+                        />
+                      </label>
+                    </div>
+
+                    <button className="luxury-button mt-5 rounded-2xl px-6 py-3 text-sm font-semibold">
+                      {adminLanguage === "bg" ? "Смени паролата" : "Change password"}
+                    </button>
+                  </form>
+                </div>
+              </Panel>
+            )}
+
             {activeTab === "liveMap" && (
               <ReservationOperationsMap
                 text={a.liveMap}
