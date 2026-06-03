@@ -4427,13 +4427,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   return (
     <div className="admin-page luxury-shell min-h-screen text-white">
       <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-8">
-        <div className={`luxury-panel relative mb-8 rounded-[28px] flex flex-col gap-5 ${
-          isDashboard ? "p-6 pr-24 md:p-8 md:pr-28" : "p-4 pr-20 md:p-5 md:pr-24"
+        <div className={`luxury-panel relative mb-8 rounded-[28px] flex flex-col ${
+          isDashboard
+            ? "min-h-[214px] p-6 pr-24 md:min-h-[220px] md:p-8 md:pr-32"
+            : "min-h-[148px] p-4 pr-20 md:min-h-[132px] md:p-5 md:pr-32"
         }`}>
           <button
             type="button"
             onClick={() => setActiveTab("profile")}
-            className={`absolute right-5 top-5 flex h-16 w-12 items-center justify-center rounded-[22px] border p-1 transition md:right-6 md:top-6 ${
+            className={`absolute right-5 top-5 flex h-16 w-12 items-center justify-center rounded-[22px] border p-1 transition md:right-7 md:top-7 ${
               activeTab === "profile"
                 ? "border-[#f2d39a]/60 bg-[#c9a56a]/18 text-[#f2d39a]"
                 : "border-white/10 bg-black/20 text-white/75 hover:border-[#c9a56a]/35 hover:text-[#f2d39a]"
@@ -4444,7 +4446,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             <RoleProfileIcon role={adminUser?.role} className="h-full w-full rounded-[18px]" />
           </button>
 
-          <div className={isDashboard ? "max-w-[760px]" : ""}>
+          <div className={isDashboard ? "max-w-[760px]" : "pr-2"}>
             <img
               src="/casa-di-fratelli-logo.svg"
               alt="Casa di Fratelli"
@@ -4465,8 +4467,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           <div
             className={`flex w-full items-center gap-3 ${
               isDashboard
-                ? "mt-1 justify-between md:justify-end lg:absolute lg:right-28 lg:bottom-28 lg:mt-0 lg:w-auto"
-                : "justify-between md:justify-end"
+                ? "mt-7 justify-between md:justify-end lg:absolute lg:right-32 lg:top-1/2 lg:mt-0 lg:w-auto lg:-translate-y-1/2"
+                : "mt-6 justify-between md:justify-end lg:absolute lg:right-32 lg:top-1/2 lg:mt-0 lg:w-auto lg:-translate-y-1/2"
             }`}
           >
             <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
