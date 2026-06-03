@@ -4429,8 +4429,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-8">
         <div className={`admin-hero-panel luxury-panel relative mb-8 rounded-[28px] flex flex-col ${
           isDashboard
-            ? "min-h-[214px] p-6 pr-24 md:min-h-[220px] md:p-8 md:pr-32"
-            : "min-h-[148px] p-4 pr-20 md:min-h-[132px] md:p-5 md:pr-32"
+            ? "min-h-[236px] p-6 pr-24 pb-24 md:min-h-[232px] md:p-8 md:pr-32 md:pb-8"
+            : "min-h-[156px] p-4 pr-20 pb-24 md:min-h-[148px] md:p-5 md:pr-32 md:pb-5"
         }`}>
           <button
             type="button"
@@ -4465,11 +4465,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           </div>
 
           <div
-            className={`admin-header-controls flex w-full items-center gap-3 ${
-              isDashboard
-                ? "mt-7 justify-between md:justify-end lg:absolute lg:right-32 lg:top-1/2 lg:mt-0 lg:w-auto lg:-translate-y-1/2"
-                : "mt-6 justify-between md:justify-end lg:absolute lg:right-32 lg:top-1/2 lg:mt-0 lg:w-auto lg:-translate-y-1/2"
-            }`}
+            className="admin-header-controls absolute bottom-5 right-5 flex w-auto items-center justify-end gap-3 md:bottom-7 md:right-7"
           >
             <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
               {["bg", "en"].map((lang) => (
