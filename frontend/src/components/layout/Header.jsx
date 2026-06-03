@@ -1,4 +1,5 @@
 import React from "react";
+import ThemeToggleIcon from "./ThemeToggleIcon";
 
 function LocationIcon({ className = "h-4 w-4" }) {
   return (
@@ -135,9 +136,11 @@ export default function Header({
               <button
                 type="button"
                 onClick={onToggleTheme}
-                className="flex h-10 min-w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-3 text-xs font-semibold text-stone-300 transition hover:border-[#c9a56a]/35 hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-stone-300 transition hover:border-[#c9a56a]/35 hover:text-white"
+                title={theme === "light" ? "Dark" : "Light"}
+                aria-label={theme === "light" ? "Dark" : "Light"}
               >
-                {theme === "light" ? "Dark" : "Light"}
+                <ThemeToggleIcon theme={theme} className="h-[18px] w-[18px]" />
               </button>
             ) : null}
           </div>
@@ -174,9 +177,11 @@ export default function Header({
               <button
                 type="button"
                 onClick={onToggleTheme}
-                className="flex h-10 min-w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] px-2 text-[10px] font-semibold text-stone-300 transition active:scale-95"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-stone-300 transition active:scale-95"
+                title={theme === "light" ? "Dark" : "Light"}
+                aria-label={theme === "light" ? "Dark" : "Light"}
               >
-                {theme === "light" ? "Dark" : "Light"}
+                <ThemeToggleIcon theme={theme} className="h-[18px] w-[18px]" />
               </button>
             ) : null}
 

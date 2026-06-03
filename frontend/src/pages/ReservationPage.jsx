@@ -1,4 +1,5 @@
 import React from "react";
+import ThemeToggleIcon from "../components/layout/ThemeToggleIcon";
 import { API_BASE_URL } from "../config/api";
 import {
   defaultGardenTables,
@@ -1282,8 +1283,14 @@ if (bookingMode === "single") {
               </button>
 
               {onToggleTheme ? (
-                <button type="button" onClick={onToggleTheme} className="ghost-button rounded-full px-4 py-2">
-                  {theme === "light" ? "Dark" : "Light"}
+                <button
+                  type="button"
+                  onClick={onToggleTheme}
+                  className="ghost-button flex h-10 w-10 items-center justify-center rounded-full"
+                  title={theme === "light" ? "Dark" : "Light"}
+                  aria-label={theme === "light" ? "Dark" : "Light"}
+                >
+                  <ThemeToggleIcon theme={theme} className="h-[18px] w-[18px]" />
                 </button>
               ) : null}
 
