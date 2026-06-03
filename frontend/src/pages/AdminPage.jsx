@@ -3879,8 +3879,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   });
 
   const pendingCount = statsReservations.filter((r) => r.status === "Pending").length;
-  const approvedCount = statsReservations.filter((r) => r.status === "Approved").length;
-  const blacklistCount = blacklist.length;
   const blacklistKeys = new Set(
     blacklist.flatMap((entry) => [
       String(entry.phone || entry.Phone || "").trim().toLowerCase(),
@@ -4428,12 +4426,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               ))}
             </div>
 
-            <div className={`mb-8 grid gap-4 ${isOperationalRole ? "md:grid-cols-2" : "md:grid-cols-5"}`}>
+            <div className={`mb-8 grid gap-4 ${isOperationalRole ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
               {!isOperationalRole && <StatCard label={a.stats.allReservations} value={statsReservations.length} />}
               <StatCard label={a.stats.orders} value={diningOrders.length} />
               {!isOperationalRole && <StatCard label={a.stats.pending} value={pendingCount} />}
-              {!isOperationalRole && <StatCard label={a.stats.approved} value={approvedCount} />}
-              {!isOperationalRole && <StatCard label={a.stats.blacklist} value={blacklistCount} />}
             </div>
 
             <div className="mb-8 grid grid-cols-2 gap-2 rounded-[22px] border border-white/10 bg-black/20 p-2 sm:grid-cols-3">
