@@ -1150,6 +1150,14 @@ html[data-theme="light"] .menu-page .text-white\/70 {
 }
 
 @media (max-width: 640px) {
+  .admin-page .admin-header-controls {
+    left: 1.2rem !important;
+    right: 1.2rem !important;
+    bottom: 1.2rem !important;
+    width: auto !important;
+    justify-content: space-between !important;
+  }
+
   .admin-page .admin-header-controls .ghost-button {
     width: 2.75rem;
     height: 2.75rem;

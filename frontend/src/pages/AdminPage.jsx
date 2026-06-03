@@ -4465,7 +4465,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           </div>
 
           <div
-            className="admin-header-controls absolute bottom-5 right-5 flex w-auto items-center justify-end gap-3 md:bottom-7 md:right-7"
+            className={`admin-header-controls absolute bottom-5 right-5 flex w-auto items-center justify-end gap-3 ${
+              isDashboard
+                ? "md:bottom-7 md:right-7"
+                : "md:bottom-auto md:right-32 md:top-1/2 md:-translate-y-1/2"
+            }`}
           >
             <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
               {["bg", "en"].map((lang) => (
