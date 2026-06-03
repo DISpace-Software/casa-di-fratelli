@@ -2357,6 +2357,25 @@ function RefreshIcon({ className = "h-5 w-5" }) {
   );
 }
 
+function ThemeIcon({ theme, className = "h-5 w-5" }) {
+  const isLight = theme === "light";
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      {isLight ? (
+        <>
+          <path d="M21 14.2A8.2 8.2 0 0 1 9.8 3a7 7 0 1 0 11.2 11.2z" />
+        </>
+      ) : (
+        <>
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function RoleProfileIcon({ role, className = "h-12 w-12" }) {
   const normalized = normalizeAdminRole(role);
   const imageByRole = {
@@ -4462,9 +4481,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               <button
                 type="button"
                 onClick={onToggleTheme}
-                className="ghost-button rounded-full px-5 py-3 text-sm font-semibold"
+                className="ghost-button flex h-12 w-12 items-center justify-center rounded-full text-white/80"
+                title={theme === "light" ? "Dark" : "Light"}
+                aria-label={theme === "light" ? "Dark" : "Light"}
               >
-                {theme === "light" ? "Dark" : "Light"}
+                <ThemeIcon theme={theme} />
               </button>
             ) : null}
             <button
