@@ -1467,12 +1467,13 @@ function ReservationOperationsMap({
   React.useEffect(() => {
     if (!showConsumption) return;
 
-    const frame = window.requestAnimationFrame(() => {
-      consumptionPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
-    return () => window.cancelAnimationFrame(frame);
-  }, [showConsumption, selectedReservationId]);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [showConsumption]);
 
   return (
     <Panel title={text.title} subtitle={text.subtitle}>
@@ -1496,9 +1497,9 @@ function ReservationOperationsMap({
         ))}
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[1.45fr_0.75fr]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,0.75fr)]">
         <div
-          className={`relative min-h-[600px] overflow-hidden rounded-[26px] border border-white/10 ${
+          className={`relative min-w-0 min-h-[600px] overflow-hidden rounded-[26px] border border-white/10 ${
             selectedArea === "garden"
               ? "bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] md:min-h-[820px]"
               : selectedArea === "openTerrace"
@@ -1792,7 +1793,7 @@ function ReservationOperationsMap({
           })}
         </div>
 
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           <div className="rounded-2xl border border-[#c9a56a]/18 bg-black/20 p-4">
             <div className="section-kicker">{ordersOnly ? text.ordersTitle || "Orders" : text.next}</div>
             {ordersOnly ? (
@@ -2002,119 +2003,148 @@ function ReservationOperationsMap({
               )}
 
               {showConsumption && selectedReservation.isArrived && (
-                <div ref={consumptionPanelRef} className="mt-4 scroll-mt-28 rounded-2xl border border-emerald-300/18 bg-emerald-400/10 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="section-kicker">{text.consumption}</div>
-                      <div className="mt-2 text-xl font-semibold text-[#fff4df]">
-                        {formatEuroAmount(selectedConsumptionTotal)}
-                      </div>
-                    </div>
-                    <button type="button" onClick={() => setShowConsumption(false)} className="ghost-button rounded-full px-3 py-2 text-xs">
-                      {text.close}
-                    </button>
-                  </div>
-
-                  {selectedConsumptionItems.length === 0 ? (
-                    <p className="mt-3 text-sm text-white/55">{text.noConsumption}</p>
-                  ) : (
-                    <div className="mt-3 grid gap-2">
-                      {selectedConsumptionItems.map((item) => (
-                        <div key={`${item.orderId}-${item.id}`} className="rounded-xl border border-white/10 bg-black/22 p-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="truncate text-sm font-semibold text-[#fff4df]">{item.name}</div>
-                              <div className="text-xs text-white/45">{formatEuroAmount(item.unitPrice)} · {formatEuroAmount(item.unitPrice * item.quantity)}</div>
-                            </div>
-                            <div className="flex items-center overflow-hidden rounded-full border border-white/10">
-                              <button type="button" onClick={() => onUpdateConsumptionItem(item.id, item.quantity - 1)} className="px-3 py-1 text-[#f2d39a]">-</button>
-                              <span className="min-w-8 text-center text-sm">{item.quantity}</span>
-                              <button type="button" onClick={() => onUpdateConsumptionItem(item.id, item.quantity + 1)} className="px-3 py-1 text-[#f2d39a]">+</button>
-                            </div>
+                <div
+                  className="fixed inset-0 z-[140] flex items-end justify-center bg-black/72 px-3 py-3 backdrop-blur-md md:items-center md:px-5 md:py-6"
+                  role="dialog"
+                  aria-modal="true"
+                >
+                  <div
+                    ref={consumptionPanelRef}
+                    className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl min-w-0 flex-col overflow-hidden rounded-[26px] border border-emerald-300/20 bg-[#15110e] shadow-[0_32px_120px_rgba(0,0,0,0.72)] md:max-h-[calc(100dvh-3rem)]"
+                  >
+                    <div className="shrink-0 border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-4 md:p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="section-kicker">{text.consumption}</div>
+                          <div className="mt-2 truncate text-lg font-semibold text-[#fff4df] md:text-2xl">
+                            {selectedReservation.guestName} · {formatEuroAmount(selectedConsumptionTotal)}
+                          </div>
+                          <div className="mt-1 text-xs text-white/45">
+                            {selectedReservation.tableIds.join(", ")} · {selectedReservation.guestCount} {text.guests}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="mt-4">
-                    <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#f2d39a]">
-                      {text.addConsumption}
-                    </div>
-                    <div className="-mx-1 mb-3 flex snap-x gap-2 overflow-x-auto px-1 pb-1">
-                      {[
-                        { id: "all", label: text.allDishes || "All", count: menuItems.filter((item) => (getValue(item, "isActive") ?? true) === true).length },
-                        ...consumptionMenuGroups.map((group) => ({ ...group, count: group.items.length })),
-                      ].map((category) => (
                         <button
-                          key={category.id}
                           type="button"
-                          onClick={() => {
-                            setConsumptionCategory(category.id);
-                            setConsumptionSearch("");
-                          }}
-                          className={`min-w-[8rem] snap-start rounded-2xl border px-3 py-2 text-left transition active:scale-[0.98] ${
-                            consumptionCategory === category.id
-                              ? "border-[#f2d39a]/60 bg-[#c9a56a]/24 text-[#fff4df]"
-                              : "border-white/10 bg-black/22 text-white/68 hover:border-[#c9a56a]/35"
-                          }`}
+                          onClick={() => setShowConsumption(false)}
+                          className="shrink-0 rounded-full border border-white/10 bg-white/[0.05] px-4 py-2 text-xs font-semibold text-white/75 transition hover:border-white/25 hover:text-white"
                         >
-                          <span className="block truncate text-sm font-semibold">{category.label}</span>
-                          <span className="mt-1 block text-[11px] text-white/45">
-                            {category.count} {language === "bg" ? "позиции" : "items"}
-                          </span>
+                          {text.close}
                         </button>
-                      ))}
+                      </div>
                     </div>
-                    <input
-                      value={consumptionSearch}
-                      onChange={(event) => setConsumptionSearch(event.target.value)}
-                      placeholder={text.searchDish}
-                      className="mb-2 w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/50"
-                    />
-                    <div className="max-h-[26rem] space-y-2 overflow-y-auto pr-1">
-                      {filteredConsumptionMenuItems.length === 0 ? (
-                        <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-4 text-sm text-white/55">
-                          {language === "bg" ? "Няма намерени ястия." : "No dishes found."}
-                        </div>
-                      ) : filteredConsumptionMenuItems.map((item) => {
-                          const name = getMenuItemName(item, language);
-                          const price = Number(getValue(item, "price") || 0);
-                          const imageUrl = getValue(item, "imageUrl") || "";
-                          const weight = getValue(item, "weight") || "";
-                          return (
-                            <button
-                              key={getValue(item, "id") || name}
-                              type="button"
-                              onClick={() => onAddConsumptionItem(selectedReservation.id, {
-                                menuItemId: getValue(item, "id"),
-                                name,
-                                unitPrice: price,
-                                quantity: 1,
-                              })}
-                              className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-2 text-left transition hover:border-[#c9a56a]/40 active:scale-[0.99]"
-                            >
-                              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/25">
-                                {imageUrl ? (
-                                  <img src={imageUrl} alt="" className="h-full w-full object-cover" />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center text-[9px] font-semibold uppercase tracking-[0.18em] text-[#f2d39a]/70">
-                                    Casa
+
+                    <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-5">
+                      <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                        <div className="min-w-0 rounded-2xl border border-white/10 bg-black/20 p-3 md:p-4">
+                          <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#f2d39a]">
+                            {language === "bg" ? "Текуща консумация" : "Current consumption"}
+                          </div>
+                          {selectedConsumptionItems.length === 0 ? (
+                            <p className="text-sm leading-6 text-white/55">{text.noConsumption}</p>
+                          ) : (
+                            <div className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
+                              {selectedConsumptionItems.map((item) => (
+                                <div key={`${item.orderId}-${item.id}`} className="rounded-xl border border-white/10 bg-black/22 p-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <div className="truncate text-sm font-semibold text-[#fff4df]">{item.name}</div>
+                                      <div className="text-xs text-white/45">
+                                        {formatEuroAmount(item.unitPrice)} · {formatEuroAmount(item.unitPrice * item.quantity)}
+                                      </div>
+                                    </div>
+                                    <div className="flex shrink-0 items-center overflow-hidden rounded-full border border-white/10">
+                                      <button type="button" onClick={() => onUpdateConsumptionItem(item.id, item.quantity - 1)} className="px-3 py-1 text-[#f2d39a]">-</button>
+                                      <span className="min-w-8 text-center text-sm text-white/80">{item.quantity}</span>
+                                      <button type="button" onClick={() => onUpdateConsumptionItem(item.id, item.quantity + 1)} className="px-3 py-1 text-[#f2d39a]">+</button>
+                                    </div>
                                   </div>
-                                )}
-                              </div>
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-semibold text-white/86">{name}</span>
-                                <span className="mt-1 block text-xs text-white/45">
-                                  {weight ? `${weight} · ` : ""}{formatEuroAmount(price)}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0 rounded-2xl border border-emerald-300/16 bg-emerald-400/8 p-3 md:p-4">
+                          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#f2d39a]">
+                            {text.addConsumption}
+                          </div>
+                          <div className="-mx-1 mb-3 flex max-w-full snap-x gap-2 overflow-x-auto px-1 pb-1">
+                            {[
+                              { id: "all", label: text.allDishes || "All", count: menuItems.filter((item) => (getValue(item, "isActive") ?? true) === true).length },
+                              ...consumptionMenuGroups.map((group) => ({ ...group, count: group.items.length })),
+                            ].map((category) => (
+                              <button
+                                key={category.id}
+                                type="button"
+                                onClick={() => {
+                                  setConsumptionCategory(category.id);
+                                  setConsumptionSearch("");
+                                }}
+                                className={`min-w-[7.5rem] snap-start rounded-2xl border px-3 py-2 text-left transition active:scale-[0.98] ${
+                                  consumptionCategory === category.id
+                                    ? "border-[#f2d39a]/60 bg-[#c9a56a]/24 text-[#fff4df]"
+                                    : "border-white/10 bg-black/22 text-white/68 hover:border-[#c9a56a]/35"
+                                }`}
+                              >
+                                <span className="block truncate text-sm font-semibold">{category.label}</span>
+                                <span className="mt-1 block text-[11px] text-white/45">
+                                  {category.count} {language === "bg" ? "позиции" : "items"}
                                 </span>
-                              </span>
-                              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f2d39a]/25 bg-[#c9a56a]/14 text-lg font-semibold text-[#f2d39a]">
-                                +
-                              </span>
-                            </button>
-                          );
-                        })}
+                              </button>
+                            ))}
+                          </div>
+                          <input
+                            value={consumptionSearch}
+                            onChange={(event) => setConsumptionSearch(event.target.value)}
+                            placeholder={text.searchDish}
+                            className="mb-3 w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/50"
+                          />
+                          <div className="max-h-[32rem] space-y-2 overflow-y-auto pr-1">
+                            {filteredConsumptionMenuItems.length === 0 ? (
+                              <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-4 text-sm text-white/55">
+                                {language === "bg" ? "Няма намерени ястия." : "No dishes found."}
+                              </div>
+                            ) : filteredConsumptionMenuItems.map((item) => {
+                                const name = getMenuItemName(item, language);
+                                const price = Number(getValue(item, "price") || 0);
+                                const imageUrl = getValue(item, "imageUrl") || "";
+                                const weight = getValue(item, "weight") || "";
+                                return (
+                                  <button
+                                    key={getValue(item, "id") || name}
+                                    type="button"
+                                    onClick={() => onAddConsumptionItem(selectedReservation.id, {
+                                      menuItemId: getValue(item, "id"),
+                                      name,
+                                      unitPrice: price,
+                                      quantity: 1,
+                                    })}
+                                    className="flex w-full min-w-0 items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-2 text-left transition hover:border-[#c9a56a]/40 active:scale-[0.99]"
+                                  >
+                                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/25 sm:h-16 sm:w-16">
+                                      {imageUrl ? (
+                                        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                                      ) : (
+                                        <div className="flex h-full w-full items-center justify-center text-[9px] font-semibold uppercase tracking-[0.18em] text-[#f2d39a]/70">
+                                          Casa
+                                        </div>
+                                      )}
+                                    </div>
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block truncate text-sm font-semibold text-white/86">{name}</span>
+                                      <span className="mt-1 block text-xs text-white/45">
+                                        {weight ? `${weight} · ` : ""}{formatEuroAmount(price)}
+                                      </span>
+                                    </span>
+                                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f2d39a]/25 bg-[#c9a56a]/14 text-lg font-semibold text-[#f2d39a]">
+                                      +
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
