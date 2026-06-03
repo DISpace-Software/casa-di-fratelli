@@ -50,13 +50,16 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
 
           <div className="mt-12 grid max-w-xl grid-cols-3 gap-3 text-center sm:gap-4">
             <div className="luxury-panel rounded-2xl p-4">
-              <div className="text-2xl font-semibold text-[#fff4df]">4.9</div>
+              <div className="text-2xl font-semibold text-[#fff4df]">4,8</div>
+              <div className="mt-1 text-[0.68rem] font-semibold tracking-[0.18em] text-[#f2c76f]" aria-label="5 stars">
+                ★★★★★
+              </div>
               <div className="mt-1 text-xs text-stone-400">{t.rating}</div>
             </div>
 
             <div className="luxury-panel rounded-2xl p-4">
-              <div className="text-2xl font-semibold text-[#fff4df]">40+</div>
-              <div className="mt-1 text-xs text-stone-400">{t.dishes}</div>
+              <div className="text-2xl font-semibold text-[#fff4df]">1000+</div>
+              <div className="mt-1 text-xs text-stone-400">{t.reviewsCount}</div>
             </div>
 
             <div className="luxury-panel rounded-2xl p-4">
