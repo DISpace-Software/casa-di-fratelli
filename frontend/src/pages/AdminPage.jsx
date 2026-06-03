@@ -2359,60 +2359,28 @@ function RefreshIcon({ className = "h-5 w-5" }) {
 
 function RoleProfileIcon({ role, className = "h-12 w-12" }) {
   const normalized = normalizeAdminRole(role);
-  const common = {
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.55,
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
+  const imageByRole = {
+    Kitchen: "/admin-role-chef.jpeg",
+    Waiter: "/admin-role-waiter.jpeg",
+    Administrator: "/admin-role-admin.jpeg",
+    Owner: "/admin-role-owner.jpeg",
+    Developer: "/admin-role-developer.jpeg",
   };
+  const src = imageByRole[normalized] || imageByRole.Administrator;
 
   return (
-    <svg viewBox="0 0 64 80" className={className} aria-hidden="true">
-      <circle cx="32" cy="20" r="9" {...common} />
-      <path d="M18 55c2-12 8-18 14-18s12 6 14 18" {...common} />
-
-      {normalized === "Kitchen" && (
-        <>
-          <path d="M18 15c-2-7 7-12 12-6 5-7 16-2 14 6 5 0 8 7 3 11H17c-5-4-2-11 3-11z" {...common} />
-          <path d="M20 28h24" {...common} />
-        </>
-      )}
-
-      {normalized === "Waiter" && (
-        <>
-          <path d="M45 38c7 0 11 4 11 9H34c0-5 4-9 11-9z" {...common} />
-          <path d="M45 34v4" {...common} />
-          <path d="M42 34h6" {...common} />
-          <path d="M16 42c5 3 8 7 9 13" {...common} />
-        </>
-      )}
-
-      {normalized === "Administrator" && (
-        <>
-          <path d="M43 38h13v18H39V42a4 4 0 0 1 4-4z" {...common} />
-          <path d="M43 44h10M43 49h8" {...common} />
-          <path d="M14 50l10-10 4 4-10 10-6 2z" {...common} />
-        </>
-      )}
-
-      {normalized === "Owner" && (
-        <>
-          <path d="M14 58h38" {...common} />
-          <path d="M20 47c7 5 17 5 24 0" {...common} />
-          <path d="M20 47l-8 7M44 47l8 7" {...common} />
-          <path d="M23 39c5 5 13 5 18 0" {...common} />
-        </>
-      )}
-
-      {normalized === "Developer" && (
-        <>
-          <path d="M25 20h-5a4 4 0 0 0 0 8h5M39 20h5a4 4 0 0 1 0 8h-5M25 24h14" {...common} />
-          <path d="M17 48h30l4 10H13z" {...common} />
-          <path d="M28 52h8" {...common} />
-        </>
-      )}
-    </svg>
+    <span
+      className={`relative block overflow-hidden rounded-[22px] border border-[#d8b676]/35 bg-black/60 shadow-[0_12px_32px_rgba(0,0,0,0.35)] ring-1 ring-white/5 ${className}`}
+      aria-hidden="true"
+    >
+      <img
+        src={src}
+        alt=""
+        className="h-full w-full scale-[1.04] object-cover object-center"
+        loading="lazy"
+      />
+      <span className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-b from-white/10 via-transparent to-black/18" />
+    </span>
   );
 }
 
@@ -4502,7 +4470,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             <button
               type="button"
               onClick={() => setActiveTab("profile")}
-              className={`flex h-14 w-14 items-center justify-center rounded-full border transition ${
+              className={`flex h-16 w-12 items-center justify-center rounded-[22px] border p-1 transition ${
                 activeTab === "profile"
                   ? "border-[#f2d39a]/60 bg-[#c9a56a]/18 text-[#f2d39a]"
                   : "border-white/10 bg-black/20 text-white/75 hover:border-[#c9a56a]/35 hover:text-[#f2d39a]"
@@ -4510,7 +4478,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               title={adminLanguage === "bg" ? "Моят профил" : "My profile"}
               aria-label={adminLanguage === "bg" ? "Моят профил" : "My profile"}
             >
-              <RoleProfileIcon role={adminUser?.role} className="h-10 w-10" />
+              <RoleProfileIcon role={adminUser?.role} className="h-full w-full rounded-[18px]" />
             </button>
           </div>
         </div>
@@ -4759,9 +4727,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               >
                 <div className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr]">
                   <div className="rounded-[26px] border border-white/10 bg-black/20 p-5 text-center md:p-6">
-                    <div className="mx-auto flex h-36 w-28 items-center justify-center rounded-[32px] border border-[#c9a56a]/24 bg-[#c9a56a]/8 text-[#f2d39a]">
-                      <RoleProfileIcon role={adminUser?.role} className="h-28 w-24" />
-                    </div>
+                    <RoleProfileIcon role={adminUser?.role} className="mx-auto h-48 w-32 md:h-56 md:w-36" />
                     <h3 className="mt-5 text-2xl font-semibold text-[#fff4df]">
                       {adminUser?.name || adminUser?.email || "Admin"}
                     </h3>
