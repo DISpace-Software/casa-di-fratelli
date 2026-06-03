@@ -2036,14 +2036,14 @@ function ReservationOperationsMap({
 
                     <div className="min-h-0 flex-1 overflow-hidden p-2.5 sm:p-3 md:p-4">
                       <div className="grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-2.5 sm:gap-3 lg:grid-cols-[minmax(280px,0.78fr)_minmax(0,1.22fr)] lg:grid-rows-1">
-                        <div className="min-h-0 min-w-0 rounded-2xl border border-white/10 bg-black/20 p-2.5 sm:p-3 md:p-4">
+                        <div className="min-h-0 min-w-0 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-2.5 sm:p-3 md:p-4 lg:overflow-visible">
                           <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#f2d39a] sm:text-xs">
                             {language === "bg" ? "Текуща консумация" : "Current consumption"}
                           </div>
                           {selectedConsumptionItems.length === 0 ? (
                             <p className="text-sm leading-6 text-white/55">{text.noConsumption}</p>
                           ) : (
-                            <div className="max-h-[7.5rem] space-y-1.5 overflow-y-auto pr-1 lg:max-h-[calc(100%-2rem)]">
+                            <div className="space-y-1.5 pr-1">
                               {selectedConsumptionItems.map((item) => (
                                 <div key={`${item.orderId}-${item.id}`} className="rounded-xl border border-white/10 bg-black/22 p-2.5">
                                   <div className="flex items-center justify-between gap-3">
@@ -2065,7 +2065,7 @@ function ReservationOperationsMap({
                           )}
                         </div>
 
-                        <div className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-emerald-300/16 bg-emerald-400/8 p-2.5 sm:p-3 md:p-4">
+                        <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-emerald-300/16 bg-emerald-400/8 p-2.5 sm:p-3 md:p-4">
                           <div className="mb-2 shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#f2d39a] sm:text-xs">
                             {text.addConsumption}
                           </div>
