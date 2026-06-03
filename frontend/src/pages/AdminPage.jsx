@@ -1197,6 +1197,7 @@ function ReservationOperationsMap({
   onOpenReservation,
   onOpenOrder,
   onSeatWalkIn,
+  onClaimReservation,
   onRelease,
   ordersOnly = false,
 }) {
@@ -1499,7 +1500,12 @@ function ReservationOperationsMap({
     }
   }
 
-  function openConsumptionPanel() {
+  async function openConsumptionPanel() {
+    if (!selectedReservation) return;
+
+    const claimed = await onClaimReservation?.(selectedReservation.id);
+    if (claimed === false) return;
+
     setConsumptionSearch("");
     setConsumptionCategory("all");
     setShowConsumption(true);
@@ -3070,7 +3076,30 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
 
     setAdminNotice(adminLanguage === "bg" ? "Поръчката е взета от Вас." : "Order assigned to you.");
-    await loadDiningOrders();
+    await Promise.all([loadReservations(), loadDiningOrders()]);
+  }
+
+  async function claimReservationForConsumption(reservationId) {
+    setAdminNotice("");
+    setAdminError("");
+
+    const response = await adminFetch(`${API_BASE_URL}/api/dining-orders/reservations/${reservationId}/claim`, {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(
+        response,
+        adminLanguage === "bg"
+          ? "Резервацията вече е взета от друг сервитьор."
+          : "Reservation is already assigned to another waiter."
+      ));
+      await Promise.all([loadReservations(), loadDiningOrders()]);
+      return false;
+    }
+
+    await Promise.all([loadReservations(), loadDiningOrders()]);
+    return true;
   }
 
   async function updateDiningOrderItemStatus(itemId, status) {
@@ -5000,6 +5029,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   setActiveTab("orders");
                 }}
                 onSeatWalkIn={seatWalkInFromMap}
+                onClaimReservation={isWaiterRole ? claimReservationForConsumption : null}
                 onRelease={releaseReservationTable}
                 ordersOnly={false}
               />

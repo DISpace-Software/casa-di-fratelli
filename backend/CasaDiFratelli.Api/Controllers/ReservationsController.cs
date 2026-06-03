@@ -300,11 +300,26 @@ public class ReservationsController : ControllerBase
     [AdminAuthorize]
     public async Task<IActionResult> GetAll()
     {
-        var reservations = await _db.Reservations
+        var admin = AdminAuthService.Current(HttpContext);
+        var role = AdminRoleAccess.Normalize(admin?.Role);
+
+        var query = _db.Reservations
             .Include(x => x.Tables)
             .Where(x =>
                 x.Status != ReservationStatusAwaitingEmailConfirmation &&
-                !(x.Status == ReservationStatusPending && x.EmailConfirmedAtUtc == null))
+                !(x.Status == ReservationStatusPending && x.EmailConfirmedAtUtc == null));
+
+        if (role == AdminRoleAccess.Waiter && admin != null)
+        {
+            query = query.Where(reservation =>
+                !_db.DiningOrders.Any(order =>
+                    order.ReservationId == reservation.Id &&
+                    order.Status != "Cancelled" &&
+                    order.AssignedWaiterId.HasValue &&
+                    order.AssignedWaiterId.Value != admin.Id));
+        }
+
+        var reservations = await query
             .OrderByDescending(x => x.CreatedAtUtc)
             .Select(x => new
             {

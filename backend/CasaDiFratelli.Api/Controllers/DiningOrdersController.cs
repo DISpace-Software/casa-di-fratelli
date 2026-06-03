@@ -108,6 +108,10 @@ public class DiningOrdersController : ControllerBase
         {
             query = query.Where(x => !x.AssignedWaiterId.HasValue || x.AssignedWaiterId == admin.Id);
         }
+        else if (role == AdminRoleAccess.Kitchen)
+        {
+            query = query.Where(x => x.Items.Any());
+        }
 
         var orders = await query
             .OrderByDescending(x => x.CreatedAtUtc)
@@ -429,6 +433,54 @@ public class DiningOrdersController : ControllerBase
         await _audit.RecordAsync(HttpContext, "claim", "DiningOrder", order.Id.ToString(), after: new { order.Id, order.AssignedWaiterId, order.AssignedWaiterName });
 
         return Ok(new { order.Id, order.AssignedWaiterId, order.AssignedWaiterName, order.ClaimedAtUtc });
+    }
+
+    [HttpPost("reservations/{reservationId:int}/claim")]
+    [AdminAuthorize]
+    public async Task<IActionResult> ClaimReservation(int reservationId)
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (admin == null || AdminRoleAccess.Normalize(admin.Role) != AdminRoleAccess.Waiter)
+            return Forbid();
+
+        var reservation = await _db.Reservations
+            .Include(x => x.Tables)
+            .FirstOrDefaultAsync(x => x.Id == reservationId);
+
+        if (reservation == null)
+            return NotFound();
+
+        var order = await _db.DiningOrders
+            .Where(x => x.ReservationId == reservationId && x.Status != "Cancelled")
+            .OrderBy(x => x.CreatedAtUtc)
+            .FirstOrDefaultAsync();
+
+        if (order == null)
+        {
+            order = new DiningOrder
+            {
+                ReservationId = reservation.Id,
+                GuestName = reservation.GuestName,
+                TableLabel = string.Join(", ", reservation.Tables.Select(t => t.TableCode)),
+                Status = "Seen",
+                Source = "Waiter",
+                CreatedAtUtc = DateTime.UtcNow
+            };
+            _db.DiningOrders.Add(order);
+        }
+        else if (order.AssignedWaiterId.HasValue && order.AssignedWaiterId.Value != admin.Id)
+        {
+            return Conflict(new { message = "Reservation is already assigned to another waiter." });
+        }
+
+        order.AssignedWaiterId = admin.Id;
+        order.AssignedWaiterName = admin.Name;
+        order.ClaimedAtUtc ??= DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "claim-reservation", "DiningOrder", order.Id.ToString(), after: new { order.Id, order.ReservationId, order.AssignedWaiterId, order.AssignedWaiterName });
+
+        return Ok(new { order.Id, order.ReservationId, order.AssignedWaiterId, order.AssignedWaiterName, order.ClaimedAtUtc });
     }
 
     [HttpPatch("items/{itemId:int}/status")]
