@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { API_BASE_URL } from "../config/api";
 import {
   defaultGardenTables,
@@ -2002,15 +2003,15 @@ function ReservationOperationsMap({
                 </div>
               )}
 
-              {showConsumption && selectedReservation.isArrived && (
+              {showConsumption && selectedReservation.isArrived && typeof document !== "undefined" && createPortal((
                 <div
-                  className="fixed inset-0 z-[140] flex items-stretch justify-center bg-black/72 p-2 backdrop-blur-md sm:p-3 md:items-center md:p-4"
+                  className="fixed inset-0 z-[9999] overflow-y-auto bg-black/72 p-2 backdrop-blur-md sm:p-3 md:p-4"
                   role="dialog"
                   aria-modal="true"
                 >
                   <div
                     ref={consumptionPanelRef}
-                    className="flex h-[calc(100svh-1rem)] max-h-[calc(100svh-1rem)] w-full max-w-5xl min-w-0 flex-col overflow-hidden rounded-[22px] border border-emerald-300/20 bg-[#15110e] shadow-[0_32px_120px_rgba(0,0,0,0.72)] sm:h-[calc(100svh-1.5rem)] sm:max-h-[calc(100svh-1.5rem)] md:h-[min(760px,calc(100svh-2rem))] md:max-h-[calc(100svh-2rem)] md:rounded-[26px]"
+                    className="mx-auto flex min-h-[calc(100svh-1rem)] w-full max-w-5xl min-w-0 flex-col overflow-hidden rounded-[22px] border border-emerald-300/20 bg-[#15110e] shadow-[0_32px_120px_rgba(0,0,0,0.72)] sm:min-h-[calc(100svh-1.5rem)] md:min-h-0 md:h-[min(760px,calc(100svh-2rem))] md:rounded-[26px]"
                   >
                     <div className="shrink-0 border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-3 md:p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -2148,7 +2149,7 @@ function ReservationOperationsMap({
                     </div>
                   </div>
                 </div>
-              )}
+              ), document.body)}
             </div>
           )}
         </div>
