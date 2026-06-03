@@ -2716,6 +2716,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     currentPassword: "",
     newPassword: "",
   });
+  const [showOwnPasswords, setShowOwnPasswords] = React.useState({
+    currentPassword: false,
+    newPassword: false,
+  });
   const [editingAdminId, setEditingAdminId] = React.useState(null);
   const [adminEditForm, setAdminEditForm] = React.useState({
     name: "",
@@ -4977,28 +4981,50 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         : "Enter your current password and a new password with at least 8 characters."}
                     </p>
 
-                    <div className="mt-5 grid gap-4 md:grid-cols-2">
-                      <label className="block text-sm text-white/60">
-                        {adminLanguage === "bg" ? "Текуща парола" : "Current password"}
-                        <input
-                          type="password"
-                          autoComplete="current-password"
-                          value={ownPasswordForm.currentPassword}
-                          onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
-                          className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-300"
-                        />
-                      </label>
-                      <label className="block text-sm text-white/60">
-                        {adminLanguage === "bg" ? "Нова парола" : "New password"}
-                        <input
-                          type="password"
-                          autoComplete="new-password"
-                          value={ownPasswordForm.newPassword}
-                          onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))}
-                          className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-300"
-                        />
-                      </label>
-                    </div>
+	                    <div className="mt-5 grid gap-4 md:grid-cols-2">
+	                      <label className="block text-sm text-white/60">
+	                        {adminLanguage === "bg" ? "Текуща парола" : "Current password"}
+	                        <span className="mt-2 flex overflow-hidden rounded-2xl border border-white/10 bg-black/25 focus-within:border-amber-300">
+	                          <input
+	                            type={showOwnPasswords.currentPassword ? "text" : "password"}
+	                            autoComplete="current-password"
+	                            value={ownPasswordForm.currentPassword}
+	                            onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
+	                            className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
+	                          />
+	                          <button
+	                            type="button"
+	                            onClick={() => setShowOwnPasswords((prev) => ({ ...prev, currentPassword: !prev.currentPassword }))}
+	                            className="border-l border-white/10 px-3 text-xs font-semibold text-[#f2d39a] transition hover:bg-white/5"
+	                          >
+	                            {showOwnPasswords.currentPassword
+	                              ? adminLanguage === "bg" ? "Скрий" : "Hide"
+	                              : adminLanguage === "bg" ? "Покажи" : "Show"}
+	                          </button>
+	                        </span>
+	                      </label>
+	                      <label className="block text-sm text-white/60">
+	                        {adminLanguage === "bg" ? "Нова парола" : "New password"}
+	                        <span className="mt-2 flex overflow-hidden rounded-2xl border border-white/10 bg-black/25 focus-within:border-amber-300">
+	                          <input
+	                            type={showOwnPasswords.newPassword ? "text" : "password"}
+	                            autoComplete="new-password"
+	                            value={ownPasswordForm.newPassword}
+	                            onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))}
+	                            className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm text-white outline-none placeholder:text-white/35"
+	                          />
+	                          <button
+	                            type="button"
+	                            onClick={() => setShowOwnPasswords((prev) => ({ ...prev, newPassword: !prev.newPassword }))}
+	                            className="border-l border-white/10 px-3 text-xs font-semibold text-[#f2d39a] transition hover:bg-white/5"
+	                          >
+	                            {showOwnPasswords.newPassword
+	                              ? adminLanguage === "bg" ? "Скрий" : "Hide"
+	                              : adminLanguage === "bg" ? "Покажи" : "Show"}
+	                          </button>
+	                        </span>
+	                      </label>
+	                    </div>
 
                     <button className="luxury-button mt-5 rounded-2xl px-6 py-3 text-sm font-semibold">
                       {adminLanguage === "bg" ? "Смени паролата" : "Change password"}
@@ -5709,18 +5735,29 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 ) : (
                   <div className="grid gap-4">
                     {diningOrders.map((order) => {
-                      const expanded = isKitchenRole || expandedOrderId === order.id;
                       const detailsId = `dining-order-${order.id}-details`;
                       const hasReadyItems = hasReadyDiningItems(order);
                       const visibleOrderItems = isWaiterRole
                         ? order.items.filter((item) => item.status !== "Done" && item.status !== "Cancelled")
                         : order.items;
+                      const kitchenOrderComplete =
+                        isKitchenRole &&
+                        order.items.length > 0 &&
+                        order.items.every((item) => ["Ready", "Done"].includes(item.status));
+                      const waiterOrderServed =
+                        isWaiterRole &&
+                        order.items.length > 0 &&
+                        visibleOrderItems.length === 0;
+                      const compactOrder = kitchenOrderComplete || waiterOrderServed;
+                      const expanded = isKitchenRole ? !kitchenOrderComplete : !waiterOrderServed && expandedOrderId === order.id;
 
                       return (
                         <article
                           key={order.id}
                           className={`rounded-[24px] border p-4 ${
-                            isKitchenRole && order.status === "New"
+                            kitchenOrderComplete
+                              ? "border-emerald-300/20 bg-emerald-400/[0.06]"
+                            : isKitchenRole && order.status === "New"
                               ? "new-kitchen-order border-amber-300/45 bg-amber-400/10 shadow-[0_0_34px_rgba(251,191,36,0.14)]"
                               : isWaiterRole && hasReadyItems
                               ? "waiter-ready-alert border-emerald-300/35 bg-emerald-400/10"
@@ -5729,19 +5766,22 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         >
                           <button
                             type="button"
-                            aria-expanded={expanded}
-                            aria-controls={detailsId}
-                            disabled={isKitchenRole}
-                            onClick={() => setExpandedOrderId(expanded ? null : order.id)}
-                            className="grid w-full gap-3 text-left md:grid-cols-[1fr_1fr_auto] md:items-center disabled:cursor-default"
-                          >
+	                            aria-expanded={expanded}
+	                            aria-controls={detailsId}
+	                            disabled={isKitchenRole || compactOrder}
+	                            onClick={() => setExpandedOrderId(expanded ? null : order.id)}
+	                            className={`grid w-full gap-3 text-left md:items-center disabled:cursor-default ${
+	                              compactOrder ? "md:grid-cols-[1fr_auto]" : "md:grid-cols-[1fr_1fr_auto]"
+	                            }`}
+	                          >
                             <div>
                               <div className="text-xs uppercase tracking-[0.2em] text-[#c9a56a]">
                                 {a.orders.table}
                               </div>
                               <div className="mt-1 text-xl font-semibold text-[#fff4df]">{order.tableLabel}</div>
                             </div>
-                            <div className={isKitchenRole ? "hidden md:block" : ""}>
+	                            {!compactOrder && (
+	                            <div className={isKitchenRole ? "hidden md:block" : ""}>
                               <div className="text-xs uppercase tracking-[0.2em] text-white/35">
                                 {isKitchenRole ? (adminLanguage === "bg" ? "Поръчка" : "Order") : a.orders.guest}
                               </div>
@@ -5759,24 +5799,46 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                     ? `${adminLanguage === "bg" ? "Сервитьор" : "Waiter"}: ${order.assignedWaiterName}`
                                     : adminLanguage === "bg" ? "Непоета поръчка" : "Unclaimed order"}
                                 </div>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between gap-3 md:justify-end">
+	                              )}
+	                            </div>
+	                            )}
+	                            <div className="flex items-center justify-between gap-3 md:justify-end">
                               <div className="text-left md:text-right">
                                 <div className="text-xs uppercase tracking-[0.2em] text-white/35">
                                   {isKitchenRole ? a.orders.status : a.orders.total}
                                 </div>
                                 <div className="mt-1 text-xl font-semibold text-[#f2d39a]">
-                                  {isKitchenRole ? order.status : formatEuroAmount(order.totalPrice)}
-                                </div>
-                              </div>
-                              {!isKitchenRole && <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs text-white/65">
-                                {expanded ? a.reservations.close : a.reservations.open}
-                              </span>}
-                            </div>
-                          </button>
+	                                  {kitchenOrderComplete
+	                                    ? adminLanguage === "bg" ? "Готово" : "Ready"
+	                                    : isKitchenRole ? order.status : formatEuroAmount(order.totalPrice)}
+	                                </div>
+	                              </div>
+	                              {!isKitchenRole && !waiterOrderServed && <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs text-white/65">
+	                                {expanded ? a.reservations.close : a.reservations.open}
+	                              </span>}
+	                            </div>
+	                          </button>
 
-                          {expanded && (
+	                          {compactOrder && (
+	                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/18 px-3 py-2">
+	                              <div className="text-xs text-white/50">
+	                                {kitchenOrderComplete
+	                                  ? adminLanguage === "bg" ? "Всички блюда са готови." : "All dishes are ready."
+	                                  : adminLanguage === "bg" ? "Всички блюда са сервирани." : "All dishes are served."}
+	                              </div>
+	                              {waiterOrderServed && (
+	                                <button
+	                                  type="button"
+	                                  onClick={() => updateDiningOrderStatus(order.id, "Done")}
+	                                  className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-4 py-2 text-xs font-semibold text-emerald-100"
+	                                >
+	                                  {a.orders.paid}
+	                                </button>
+	                              )}
+	                            </div>
+	                          )}
+
+	                          {expanded && (
                             <div id={detailsId} className="mt-4 border-t border-white/10 pt-4">
                               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                                 <div className="flex flex-wrap items-center gap-2">
