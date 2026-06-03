@@ -4458,9 +4458,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 <h1 className="mt-3 text-4xl font-semibold text-[#fff4df] md:text-5xl">
                   {a.appTitle}
                 </h1>
-                <p className="mt-3 text-stone-400">
-                  {a.appSubtitle}
-                </p>
               </>
             )}
           </div>
@@ -4468,7 +4465,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           <div
             className={`flex w-full items-center gap-3 ${
               isDashboard
-                ? "mt-1 justify-between md:justify-end lg:absolute lg:right-28 lg:bottom-20 lg:mt-0 lg:w-auto"
+                ? "mt-1 justify-between md:justify-end lg:absolute lg:right-28 lg:bottom-28 lg:mt-0 lg:w-auto"
                 : "justify-between md:justify-end"
             }`}
           >
