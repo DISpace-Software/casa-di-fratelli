@@ -37,6 +37,12 @@ public class Reservation
 
     public bool CreatedByAdmin { get; set; } = false;
 
+    public int? CreatedByAdminUserId { get; set; }
+
+    public string? CreatedByAdminName { get; set; }
+
+    public bool IsWalkIn { get; set; } = false;
+
     public string? InternalNote { get; set; }
 
     public bool IsNoShow { get; set; } = false;

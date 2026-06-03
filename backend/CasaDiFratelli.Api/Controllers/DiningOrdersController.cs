@@ -64,14 +64,52 @@ public class DiningOrdersController : ControllerBase
         order.TotalPrice = order.Items.Sum(x => x.UnitPrice * x.Quantity);
     }
 
+    private static bool IsKitchenOrManager(AdminPrincipal? admin)
+    {
+        var role = AdminRoleAccess.Normalize(admin?.Role);
+        return role is AdminRoleAccess.Kitchen or AdminRoleAccess.Owner or AdminRoleAccess.Administrator or AdminRoleAccess.Developer;
+    }
+
+    private static bool CanWorkWithOrder(AdminPrincipal? admin, DiningOrder order)
+    {
+        if (admin == null) return false;
+
+        var role = AdminRoleAccess.Normalize(admin.Role);
+        if (role is AdminRoleAccess.Owner or AdminRoleAccess.Administrator or AdminRoleAccess.Developer or AdminRoleAccess.Kitchen)
+            return true;
+
+        return role == AdminRoleAccess.Waiter &&
+            (!order.AssignedWaiterId.HasValue || order.AssignedWaiterId.Value == admin.Id);
+    }
+
+    private static void AssignToWaiterIfNeeded(DiningOrder order, AdminPrincipal? admin)
+    {
+        if (admin == null || AdminRoleAccess.Normalize(admin.Role) != AdminRoleAccess.Waiter)
+            return;
+
+        order.AssignedWaiterId ??= admin.Id;
+        order.AssignedWaiterName ??= admin.Name;
+        order.ClaimedAtUtc ??= DateTime.UtcNow;
+    }
+
     [HttpGet]
     [AdminAuthorize]
     public async Task<IActionResult> GetAll()
     {
-        var orders = await _db.DiningOrders
+        var admin = AdminAuthService.Current(HttpContext);
+        var role = AdminRoleAccess.Normalize(admin?.Role);
+        var query = _db.DiningOrders
             .Include(x => x.Items)
             .Include(x => x.Reservation)
                 .ThenInclude(x => x!.Tables)
+            .AsQueryable();
+
+        if (role == AdminRoleAccess.Waiter && admin != null)
+        {
+            query = query.Where(x => !x.AssignedWaiterId.HasValue || x.AssignedWaiterId == admin.Id);
+        }
+
+        var orders = await query
             .OrderByDescending(x => x.CreatedAtUtc)
             .Select(x => new
             {
@@ -80,6 +118,10 @@ public class DiningOrdersController : ControllerBase
                 x.GuestName,
                 x.TableLabel,
                 x.Status,
+                x.Source,
+                x.AssignedWaiterId,
+                x.AssignedWaiterName,
+                x.ClaimedAtUtc,
                 x.TotalPrice,
                 x.Notes,
                 x.CreatedAtUtc,
@@ -89,6 +131,7 @@ public class DiningOrdersController : ControllerBase
                     x.Reservation.Email,
                     x.Reservation.ReservedDate,
                     x.Reservation.ReservedTime,
+                    x.Reservation.IsWalkIn,
                     TableIds = x.Reservation.Tables.Select(t => t.TableCode).ToList()
                 },
                 Items = x.Items.Select(item => new
@@ -98,7 +141,8 @@ public class DiningOrdersController : ControllerBase
                     item.Name,
                     item.UnitPrice,
                     item.Quantity,
-                    item.Notes
+                    item.Notes,
+                    item.Status
                 }).ToList()
             })
             .ToListAsync();
@@ -125,6 +169,10 @@ public class DiningOrdersController : ControllerBase
             x.GuestName,
             TableLabel = x.Reservation == null ? x.TableLabel : string.Join(", ", x.Reservation.Tables.Select(t => t.TableCode)),
             x.Status,
+            x.Source,
+            x.AssignedWaiterId,
+            x.AssignedWaiterName,
+            x.ClaimedAtUtc,
             x.TotalPrice,
             x.Notes,
             x.CreatedAtUtc,
@@ -135,7 +183,8 @@ public class DiningOrdersController : ControllerBase
                 item.Name,
                 item.UnitPrice,
                 item.Quantity,
-                item.Notes
+                item.Notes,
+                item.Status
             }).ToList()
         }));
     }
@@ -200,6 +249,7 @@ public class DiningOrdersController : ControllerBase
             GuestName = reservation.GuestName,
             TableLabel = string.Join(", ", reservation.Tables.Select(t => t.TableCode)),
             Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim(),
+            Source = "GuestOnline",
             TotalPrice = items.Sum(x => x.UnitPrice * x.Quantity),
             CreatedAtUtc = DateTime.UtcNow,
             Items = items
@@ -221,6 +271,7 @@ public class DiningOrdersController : ControllerBase
     [AdminAuthorize]
     public async Task<IActionResult> AddReservationItem(int reservationId, [FromBody] CreateDiningOrderItemRequest request)
     {
+        var admin = AdminAuthService.Current(HttpContext);
         if (request.Quantity <= 0 || string.IsNullOrWhiteSpace(request.Name) || request.UnitPrice < 0)
             return BadRequest(new { message = "Order item is required." });
 
@@ -245,11 +296,17 @@ public class DiningOrdersController : ControllerBase
                 GuestName = reservation.GuestName,
                 TableLabel = string.Join(", ", reservation.Tables.Select(t => t.TableCode)),
                 Status = "New",
+                Source = AdminRoleAccess.Normalize(admin?.Role) == AdminRoleAccess.Waiter ? "Waiter" : "Admin",
                 CreatedAtUtc = DateTime.UtcNow
             };
             _db.DiningOrders.Add(order);
         }
+        else if (!CanWorkWithOrder(admin, order))
+        {
+            return Forbid();
+        }
 
+        AssignToWaiterIfNeeded(order, admin);
         AddOrIncreaseItem(order, request);
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "add-item", "DiningOrder", order.Id.ToString(), after: new { order.Id, order.ReservationId, order.TotalPrice });
@@ -261,6 +318,7 @@ public class DiningOrdersController : ControllerBase
     [AdminAuthorize]
     public async Task<IActionResult> AddOrderItem(int orderId, [FromBody] CreateDiningOrderItemRequest request)
     {
+        var admin = AdminAuthService.Current(HttpContext);
         if (request.Quantity <= 0 || string.IsNullOrWhiteSpace(request.Name) || request.UnitPrice < 0)
             return BadRequest(new { message = "Order item is required." });
 
@@ -271,6 +329,10 @@ public class DiningOrdersController : ControllerBase
         if (order == null)
             return NotFound();
 
+        if (!CanWorkWithOrder(admin, order))
+            return Forbid();
+
+        AssignToWaiterIfNeeded(order, admin);
         AddOrIncreaseItem(order, request);
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "add-item", "DiningOrder", order.Id.ToString(), after: new { order.Id, order.ReservationId, order.TotalPrice });
@@ -283,6 +345,7 @@ public class DiningOrdersController : ControllerBase
     [AdminAuthorize]
     public async Task<IActionResult> UpdateItemQuantity(int itemId, [FromBody] UpdateDiningOrderItemRequest request, int? orderId = null)
     {
+        var admin = AdminAuthService.Current(HttpContext);
         var item = await _db.DiningOrderItems.FirstOrDefaultAsync(x =>
             x.Id == itemId &&
             (!orderId.HasValue || x.DiningOrderId == orderId.Value));
@@ -295,6 +358,9 @@ public class DiningOrdersController : ControllerBase
 
         if (order == null)
             return NotFound();
+
+        if (!CanWorkWithOrder(admin, order))
+            return Forbid();
 
         if (request.Quantity <= 0)
         {
@@ -319,10 +385,14 @@ public class DiningOrdersController : ControllerBase
     [AdminAuthorize]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateDiningOrderStatusRequest request)
     {
+        var admin = AdminAuthService.Current(HttpContext);
         var order = await _db.DiningOrders.FindAsync(id);
 
         if (order == null)
             return NotFound();
+
+        if (!CanWorkWithOrder(admin, order))
+            return Forbid();
 
         var nextStatus = string.IsNullOrWhiteSpace(request.Status) ? "New" : request.Status.Trim();
         if (!new[] { "New", "Seen", "Preparing", "Done", "Cancelled" }.Contains(nextStatus))
@@ -335,6 +405,73 @@ public class DiningOrdersController : ControllerBase
 
         return Ok(new { order.Id, order.Status });
     }
+
+    [HttpPost("{id:int}/claim")]
+    [AdminAuthorize]
+    public async Task<IActionResult> Claim(int id)
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (admin == null || AdminRoleAccess.Normalize(admin.Role) != AdminRoleAccess.Waiter)
+            return Forbid();
+
+        var order = await _db.DiningOrders.FindAsync(id);
+        if (order == null)
+            return NotFound();
+
+        if (order.AssignedWaiterId.HasValue && order.AssignedWaiterId.Value != admin.Id)
+            return Conflict(new { message = "Order is already assigned to another waiter." });
+
+        order.AssignedWaiterId = admin.Id;
+        order.AssignedWaiterName = admin.Name;
+        order.ClaimedAtUtc ??= DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "claim", "DiningOrder", order.Id.ToString(), after: new { order.Id, order.AssignedWaiterId, order.AssignedWaiterName });
+
+        return Ok(new { order.Id, order.AssignedWaiterId, order.AssignedWaiterName, order.ClaimedAtUtc });
+    }
+
+    [HttpPatch("items/{itemId:int}/status")]
+    [AdminAuthorize]
+    public async Task<IActionResult> UpdateItemStatus(int itemId, [FromBody] UpdateDiningOrderItemStatusRequest request)
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!IsKitchenOrManager(admin))
+            return Forbid();
+
+        var item = await _db.DiningOrderItems
+            .Include(x => x.DiningOrder)
+                .ThenInclude(x => x!.Items)
+            .FirstOrDefaultAsync(x => x.Id == itemId);
+
+        if (item?.DiningOrder == null)
+            return NotFound();
+
+        var nextStatus = string.IsNullOrWhiteSpace(request.Status) ? "New" : request.Status.Trim();
+        if (!new[] { "New", "Seen", "Preparing", "Ready", "Done", "Cancelled" }.Contains(nextStatus))
+            return BadRequest(new { message = "Invalid item status." });
+
+        var previousStatus = item.Status;
+        item.Status = nextStatus;
+
+        if (item.DiningOrder.Items.Count > 0 && item.DiningOrder.Items.All(x => x.Status == "Ready" || x.Status == "Done"))
+        {
+            item.DiningOrder.Status = "Done";
+        }
+        else if (nextStatus == "Preparing" && item.DiningOrder.Status == "New")
+        {
+            item.DiningOrder.Status = "Preparing";
+        }
+        else if (nextStatus == "Seen" && item.DiningOrder.Status == "New")
+        {
+            item.DiningOrder.Status = "Seen";
+        }
+
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "update-item-status", "DiningOrderItem", item.Id.ToString(), new { Status = previousStatus }, new { item.Status, OrderStatus = item.DiningOrder.Status });
+
+        return Ok(new { item.Id, item.Status, OrderId = item.DiningOrderId, OrderStatus = item.DiningOrder.Status });
+    }
 }
 
 public class UpdateDiningOrderStatusRequest
@@ -345,4 +482,9 @@ public class UpdateDiningOrderStatusRequest
 public class UpdateDiningOrderItemRequest
 {
     public int Quantity { get; set; }
+}
+
+public class UpdateDiningOrderItemStatusRequest
+{
+    public string Status { get; set; } = "Seen";
 }

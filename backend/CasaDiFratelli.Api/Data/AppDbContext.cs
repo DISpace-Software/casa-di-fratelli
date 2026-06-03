@@ -33,6 +33,7 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Status).IsRequired().HasMaxLength(30);
             entity.Property(x => x.OrderAccessToken).HasMaxLength(80);
             entity.Property(x => x.EmailConfirmationTokenHash).HasMaxLength(128);
+            entity.Property(x => x.CreatedByAdminName).HasMaxLength(120);
             entity.HasIndex(x => x.OrderAccessToken);
             entity.HasIndex(x => x.EmailConfirmationTokenHash);
         });
@@ -68,12 +69,15 @@ public class AppDbContext : DbContext
             entity.Property(x => x.GuestName).IsRequired().HasMaxLength(120);
             entity.Property(x => x.TableLabel).IsRequired().HasMaxLength(120);
             entity.Property(x => x.Status).IsRequired().HasMaxLength(30);
+            entity.Property(x => x.Source).IsRequired().HasMaxLength(40);
+            entity.Property(x => x.AssignedWaiterName).HasMaxLength(120);
             entity.HasMany(x => x.Items).WithOne(x => x.DiningOrder).HasForeignKey(x => x.DiningOrderId);
         });
 
         modelBuilder.Entity<DiningOrderItem>(entity =>
         {
             entity.Property(x => x.Name).IsRequired().HasMaxLength(180);
+            entity.Property(x => x.Status).IsRequired().HasMaxLength(30);
         });
     }
 }

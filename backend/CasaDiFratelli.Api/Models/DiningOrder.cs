@@ -14,6 +14,14 @@ public class DiningOrder
 
     public string Status { get; set; } = "New";
 
+    public string Source { get; set; } = "GuestOnline";
+
+    public int? AssignedWaiterId { get; set; }
+
+    public string? AssignedWaiterName { get; set; }
+
+    public DateTime? ClaimedAtUtc { get; set; }
+
     public decimal TotalPrice { get; set; }
 
     public string? Notes { get; set; }

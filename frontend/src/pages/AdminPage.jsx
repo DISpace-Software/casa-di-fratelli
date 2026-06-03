@@ -403,6 +403,7 @@ const adminRoleOptions = [
   { value: "Owner", labels: { bg: "Собственик", en: "Owner" } },
   { value: "Administrator", labels: { bg: "Администратор", en: "Administrator" } },
   { value: "Waiter", labels: { bg: "Сервитьор", en: "Waiter" } },
+  { value: "Kitchen", labels: { bg: "Кухня", en: "Kitchen" } },
   { value: "Developer", labels: { bg: "Програмист", en: "Developer" } },
 ];
 
@@ -412,6 +413,7 @@ function normalizeAdminRole(role) {
   if (normalized === "owner") return "Owner";
   if (["administrator", "admin", "manager"].includes(normalized)) return "Administrator";
   if (["waiter", "staff", "server"].includes(normalized)) return "Waiter";
+  if (["kitchen", "chef", "cook"].includes(normalized)) return "Kitchen";
   if (["developer", "dev", "programmer"].includes(normalized)) return "Developer";
 
   return "Administrator";
@@ -1169,6 +1171,7 @@ function ReservationOperationsMap({
   onNoShow,
   onOpenReservation,
   onOpenOrder,
+  onSeatWalkIn,
   onRelease,
   ordersOnly = false,
 }) {
@@ -1763,7 +1766,18 @@ function ReservationOperationsMap({
                         </div>
                       )
                     ) : todayReservationsForSelectedTable.length === 0 ? (
-                      <p className="mt-3 text-sm leading-6 text-white/55">{text.tableTodayEmpty}</p>
+                      <div className="mt-3 space-y-3">
+                        <p className="text-sm leading-6 text-white/55">{text.tableTodayEmpty}</p>
+                        {onSeatWalkIn && (
+                          <button
+                            type="button"
+                            onClick={() => onSeatWalkIn({ area: selectedArea, tableId: table.id, seats: table.seats })}
+                            className="w-full rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100"
+                          >
+                            {language === "bg" ? "Настани без резервация" : "Seat walk-in"}
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <div className="mt-3 space-y-2">
                         {todayReservationsForSelectedTable.map((reservation) => (
@@ -2182,6 +2196,9 @@ function normalizeReservation(r) {
     isArrived: Boolean(getValue(r, "isArrived")),
     isNoShow: Boolean(getValue(r, "isNoShow")),
     createdByAdmin: Boolean(getValue(r, "createdByAdmin")),
+    createdByAdminUserId: getValue(r, "createdByAdminUserId"),
+    createdByAdminName: getValue(r, "createdByAdminName") || "",
+    isWalkIn: Boolean(getValue(r, "isWalkIn")),
     tableIds: Array.isArray(tables)
       ? tables.map((x) => (typeof x === "string" ? x : x.tableCode || x.TableCode)).filter(Boolean)
       : [],
@@ -2198,6 +2215,10 @@ function normalizeDiningOrder(order) {
     guestName: getValue(order, "guestName") || "—",
     tableLabel: getValue(order, "tableLabel") || "—",
     status: getValue(order, "status") || "New",
+    source: getValue(order, "source") || "GuestOnline",
+    assignedWaiterId: getValue(order, "assignedWaiterId"),
+    assignedWaiterName: getValue(order, "assignedWaiterName") || "",
+    claimedAtUtc: getValue(order, "claimedAtUtc"),
     totalPrice: Number(getValue(order, "totalPrice") || 0),
     notes: getValue(order, "notes") || "",
     createdAtUtc: getValue(order, "createdAtUtc"),
@@ -2206,6 +2227,7 @@ function normalizeDiningOrder(order) {
       email: getValue(reservation, "email") || "",
       reservedDate: getValue(reservation, "reservedDate") || "",
       reservedTime: getValue(reservation, "reservedTime") || "",
+      isWalkIn: Boolean(getValue(reservation, "isWalkIn")),
       tableIds: getValue(reservation, "tableIds") || [],
     },
     items: Array.isArray(items)
@@ -2215,6 +2237,7 @@ function normalizeDiningOrder(order) {
           unitPrice: Number(getValue(item, "unitPrice") || 0),
           quantity: Number(getValue(item, "quantity") || 0),
           notes: getValue(item, "notes") || "",
+          status: getValue(item, "status") || "New",
         }))
       : [],
   };
@@ -2314,6 +2337,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [menuMode, setMenuMode] = React.useState("list");
   const [selectedMenuCategory, setSelectedMenuCategory] = React.useState("");
   const menuItemsRef = React.useRef(null);
+  const seenKitchenOrderIdsRef = React.useRef(new Set());
+  const seenReadyItemIdsRef = React.useRef(new Set());
   const [blacklistMode, setBlacklistMode] = React.useState("list");
   const [customersMode, setCustomersMode] = React.useState("customers");
   const [customerPeriod, setCustomerPeriod] = React.useState("all");
@@ -2356,6 +2381,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   });
   const currentAdminRole = normalizeAdminRole(adminUser?.role);
   const isWaiterRole = currentAdminRole === "Waiter";
+  const isKitchenRole = currentAdminRole === "Kitchen";
+  const isOperationalRole = isWaiterRole || isKitchenRole;
   const canClearOperationalData = currentAdminRole === "Developer";
   const canManageAdmins = ["Owner", "Developer"].includes(currentAdminRole);
   const hasDeveloperAdmin = adminUsers.some((user) => normalizeAdminRole(user.role || user.Role) === "Developer");
@@ -2474,6 +2501,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         return;
       }
 
+      if (isKitchenRole) {
+        setLoading(true);
+        setAdminError("");
+        await Promise.all([loadDiningOrders(), loadMenuItems()]);
+        if (!cancelled) {
+          setLoading(false);
+        }
+        return;
+      }
+
       loadReservations();
       loadBlacklist();
       loadDiningOrders();
@@ -2485,7 +2522,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return () => {
       cancelled = true;
     };
-  }, [isWaiterRole, loadBlacklist, loadDiningOrders, loadMenuItems, loadReservations, loadTableLayout]);
+  }, [isKitchenRole, isWaiterRole, loadBlacklist, loadDiningOrders, loadMenuItems, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     setAdminError("");
@@ -2499,7 +2536,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadMenuItems();
     }
 
-    if ((activeTab === "customers" || activeTab === "reports") && !isWaiterRole) {
+    if ((activeTab === "customers" || activeTab === "reports") && !isWaiterRole && !isKitchenRole) {
       loadReservations({ silent: true });
       loadDiningOrders();
     }
@@ -2522,10 +2559,12 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadAdminUsers();
       loadAuditLogs();
     }
-  }, [activeTab, canManageAdmins, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadMenuItems, loadReservations, loadTableLayout]);
+  }, [activeTab, canManageAdmins, isKitchenRole, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadMenuItems, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
-    const pages = isWaiterRole
+    const pages = isKitchenRole
+      ? ["home", "orders"]
+      : isWaiterRole
       ? ["home", "liveMap", "orders"]
       : canManageAdmins
       ? ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "layout", "customers", "admins"]
@@ -2570,7 +2609,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [activeTab, canManageAdmins, isWaiterRole]);
+  }, [activeTab, canManageAdmins, isKitchenRole, isWaiterRole]);
 
   function updateTableLayoutItem(tableId, nextItem) {
     const normalized = normalizeLayoutItem(nextItem);
@@ -2676,6 +2715,74 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     setAdminNotice(adminLanguage === "bg" ? "Статусът на поръчката е обновен." : "Order status updated.");
     await loadDiningOrders();
+  }
+
+  async function claimDiningOrder(orderId) {
+    setAdminNotice("");
+    setAdminError("");
+
+    const response = await adminFetch(`${API_BASE_URL}/api/dining-orders/${orderId}/claim`, {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to claim order."));
+      return;
+    }
+
+    setAdminNotice(adminLanguage === "bg" ? "Поръчката е взета от Вас." : "Order assigned to you.");
+    await loadDiningOrders();
+  }
+
+  async function updateDiningOrderItemStatus(itemId, status) {
+    setAdminNotice("");
+    setAdminError("");
+
+    const response = await adminFetch(`${API_BASE_URL}/api/dining-orders/items/${itemId}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to update item status."));
+      return;
+    }
+
+    await loadDiningOrders();
+  }
+
+  async function seatWalkInFromMap({ area, tableId, seats }) {
+    setAdminNotice("");
+    setAdminError("");
+
+    const guestCountInput = window.prompt(
+      adminLanguage === "bg"
+        ? `Колко гости да настаним на маса ${tableId}?`
+        : `How many guests should be seated at table ${tableId}?`,
+      String(Math.min(Number(seats || 2), 4))
+    );
+
+    if (guestCountInput === null) return;
+
+    const guestCount = Math.max(1, Math.min(40, Number.parseInt(guestCountInput, 10) || 2));
+    const response = await adminFetch(`${API_BASE_URL}/api/reservations/walk-in`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        area,
+        tableIds: [tableId],
+        guestCount,
+      }),
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to seat walk-in guest."));
+      return;
+    }
+
+    setAdminNotice(adminLanguage === "bg" ? "Гостът е настанен без резервация." : "Walk-in guest seated.");
+    await Promise.all([loadReservations(), loadDiningOrders()]);
   }
 
   async function clearReservationsAndOrders() {
@@ -3530,6 +3637,47 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
   const reportsReservations = statsReservations.filter(isActiveCustomerReservation);
   const reportsOrders = diningOrders.filter((order) => order.status !== "Cancelled" && isOrderInStatsPeriod(order));
+  const walkInReservations = reportsReservations.filter((reservation) => reservation.isWalkIn);
+  const waiterReportRows = Object.values(
+    reportsOrders.reduce((acc, order) => {
+      const key = order.assignedWaiterId || "unassigned";
+      if (!acc[key]) {
+        acc[key] = {
+          key,
+          waiterName: order.assignedWaiterName || (adminLanguage === "bg" ? "Непоети" : "Unassigned"),
+          orders: 0,
+          revenue: 0,
+          tables: new Set(),
+        };
+      }
+
+      acc[key].orders += 1;
+      acc[key].revenue += Number(order.totalPrice || 0);
+      String(order.tableLabel || "")
+        .split(",")
+        .map((table) => table.trim())
+        .filter(Boolean)
+        .forEach((table) => acc[key].tables.add(table));
+
+      return acc;
+    }, {})
+  ).map((row) => ({ ...row, tableCount: row.tables.size })).sort((aRow, bRow) => bRow.revenue - aRow.revenue);
+  const soldItemRows = Object.values(
+    reportsOrders.flatMap((order) => order.items || []).reduce((acc, item) => {
+      const key = item.name;
+      if (!acc[key]) {
+        acc[key] = {
+          name: item.name,
+          quantity: 0,
+          revenue: 0,
+        };
+      }
+
+      acc[key].quantity += Number(item.quantity || 0);
+      acc[key].revenue += Number(item.quantity || 0) * Number(item.unitPrice || 0);
+      return acc;
+    }, {})
+  ).sort((aRow, bRow) => bRow.quantity - aRow.quantity);
   const reportMetrics = [
     {
       label: adminLanguage === "bg" ? "Резервации" : "Reservations",
@@ -3545,6 +3693,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       label: adminLanguage === "bg" ? "Създадени от админ" : "Created by admin",
       value: reportsReservations.filter((reservation) => reservation.createdByAdmin).length,
       detail: adminLanguage === "bg" ? "ръчно въведени" : "entered manually",
+    },
+    {
+      label: adminLanguage === "bg" ? "Без резервация" : "Walk-ins",
+      value: walkInReservations.length,
+      detail: adminLanguage === "bg" ? "настанени директно" : "seated directly",
     },
     {
       label: adminLanguage === "bg" ? "Онлайн поръчки" : "Online orders",
@@ -3833,7 +3986,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       }));
 
   const tabs = React.useMemo(
-    () => isWaiterRole
+    () => isKitchenRole
+      ? [
+          ["orders", adminLanguage === "bg" ? "Кухня" : "Kitchen"],
+        ]
+      : isWaiterRole
       ? [
           ["liveMap", a.tabs.liveMap],
           ["orders", a.tabs.orders],
@@ -3849,22 +4006,22 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           ["customers", a.tabs.customers],
           ...(canManageAdmins ? [["admins", adminLanguage === "bg" ? "Админи" : "Admins"]] : []),
         ],
-    [a.tabs, adminLanguage, canManageAdmins, isWaiterRole]
+    [a.tabs, adminLanguage, canManageAdmins, isKitchenRole, isWaiterRole]
   );
   const allowedTabKeys = React.useMemo(() => new Set(["home", ...tabs.map(([key]) => key)]), [tabs]);
 
   React.useEffect(() => {
     if (!allowedTabKeys.has(activeTab)) {
-      setActiveTab(isWaiterRole ? "orders" : "home");
+      setActiveTab(isWaiterRole || isKitchenRole ? "orders" : "home");
     }
-  }, [activeTab, allowedTabKeys, isWaiterRole]);
+  }, [activeTab, allowedTabKeys, isKitchenRole, isWaiterRole]);
 
   const refreshActiveTab = React.useCallback(async ({ silent = false } = {}) => {
     if (activeTab === "home") {
       await Promise.all([
-        ...(isWaiterRole ? [] : [loadReservations({ silent }), loadBlacklist()]),
+        ...(isWaiterRole || isKitchenRole ? [] : [loadReservations({ silent }), loadBlacklist()]),
         loadDiningOrders(),
-        loadTableLayout(),
+        ...(isKitchenRole ? [] : [loadTableLayout()]),
       ]);
       return;
     }
@@ -3874,7 +4031,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
-    if (activeTab === "reports" && !isWaiterRole) {
+    if (activeTab === "reports" && !isWaiterRole && !isKitchenRole) {
       await Promise.all([loadReservations({ silent }), loadDiningOrders()]);
       return;
     }
@@ -3908,12 +4065,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
-    if (!isWaiterRole) {
+    if (!isWaiterRole && !isKitchenRole) {
       await loadReservations({ silent });
     }
   }, [
     activeTab,
     canManageAdmins,
+    isKitchenRole,
     isWaiterRole,
     loadAdminUsers,
     loadAuditLogs,
@@ -3926,10 +4084,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
   const refreshLiveData = React.useCallback(async () => {
     await Promise.all([
-      loadReservations({ silent: true }),
+      ...(isKitchenRole ? [] : [loadReservations({ silent: true })]),
       loadDiningOrders({ silent: true }),
     ]);
-  }, [loadDiningOrders, loadReservations]);
+  }, [isKitchenRole, loadDiningOrders, loadReservations]);
 
   const shouldPauseLiveDataRefresh = Boolean(
     showCreateReservation ||
@@ -3953,6 +4111,41 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     return () => window.clearInterval(intervalId);
   }, [activeTab, refreshLiveData, shouldPauseLiveDataRefresh]);
+
+  React.useEffect(() => {
+    if (isKitchenRole) {
+      const activeOrderIds = diningOrders
+        .filter((order) => !["Done", "Cancelled"].includes(order.status))
+        .map((order) => order.id);
+      const newOrderIds = activeOrderIds.filter((id) => !seenKitchenOrderIdsRef.current.has(id));
+      const hadSeenOrders = seenKitchenOrderIdsRef.current.size > 0;
+
+      activeOrderIds.forEach((id) => seenKitchenOrderIdsRef.current.add(id));
+      if (hadSeenOrders && newOrderIds.length > 0) {
+        setAdminNotice(adminLanguage === "bg" ? "Нова поръчка за кухнята." : "New kitchen order.");
+      }
+    }
+
+    if (isWaiterRole) {
+      const readyItems = diningOrders.flatMap((order) =>
+        (order.items || [])
+          .filter((item) => item.status === "Ready")
+          .map((item) => ({ id: item.id, name: item.name, tableLabel: order.tableLabel }))
+      );
+      const newReadyItems = readyItems.filter((item) => !seenReadyItemIdsRef.current.has(item.id));
+      const hadSeenReadyItems = seenReadyItemIdsRef.current.size > 0;
+
+      readyItems.forEach((item) => seenReadyItemIdsRef.current.add(item.id));
+      if (hadSeenReadyItems && newReadyItems.length > 0) {
+        const first = newReadyItems[0];
+        setAdminNotice(
+          adminLanguage === "bg"
+            ? `Готово блюдо: ${first.name} · маса ${first.tableLabel}`
+            : `Ready dish: ${first.name} · table ${first.tableLabel}`
+        );
+      }
+    }
+  }, [adminLanguage, diningOrders, isKitchenRole, isWaiterRole]);
 
   const isDashboard = activeTab === "home";
   const activeTabLabel = tabs.find(([key]) => key === activeTab)?.[1] || a.appTitle;
@@ -4063,12 +4256,12 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               ))}
             </div>
 
-            <div className={`mb-8 grid gap-4 ${isWaiterRole ? "md:grid-cols-2" : "md:grid-cols-5"}`}>
-              {!isWaiterRole && <StatCard label={a.stats.allReservations} value={statsReservations.length} />}
+            <div className={`mb-8 grid gap-4 ${isOperationalRole ? "md:grid-cols-2" : "md:grid-cols-5"}`}>
+              {!isOperationalRole && <StatCard label={a.stats.allReservations} value={statsReservations.length} />}
               <StatCard label={a.stats.orders} value={diningOrders.length} />
-              {!isWaiterRole && <StatCard label={a.stats.pending} value={pendingCount} />}
-              {!isWaiterRole && <StatCard label={a.stats.approved} value={approvedCount} />}
-              {!isWaiterRole && <StatCard label={a.stats.blacklist} value={blacklistCount} />}
+              {!isOperationalRole && <StatCard label={a.stats.pending} value={pendingCount} />}
+              {!isOperationalRole && <StatCard label={a.stats.approved} value={approvedCount} />}
+              {!isOperationalRole && <StatCard label={a.stats.blacklist} value={blacklistCount} />}
             </div>
 
             <div className="mb-8 grid grid-cols-2 gap-2 rounded-[22px] border border-white/10 bg-black/20 p-2 sm:grid-cols-3">
@@ -4083,8 +4276,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               ))}
             </div>
 
-            <div className={`mb-8 grid gap-5 ${isWaiterRole ? "" : "xl:grid-cols-2"}`}>
-              {!isWaiterRole && (
+            <div className={`mb-8 grid gap-5 ${isOperationalRole ? "" : "xl:grid-cols-2"}`}>
+              {!isOperationalRole && (
               <div className="rounded-[26px] border border-white/10 bg-black/20 p-4 md:p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
@@ -4254,6 +4447,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   setExpandedOrderId(orderId);
                   setActiveTab("orders");
                 }}
+                onSeatWalkIn={seatWalkInFromMap}
                 onRelease={releaseReservationTable}
                 ordersOnly={false}
               />
@@ -4955,7 +5149,19 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               <div className="text-xs uppercase tracking-[0.2em] text-white/35">
                                 {a.orders.guest}
                               </div>
-                              <div className="mt-1 text-base font-semibold text-white">{order.guestName}</div>
+                              <div className="mt-1 text-base font-semibold text-white">
+                                {order.guestName}
+                                {order.reservation?.isWalkIn && (
+                                  <span className="ml-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-emerald-100">
+                                    Walk-in
+                                  </span>
+                                )}
+                              </div>
+                              <div className="mt-1 text-xs text-white/40">
+                                {order.assignedWaiterName
+                                  ? `${adminLanguage === "bg" ? "Сервитьор" : "Waiter"}: ${order.assignedWaiterName}`
+                                  : adminLanguage === "bg" ? "Непоета поръчка" : "Unclaimed order"}
+                              </div>
                             </div>
                             <div className="flex items-center justify-between gap-3 md:justify-end">
                               <div className="text-left md:text-right">
@@ -4980,6 +5186,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs text-white/65">
                                     {a.orders.status}: {order.status}
                                   </span>
+                                  <span className="rounded-full border border-sky-300/20 bg-sky-400/10 px-3 py-1 text-xs text-sky-100">
+                                    {order.source === "Waiter"
+                                      ? adminLanguage === "bg" ? "От сервитьор" : "Waiter order"
+                                      : order.source === "Admin"
+                                      ? adminLanguage === "bg" ? "От админ" : "Admin order"
+                                      : adminLanguage === "bg" ? "Онлайн" : "Online"}
+                                  </span>
                                   {order.notes && (
                                     <span className="rounded-full border border-amber-300/20 bg-amber-400/10 px-3 py-1 text-xs text-amber-100">
                                       {a.orders.notes}: {order.notes}
@@ -4988,27 +5201,40 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => updateDiningOrderStatus(order.id, "Seen")}
-                                    className="ghost-button rounded-xl px-3 py-2 text-xs font-semibold"
-                                  >
-                                    {a.orders.markSeen}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => updateDiningOrderStatus(order.id, "Preparing")}
-                                    className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-3 py-2 text-xs font-semibold text-[#f2d39a]"
-                                  >
-                                    {a.orders.preparing}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => updateDiningOrderStatus(order.id, "Done")}
-                                    className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100"
-                                  >
-                                    {a.orders.done}
-                                  </button>
+                                  {isWaiterRole && !order.assignedWaiterId && (
+                                    <button
+                                      type="button"
+                                      onClick={() => claimDiningOrder(order.id)}
+                                      className="luxury-button rounded-xl px-3 py-2 text-xs font-semibold"
+                                    >
+                                      {adminLanguage === "bg" ? "Вземи поръчка" : "Claim order"}
+                                    </button>
+                                  )}
+                                  {!isKitchenRole && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateDiningOrderStatus(order.id, "Seen")}
+                                        className="ghost-button rounded-xl px-3 py-2 text-xs font-semibold"
+                                      >
+                                        {a.orders.markSeen}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateDiningOrderStatus(order.id, "Preparing")}
+                                        className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-3 py-2 text-xs font-semibold text-[#f2d39a]"
+                                      >
+                                        {a.orders.preparing}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => updateDiningOrderStatus(order.id, "Done")}
+                                        className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100"
+                                      >
+                                        {a.orders.done}
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
                               </div>
 
@@ -5022,17 +5248,44 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                       </div>
                                       <div className="shrink-0 text-right">
                                         <div className="mb-1 text-xs text-white/45">{formatEuroAmount(item.unitPrice * item.quantity)}</div>
-                                        <div className="flex items-center overflow-hidden rounded-full border border-white/10">
-                                          <button type="button" onClick={() => updateConsumptionItem(item.id, item.quantity - 1)} className="px-3 py-1 text-[#f2d39a]" aria-label={`${a.orders.remove} ${item.name}`}>-</button>
-                                          <span className="min-w-8 text-center text-sm text-white">{item.quantity}</span>
-                                          <button type="button" onClick={() => updateConsumptionItem(item.id, item.quantity + 1)} className="px-3 py-1 text-[#f2d39a]" aria-label={`${a.orders.addItem} ${item.name}`}>+</button>
-                                        </div>
+                                        <span className="mb-2 inline-flex rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[11px] text-white/65">
+                                          {item.status}
+                                        </span>
+                                        {isKitchenRole ? (
+                                          <div className="flex flex-wrap justify-end gap-1">
+                                            {[
+                                              ["Seen", adminLanguage === "bg" ? "Видяна" : "Seen"],
+                                              ["Preparing", adminLanguage === "bg" ? "Готви се" : "Preparing"],
+                                              ["Ready", adminLanguage === "bg" ? "Готово" : "Ready"],
+                                            ].map(([status, label]) => (
+                                              <button
+                                                key={status}
+                                                type="button"
+                                                onClick={() => updateDiningOrderItemStatus(item.id, status)}
+                                                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                                                  item.status === status
+                                                    ? "border-[#f2d39a]/55 bg-[#c9a56a]/20 text-[#f2d39a]"
+                                                    : "border-white/10 bg-black/20 text-white/60"
+                                                }`}
+                                              >
+                                                {label}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center overflow-hidden rounded-full border border-white/10">
+                                            <button type="button" onClick={() => updateConsumptionItem(item.id, item.quantity - 1)} className="px-3 py-1 text-[#f2d39a]" aria-label={`${a.orders.remove} ${item.name}`}>-</button>
+                                            <span className="min-w-8 text-center text-sm text-white">{item.quantity}</span>
+                                            <button type="button" onClick={() => updateConsumptionItem(item.id, item.quantity + 1)} className="px-3 py-1 text-[#f2d39a]" aria-label={`${a.orders.addItem} ${item.name}`}>+</button>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
                                 ))}
                               </div>
 
+                              {!isKitchenRole && (
                               <div className="mt-4 rounded-2xl border border-emerald-300/15 bg-emerald-400/10 p-4">
                                 <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100">
                                   {a.orders.addItem}
@@ -5077,6 +5330,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   </div>
                                 )}
                               </div>
+                              )}
                             </div>
                           )}
                         </article>
@@ -5865,36 +6119,59 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <span>{adminLanguage === "bg" ? "От админ" : "Admin created"}</span>
                         <strong className="text-[#fff4df]">{reportsReservations.filter((reservation) => reservation.createdByAdmin).length}</strong>
                       </div>
+                      <div className="flex justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                        <span>{adminLanguage === "bg" ? "Без резервация" : "Walk-ins"}</span>
+                        <strong className="text-[#fff4df]">{walkInReservations.length}</strong>
+                      </div>
                     </div>
                   </div>
 
                   <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
                     <div className="section-kicker">
-                      {adminLanguage === "bg" ? "Последни онлайн поръчки" : "Recent online orders"}
+                      {adminLanguage === "bg" ? "Оборот по сервитьори" : "Revenue by waiter"}
                     </div>
                     <div className="mt-4 space-y-3">
-                      {reportsOrders.slice(0, 6).map((order) => (
-                        <button
-                          key={order.id}
-                          type="button"
-                          onClick={() => {
-                            setExpandedOrderId(order.id);
-                            setActiveTab("orders");
-                          }}
-                          className="flex w-full items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left text-sm transition hover:border-[#c9a56a]/35"
-                        >
-                          <span className="min-w-0 truncate text-[#fff4df]">
-                            #{order.id} · {order.guestName} · {order.tableLabel}
-                          </span>
-                          <span className="shrink-0 text-[#f2d39a]">{formatEuroAmount(order.totalPrice)}</span>
-                        </button>
+                      {waiterReportRows.map((row) => (
+                        <div key={row.key} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="min-w-0 truncate font-semibold text-[#fff4df]">{row.waiterName}</span>
+                            <span className="shrink-0 text-[#f2d39a]">{formatEuroAmount(row.revenue)}</span>
+                          </div>
+                          <div className="mt-1 text-xs text-white/45">
+                            {row.orders} {adminLanguage === "bg" ? "поръчки" : "orders"} · {row.tableCount} {adminLanguage === "bg" ? "маси" : "tables"}
+                          </div>
+                        </div>
                       ))}
-                      {reportsOrders.length === 0 && (
+                      {waiterReportRows.length === 0 && (
                         <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/45">
                           {adminLanguage === "bg" ? "Няма поръчки за периода." : "No orders for the period."}
                         </div>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5">
+                  <div className="section-kicker">
+                    {adminLanguage === "bg" ? "Продадени артикули" : "Sold items"}
+                  </div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {soldItemRows.slice(0, 12).map((row) => (
+                      <div key={row.name} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="min-w-0 truncate font-semibold text-[#fff4df]">{row.name}</span>
+                          <span className="shrink-0 rounded-full border border-[#f2d39a]/20 bg-[#c9a56a]/10 px-2.5 py-1 text-xs font-semibold text-[#f2d39a]">
+                            {row.quantity}x
+                          </span>
+                        </div>
+                        <div className="mt-1 text-xs text-white/45">{formatEuroAmount(row.revenue)}</div>
+                      </div>
+                    ))}
+                    {soldItemRows.length === 0 && (
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/45">
+                        {adminLanguage === "bg" ? "Няма продадени артикули за периода." : "No sold items for the period."}
+                      </div>
+                    )}
                   </div>
                 </div>
               </Panel>

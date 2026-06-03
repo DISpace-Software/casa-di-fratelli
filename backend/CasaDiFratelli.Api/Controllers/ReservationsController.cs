@@ -321,6 +321,9 @@ public class ReservationsController : ControllerBase
                 x.PrivacyConsent,
                 x.Notes,
                 x.CreatedByAdmin,
+                x.CreatedByAdminUserId,
+                x.CreatedByAdminName,
+                x.IsWalkIn,
                 x.InternalNote,
                 x.IsArrived,
                 x.IsNoShow,
@@ -458,6 +461,8 @@ public class ReservationsController : ControllerBase
             Status = requiresEmailConfirmation ? ReservationStatusAwaitingEmailConfirmation : ReservationStatusApproved,
             CreatedAtUtc = DateTime.UtcNow,
             CreatedByAdmin = request.CreatedByAdmin,
+            CreatedByAdminUserId = request.CreatedByAdmin ? AdminAuthService.Current(HttpContext)?.Id : null,
+            CreatedByAdminName = request.CreatedByAdmin ? AdminAuthService.Current(HttpContext)?.Name : null,
             InternalNote = request.InternalNote,
             EmailConfirmationTokenHash = confirmationToken == null ? null : HashToken(confirmationToken),
             EmailConfirmationExpiresAtUtc = confirmationToken == null ? null : DateTime.UtcNow.AddDays(2),
@@ -507,6 +512,81 @@ public class ReservationsController : ControllerBase
                     ? $"Добре дошли отново, {reservation.GuestName}! Вашата резервация е автоматично потвърдена, защото вече сте клиент на нашия ресторант."
                     : "Reservation confirmed.",
             reservation.CreatedAtUtc,
+            TableIds = reservation.Tables.Select(t => t.TableCode).ToList()
+        });
+    }
+
+    [HttpPost("walk-in")]
+    [AdminAuthorize]
+    public async Task<IActionResult> CreateWalkIn([FromBody] CreateWalkInReservationRequest request)
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (admin == null)
+            return Unauthorized(new { message = "Admin session is required." });
+
+        var tableIds = ReservationConflictService.NormalizeTableIds(request.TableIds);
+        if (tableIds.Count == 0)
+            return BadRequest(new { message = "At least one table must be selected." });
+
+        var guestCount = Math.Clamp(request.GuestCount <= 0 ? 2 : request.GuestCount, 1, 40);
+        if (!TableCapacityService.HasEnoughSeats(tableIds, guestCount))
+            return BadRequest(new { message = "Selected tables do not have enough seats." });
+
+        var now = GetRestaurantNow();
+        var reservedDate = DateOnly.FromDateTime(now);
+        var reservedTime = $"{now.Hour:00}:{now.Minute:00}";
+        var conflict = await _reservationConflictService.FindTableConflictAsync(reservedDate, reservedTime, tableIds);
+
+        if (conflict != null)
+            return Conflict(ReservationConflictService.ToConflictResponse(conflict));
+
+        var reservation = new Reservation
+        {
+            GuestName = "Walk-in",
+            Phone = string.Empty,
+            Email = string.Empty,
+            GuestCount = guestCount,
+            Area = string.IsNullOrWhiteSpace(request.Area) ? "indoor" : request.Area.Trim(),
+            ReservedDate = reservedDate,
+            ReservedTime = reservedTime,
+            Status = ReservationStatusApproved,
+            CreatedAtUtc = DateTime.UtcNow,
+            CreatedByAdmin = true,
+            CreatedByAdminUserId = admin.Id,
+            CreatedByAdminName = admin.Name,
+            IsWalkIn = true,
+            IsArrived = true,
+            PrivacyConsent = true,
+            InternalNote = string.IsNullOrWhiteSpace(request.InternalNote)
+                ? "Walk-in guest seated without customer details."
+                : request.InternalNote.Trim(),
+            OrderAccessToken = CreateOrderAccessToken(),
+            EmailConfirmedAtUtc = DateTime.UtcNow,
+            Tables = tableIds.Select(id => new ReservationTable { TableCode = id }).ToList()
+        };
+
+        _db.Reservations.Add(reservation);
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "walk-in", "Reservation", reservation.Id.ToString(), after: new
+        {
+            reservation.Id,
+            reservation.Area,
+            reservation.GuestCount,
+            TableIds = tableIds,
+            CreatedBy = admin.Name
+        });
+
+        return Ok(new
+        {
+            reservation.Id,
+            reservation.GuestName,
+            reservation.GuestCount,
+            reservation.Area,
+            reservation.ReservedDate,
+            reservation.ReservedTime,
+            reservation.Status,
+            reservation.IsWalkIn,
+            reservation.IsArrived,
             TableIds = reservation.Tables.Select(t => t.TableCode).ToList()
         });
     }

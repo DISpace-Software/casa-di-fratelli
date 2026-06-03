@@ -9,6 +9,9 @@ public static class AdminSchemaBootstrapper
         await db.Database.ExecuteSqlRawAsync("""
             ALTER TABLE "Reservations" ADD COLUMN IF NOT EXISTS "BirthDate" date NULL;
             ALTER TABLE "Reservations" ADD COLUMN IF NOT EXISTS "CreatedByAdmin" boolean NOT NULL DEFAULT false;
+            ALTER TABLE "Reservations" ADD COLUMN IF NOT EXISTS "CreatedByAdminUserId" integer NULL;
+            ALTER TABLE "Reservations" ADD COLUMN IF NOT EXISTS "CreatedByAdminName" varchar(120) NULL;
+            ALTER TABLE "Reservations" ADD COLUMN IF NOT EXISTS "IsWalkIn" boolean NOT NULL DEFAULT false;
             ALTER TABLE "Reservations" ADD COLUMN IF NOT EXISTS "InternalNote" text NULL;
             ALTER TABLE "Reservations" ADD COLUMN IF NOT EXISTS "IsArrived" boolean NOT NULL DEFAULT false;
             ALTER TABLE "Reservations" ADD COLUMN IF NOT EXISTS "IsBlacklisted" boolean NOT NULL DEFAULT false;
@@ -131,6 +134,10 @@ public static class AdminSchemaBootstrapper
                 "GuestName" varchar(120) NOT NULL DEFAULT '',
                 "TableLabel" varchar(120) NOT NULL DEFAULT '',
                 "Status" varchar(30) NOT NULL DEFAULT 'New',
+                "Source" varchar(40) NOT NULL DEFAULT 'GuestOnline',
+                "AssignedWaiterId" integer NULL,
+                "AssignedWaiterName" varchar(120) NULL,
+                "ClaimedAtUtc" timestamp with time zone NULL,
                 "TotalPrice" numeric NOT NULL DEFAULT 0,
                 "Notes" text NULL,
                 "CreatedAtUtc" timestamp with time zone NOT NULL DEFAULT now(),
@@ -147,6 +154,7 @@ public static class AdminSchemaBootstrapper
                 "UnitPrice" numeric NOT NULL DEFAULT 0,
                 "Quantity" integer NOT NULL DEFAULT 1,
                 "Notes" text NULL,
+                "Status" varchar(30) NOT NULL DEFAULT 'New',
                 CONSTRAINT "PK_DiningOrderItems" PRIMARY KEY ("Id")
             );
 
@@ -186,6 +194,10 @@ public static class AdminSchemaBootstrapper
             ALTER TABLE "DiningOrders" ADD COLUMN IF NOT EXISTS "GuestName" varchar(120) NOT NULL DEFAULT '';
             ALTER TABLE "DiningOrders" ADD COLUMN IF NOT EXISTS "TableLabel" varchar(120) NOT NULL DEFAULT '';
             ALTER TABLE "DiningOrders" ADD COLUMN IF NOT EXISTS "Status" varchar(30) NOT NULL DEFAULT 'New';
+            ALTER TABLE "DiningOrders" ADD COLUMN IF NOT EXISTS "Source" varchar(40) NOT NULL DEFAULT 'GuestOnline';
+            ALTER TABLE "DiningOrders" ADD COLUMN IF NOT EXISTS "AssignedWaiterId" integer NULL;
+            ALTER TABLE "DiningOrders" ADD COLUMN IF NOT EXISTS "AssignedWaiterName" varchar(120) NULL;
+            ALTER TABLE "DiningOrders" ADD COLUMN IF NOT EXISTS "ClaimedAtUtc" timestamp with time zone NULL;
             ALTER TABLE "DiningOrders" ADD COLUMN IF NOT EXISTS "TotalPrice" numeric NOT NULL DEFAULT 0;
             ALTER TABLE "DiningOrders" ADD COLUMN IF NOT EXISTS "Notes" text NULL;
             ALTER TABLE "DiningOrders" ADD COLUMN IF NOT EXISTS "CreatedAtUtc" timestamp with time zone NOT NULL DEFAULT now();
@@ -196,6 +208,7 @@ public static class AdminSchemaBootstrapper
             ALTER TABLE "DiningOrderItems" ADD COLUMN IF NOT EXISTS "UnitPrice" numeric NOT NULL DEFAULT 0;
             ALTER TABLE "DiningOrderItems" ADD COLUMN IF NOT EXISTS "Quantity" integer NOT NULL DEFAULT 1;
             ALTER TABLE "DiningOrderItems" ADD COLUMN IF NOT EXISTS "Notes" text NULL;
+            ALTER TABLE "DiningOrderItems" ADD COLUMN IF NOT EXISTS "Status" varchar(30) NOT NULL DEFAULT 'New';
 
             DO $$
             BEGIN
