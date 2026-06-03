@@ -1337,6 +1337,23 @@ function ReservationOperationsMap({
       })
       .sort((first, second) => first.minutes - second.minutes)[0] || null;
   }, [now, ordersOnly, reservations, selectedArea, selectedTableId]);
+  const selectedTableHasArrivedReservation = React.useMemo(() => {
+    if (ordersOnly || !selectedTableId) return false;
+
+    const today = formatLocalDate(now);
+
+    return reservations.some((reservation) => {
+      if (reservation.area !== selectedArea) return false;
+      if (reservation.reservedDate !== today) return false;
+      if (!reservation.tableIds.includes(selectedTableId)) return false;
+      if (reservation.isNoShow || ["Cancelled", "Released"].includes(reservation.status)) return false;
+      return Boolean(reservation.isArrived);
+    });
+  }, [now, ordersOnly, reservations, selectedArea, selectedTableId]);
+  const canSeatWalkInForSelectedTable =
+    Boolean(onSeatWalkIn) &&
+    !selectedTableHasArrivedReservation &&
+    !(nextSoonReservationForSelectedTable && nextSoonReservationForSelectedTable.minutes <= 90);
   const activeOrdersByTable = React.useMemo(() => {
     const byTable = new Map();
 
@@ -1837,16 +1854,13 @@ function ReservationOperationsMap({
                               : `Reservation in ${nextSoonReservationForSelectedTable.minutes} min.`}
                           </div>
                         )}
-                        {onSeatWalkIn && (
+                        {canSeatWalkInForSelectedTable && (
                           <button
                             type="button"
                             onClick={() => openWalkInModal(table)}
-                            disabled={nextSoonReservationForSelectedTable?.minutes < 90}
-                            className="w-full rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.04] disabled:text-white/35"
+                            className="w-full rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:border-emerald-200/40 hover:bg-emerald-400/20"
                           >
-                            {nextSoonReservationForSelectedTable?.minutes < 90
-                              ? language === "bg" ? "Скоро има резервация" : "Reservation soon"
-                              : language === "bg" ? "Настани без резервация" : "Seat walk-in"}
+                            {language === "bg" ? "Настани без резервация" : "Seat walk-in"}
                           </button>
                         )}
                       </div>
@@ -1878,16 +1892,13 @@ function ReservationOperationsMap({
                               : `Reservation in ${nextSoonReservationForSelectedTable.minutes} min.`}
                           </div>
                         )}
-                        {onSeatWalkIn && (
+                        {canSeatWalkInForSelectedTable && (
                           <button
                             type="button"
                             onClick={() => openWalkInModal(table)}
-                            disabled={nextSoonReservationForSelectedTable?.minutes < 90}
-                            className="w-full rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.04] disabled:text-white/35"
+                            className="w-full rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:border-emerald-200/40 hover:bg-emerald-400/20"
                           >
-                            {nextSoonReservationForSelectedTable?.minutes < 90
-                              ? language === "bg" ? "Скоро има резервация" : "Reservation soon"
-                              : language === "bg" ? "Настани без резервация" : "Seat walk-in"}
+                            {language === "bg" ? "Настани без резервация" : "Seat walk-in"}
                           </button>
                         )}
                       </div>

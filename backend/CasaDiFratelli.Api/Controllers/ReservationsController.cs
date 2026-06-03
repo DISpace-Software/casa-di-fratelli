@@ -575,7 +575,7 @@ public class ReservationsController : ControllerBase
                 x.Reservation,
                 Minutes = (x.Reservation.ReservedDate.ToDateTime(x.Time!.Value) - now).TotalMinutes
             })
-            .Where(x => x.Minutes > 0 && x.Minutes < 90)
+            .Where(x => x.Minutes > 0 && x.Minutes <= 90)
             .OrderBy(x => x.Minutes)
             .FirstOrDefault();
 
