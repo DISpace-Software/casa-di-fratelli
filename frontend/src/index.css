@@ -1137,6 +1137,72 @@ html[data-theme="light"] .menu-page .text-white\/70 {
   color: rgba(42, 28, 18, 0.66) !important;
 }
 
+.admin-hero-panel {
+  isolation: isolate;
+}
+
+.admin-header-controls {
+  z-index: 3;
+}
+
+.admin-profile-anchor {
+  z-index: 4;
+}
+
+@media (min-width: 1025px) {
+  .admin-page .admin-header-controls {
+    position: absolute !important;
+    top: 54% !important;
+    right: clamp(6.25rem, 8vw, 8.75rem) !important;
+    width: auto !important;
+    margin-top: 0 !important;
+    transform: translateY(-50%) !important;
+    justify-content: flex-end !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .admin-page .admin-header-controls {
+    position: absolute !important;
+    top: 52% !important;
+    right: 6.75rem !important;
+    width: auto !important;
+    margin-top: 0 !important;
+    transform: translateY(-50%) !important;
+    justify-content: flex-end !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-page .admin-header-controls {
+    position: absolute !important;
+    right: 4.875rem !important;
+    bottom: 1.15rem !important;
+    left: 1.1rem !important;
+    width: auto !important;
+    margin-top: 0 !important;
+    justify-content: space-between !important;
+  }
+
+  .admin-page .admin-header-controls .ghost-button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .admin-page .admin-header-controls > div:first-child {
+    padding: 0.2rem;
+  }
+
+  .admin-page .admin-header-controls > div:first-child button {
+    padding: 0.55rem 0.85rem;
+  }
+
+  .admin-page .admin-profile-anchor {
+    right: 1.2rem !important;
+    top: 1.2rem !important;
+  }
+}
+
 @media (max-width: 1024px) {
   .site-hero .hero-logo {
     width: 250px;
