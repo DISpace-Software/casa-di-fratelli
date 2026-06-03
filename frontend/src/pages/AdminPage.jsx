@@ -2417,6 +2417,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     currentPassword: "",
     newPassword: "",
   });
+  const [showProfilePanel, setShowProfilePanel] = React.useState(false);
   const [editingAdminId, setEditingAdminId] = React.useState(null);
   const [adminEditForm, setAdminEditForm] = React.useState({
     name: "",
@@ -4318,13 +4319,73 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             ) : null}
             <button
               type="button"
-              onClick={onAdminLogout}
-              className="ghost-button rounded-full px-5 py-3 text-sm font-semibold text-white/70"
+              onClick={() => setShowProfilePanel((isOpen) => !isOpen)}
+              className="ghost-button rounded-full px-5 py-3 text-sm font-semibold text-white/80"
             >
-              {adminLanguage === "bg" ? "Изход" : "Logout"}
+              {adminLanguage === "bg" ? "Моят профил" : "My profile"}
             </button>
           </div>
         </div>
+        {showProfilePanel && (
+          <div className="-mt-4 mb-8 rounded-[24px] border border-white/10 bg-black/30 p-4 shadow-2xl shadow-black/25 md:p-5">
+            <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <div className="section-kicker">
+                  {adminLanguage === "bg" ? "Профил" : "Profile"}
+                </div>
+                <h2 className="mt-2 text-xl font-semibold text-[#fff4df]">
+                  {adminUser?.name || adminUser?.email || (adminLanguage === "bg" ? "Моят профил" : "My profile")}
+                </h2>
+                <div className="mt-1 text-sm text-white/45">
+                  {adminUser?.email} · {getAdminRoleLabel(adminUser?.role, adminLanguage)}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowProfilePanel(false)}
+                  className="ghost-button rounded-full px-4 py-2 text-sm font-semibold"
+                >
+                  {adminLanguage === "bg" ? "Затвори" : "Close"}
+                </button>
+                <button
+                  type="button"
+                  onClick={onAdminLogout}
+                  className="rounded-full border border-red-300/25 bg-red-500/12 px-4 py-2 text-sm font-semibold text-red-100"
+                >
+                  {adminLanguage === "bg" ? "Изход" : "Logout"}
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={changeOwnPassword} className="rounded-2xl border border-white/10 bg-black/20 p-3 md:p-4">
+              <div className="mb-3 text-sm font-semibold text-[#fff4df]">
+                {adminLanguage === "bg" ? "Смяна на парола" : "Change password"}
+              </div>
+              <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={ownPasswordForm.currentPassword}
+                  onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
+                  placeholder={adminLanguage === "bg" ? "Текуща парола" : "Current password"}
+                  className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-300"
+                />
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={ownPasswordForm.newPassword}
+                  onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))}
+                  placeholder={adminLanguage === "bg" ? "Нова парола" : "New password"}
+                  className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-300"
+                />
+                <button className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold">
+                  {adminLanguage === "bg" ? "Смени" : "Change"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
         {isDashboard ? (
           <>
             <div className="mb-4 flex flex-wrap gap-2">
@@ -4353,43 +4414,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               {!isOperationalRole && <StatCard label={a.stats.approved} value={approvedCount} />}
               {!isOperationalRole && <StatCard label={a.stats.blacklist} value={blacklistCount} />}
             </div>
-
-            <form onSubmit={changeOwnPassword} className="mb-8 rounded-[24px] border border-white/10 bg-black/20 p-4 md:p-5">
-              <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <div className="section-kicker">
-                    {adminLanguage === "bg" ? "Профил" : "Profile"}
-                  </div>
-                  <h2 className="mt-2 text-xl font-semibold text-[#fff4df]">
-                    {adminLanguage === "bg" ? "Смяна на моята парола" : "Change my password"}
-                  </h2>
-                </div>
-                <div className="text-sm text-white/45">
-                  {adminUser?.name || adminUser?.email}
-                </div>
-              </div>
-              <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  value={ownPasswordForm.currentPassword}
-                  onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, currentPassword: event.target.value }))}
-                  placeholder={adminLanguage === "bg" ? "Текуща парола" : "Current password"}
-                  className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-300"
-                />
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  value={ownPasswordForm.newPassword}
-                  onChange={(event) => setOwnPasswordForm((prev) => ({ ...prev, newPassword: event.target.value }))}
-                  placeholder={adminLanguage === "bg" ? "Нова парола" : "New password"}
-                  className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-amber-300"
-                />
-                <button className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold">
-                  {adminLanguage === "bg" ? "Смени" : "Change"}
-                </button>
-              </div>
-            </form>
 
             <div className="mb-8 grid grid-cols-2 gap-2 rounded-[22px] border border-white/10 bg-black/20 p-2 sm:grid-cols-3">
               {tabs.map(([key, label]) => (
