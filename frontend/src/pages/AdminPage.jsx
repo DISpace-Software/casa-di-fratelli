@@ -2266,79 +2266,78 @@ function ReservationOperationsMap({
                   </div>
                 </div>
               ), document.body)}
-
-              {walkInDraft && typeof document !== "undefined" && createPortal((
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/72 p-4 backdrop-blur-md" role="dialog" aria-modal="true">
-                  <form
-                    onSubmit={submitWalkInModal}
-                    className="w-full max-w-md overflow-hidden rounded-[28px] border border-emerald-300/20 bg-[#15110e] shadow-[0_32px_120px_rgba(0,0,0,0.72)]"
-                  >
-                    <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5">
-                      <div className="section-kicker">
-                        {language === "bg" ? "Настаняване" : "Walk-in"}
-                      </div>
-                      <h3 className="mt-2 text-2xl font-semibold text-[#fff4df]">
-                        {language === "bg" ? `Маса ${walkInDraft.tableId}` : `Table ${walkInDraft.tableId}`}
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-white/55">
-                        {language === "bg"
-                          ? "Въведете броя гости. Резервацията ще бъде създадена без клиентски данни и ще е готова за консумация."
-                          : "Enter guest count. The table will be seated without customer details and ready for consumption."}
-                      </p>
-                    </div>
-
-                    <div className="p-5">
-                      <label className="text-sm font-semibold text-white/70">
-                        {language === "bg" ? "Брой гости" : "Guests"}
-                        <div className="mt-3 flex items-center overflow-hidden rounded-2xl border border-white/10 bg-black/25">
-                          <button
-                            type="button"
-                            onClick={() => setWalkInDraft((prev) => ({ ...prev, guestCount: Math.max(1, Number(prev.guestCount || 1) - 1) }))}
-                            className="h-14 w-14 text-xl font-semibold text-[#f2d39a]"
-                          >
-                            -
-                          </button>
-                          <input
-                            type="number"
-                            min="1"
-                            max="40"
-                            value={walkInDraft.guestCount}
-                            onChange={(event) =>
-                              setWalkInDraft((prev) => ({
-                                ...prev,
-                                guestCount: Math.max(1, Math.min(40, Number(event.target.value || 1))),
-                              }))
-                            }
-                            className="h-14 min-w-0 flex-1 bg-transparent text-center text-2xl font-semibold text-white outline-none"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setWalkInDraft((prev) => ({ ...prev, guestCount: Math.min(40, Number(prev.guestCount || 1) + 1) }))}
-                            className="h-14 w-14 text-xl font-semibold text-[#f2d39a]"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </label>
-
-                      <div className="mt-5 grid grid-cols-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={closeWalkInModal}
-                          className="ghost-button rounded-2xl px-4 py-3 text-sm font-semibold"
-                        >
-                          {text.close}
-                        </button>
-                        <button className="luxury-button rounded-2xl px-4 py-3 text-sm font-semibold">
-                          {language === "bg" ? "Настани" : "Seat"}
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              ), document.body)}
             </div>
           )}
+          {walkInDraft && typeof document !== "undefined" && createPortal((
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/72 p-4 backdrop-blur-md" role="dialog" aria-modal="true">
+              <form
+                onSubmit={submitWalkInModal}
+                className="w-full max-w-md overflow-hidden rounded-[28px] border border-emerald-300/20 bg-[#15110e] shadow-[0_32px_120px_rgba(0,0,0,0.72)]"
+              >
+                <div className="border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5">
+                  <div className="section-kicker">
+                    {language === "bg" ? "Настаняване" : "Walk-in"}
+                  </div>
+                  <h3 className="mt-2 text-2xl font-semibold text-[#fff4df]">
+                    {language === "bg" ? `Маса ${walkInDraft.tableId}` : `Table ${walkInDraft.tableId}`}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-white/55">
+                    {language === "bg"
+                      ? "Въведете броя гости. Резервацията ще бъде създадена без клиентски данни и ще е готова за консумация."
+                      : "Enter guest count. The table will be seated without customer details and ready for consumption."}
+                  </p>
+                </div>
+
+                <div className="p-5">
+                  <label className="text-sm font-semibold text-white/70">
+                    {language === "bg" ? "Брой гости" : "Guests"}
+                    <div className="mt-3 flex items-center overflow-hidden rounded-2xl border border-white/10 bg-black/25">
+                      <button
+                        type="button"
+                        onClick={() => setWalkInDraft((prev) => ({ ...prev, guestCount: Math.max(1, Number(prev.guestCount || 1) - 1) }))}
+                        className="h-14 w-14 text-xl font-semibold text-[#f2d39a]"
+                      >
+                        -
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        max="40"
+                        value={walkInDraft.guestCount}
+                        onChange={(event) =>
+                          setWalkInDraft((prev) => ({
+                            ...prev,
+                            guestCount: Math.max(1, Math.min(40, Number(event.target.value || 1))),
+                          }))
+                        }
+                        className="h-14 min-w-0 flex-1 bg-transparent text-center text-2xl font-semibold text-white outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setWalkInDraft((prev) => ({ ...prev, guestCount: Math.min(40, Number(prev.guestCount || 1) + 1) }))}
+                        className="h-14 w-14 text-xl font-semibold text-[#f2d39a]"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </label>
+
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={closeWalkInModal}
+                      className="ghost-button rounded-2xl px-4 py-3 text-sm font-semibold"
+                    >
+                      {text.close}
+                    </button>
+                    <button className="luxury-button rounded-2xl px-4 py-3 text-sm font-semibold">
+                      {language === "bg" ? "Настани" : "Seat"}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          ), document.body)}
         </div>
       </div>
     </Panel>
