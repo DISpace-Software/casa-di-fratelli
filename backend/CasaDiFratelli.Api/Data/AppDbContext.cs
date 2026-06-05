@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<DiningOrder> DiningOrders => Set<DiningOrder>();
     public DbSet<DiningOrderItem> DiningOrderItems => Set<DiningOrderItem>();
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -62,6 +63,13 @@ public class AppDbContext : DbContext
         {
             entity.Property(x => x.CredentialHash).IsRequired().HasMaxLength(128);
             entity.HasIndex(x => x.CredentialHash).IsUnique();
+        });
+
+        modelBuilder.Entity<AppSetting>(entity =>
+        {
+            entity.Property(x => x.Key).IsRequired().HasMaxLength(80);
+            entity.Property(x => x.Value).IsRequired().HasMaxLength(200);
+            entity.HasIndex(x => x.Key).IsUnique();
         });
 
         modelBuilder.Entity<DiningOrder>(entity =>

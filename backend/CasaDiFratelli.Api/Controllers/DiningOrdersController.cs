@@ -10,6 +10,7 @@ namespace CasaDiFratelli.Api.Controllers;
 
 [ApiController]
 [Route("api/dining-orders")]
+[ProOnly]
 public class DiningOrdersController : ControllerBase
 {
     private readonly AppDbContext _db;

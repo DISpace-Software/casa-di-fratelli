@@ -27,6 +27,7 @@ public class ReservationsController : ControllerBase
     private readonly ReservationConflictService _reservationConflictService;
     private readonly AdminAuthService _adminAuth;
     private readonly AuditService _audit;
+    private readonly ProductTierService _tiers;
 
     public ReservationsController(
         AppDbContext db,
@@ -34,7 +35,8 @@ public class ReservationsController : ControllerBase
         IConfiguration configuration,
         ReservationConflictService reservationConflictService,
         AdminAuthService adminAuth,
-        AuditService audit)
+        AuditService audit,
+        ProductTierService tiers)
     {
         _db = db;
         _emailService = emailService;
@@ -42,6 +44,7 @@ public class ReservationsController : ControllerBase
         _reservationConflictService = reservationConflictService;
         _adminAuth = adminAuth;
         _audit = audit;
+        _tiers = tiers;
     }
 
     private static DateTime GetRestaurantNow()
@@ -787,13 +790,18 @@ public class ReservationsController : ControllerBase
         reservation.Status = "Approved";
         reservation.IsArrived = true;
         reservation.IsNoShow = false;
-        reservation.OrderAccessToken ??= CreateOrderAccessToken();
+        var isPro = await _tiers.IsProAsync();
+        if (isPro)
+        {
+            reservation.OrderAccessToken ??= CreateOrderAccessToken();
+        }
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "arrive", "Reservation", reservation.Id.ToString(), after: new { reservation.Id, reservation.Status, reservation.IsArrived });
 
-        if (!string.IsNullOrWhiteSpace(reservation.Email))
+        if (isPro && !string.IsNullOrWhiteSpace(reservation.Email))
         {
-            var menuUrl = $"{GetFrontendUrl()}/menu?reservation={reservation.Id}&token={Uri.EscapeDataString(reservation.OrderAccessToken)}";
+            var orderAccessToken = reservation.OrderAccessToken ?? string.Empty;
+            var menuUrl = $"{GetFrontendUrl()}/menu?reservation={reservation.Id}&token={Uri.EscapeDataString(orderAccessToken)}";
 
             await _emailService.SendAsync(
                 reservation.Email,

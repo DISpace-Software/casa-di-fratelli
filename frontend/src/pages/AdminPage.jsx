@@ -1200,6 +1200,7 @@ function ReservationOperationsMap({
   onClaimReservation,
   onRelease,
   requireTableClaim = false,
+  diningEnabled = true,
   ordersOnly = false,
 }) {
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
@@ -1322,6 +1323,7 @@ function ReservationOperationsMap({
   );
   const selectedReservationNeedsClaim =
     Boolean(selectedReservation?.isArrived) &&
+    diningEnabled &&
     requireTableClaim &&
     !selectedConsumptionOrders.some((order) => Boolean(order.assignedWaiterId));
   const newOrderReservationIds = React.useMemo(
@@ -1649,6 +1651,7 @@ function ReservationOperationsMap({
             const canMarkArrived = !reservation.isArrived;
             const reservationOrders = activeOrdersByReservationId.get(Number(reservation.id)) || [];
             const needsTableClaim =
+              diningEnabled &&
               requireTableClaim &&
               reservation.isArrived &&
               !reservationOrders.some((order) => Boolean(order.assignedWaiterId));
@@ -1741,6 +1744,7 @@ function ReservationOperationsMap({
                         )}
                         {reservation.isArrived && !needsTableClaim && (
                           <>
+	                          {diningEnabled && (
 	                            <button
 	                              type="button"
 	                              onClick={openConsumptionPanel}
@@ -1752,6 +1756,7 @@ function ReservationOperationsMap({
 	                            >
                               {text.consumption}
                             </button>
+	                          )}
                             <button
                               type="button"
                               onClick={() => openMovePanel(reservation)}
@@ -2065,9 +2070,11 @@ function ReservationOperationsMap({
                         <button type="button" onClick={() => openMovePanel(selectedReservation)} className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-4 py-3 text-sm font-semibold text-[#f2d39a]">
                           {text.move}
                         </button>
-                        <button type="button" onClick={openConsumptionPanel} className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-4 py-3 text-sm font-semibold text-emerald-100">
-                          {text.consumption}
-                        </button>
+                        {diningEnabled && (
+                          <button type="button" onClick={openConsumptionPanel} className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-4 py-3 text-sm font-semibold text-emerald-100">
+                            {text.consumption}
+                          </button>
+                        )}
                         <button type="button" onClick={() => onRelease(selectedReservation)} className="rounded-xl border border-sky-300/25 bg-sky-400/15 px-4 py-3 text-sm font-semibold text-sky-100">
                           {text.release}
                         </button>
@@ -2192,7 +2199,7 @@ function ReservationOperationsMap({
                 </div>
               )}
 
-              {showConsumption && selectedReservation.isArrived && typeof document !== "undefined" && createPortal((
+              {diningEnabled && showConsumption && selectedReservation.isArrived && typeof document !== "undefined" && createPortal((
                 <div
                   className="fixed inset-0 z-[9999] overflow-y-auto bg-black/72 p-2 backdrop-blur-md sm:p-3 md:p-4"
                   role="dialog"
@@ -2830,6 +2837,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     role: "Administrator",
     isActive: true,
   });
+  const [productTier, setProductTier] = React.useState("Basic");
+  const isProVersion = productTier === "Pro";
   const currentAdminRole = normalizeAdminRole(adminUser?.role);
   const isWaiterRole = currentAdminRole === "Waiter";
   const isKitchenRole = currentAdminRole === "Kitchen";
@@ -2837,9 +2846,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const canClearOperationalData = currentAdminRole === "Developer";
   const canManageAdmins = ["Owner", "Developer"].includes(currentAdminRole);
   const hasDeveloperAdmin = adminUsers.some((user) => normalizeAdminRole(user.role || user.Role) === "Developer");
-  const availableAdminRoleOptions = adminRoleOptions.filter(
-    (role) => currentAdminRole === "Developer" || role.value !== "Developer" || !hasDeveloperAdmin
-  );
+  const availableAdminRoleOptions = adminRoleOptions.filter((role) => {
+    if (!isProVersion && ["Waiter", "Kitchen"].includes(role.value)) return false;
+    return currentAdminRole === "Developer" || role.value !== "Developer" || !hasDeveloperAdmin;
+  });
 
   const withAdminToken = React.useCallback(
     (options = {}) => ({
@@ -2888,7 +2898,12 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
   }, [withAdminToken]);
 
-  const loadDiningOrders = React.useCallback(async ({ silent = false } = {}) => {
+  const loadDiningOrders = React.useCallback(async ({ silent = false, force = false } = {}) => {
+    if (!isProVersion && !force) {
+      setDiningOrders([]);
+      return;
+    }
+
     try {
       const ordersData = await fetchJsonOrEmpty(`${API_BASE_URL}/api/dining-orders`, [], withAdminToken());
       setDiningOrders(Array.isArray(ordersData) ? ordersData.map(normalizeDiningOrder) : []);
@@ -2897,6 +2912,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       if (!silent) {
         setAdminError(error?.message || "Failed to load dining orders.");
       }
+    }
+  }, [isProVersion, withAdminToken]);
+
+  const loadProductTier = React.useCallback(async () => {
+    try {
+      const data = await fetchJsonOrEmpty(`${API_BASE_URL}/api/product-tier`, { tier: "Basic" }, withAdminToken());
+      setProductTier(data?.isPro || data?.tier === "Pro" ? "Pro" : "Basic");
+    } catch (error) {
+      console.error("Failed to load product tier", error);
+      setProductTier("Basic");
     }
   }, [withAdminToken]);
 
@@ -2942,7 +2967,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     let cancelled = false;
 
     async function loadInitialData() {
-      if (isWaiterRole) {
+      await loadProductTier();
+
+      if (isWaiterRole && isProVersion) {
         setLoading(true);
         setAdminError("");
         await Promise.all([loadReservations(), loadDiningOrders(), loadTableLayout(), loadMenuItems()]);
@@ -2952,7 +2979,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         return;
       }
 
-      if (isKitchenRole) {
+      if (isKitchenRole && isProVersion) {
         setLoading(true);
         setAdminError("");
         await Promise.all([loadDiningOrders(), loadMenuItems()]);
@@ -2964,7 +2991,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
       loadReservations();
       loadBlacklist();
-      loadDiningOrders();
+      if (isProVersion) {
+        loadDiningOrders();
+      }
       loadTableLayout();
     }
 
@@ -2973,7 +3002,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return () => {
       cancelled = true;
     };
-  }, [isKitchenRole, isWaiterRole, loadBlacklist, loadDiningOrders, loadMenuItems, loadReservations, loadTableLayout]);
+  }, [isKitchenRole, isProVersion, isWaiterRole, loadBlacklist, loadDiningOrders, loadMenuItems, loadProductTier, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     setAdminError("");
@@ -2982,14 +3011,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadMenuItems();
     }
 
-    if (activeTab === "orders") {
+    if (activeTab === "orders" && isProVersion) {
       loadDiningOrders();
       loadMenuItems();
     }
 
     if ((activeTab === "customers" || activeTab === "reports") && !isWaiterRole && !isKitchenRole) {
       loadReservations({ silent: true });
-      loadDiningOrders();
+      if (isProVersion) {
+        loadDiningOrders();
+      }
     }
 
     if (activeTab === "blacklist" && !isWaiterRole) {
@@ -3002,7 +3033,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     if (activeTab === "liveMap") {
       loadReservations({ silent: true });
-      loadDiningOrders();
+      if (isProVersion) {
+        loadDiningOrders();
+        loadMenuItems();
+      }
       loadMenuItems();
     }
 
@@ -3010,7 +3044,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadAdminUsers();
       loadAuditLogs();
     }
-  }, [activeTab, canManageAdmins, isKitchenRole, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadMenuItems, loadReservations, loadTableLayout]);
+  }, [activeTab, canManageAdmins, isKitchenRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadMenuItems, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     const pages = isKitchenRole
@@ -3946,6 +3980,35 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     await loadBlacklist();
   }
 
+  async function unlockProVersion() {
+    setAdminError("");
+    setAdminNotice("");
+
+    const code = window.prompt(
+      adminLanguage === "bg"
+        ? "Въведете developer код за отключване на Pro версия:"
+        : "Enter developer code to unlock Pro version:"
+    );
+
+    if (code === null) return;
+
+    const response = await adminFetch(`${API_BASE_URL}/api/product-tier/unlock-pro`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to unlock Pro version."));
+      return;
+    }
+
+    const data = await response.json().catch(() => null);
+    setProductTier(data?.isPro || data?.tier === "Pro" ? "Pro" : "Basic");
+    setAdminNotice(adminLanguage === "bg" ? "Pro версията е отключена." : "Pro version unlocked.");
+    await Promise.all([loadReservations({ silent: true }), loadDiningOrders({ force: true }), loadMenuItems(), loadTableLayout()]);
+  }
+
   async function createAdminUser(event) {
     event.preventDefault();
     setAdminError("");
@@ -4494,11 +4557,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       }));
 
   const tabs = React.useMemo(
-    () => isKitchenRole
+    () => isKitchenRole && isProVersion
       ? [
           ["orders", adminLanguage === "bg" ? "Кухня" : "Kitchen"],
         ]
-      : isWaiterRole
+      : isWaiterRole && isProVersion
       ? [
           ["liveMap", a.tabs.liveMap],
           ["orders", a.tabs.orders],
@@ -4506,15 +4569,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       : [
           ["liveMap", a.tabs.liveMap],
           ["reservations", a.tabs.reservations],
-          ["orders", a.tabs.orders],
-          ["reports", a.tabs.reports],
+          ...(isProVersion ? [["orders", a.tabs.orders], ["reports", a.tabs.reports]] : []),
           ["block", a.tabs.block],
           ["menu", a.tabs.menu],
           ["layout", a.tabs.layout],
           ["customers", a.tabs.customers],
           ...(canManageAdmins ? [["admins", adminLanguage === "bg" ? "Админи" : "Admins"]] : []),
         ],
-    [a.tabs, adminLanguage, canManageAdmins, isKitchenRole, isWaiterRole]
+    [a.tabs, adminLanguage, canManageAdmins, isKitchenRole, isProVersion, isWaiterRole]
   );
   const readyWaiterItemsCount = React.useMemo(
     () => isWaiterRole
@@ -4560,26 +4622,26 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
   React.useEffect(() => {
     if (!allowedTabKeys.has(activeTab)) {
-      setActiveTab(isWaiterRole || isKitchenRole ? "orders" : "home");
+      setActiveTab(isProVersion && (isWaiterRole || isKitchenRole) ? "orders" : "home");
     }
-  }, [activeTab, allowedTabKeys, isKitchenRole, isWaiterRole]);
+  }, [activeTab, allowedTabKeys, isKitchenRole, isProVersion, isWaiterRole]);
 
   const refreshActiveTab = React.useCallback(async ({ silent = false } = {}) => {
     if (activeTab === "home") {
       await Promise.all([
         ...(isWaiterRole || isKitchenRole ? [] : [loadReservations({ silent }), loadBlacklist()]),
-        loadDiningOrders(),
+        ...(isProVersion ? [loadDiningOrders()] : []),
         ...(isKitchenRole ? [] : [loadTableLayout()]),
       ]);
       return;
     }
 
-    if (activeTab === "orders") {
+    if (activeTab === "orders" && isProVersion) {
       await Promise.all([loadDiningOrders(), loadMenuItems()]);
       return;
     }
 
-    if (activeTab === "reports" && !isWaiterRole && !isKitchenRole) {
+    if (activeTab === "reports" && isProVersion && !isWaiterRole && !isKitchenRole) {
       await Promise.all([loadReservations({ silent }), loadDiningOrders()]);
       return;
     }
@@ -4606,8 +4668,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     if (activeTab === "liveMap") {
       await Promise.all([
-        ...(isWaiterRole ? [loadMenuItems()] : [loadReservations({ silent }), loadMenuItems()]),
-        loadDiningOrders(),
+        ...(isWaiterRole ? [loadMenuItems()] : [loadReservations({ silent }), ...(isProVersion ? [loadMenuItems()] : [])]),
+        ...(isProVersion ? [loadDiningOrders()] : []),
         loadTableLayout(),
       ]);
       return;
@@ -4620,6 +4682,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     activeTab,
     canManageAdmins,
     isKitchenRole,
+    isProVersion,
     isWaiterRole,
     loadAdminUsers,
     loadAuditLogs,
@@ -4878,7 +4941,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
             <div className={`mb-8 grid gap-4 ${isOperationalRole ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
               {!isOperationalRole && <StatCard label={a.stats.allReservations} value={statsReservations.length} />}
-              <StatCard label={a.stats.orders} value={diningOrders.length} />
+              {isProVersion && <StatCard label={a.stats.orders} value={diningOrders.length} />}
               {!isOperationalRole && <StatCard label={a.stats.pending} value={pendingCount} />}
             </div>
 
@@ -4997,7 +5060,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               </div>
               )}
 
-              <div className="rounded-[26px] border border-white/10 bg-black/20 p-4 md:p-5">
+              {isProVersion && <div className="rounded-[26px] border border-white/10 bg-black/20 p-4 md:p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
                     <div className="section-kicker">
@@ -5066,7 +5129,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     ))}
                   </div>
                 )}
-              </div>
+              </div>}
             </div>
           </>
         ) : (
@@ -5220,6 +5283,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 onClaimReservation={isWaiterRole ? claimReservationForConsumption : null}
                 onRelease={releaseReservationTable}
                 requireTableClaim={isWaiterRole}
+                diningEnabled={isProVersion}
                 ordersOnly={false}
               />
             )}
@@ -7399,22 +7463,55 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
                   <div className="space-y-4">
                     {canClearOperationalData && (
-                      <div className="rounded-3xl border border-red-300/20 bg-red-500/10 p-5">
-                        <div className="section-kicker text-red-100/80">
-                          {adminLanguage === "bg" ? "Developer действие" : "Developer action"}
+                      <div className="grid gap-3">
+                        <div className={`rounded-3xl border p-5 ${
+                          isProVersion
+                            ? "border-emerald-300/20 bg-emerald-500/10"
+                            : "border-[#f2d39a]/25 bg-[#c9a56a]/10"
+                        }`}>
+                          <div className="section-kicker">
+                            {adminLanguage === "bg" ? "Версия на системата" : "System version"}
+                          </div>
+                          <div className="mt-2 text-2xl font-semibold text-[#fff4df]">
+                            {isProVersion ? "Pro" : "Basic"}
+                          </div>
+                          <p className="mt-3 text-sm leading-6 text-white/60">
+                            {isProVersion
+                              ? adminLanguage === "bg"
+                                ? "Пълният оперативен модул е активен: сервитьори, кухня, поръчки и дигитално меню."
+                                : "Full operations are active: waiters, kitchen, orders, and digital menu."
+                              : adminLanguage === "bg"
+                                ? "Активни са сайтът и резервациите. Поръчки, кухня и сервитьорски роли са заключени."
+                                : "Website and reservations are active. Orders, kitchen, and waiter roles are locked."}
+                          </p>
+                          {!isProVersion && (
+                            <button
+                              type="button"
+                              onClick={unlockProVersion}
+                              className="luxury-button mt-4 w-full rounded-2xl px-5 py-3 text-sm font-semibold"
+                            >
+                              {adminLanguage === "bg" ? "Отключи Pro версия" : "Unlock Pro version"}
+                            </button>
+                          )}
                         </div>
-                        <p className="mt-3 text-sm leading-6 text-red-50/75">
-                          {adminLanguage === "bg"
-                            ? "Изчиства само резервации и поръчки. Менюто, масите, клиентските настройки и админите остават."
-                            : "Clears only reservations and orders. Menu, tables, customer settings, and admins stay intact."}
-                        </p>
-                        <button
-                          type="button"
-                          onClick={clearReservationsAndOrders}
-                          className="mt-4 w-full rounded-2xl border border-red-300/30 bg-red-500/20 px-5 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-500/30"
-                        >
-                          {adminLanguage === "bg" ? "Изчисти резервации и поръчки" : "Clear reservations and orders"}
-                        </button>
+
+                        <div className="rounded-3xl border border-red-300/20 bg-red-500/10 p-5">
+                          <div className="section-kicker text-red-100/80">
+                            {adminLanguage === "bg" ? "Developer действие" : "Developer action"}
+                          </div>
+                          <p className="mt-3 text-sm leading-6 text-red-50/75">
+                            {adminLanguage === "bg"
+                              ? "Изчиства само резервации и поръчки. Менюто, масите, клиентските настройки и админите остават."
+                              : "Clears only reservations and orders. Menu, tables, customer settings, and admins stay intact."}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={clearReservationsAndOrders}
+                            className="mt-4 w-full rounded-2xl border border-red-300/30 bg-red-500/20 px-5 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-500/30"
+                          >
+                            {adminLanguage === "bg" ? "Изчисти резервации и поръчки" : "Clear reservations and orders"}
+                          </button>
+                        </div>
                       </div>
                     )}
 

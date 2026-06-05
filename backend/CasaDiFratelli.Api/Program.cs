@@ -14,6 +14,7 @@ builder.Services.AddHttpClient<EmailService>(client =>
 builder.Services.AddScoped<ReservationConflictService>();
 builder.Services.AddScoped<AdminAuthService>();
 builder.Services.AddScoped<AuditService>();
+builder.Services.AddScoped<ProductTierService>();
 
 var databaseConnectionString = ResolveDatabaseConnectionString(builder.Configuration);
 builder.Services.AddDbContext<AppDbContext>(options =>

@@ -16,19 +16,22 @@ public class AdminAuthController : ControllerBase
     private readonly AuditService _audit;
     private readonly EmailService _emailService;
     private readonly IConfiguration _configuration;
+    private readonly ProductTierService _tiers;
 
     public AdminAuthController(
         AppDbContext db,
         AdminAuthService auth,
         AuditService audit,
         EmailService emailService,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ProductTierService tiers)
     {
         _db = db;
         _auth = auth;
         _audit = audit;
         _emailService = emailService;
         _configuration = configuration;
+        _tiers = tiers;
     }
 
     public sealed record AdminLoginRequest(string Email, string Password);
@@ -64,6 +67,12 @@ public class AdminAuthController : ControllerBase
             return Unauthorized(new { message = "Invalid admin credentials." });
         }
 
+        if (!await _tiers.IsProAsync() &&
+            AdminRoleAccess.Normalize(login.User.Role) is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen)
+        {
+            return Forbid();
+        }
+
         await _audit.RecordAsync(HttpContext, "login", "AdminUser", login.User.Id.ToString(), after: login.User);
         return Ok(login);
     }
@@ -75,6 +84,12 @@ public class AdminAuthController : ControllerBase
         if (login == null)
         {
             return Unauthorized(new { message = "Device login is not enabled." });
+        }
+
+        if (!await _tiers.IsProAsync() &&
+            AdminRoleAccess.Normalize(login.User.Role) is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen)
+        {
+            return Forbid();
         }
 
         await _audit.RecordAsync(HttpContext, "device-login", "AdminUser", login.User.Id.ToString(), after: login.User);
@@ -239,6 +254,9 @@ public class AdminAuthController : ControllerBase
             return BadRequest(new { message = "Email and password are required." });
 
         var requestedRole = AdminRoleAccess.Normalize(request.Role);
+        if (!await _tiers.IsProAsync() && requestedRole is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen)
+            return BadRequest(new { message = "Waiter and kitchen roles are available only in Pro version." });
+
         var developerExists = await _db.AdminUsers.AnyAsync(x => x.Role == AdminRoleAccess.Developer);
         if (!AdminRoleAccess.CanCreateRole(current?.Role, requestedRole, developerExists))
             return Forbid();
@@ -282,6 +300,9 @@ public class AdminAuthController : ControllerBase
             return Forbid();
 
         var requestedRole = AdminRoleAccess.Normalize(request.Role);
+        if (!await _tiers.IsProAsync() && requestedRole is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen)
+            return BadRequest(new { message = "Waiter and kitchen roles are available only in Pro version." });
+
         var developerExists = await _db.AdminUsers.AnyAsync(x => x.Id != id && x.Role == AdminRoleAccess.Developer);
         if (!AdminRoleAccess.CanCreateRole(current?.Role, requestedRole, developerExists))
             return Forbid();
