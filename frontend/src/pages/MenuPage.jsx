@@ -131,6 +131,7 @@ export default function MenuPage({
   const [orderNotice, setOrderNotice] = React.useState("");
   const [showOrderReview, setShowOrderReview] = React.useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = React.useState(false);
+  const [isSendingGuestRequest, setIsSendingGuestRequest] = React.useState("");
   const categoryNavRef = React.useRef(null);
   const activeCategoryButtonRef = React.useRef(null);
   const manualCategoryRef = React.useRef("");
@@ -321,6 +322,41 @@ export default function MenuPage({
     }
   }
 
+  async function sendGuestRequest(type) {
+    if (!orderEnabled || isSendingGuestRequest) return;
+
+    setIsSendingGuestRequest(type);
+    setOrderError("");
+    setOrderNotice("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/dining-orders/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reservationId: Number(orderParams.reservationId),
+          token: orderParams.token,
+          type,
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(payload?.message || (language === "bg" ? "Заявката не беше изпратена." : "The request was not sent."));
+      }
+
+      setOrderNotice(
+        type === "bill"
+          ? language === "bg" ? "Сервитьорът получи заявка за сметка." : "Your waiter received the bill request."
+          : language === "bg" ? "Сервитьорът е повикан към масата." : "Your waiter was called to the table."
+      );
+    } catch (error) {
+      setOrderError(error?.message || (language === "bg" ? "Заявката не беше изпратена." : "The request was not sent."));
+    } finally {
+      setIsSendingGuestRequest("");
+    }
+  }
+
   return (
     <div className={`menu-page luxury-shell min-h-screen text-white ${orderEnabled ? "pb-40" : ""}`}>
       {!isOrderLink && (
@@ -363,6 +399,38 @@ export default function MenuPage({
               </div>
             </div>
             {orderNotice && <div className="rounded-full border border-emerald-300/25 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-100">{orderNotice}</div>}
+            {orderSession && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowOrderReview(true)}
+                  disabled={orderItems.length === 0 || isSubmittingOrder}
+                  className="luxury-button rounded-full px-4 py-2 text-xs font-semibold disabled:opacity-50"
+                >
+                  {language === "bg" ? "Изпрати поръчка" : "Send order"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => sendGuestRequest("call-waiter")}
+                  disabled={Boolean(isSendingGuestRequest)}
+                  className="ghost-button rounded-full px-4 py-2 text-xs font-semibold disabled:opacity-50"
+                >
+                  {isSendingGuestRequest === "call-waiter"
+                    ? language === "bg" ? "Изпращане..." : "Sending..."
+                    : language === "bg" ? "Повикай сервитьор" : "Call waiter"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => sendGuestRequest("bill")}
+                  disabled={Boolean(isSendingGuestRequest)}
+                  className="ghost-button rounded-full px-4 py-2 text-xs font-semibold disabled:opacity-50"
+                >
+                  {isSendingGuestRequest === "bill"
+                    ? language === "bg" ? "Изпращане..." : "Sending..."
+                    : language === "bg" ? "Поискай сметка" : "Request bill"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1327,7 +1327,7 @@ function ReservationOperationsMap({
   const newOrderReservationIds = React.useMemo(
     () => new Set(
       diningOrders
-        .filter((order) => hasNewDiningItems(order))
+        .filter((order) => hasUnseenGuestItems(order))
         .map((order) => Number(order.reservationId))
         .filter(Number.isFinite)
     ),
@@ -2237,7 +2237,7 @@ function ReservationOperationsMap({
 	                                <div
 	                                  key={`${item.orderId}-${item.id}`}
 	                                  className={`rounded-xl border p-2.5 ${
-	                                    item.status === "New"
+	                                    item.source === "GuestOnline" && !item.waiterSeenAtUtc
 	                                      ? "waiter-new-dish border-amber-300/35 bg-amber-400/12"
 	                                      : item.status === "Ready"
 	                                      ? "waiter-ready-dish border-emerald-300/35 bg-emerald-400/12"
@@ -2251,13 +2251,13 @@ function ReservationOperationsMap({
 	                                        {formatEuroAmount(item.unitPrice)} · {formatEuroAmount(item.unitPrice * item.quantity)}
 	                                      </div>
 	                                      <div className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-	                                        item.status === "New"
+	                                        item.source === "GuestOnline" && !item.waiterSeenAtUtc
 	                                          ? "border-amber-300/35 bg-amber-400/12 text-amber-100"
 	                                          : item.status === "Ready"
 	                                          ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-100"
 	                                          : "border-white/10 bg-black/25 text-white/50"
 	                                      }`}>
-	                                        {getDiningItemStatusLabel(item.status, language)}
+	                                        {getDiningItemStatusLabel(item, language)}
 	                                      </div>
 	                                    </div>
                                     <div className="flex shrink-0 items-center overflow-hidden rounded-full border border-white/10">
@@ -2501,6 +2501,9 @@ function normalizeDiningOrder(order) {
           quantity: Number(getValue(item, "quantity") || 0),
           notes: getValue(item, "notes") || "",
           status: getValue(item, "status") || "New",
+          source: getValue(item, "source") || getValue(order, "source") || "GuestOnline",
+          kind: getValue(item, "kind") || "Dish",
+          waiterSeenAtUtc: getValue(item, "waiterSeenAtUtc"),
         }))
       : [],
   };
@@ -2516,6 +2519,14 @@ function formatEuroAmount(value) {
 }
 
 function getDiningItemStatusLabel(status, language) {
+  if (typeof status === "object" && status?.kind === "WaiterCall") {
+    return language === "bg" ? "Повикан сервитьор" : "Waiter called";
+  }
+  if (typeof status === "object" && status?.kind === "BillRequest") {
+    return language === "bg" ? "Иска сметка" : "Bill requested";
+  }
+
+  const normalizedStatus = typeof status === "string" ? status : status?.status;
   const labels = {
     New: language === "bg" ? "Чака кухня" : "Waiting kitchen",
     Seen: language === "bg" ? "Видяно от кухня" : "Seen by kitchen",
@@ -2525,7 +2536,7 @@ function getDiningItemStatusLabel(status, language) {
     Cancelled: language === "bg" ? "Отказано" : "Cancelled",
   };
 
-  return labels[status] || status || labels.New;
+  return labels[normalizedStatus] || normalizedStatus || labels.New;
 }
 
 function hasReadyDiningItems(order) {
@@ -2536,8 +2547,12 @@ function hasNewDiningItems(order) {
   return (order.items || []).some((item) => item.status === "New");
 }
 
+function hasUnseenGuestItems(order) {
+  return (order.items || []).some((item) => item.source === "GuestOnline" && !item.waiterSeenAtUtc);
+}
+
 function hasWaiterAttentionItems(order) {
-  return hasNewDiningItems(order) || hasReadyDiningItems(order);
+  return hasUnseenGuestItems(order) || hasReadyDiningItems(order);
 }
 
 function formatBirthday(value, language) {
@@ -2766,6 +2781,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const seenKitchenOrderIdsRef = React.useRef(new Set());
   const seenKitchenItemIdsRef = React.useRef(new Set());
   const seenReadyItemIdsRef = React.useRef(new Set());
+  const seenWaiterGuestItemIdsRef = React.useRef(new Set());
   const [blacklistMode, setBlacklistMode] = React.useState("list");
   const [customersMode, setCustomersMode] = React.useState("customers");
   const [customerPeriod, setCustomerPeriod] = React.useState("all");
@@ -4508,7 +4524,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   );
   const newWaiterItemsCount = React.useMemo(
     () => isWaiterRole
-      ? diningOrders.reduce((count, order) => count + (order.items || []).filter((item) => item.status === "New").length, 0)
+      ? diningOrders.reduce((count, order) => count + (order.items || []).filter((item) => item.source === "GuestOnline" && !item.waiterSeenAtUtc).length, 0)
       : 0,
     [diningOrders, isWaiterRole]
   );
@@ -4665,7 +4681,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
       const newKitchenItems = diningOrders.flatMap((order) =>
         (order.items || [])
-          .filter((item) => item.status === "New")
+          .filter((item) => item.status === "New" && item.kind === "Dish")
           .map((item) => ({ id: item.id, name: item.name, tableLabel: order.tableLabel }))
       );
       const unseenKitchenItems = newKitchenItems.filter((item) => !seenKitchenItemIdsRef.current.has(item.id));
@@ -4682,6 +4698,29 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
 
     if (isWaiterRole) {
+      const guestItems = diningOrders.flatMap((order) =>
+        (order.items || [])
+          .filter((item) => item.source === "GuestOnline" && !item.waiterSeenAtUtc)
+          .map((item) => ({ id: item.id, name: item.name, kind: item.kind, tableLabel: order.tableLabel }))
+      );
+      const newGuestItems = guestItems.filter((item) => !seenWaiterGuestItemIdsRef.current.has(item.id));
+      const hadSeenGuestItems = seenWaiterGuestItemIdsRef.current.size > 0;
+
+      guestItems.forEach((item) => seenWaiterGuestItemIdsRef.current.add(item.id));
+      if (hadSeenGuestItems && newGuestItems.length > 0) {
+        const first = newGuestItems[0];
+        const title = first.kind === "BillRequest"
+          ? adminLanguage === "bg" ? "Клиент поиска сметка" : "Guest requested bill"
+          : first.kind === "WaiterCall"
+          ? adminLanguage === "bg" ? "Клиент повика сервитьор" : "Guest called waiter"
+          : adminLanguage === "bg" ? "Нова онлайн добавка" : "New online addition";
+        const body = first.kind === "Dish"
+          ? `${first.name} · ${adminLanguage === "bg" ? "маса" : "table"} ${first.tableLabel}`
+          : `${adminLanguage === "bg" ? "маса" : "table"} ${first.tableLabel}`;
+        setAdminNotice(`${title} · ${body}`);
+        showBrowserNotification(title, body);
+      }
+
       const readyItems = diningOrders.flatMap((order) =>
         (order.items || [])
           .filter((item) => item.status === "Ready")
@@ -4994,7 +5033,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           setActiveTab("orders");
                         }}
 	                        className={`rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10 ${
-	                          isWaiterRole && hasNewDiningItems(order)
+	                          isWaiterRole && hasUnseenGuestItems(order)
 	                            ? "waiter-new-alert"
 	                            : isWaiterRole && hasReadyDiningItems(order)
 	                            ? "waiter-ready-alert"
@@ -5014,11 +5053,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         </div>
 	                        {isWaiterRole && hasWaiterAttentionItems(order) && (
 	                          <div className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-	                            hasNewDiningItems(order)
+	                            hasUnseenGuestItems(order)
 	                              ? "border-amber-300/30 bg-amber-400/15 text-amber-100"
 	                              : "border-emerald-300/30 bg-emerald-400/15 text-emerald-100"
 	                          }`}>
-	                            {hasNewDiningItems(order)
+	                            {hasUnseenGuestItems(order)
 	                              ? adminLanguage === "bg" ? "Нова добавка" : "New addition"
 	                              : adminLanguage === "bg" ? "Има готово блюдо" : "Ready dish"}
 	                          </div>
@@ -5861,7 +5900,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     {diningOrders.map((order) => {
 	                      const detailsId = `dining-order-${order.id}-details`;
 	                      const hasReadyItems = hasReadyDiningItems(order);
-	                      const hasNewItems = hasNewDiningItems(order);
+	                      const hasNewItems = isWaiterRole ? hasUnseenGuestItems(order) : hasNewDiningItems(order);
                       const visibleOrderItems = isWaiterRole
                         ? order.items.filter((item) => item.status !== "Done" && item.status !== "Cancelled")
                         : order.items;
@@ -6013,13 +6052,24 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                     </button>
                                   )}
                                   {isWaiterRole ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => updateDiningOrderStatus(order.id, "Done")}
-                                      className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100"
-                                    >
-                                      {a.orders.paid}
-                                    </button>
+                                    <>
+                                      {hasUnseenGuestItems(order) && (
+                                        <button
+                                          type="button"
+                                          onClick={() => updateDiningOrderStatus(order.id, "Seen")}
+                                          className="luxury-button rounded-xl px-3 py-2 text-xs font-semibold"
+                                        >
+                                          {a.orders.markSeen}
+                                        </button>
+                                      )}
+                                      <button
+                                        type="button"
+                                        onClick={() => updateDiningOrderStatus(order.id, "Done")}
+                                        className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100"
+                                      >
+                                        {a.orders.paid}
+                                      </button>
+                                    </>
                                   ) : !isKitchenRole && (
                                     <>
                                       <button
@@ -6069,7 +6119,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                             ? "border-emerald-300/30 bg-emerald-400/15 text-emerald-100"
                                             : "border-white/10 bg-black/25 text-white/55"
                                         }`}>
-                                          {getDiningItemStatusLabel(item.status, adminLanguage)}
+                                          {getDiningItemStatusLabel(item, adminLanguage)}
                                         </div>
                                       </div>
                                       <div className="shrink-0 text-right">

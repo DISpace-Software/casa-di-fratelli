@@ -19,4 +19,10 @@ public class DiningOrderItem
     public string? Notes { get; set; }
 
     public string Status { get; set; } = "New";
+
+    public string Source { get; set; } = "GuestOnline";
+
+    public string Kind { get; set; } = "Dish";
+
+    public DateTime? WaiterSeenAtUtc { get; set; }
 }

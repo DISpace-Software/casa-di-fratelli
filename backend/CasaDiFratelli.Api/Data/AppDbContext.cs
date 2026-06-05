@@ -78,6 +78,8 @@ public class AppDbContext : DbContext
         {
             entity.Property(x => x.Name).IsRequired().HasMaxLength(180);
             entity.Property(x => x.Status).IsRequired().HasMaxLength(30);
+            entity.Property(x => x.Source).IsRequired().HasMaxLength(40);
+            entity.Property(x => x.Kind).IsRequired().HasMaxLength(30);
         });
     }
 }

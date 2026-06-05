@@ -155,6 +155,9 @@ public static class AdminSchemaBootstrapper
                 "Quantity" integer NOT NULL DEFAULT 1,
                 "Notes" text NULL,
                 "Status" varchar(30) NOT NULL DEFAULT 'New',
+                "Source" varchar(40) NOT NULL DEFAULT 'GuestOnline',
+                "Kind" varchar(30) NOT NULL DEFAULT 'Dish',
+                "WaiterSeenAtUtc" timestamp with time zone NULL,
                 CONSTRAINT "PK_DiningOrderItems" PRIMARY KEY ("Id")
             );
 
@@ -209,6 +212,9 @@ public static class AdminSchemaBootstrapper
             ALTER TABLE "DiningOrderItems" ADD COLUMN IF NOT EXISTS "Quantity" integer NOT NULL DEFAULT 1;
             ALTER TABLE "DiningOrderItems" ADD COLUMN IF NOT EXISTS "Notes" text NULL;
             ALTER TABLE "DiningOrderItems" ADD COLUMN IF NOT EXISTS "Status" varchar(30) NOT NULL DEFAULT 'New';
+            ALTER TABLE "DiningOrderItems" ADD COLUMN IF NOT EXISTS "Source" varchar(40) NOT NULL DEFAULT 'GuestOnline';
+            ALTER TABLE "DiningOrderItems" ADD COLUMN IF NOT EXISTS "Kind" varchar(30) NOT NULL DEFAULT 'Dish';
+            ALTER TABLE "DiningOrderItems" ADD COLUMN IF NOT EXISTS "WaiterSeenAtUtc" timestamp with time zone NULL;
 
             DO $$
             BEGIN
