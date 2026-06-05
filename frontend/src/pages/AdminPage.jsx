@@ -1199,6 +1199,7 @@ function ReservationOperationsMap({
   onSeatWalkIn,
   onClaimReservation,
   onRelease,
+  requireTableClaim = false,
   ordersOnly = false,
 }) {
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
@@ -1294,11 +1295,23 @@ function ReservationOperationsMap({
   const selectedReservation =
     liveReservations.find((reservation) => reservation.id === selectedReservationId) ||
     reservations.find((reservation) => reservation.id === selectedReservationId);
+  const activeOrdersByReservationId = React.useMemo(() => {
+    const grouped = new Map();
+
+    diningOrders
+      .filter((order) => order.status !== "Cancelled" && Number.isFinite(Number(order.reservationId)))
+      .forEach((order) => {
+        const reservationId = Number(order.reservationId);
+        grouped.set(reservationId, [...(grouped.get(reservationId) || []), order]);
+      });
+
+    return grouped;
+  }, [diningOrders]);
   const selectedConsumptionOrders = React.useMemo(
     () => selectedReservation
-      ? diningOrders.filter((order) => Number(order.reservationId) === Number(selectedReservation.id) && order.status !== "Cancelled")
+      ? activeOrdersByReservationId.get(Number(selectedReservation.id)) || []
       : [],
-    [diningOrders, selectedReservation]
+    [activeOrdersByReservationId, selectedReservation]
   );
   const selectedConsumptionItems = selectedConsumptionOrders.flatMap((order) =>
     order.items.map((item) => ({ ...item, orderId: order.id }))
@@ -1307,6 +1320,10 @@ function ReservationOperationsMap({
     (total, item) => total + Number(item.unitPrice || 0) * Number(item.quantity || 0),
     0
   );
+  const selectedReservationNeedsClaim =
+    Boolean(selectedReservation?.isArrived) &&
+    requireTableClaim &&
+    !selectedConsumptionOrders.some((order) => Boolean(order.assignedWaiterId));
   const newOrderReservationIds = React.useMemo(
     () => new Set(
       diningOrders
@@ -1509,15 +1526,19 @@ function ReservationOperationsMap({
     }
   }
 
-  async function openConsumptionPanel() {
+  function openConsumptionPanel() {
     if (!selectedReservation) return;
-
-    const claimed = await onClaimReservation?.(selectedReservation.id);
-    if (claimed === false) return;
 
     setConsumptionSearch("");
     setConsumptionCategory("all");
     setShowConsumption(true);
+  }
+
+  async function claimSelectedReservation(reservation) {
+    const claimed = await onClaimReservation?.(reservation.id);
+    if (claimed === false) return;
+
+    setSelectedReservationId(reservation.id);
   }
 
   function openWalkInModal(table) {
@@ -1626,6 +1647,11 @@ function ReservationOperationsMap({
 	            const hasNewOrderItems = newOrderReservationIds.has(Number(reservation.id));
 	            const canNoShow = !reservation.isArrived && minutes !== null && minutes <= -10;
             const canMarkArrived = !reservation.isArrived;
+            const reservationOrders = activeOrdersByReservationId.get(Number(reservation.id)) || [];
+            const needsTableClaim =
+              requireTableClaim &&
+              reservation.isArrived &&
+              !reservationOrders.some((order) => Boolean(order.assignedWaiterId));
             const popoverPosition = bounds.labelTop > 72 ? "sm:top-auto sm:bottom-11" : "sm:top-11";
             const mobilePopoverOffset =
               bounds.centerX < 28
@@ -1704,7 +1730,16 @@ function ReservationOperationsMap({
                             {text.noShow}
                           </button>
                         )}
-                        {reservation.isArrived && (
+                        {reservation.isArrived && needsTableClaim && (
+                          <button
+                            type="button"
+                            onClick={() => claimSelectedReservation(reservation)}
+                            className="rounded-xl border border-[#f2d39a]/35 bg-[#c9a56a]/20 px-3 py-2 text-xs font-semibold text-[#ffe3a6]"
+                          >
+                            {language === "bg" ? "Вземи маса" : "Take table"}
+                          </button>
+                        )}
+                        {reservation.isArrived && !needsTableClaim && (
                           <>
 	                            <button
 	                              type="button"
@@ -2021,15 +2056,23 @@ function ReservationOperationsMap({
                 )}
                 {selectedReservation.isArrived ? (
                   <>
-                    <button type="button" onClick={() => openMovePanel(selectedReservation)} className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-4 py-3 text-sm font-semibold text-[#f2d39a]">
-                      {text.move}
-                    </button>
-                    <button type="button" onClick={openConsumptionPanel} className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-4 py-3 text-sm font-semibold text-emerald-100">
-                      {text.consumption}
-                    </button>
-                    <button type="button" onClick={() => onRelease(selectedReservation)} className="rounded-xl border border-sky-300/25 bg-sky-400/15 px-4 py-3 text-sm font-semibold text-sky-100">
-                      {text.release}
-                    </button>
+                    {selectedReservationNeedsClaim ? (
+                      <button type="button" onClick={() => claimSelectedReservation(selectedReservation)} className="rounded-xl border border-[#f2d39a]/35 bg-[#c9a56a]/20 px-4 py-3 text-sm font-semibold text-[#ffe3a6]">
+                        {language === "bg" ? "Вземи маса" : "Take table"}
+                      </button>
+                    ) : (
+                      <>
+                        <button type="button" onClick={() => openMovePanel(selectedReservation)} className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-4 py-3 text-sm font-semibold text-[#f2d39a]">
+                          {text.move}
+                        </button>
+                        <button type="button" onClick={openConsumptionPanel} className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-4 py-3 text-sm font-semibold text-emerald-100">
+                          {text.consumption}
+                        </button>
+                        <button type="button" onClick={() => onRelease(selectedReservation)} className="rounded-xl border border-sky-300/25 bg-sky-400/15 px-4 py-3 text-sm font-semibold text-sky-100">
+                          {text.release}
+                        </button>
+                      </>
+                    )}
                   </>
                 ) : (
                   <a href={`tel:${selectedReservation.phone}`} className="ghost-button rounded-xl px-4 py-3 text-center text-sm font-semibold">
@@ -5137,6 +5180,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 onSeatWalkIn={seatWalkInFromMap}
                 onClaimReservation={isWaiterRole ? claimReservationForConsumption : null}
                 onRelease={releaseReservationTable}
+                requireTableClaim={isWaiterRole}
                 ordersOnly={false}
               />
             )}
