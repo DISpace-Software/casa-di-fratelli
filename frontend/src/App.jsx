@@ -446,6 +446,7 @@ export default function App() {
   const [theme, setTheme] = React.useState(safeReadStoredTheme);
   const [currentPage, setCurrentPage] = React.useState(getInitialPage);
   const [cmsMenuItems, setCmsMenuItems] = React.useState([]);
+  const [cmsEvents, setCmsEvents] = React.useState([]);
   const [adminToken, setAdminToken] = React.useState(safeReadAdminToken);
   const [adminUser, setAdminUser] = React.useState(() => {
     if (typeof window === "undefined") return null;
@@ -474,6 +475,20 @@ export default function App() {
     }
   }, []);
 
+  const loadEvents = React.useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/events`);
+      if (!response.ok) return;
+
+      const data = await response.json();
+      setCmsEvents(Array.isArray(data) ? data : []);
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn("Using fallback events because public events failed to load.", error);
+      }
+    }
+  }, []);
+
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("restaurant-lang", language);
@@ -490,6 +505,10 @@ export default function App() {
   const toggleTheme = React.useCallback(() => {
     setTheme((currentTheme) => (currentTheme === "light" ? "dark" : "light"));
   }, []);
+
+  React.useEffect(() => {
+    loadEvents();
+  }, [loadEvents]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -662,6 +681,7 @@ export default function App() {
           }}
           adminUser={adminUser}
           onMenuChanged={loadMenuItems}
+          onEventsChanged={loadEvents}
           theme={theme}
           onToggleTheme={toggleTheme}
         />
@@ -747,6 +767,7 @@ export default function App() {
         onOpenSection={openHomeSection}
         onOpenPrivacy={() => setCurrentPage("privacy")}
         cmsMenuItems={cmsMenuItems}
+        cmsEvents={cmsEvents}
         theme={theme}
         onToggleTheme={toggleTheme}
       />

@@ -33,6 +33,16 @@ const emptyMenuItem = {
   notifySubscribers: false,
 };
 
+const emptyEventItem = {
+  titleBg: "",
+  titleEn: "",
+  textBg: "",
+  textEn: "",
+  badge: "",
+  imageUrls: [],
+  isActive: true,
+};
+
 const priceHelperText =
   "Stored and shown in EUR. Use the final guest-facing price.";
 
@@ -96,6 +106,10 @@ async function compressMenuImage(file) {
   throw new Error("Image is too large. Please choose a smaller photo.");
 }
 
+async function compressEventImage(file) {
+  return compressMenuImage(file);
+}
+
 function showBrowserNotification(title, body) {
   if (typeof window === "undefined" || !("Notification" in window)) return;
 
@@ -137,6 +151,7 @@ const adminText = {
       create: "Нова резервация",
       block: "Блокирай зала",
       menu: "Меню",
+      events: "Събития",
       layout: "Карта",
       blacklist: "Blacklist",
       customers: "Клиенти",
@@ -255,6 +270,30 @@ const adminText = {
       empty: "Още няма ястия в CMS.",
       priceHelp: "Цената се пази и показва в евро. Въведете крайната цена за гостите.",
     },
+    events: {
+      title: "Събития CMS",
+      subtitle: "Добавяйте празници, новини и специални вечери със снимки. Секцията е активна и в Basic версията.",
+      list: "Списък събития",
+      add: "Добави събитие",
+      edit: "Редакция",
+      addTitle: "Ново събитие",
+      editTitle: "Редактирай събитие",
+      titleBg: "Заглавие BG",
+      titleEn: "Заглавие EN",
+      textBg: "Текст BG",
+      textEn: "Текст EN",
+      badge: "Етикет / дата",
+      photos: "Снимки",
+      uploadPhotos: "Качи снимки",
+      removePhoto: "Махни",
+      active: "Активно в сайта",
+      saveAdd: "Добави събитие",
+      saveEdit: "Запази промени",
+      cancelEdit: "Назад към списъка",
+      delete: "Изтрий",
+      empty: "Още няма добавени събития.",
+      photoHelp: "Може да качите няколко снимки. Системата ги оптимизира автоматично.",
+    },
     layout: {
       title: "Карта на ресторанта",
       subtitle: "Премествайте масите, добавяйте нови и скривайте неактивни. Сайтът използва тази карта автоматично.",
@@ -291,6 +330,7 @@ const adminText = {
       create: "Create",
       block: "Block hall",
       menu: "Menu",
+      events: "Events",
       layout: "Map",
       blacklist: "Blacklist",
       customers: "Customers",
@@ -408,6 +448,30 @@ const adminText = {
       delete: "Delete",
       empty: "No dishes in the CMS yet.",
       priceHelp: priceHelperText,
+    },
+    events: {
+      title: "Events CMS",
+      subtitle: "Add celebrations, news, and special evenings with photos. This section is available in Basic too.",
+      list: "Event list",
+      add: "Add event",
+      edit: "Edit",
+      addTitle: "New event",
+      editTitle: "Edit event",
+      titleBg: "Title BG",
+      titleEn: "Title EN",
+      textBg: "Text BG",
+      textEn: "Text EN",
+      badge: "Badge / date",
+      photos: "Photos",
+      uploadPhotos: "Upload photos",
+      removePhoto: "Remove",
+      active: "Active on site",
+      saveAdd: "Add event",
+      saveEdit: "Save changes",
+      cancelEdit: "Back to list",
+      delete: "Delete",
+      empty: "No events have been added yet.",
+      photoHelp: "You can upload several photos. The system optimizes them automatically.",
     },
     layout: {
       title: "Restaurant map",
@@ -2725,6 +2789,14 @@ function AdminNavIcon({ type, className = "h-6 w-6" }) {
           <path d="M7 6h18v20H7z" {...common} />
         </>
       )}
+      {type === "events" && (
+        <>
+          <rect x="6" y="8" width="20" height="18" rx="4" {...common} />
+          <path d="M10 6v5M22 6v5M6 13h20" {...common} />
+          <path d="M11 20l3 3 7-8" {...common} />
+          <path d="M11 17h3" {...common} />
+        </>
+      )}
       {type === "layout" && (
         <>
           <rect x="6" y="7" width="8" height="7" rx="2" {...common} />
@@ -2767,12 +2839,13 @@ function Panel({ title, subtitle, children, right }) {
   );
 }
 
-export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenuChanged, theme, onToggleTheme }) {
+export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenuChanged, onEventsChanged, theme, onToggleTheme }) {
   const [activeTab, setActiveTab] = React.useState("home");
   const [adminLanguage, setAdminLanguage] = React.useState("bg");
   const [reservations, setReservations] = React.useState([]);
   const [diningOrders, setDiningOrders] = React.useState([]);
   const [menuItems, setMenuItems] = React.useState([]);
+  const [eventItems, setEventItems] = React.useState([]);
   const [blacklist, setBlacklist] = React.useState([]);
   const [adminUsers, setAdminUsers] = React.useState([]);
   const [auditLogs, setAuditLogs] = React.useState([]);
@@ -2783,6 +2856,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [expandedOrderId, setExpandedOrderId] = React.useState(null);
   const [expandedCustomerKey, setExpandedCustomerKey] = React.useState(null);
   const [menuMode, setMenuMode] = React.useState("list");
+  const [eventMode, setEventMode] = React.useState("list");
   const [selectedMenuCategory, setSelectedMenuCategory] = React.useState("");
   const menuItemsRef = React.useRef(null);
   const seenKitchenOrderIdsRef = React.useRef(new Set());
@@ -2796,6 +2870,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [showCreateReservation, setShowCreateReservation] = React.useState(false);
   const [menuForm, setMenuForm] = React.useState(emptyMenuItem);
   const [editingMenuId, setEditingMenuId] = React.useState(null);
+  const [eventForm, setEventForm] = React.useState(emptyEventItem);
+  const [editingEventId, setEditingEventId] = React.useState(null);
   const [adminReservation, setAdminReservation] = React.useState(emptyAdminReservation);
   const [tableEdits, setTableEdits] = React.useState({});
   const [tableLayout, setTableLayout] = React.useState([]);
@@ -2898,6 +2974,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
   }, [withAdminToken]);
 
+  const loadEvents = React.useCallback(async () => {
+    try {
+      const eventData = await fetchJsonOrEmpty(`${API_BASE_URL}/api/events/admin`, [], withAdminToken());
+      setEventItems(Array.isArray(eventData) ? eventData : []);
+    } catch (error) {
+      console.error("Failed to load events", error);
+      setAdminError(error?.message || "Failed to load events.");
+    }
+  }, [withAdminToken]);
+
   const loadDiningOrders = React.useCallback(async ({ silent = false, force = false } = {}) => {
     if (!isProVersion && !force) {
       setDiningOrders([]);
@@ -2995,6 +3081,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         loadDiningOrders();
       }
       loadTableLayout();
+      loadEvents();
     }
 
     loadInitialData();
@@ -3002,13 +3089,17 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return () => {
       cancelled = true;
     };
-  }, [isKitchenRole, isProVersion, isWaiterRole, loadBlacklist, loadDiningOrders, loadMenuItems, loadProductTier, loadReservations, loadTableLayout]);
+  }, [isKitchenRole, isProVersion, isWaiterRole, loadBlacklist, loadDiningOrders, loadEvents, loadMenuItems, loadProductTier, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     setAdminError("");
 
     if (activeTab === "menu" && !isWaiterRole) {
       loadMenuItems();
+    }
+
+    if (activeTab === "events" && !isWaiterRole && !isKitchenRole) {
+      loadEvents();
     }
 
     if (activeTab === "orders" && isProVersion) {
@@ -3044,7 +3135,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadAdminUsers();
       loadAuditLogs();
     }
-  }, [activeTab, canManageAdmins, isKitchenRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadMenuItems, loadReservations, loadTableLayout]);
+  }, [activeTab, canManageAdmins, isKitchenRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadEvents, loadMenuItems, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     const pages = isKitchenRole
@@ -3052,8 +3143,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       : isWaiterRole
       ? ["home", "liveMap", "orders"]
       : canManageAdmins
-      ? ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "layout", "customers", "admins"]
-      : ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "layout", "customers"];
+      ? ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "events", "layout", "customers", "admins"]
+      : ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "events", "layout", "customers"];
 
     const handleTouchStart = (event) => {
       if (event.touches.length !== 1 || isInteractiveSwipeTarget(event.target)) {
@@ -3857,6 +3948,98 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
   }
 
+  async function saveEventItem(event) {
+    event.preventDefault();
+    setAdminNotice("");
+    setAdminError("");
+
+    const payload = {
+      ...eventForm,
+      imageUrls: (eventForm.imageUrls || []).filter(Boolean).slice(0, 8),
+    };
+
+    const url = editingEventId
+      ? `${API_BASE_URL}/api/events/${editingEventId}`
+      : `${API_BASE_URL}/api/events`;
+
+    const response = await adminFetch(url, {
+      method: editingEventId ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to save event."));
+      return;
+    }
+
+    setEventForm(emptyEventItem);
+    setEditingEventId(null);
+    setEventMode("list");
+    setAdminNotice(editingEventId ? "Event updated." : "Event created.");
+    await loadEvents();
+    await onEventsChanged?.();
+  }
+
+  async function deleteEventItem(id) {
+    setAdminNotice("");
+    setAdminError("");
+
+    const confirmed = window.confirm(adminLanguage === "bg" ? "Да изтрием ли това събитие?" : "Delete this event?");
+    if (!confirmed) return;
+
+    const response = await adminFetch(`${API_BASE_URL}/api/events/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to delete event."));
+      return;
+    }
+
+    setAdminNotice("Event deleted.");
+    await loadEvents();
+    await onEventsChanged?.();
+  }
+
+  function startEditingEventItem(item) {
+    setEditingEventId(getValue(item, "id"));
+    setEventForm({
+      titleBg: getValue(item, "titleBg") || "",
+      titleEn: getValue(item, "titleEn") || "",
+      textBg: getValue(item, "textBg") || "",
+      textEn: getValue(item, "textEn") || "",
+      badge: getValue(item, "badge") || "",
+      imageUrls: getValue(item, "imageUrls") || [],
+      isActive: getValue(item, "isActive") ?? true,
+    });
+    setEventMode("form");
+  }
+
+  async function handleEventImageFileChange(event) {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (files.length === 0) return;
+
+    try {
+      const imageUrls = await Promise.all(files.slice(0, 8).map((file) => compressEventImage(file)));
+      setEventForm((prev) => ({
+        ...prev,
+        imageUrls: [...(prev.imageUrls || []), ...imageUrls].slice(0, 8),
+      }));
+      setAdminError("");
+    } catch (error) {
+      setAdminError(error?.message || "Failed to load event photos.");
+    }
+  }
+
+  function removeEventImage(index) {
+    setEventForm((prev) => ({
+      ...prev,
+      imageUrls: (prev.imageUrls || []).filter((_, photoIndex) => photoIndex !== index),
+    }));
+  }
+
   async function createAdminReservation(event) {
     event.preventDefault();
 
@@ -4572,6 +4755,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           ...(isProVersion ? [["orders", a.tabs.orders], ["reports", a.tabs.reports]] : []),
           ["block", a.tabs.block],
           ["menu", a.tabs.menu],
+          ["events", a.tabs.events],
           ["layout", a.tabs.layout],
           ["customers", a.tabs.customers],
           ...(canManageAdmins ? [["admins", adminLanguage === "bg" ? "Админи" : "Admins"]] : []),
@@ -4651,6 +4835,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
+    if (activeTab === "events" && !isWaiterRole && !isKitchenRole) {
+      await loadEvents();
+      return;
+    }
+
     if (activeTab === "blacklist" && !isWaiterRole) {
       await loadBlacklist();
       return;
@@ -4688,6 +4877,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     loadAuditLogs,
     loadBlacklist,
     loadDiningOrders,
+    loadEvents,
     loadMenuItems,
     loadReservations,
     loadTableLayout,
@@ -4703,6 +4893,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const shouldPauseLiveDataRefresh = Boolean(
     showCreateReservation ||
     menuMode !== "list" ||
+    eventMode !== "list" ||
     blacklistMode !== "list" ||
     Object.keys(tableEdits).length > 0 ||
     Object.keys(noteEdits).length > 0 ||
@@ -6879,6 +7070,263 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+              </Panel>
+            )}
+
+            {activeTab === "events" && (
+              <Panel
+                title={a.events.title}
+                subtitle={a.events.subtitle}
+                right={
+                  <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
+                    {[
+                      ["list", a.events.list],
+                      ["form", editingEventId ? a.events.edit : a.events.add],
+                    ].map(([key, label]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                          if (key === "form" && eventMode !== "form") {
+                            setEditingEventId(null);
+                            setEventForm(emptyEventItem);
+                          }
+                          setEventMode(key);
+                        }}
+                        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                          eventMode === key ? "luxury-button" : "text-white/70 hover:text-white"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                }
+              >
+                {eventMode === "form" ? (
+                  <form onSubmit={saveEventItem} className="space-y-5">
+                    <div className="rounded-[26px] border border-white/10 bg-black/20 p-5 md:p-6">
+                      <div className="mb-5">
+                        <div className="section-kicker">
+                          {editingEventId
+                            ? adminLanguage === "bg" ? "Редакция на събитие" : "Edit event"
+                            : adminLanguage === "bg" ? "Ново събитие" : "New event"}
+                        </div>
+                        <h3 className="mt-2 text-2xl font-semibold text-[#fff4df]">
+                          {editingEventId ? a.events.editTitle : a.events.addTitle}
+                        </h3>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <label className="mb-2 block text-sm text-stone-400">{a.events.titleBg}</label>
+                          <input
+                            value={eventForm.titleBg}
+                            onChange={(e) => setEventForm((prev) => ({ ...prev, titleBg: e.target.value }))}
+                            required
+                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm text-stone-400">{a.events.titleEn}</label>
+                          <input
+                            value={eventForm.titleEn}
+                            onChange={(e) => setEventForm((prev) => ({ ...prev, titleEn: e.target.value }))}
+                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="mb-2 block text-sm text-stone-400">{a.events.badge}</label>
+                          <input
+                            value={eventForm.badge}
+                            onChange={(e) => setEventForm((prev) => ({ ...prev, badge: e.target.value }))}
+                            placeholder={adminLanguage === "bg" ? "напр. 14.02 GIVEAWAY" : "e.g. 14.02 GIVEAWAY"}
+                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm text-stone-400">{a.events.textBg}</label>
+                          <textarea
+                            value={eventForm.textBg}
+                            onChange={(e) => setEventForm((prev) => ({ ...prev, textBg: e.target.value }))}
+                            rows={7}
+                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm text-stone-400">{a.events.textEn}</label>
+                          <textarea
+                            value={eventForm.textEn}
+                            onChange={(e) => setEventForm((prev) => ({ ...prev, textEn: e.target.value }))}
+                            rows={7}
+                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-5 md:p-6">
+                      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                        <div>
+                          <div className="section-kicker">{a.events.photos}</div>
+                          <h4 className="mt-2 text-xl font-semibold text-[#fff4df]">
+                            {adminLanguage === "bg" ? "Галерия на събитието" : "Event gallery"}
+                          </h4>
+                        </div>
+
+                        <label className="ghost-button cursor-pointer rounded-2xl px-4 py-3 text-sm font-semibold">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleEventImageFileChange}
+                            className="sr-only"
+                          />
+                          {a.events.uploadPhotos}
+                        </label>
+                      </div>
+
+                      <p className="mb-4 text-sm leading-6 text-stone-500">{a.events.photoHelp}</p>
+
+                      {(eventForm.imageUrls || []).length > 0 ? (
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                          {eventForm.imageUrls.map((imageUrl, index) => (
+                            <div key={`${imageUrl}-${index}`} className="overflow-hidden rounded-3xl border border-white/10 bg-black/20">
+                              <img
+                                src={imageUrl}
+                                alt={`${eventForm.titleBg || a.events.photos} ${index + 1}`}
+                                className="h-44 w-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeEventImage(index)}
+                                className="w-full border-t border-white/10 px-4 py-3 text-sm font-semibold text-red-100 hover:bg-red-500/10"
+                              >
+                                {a.events.removePhoto}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-3xl border border-dashed border-white/15 bg-black/20 p-8 text-center text-sm text-stone-500">
+                          {adminLanguage === "bg" ? "Качете една или няколко снимки за събитието." : "Upload one or more event photos."}
+                        </div>
+                      )}
+                    </div>
+
+                    <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-stone-300">
+                      <input
+                        type="checkbox"
+                        checked={eventForm.isActive}
+                        onChange={(e) => setEventForm((prev) => ({ ...prev, isActive: e.target.checked }))}
+                      />
+                      {a.events.active}
+                    </label>
+
+                    <div className="flex flex-col gap-3 md:flex-row">
+                      <button className="luxury-button rounded-2xl px-6 py-4 font-semibold">
+                        {editingEventId ? a.events.saveEdit : a.events.saveAdd}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingEventId(null);
+                          setEventForm(emptyEventItem);
+                          setEventMode("list");
+                        }}
+                        className="ghost-button rounded-2xl px-6 py-4 font-semibold"
+                      >
+                        {a.events.cancelEdit}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-5">
+                    {eventItems.length === 0 && (
+                      <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-stone-400">
+                        {a.events.empty}
+                      </div>
+                    )}
+
+                    <div className="grid gap-5 lg:grid-cols-2">
+                      {eventItems.map((item) => {
+                        const id = getValue(item, "id");
+                        const photos = getValue(item, "imageUrls") || [];
+                        const title = getValue(item, "titleBg") || getValue(item, "titleEn") || "Event";
+                        const subtitle = getValue(item, "textBg") || getValue(item, "textEn") || "";
+                        const active = getValue(item, "isActive") ?? true;
+
+                        return (
+                          <div key={id} className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04]">
+                            <div className="grid gap-0 md:grid-cols-[220px_1fr]">
+                              <div className="relative min-h-[210px] bg-black/25">
+                                {photos[0] ? (
+                                  <img
+                                    src={photos[0]}
+                                    alt={title}
+                                    loading="lazy"
+                                    className="absolute inset-0 h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="absolute inset-0 flex items-center justify-center text-xs uppercase tracking-[0.35em] text-[#f2d39a]">
+                                    Casa
+                                  </div>
+                                )}
+                                <div className="absolute left-4 top-4 rounded-full border border-white/10 bg-black/55 px-3 py-1 text-xs font-semibold text-white">
+                                  {photos.length} {adminLanguage === "bg" ? "снимки" : "photos"}
+                                </div>
+                              </div>
+
+                              <div className="p-5">
+                                <div className="mb-4 flex flex-wrap items-center gap-2">
+                                  {getValue(item, "badge") && (
+                                    <span className="rounded-full border border-[#c9a56a]/30 bg-[#c9a56a]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-[#f2d39a]">
+                                      {getValue(item, "badge")}
+                                    </span>
+                                  )}
+                                  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                                    active
+                                      ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200"
+                                      : "border-red-400/25 bg-red-400/10 text-red-200"
+                                  }`}>
+                                    {active ? (adminLanguage === "bg" ? "Активно" : "Active") : (adminLanguage === "bg" ? "Скрито" : "Hidden")}
+                                  </span>
+                                </div>
+
+                                <h3 className="text-xl font-semibold text-[#fff4df]">{title}</h3>
+                                <p className="mt-3 line-clamp-3 text-sm leading-6 text-stone-400">
+                                  {subtitle || "—"}
+                                </p>
+
+                                <div className="mt-5 flex flex-wrap gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => startEditingEventItem(item)}
+                                    className="ghost-button rounded-xl px-4 py-2 text-sm"
+                                  >
+                                    {a.events.edit}
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteEventItem(id)}
+                                    className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white"
+                                  >
+                                    {a.events.delete}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </Panel>

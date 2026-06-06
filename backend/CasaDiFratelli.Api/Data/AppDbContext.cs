@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<DiningOrder> DiningOrders => Set<DiningOrder>();
     public DbSet<DiningOrderItem> DiningOrderItems => Set<DiningOrderItem>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<RestaurantEvent> RestaurantEvents => Set<RestaurantEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -70,6 +71,13 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Key).IsRequired().HasMaxLength(80);
             entity.Property(x => x.Value).IsRequired().HasMaxLength(200);
             entity.HasIndex(x => x.Key).IsUnique();
+        });
+
+        modelBuilder.Entity<RestaurantEvent>(entity =>
+        {
+            entity.Property(x => x.TitleBg).IsRequired().HasMaxLength(180);
+            entity.Property(x => x.TitleEn).IsRequired().HasMaxLength(180);
+            entity.Property(x => x.Badge).HasMaxLength(80);
         });
 
         modelBuilder.Entity<DiningOrder>(entity =>

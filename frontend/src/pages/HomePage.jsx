@@ -20,6 +20,7 @@ export default function HomePage({
   onOpenSection,
   onOpenPrivacy,
   cmsMenuItems,
+  cmsEvents,
   theme,
   onToggleTheme,
 }) {
@@ -56,7 +57,7 @@ export default function HomePage({
       <AwardsSection language={language} />
       <ReservationPreviewSection t={t} onOpenReservation={onOpenReservation} />
       <ReviewsSection language={language} />
-      <EventsSection language={language} />
+      <EventsSection language={language} events={cmsEvents} />
       <ContactSection t={t} />
       <Footer t={t} onOpenPrivacy={onOpenPrivacy} />
     </div>
