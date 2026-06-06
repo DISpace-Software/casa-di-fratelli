@@ -59,6 +59,8 @@ public class EventsController : ControllerBase
         item.Badge,
         ImageUrls = ReadImages(item),
         item.IsActive,
+        item.ActiveUntilUtc,
+        IsExpired = item.ActiveUntilUtc.HasValue && item.ActiveUntilUtc.Value <= DateTime.UtcNow,
         item.CreatedAtUtc,
         item.UpdatedAtUtc
     };
@@ -68,7 +70,7 @@ public class EventsController : ControllerBase
     {
         var items = await _db.RestaurantEvents
             .AsNoTracking()
-            .Where(x => x.IsActive)
+            .Where(x => x.IsActive && (!x.ActiveUntilUtc.HasValue || x.ActiveUntilUtc.Value > DateTime.UtcNow))
             .OrderByDescending(x => x.CreatedAtUtc)
             .ToListAsync();
 
@@ -106,6 +108,7 @@ public class EventsController : ControllerBase
                 Badge = request.Badge?.Trim() ?? string.Empty,
                 ImageUrlsJson = NormalizeImages(request.ImageUrls),
                 IsActive = request.IsActive,
+                ActiveUntilUtc = request.ActiveUntilUtc,
                 CreatedAtUtc = DateTime.UtcNow
             };
         }
@@ -142,6 +145,7 @@ public class EventsController : ControllerBase
             item.Badge = request.Badge?.Trim() ?? string.Empty;
             item.ImageUrlsJson = NormalizeImages(request.ImageUrls);
             item.IsActive = request.IsActive;
+            item.ActiveUntilUtc = request.ActiveUntilUtc;
             item.UpdatedAtUtc = DateTime.UtcNow;
         }
         catch (InvalidOperationException error)
@@ -187,4 +191,6 @@ public class RestaurantEventRequest
     public List<string> ImageUrls { get; set; } = new();
 
     public bool IsActive { get; set; } = true;
+
+    public DateTime? ActiveUntilUtc { get; set; }
 }

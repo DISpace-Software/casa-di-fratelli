@@ -18,6 +18,8 @@ public class RestaurantEvent
 
     public bool IsActive { get; set; } = true;
 
+    public DateTime? ActiveUntilUtc { get; set; }
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAtUtc { get; set; }

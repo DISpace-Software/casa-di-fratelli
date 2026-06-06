@@ -147,6 +147,7 @@ public static class AdminSchemaBootstrapper
                 "Badge" varchar(80) NOT NULL DEFAULT '',
                 "ImageUrlsJson" text NOT NULL DEFAULT '[]',
                 "IsActive" boolean NOT NULL DEFAULT true,
+                "ActiveUntilUtc" timestamp with time zone NULL,
                 "CreatedAtUtc" timestamp with time zone NOT NULL DEFAULT now(),
                 "UpdatedAtUtc" timestamp with time zone NULL,
                 CONSTRAINT "PK_RestaurantEvents" PRIMARY KEY ("Id")
@@ -229,6 +230,7 @@ public static class AdminSchemaBootstrapper
             ALTER TABLE "RestaurantEvents" ADD COLUMN IF NOT EXISTS "Badge" varchar(80) NOT NULL DEFAULT '';
             ALTER TABLE "RestaurantEvents" ADD COLUMN IF NOT EXISTS "ImageUrlsJson" text NOT NULL DEFAULT '[]';
             ALTER TABLE "RestaurantEvents" ADD COLUMN IF NOT EXISTS "IsActive" boolean NOT NULL DEFAULT true;
+            ALTER TABLE "RestaurantEvents" ADD COLUMN IF NOT EXISTS "ActiveUntilUtc" timestamp with time zone NULL;
             ALTER TABLE "RestaurantEvents" ADD COLUMN IF NOT EXISTS "CreatedAtUtc" timestamp with time zone NOT NULL DEFAULT now();
             ALTER TABLE "RestaurantEvents" ADD COLUMN IF NOT EXISTS "UpdatedAtUtc" timestamp with time zone NULL;
 

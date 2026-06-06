@@ -41,6 +41,7 @@ const emptyEventItem = {
   badge: "",
   imageUrls: [],
   isActive: true,
+  activeUntilLocal: "",
 };
 
 const priceHelperText =
@@ -125,6 +126,16 @@ function showBrowserNotification(title, body) {
       }
     });
   }
+}
+
+function toLocalDateTimeInputValue(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const offsetMs = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
 }
 
 const adminText = {
@@ -283,6 +294,8 @@ const adminText = {
       textBg: "Текст BG",
       textEn: "Текст EN",
       badge: "Етикет / дата",
+      activeUntil: "Активно до",
+      activeUntilHelp: "Оставете празно, ако събитието няма краен срок. След този момент сайтът автоматично ще го скрие.",
       photos: "Снимки",
       uploadPhotos: "Качи снимки",
       removePhoto: "Махни",
@@ -462,6 +475,8 @@ const adminText = {
       textBg: "Text BG",
       textEn: "Text EN",
       badge: "Badge / date",
+      activeUntil: "Active until",
+      activeUntilHelp: "Leave empty if the event has no deadline. After this moment the public site hides it automatically.",
       photos: "Photos",
       uploadPhotos: "Upload photos",
       removePhoto: "Remove",
@@ -3956,7 +3971,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     const payload = {
       ...eventForm,
       imageUrls: (eventForm.imageUrls || []).filter(Boolean).slice(0, 8),
+      activeUntilUtc: eventForm.activeUntilLocal ? new Date(eventForm.activeUntilLocal).toISOString() : null,
     };
+    delete payload.activeUntilLocal;
 
     const url = editingEventId
       ? `${API_BASE_URL}/api/events/${editingEventId}`
@@ -4012,6 +4029,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       badge: getValue(item, "badge") || "",
       imageUrls: getValue(item, "imageUrls") || [],
       isActive: getValue(item, "isActive") ?? true,
+      activeUntilLocal: toLocalDateTimeInputValue(getValue(item, "activeUntilUtc")),
     });
     setEventMode("form");
   }
@@ -7189,6 +7207,17 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           />
                         </div>
 
+                        <div className="md:col-span-2">
+                          <label className="mb-2 block text-sm text-stone-400">{a.events.activeUntil}</label>
+                          <input
+                            type="datetime-local"
+                            value={eventForm.activeUntilLocal}
+                            onChange={(e) => setEventForm((prev) => ({ ...prev, activeUntilLocal: e.target.value }))}
+                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                          />
+                          <p className="mt-2 text-xs leading-5 text-stone-500">{a.events.activeUntilHelp}</p>
+                        </div>
+
                         <div>
                           <label className="mb-2 block text-sm text-stone-400">{a.events.textBg}</label>
                           <textarea
@@ -7301,6 +7330,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         const title = getValue(item, "titleBg") || getValue(item, "titleEn") || "Event";
                         const subtitle = getValue(item, "textBg") || getValue(item, "textEn") || "";
                         const active = getValue(item, "isActive") ?? true;
+                        const activeUntilUtc = getValue(item, "activeUntilUtc");
+                        const isExpired = activeUntilUtc ? new Date(activeUntilUtc).getTime() <= Date.now() : false;
+                        const activeUntilLabel = activeUntilUtc
+                          ? new Date(activeUntilUtc).toLocaleString(adminLanguage === "bg" ? "bg-BG" : "en-US", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })
+                          : "";
 
                         return (
                           <div key={id} className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04]">
@@ -7331,15 +7368,23 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                     </span>
                                   )}
                                   <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                                    active
+                                    active && !isExpired
                                       ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200"
                                       : "border-red-400/25 bg-red-400/10 text-red-200"
                                   }`}>
-                                    {active ? (adminLanguage === "bg" ? "Активно" : "Active") : (adminLanguage === "bg" ? "Скрито" : "Hidden")}
+                                    {isExpired
+                                      ? adminLanguage === "bg" ? "Изтекло" : "Expired"
+                                      : active ? (adminLanguage === "bg" ? "Активно" : "Active") : (adminLanguage === "bg" ? "Скрито" : "Hidden")}
                                   </span>
                                 </div>
 
                                 <h3 className="text-xl font-semibold text-[#fff4df]">{title}</h3>
+                                {activeUntilLabel && (
+                                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#f2d39a]/75">
+                                    {adminLanguage === "bg" ? "Активно до " : "Active until "}
+                                    {activeUntilLabel}
+                                  </p>
+                                )}
                                 <p className="mt-3 line-clamp-3 text-sm leading-6 text-stone-400">
                                   {subtitle || "—"}
                                 </p>
