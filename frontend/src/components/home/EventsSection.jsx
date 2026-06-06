@@ -45,11 +45,13 @@ export default function EventsSection({ language, events = [] }) {
 
           <div className="events-giveaway-card menu-spark overflow-hidden rounded-[30px] border border-[#c9a56a]/18 bg-[linear-gradient(135deg,rgba(201,165,106,0.16),rgba(255,255,255,0.045)),radial-gradient(circle_at_78%_18%,rgba(46,139,99,0.16),transparent_16rem)] p-4 shadow-2xl shadow-black/25 sm:p-5">
             {featuredImages.length > 0 ? (
-              <div className={`grid gap-3 ${featuredImages.length === 1 ? "" : "sm:grid-cols-2"}`}>
+              <div className={`grid h-full gap-3 ${featuredImages.length === 1 ? "min-h-[320px] md:min-h-[420px]" : "sm:grid-cols-2"}`}>
                 {featuredImages.map((src, index) => (
                   <div
                     key={`${src}-${index}`}
-                    className={`overflow-hidden rounded-[24px] border border-white/10 bg-black/25 ${
+                    className={`relative overflow-hidden rounded-[24px] border border-white/10 bg-black/25 ${
+                      featuredImages.length === 1 ? "min-h-[320px] md:min-h-[420px]" : ""
+                    } ${
                       index === 0 && featuredImages.length > 2 ? "sm:col-span-2" : ""
                     }`}
                   >
@@ -57,7 +59,11 @@ export default function EventsSection({ language, events = [] }) {
                       src={src}
                       alt={`${featured.title} ${index + 1}`}
                       loading="lazy"
-                      className={`w-full object-cover ${index === 0 ? "h-72 md:h-80" : "h-44"}`}
+                      className={
+                        featuredImages.length === 1
+                          ? "absolute inset-0 h-full w-full object-cover object-center"
+                          : `w-full object-cover ${index === 0 ? "h-72 md:h-80" : "h-44"}`
+                      }
                     />
                   </div>
                 ))}
