@@ -42,6 +42,24 @@ public class ProductTierController : ControllerBase
 
         return Ok(new { tier, isPro = true });
     }
+
+    [HttpPost("lock-basic")]
+    [AdminAuthorize]
+    public async Task<IActionResult> LockBasic([FromBody] UnlockProRequest request)
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (AdminRoleAccess.Normalize(admin?.Role) != AdminRoleAccess.Developer)
+            return Forbid();
+
+        if (request.Code != "2215")
+            return BadRequest(new { message = "Invalid developer code." });
+
+        var before = await _tiers.GetTierAsync();
+        var tier = await _tiers.LockBasicAsync();
+        await _audit.RecordAsync(HttpContext, "lock-basic", "ProductTier", "ProductTier", before: new { tier = before }, after: new { tier });
+
+        return Ok(new { tier, isPro = false });
+    }
 }
 
 public class UnlockProRequest

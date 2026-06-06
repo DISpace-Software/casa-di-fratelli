@@ -31,7 +31,7 @@ public class ProductTierService
         return string.Equals(await GetTierAsync(), Pro, StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task<string> UnlockProAsync()
+    public async Task<string> SetTierAsync(string tier)
     {
         var setting = await _db.AppSettings.FirstOrDefaultAsync(x => x.Key == ProductTierKey);
         if (setting == null)
@@ -40,10 +40,20 @@ public class ProductTierService
             _db.AppSettings.Add(setting);
         }
 
-        setting.Value = Pro;
+        setting.Value = string.Equals(tier, Pro, StringComparison.OrdinalIgnoreCase) ? Pro : Basic;
         setting.UpdatedAtUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        return Pro;
+        return setting.Value;
+    }
+
+    public async Task<string> UnlockProAsync()
+    {
+        return await SetTierAsync(Pro);
+    }
+
+    public async Task<string> LockBasicAsync()
+    {
+        return await SetTierAsync(Basic);
     }
 }

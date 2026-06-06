@@ -4192,6 +4192,46 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     await Promise.all([loadReservations({ silent: true }), loadDiningOrders({ force: true }), loadMenuItems(), loadTableLayout()]);
   }
 
+  async function lockBasicVersion() {
+    setAdminError("");
+    setAdminNotice("");
+
+    const confirmed = window.confirm(
+      adminLanguage === "bg"
+        ? "Да върнем ли системата в Basic версия? Поръчки, кухня и сервитьорски роли ще се скрият, но данните няма да бъдат изтрити."
+        : "Switch the system back to Basic? Orders, kitchen, and waiter roles will be hidden, but data will not be deleted."
+    );
+
+    if (!confirmed) return;
+
+    const code = window.prompt(
+      adminLanguage === "bg"
+        ? "Въведете developer код за връщане към Basic версия:"
+        : "Enter developer code to return to Basic version:"
+    );
+
+    if (code === null) return;
+
+    const response = await adminFetch(`${API_BASE_URL}/api/product-tier/lock-basic`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to switch to Basic version."));
+      return;
+    }
+
+    setProductTier("Basic");
+    setDiningOrders([]);
+    if (["orders", "reports"].includes(activeTab)) {
+      setActiveTab("home");
+    }
+    setAdminNotice(adminLanguage === "bg" ? "Системата е върната в Basic версия." : "System switched back to Basic version.");
+    await Promise.all([loadReservations({ silent: true }), loadMenuItems(), loadTableLayout(), loadAdminUsers(), loadAuditLogs()]);
+  }
+
   async function createAdminUser(event) {
     event.preventDefault();
     setAdminError("");
@@ -7939,6 +7979,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               className="luxury-button mt-4 w-full rounded-2xl px-5 py-3 text-sm font-semibold"
                             >
                               {adminLanguage === "bg" ? "Отключи Pro версия" : "Unlock Pro version"}
+                            </button>
+                          )}
+                          {isProVersion && (
+                            <button
+                              type="button"
+                              onClick={lockBasicVersion}
+                              className="mt-4 w-full rounded-2xl border border-[#f2d39a]/30 bg-black/20 px-5 py-3 text-sm font-semibold text-[#f2d39a] transition hover:bg-[#c9a56a]/10"
+                            >
+                              {adminLanguage === "bg" ? "Върни Basic версия" : "Return to Basic version"}
                             </button>
                           )}
                         </div>
