@@ -10,6 +10,11 @@ const categoryLabels = {
   drinks: { bg: "Напитки", en: "Drinks" },
 };
 
+const departmentLabels = {
+  Kitchen: { bg: "Кухня", en: "Kitchen" },
+  Bar: { bg: "Напитки", en: "Drinks" },
+};
+
 export function formatEuro(value) {
   const numericValue = Number(value);
 
@@ -58,6 +63,10 @@ function slugify(value) {
     .replace(/^-+|-+$/g, "") || "main";
 }
 
+function normalizeDepartment(value) {
+  return String(value || "Kitchen").trim().toLowerCase() === "bar" ? "Bar" : "Kitchen";
+}
+
 export function buildMenuDataFromCms(items, language, fallbackData) {
   if (!Array.isArray(items) || items.length === 0) {
     return localizeStaticMenuPrices(fallbackData);
@@ -65,15 +74,18 @@ export function buildMenuDataFromCms(items, language, fallbackData) {
 
   const activeItems = items.filter((item) => getValue(item, "isActive") !== false);
   const grouped = new Map();
+  const groupedByDepartment = new Map();
 
   activeItems.forEach((item) => {
     const rawCategory = getValue(item, "category") || "Main";
     const categoryId = slugify(rawCategory);
+    const department = normalizeDepartment(getValue(item, "department"));
 
     if (!grouped.has(categoryId)) {
       const labels = categoryLabels[categoryId] || categoryLabels[String(rawCategory).toLowerCase()];
       grouped.set(categoryId, {
         id: categoryId,
+        department,
         title: labels?.[language] || rawCategory,
         items: [],
       });
@@ -82,6 +94,8 @@ export function buildMenuDataFromCms(items, language, fallbackData) {
     grouped.get(categoryId).items.push({
       id: getValue(item, "id"),
       category: categoryId,
+      department,
+      kind: department === "Bar" ? "Drink" : "Dish",
       name: getValue(item, language === "bg" ? "nameBg" : "nameEn") || getValue(item, "nameBg") || "",
       weight: getValue(item, "weight") || "",
       price: formatEuro(getValue(item, "price")),
@@ -97,6 +111,18 @@ export function buildMenuDataFromCms(items, language, fallbackData) {
 
   const categories = Array.from(grouped.values()).filter((category) => category.items.length > 0);
 
+  categories.forEach((category) => {
+    if (!groupedByDepartment.has(category.department)) {
+      groupedByDepartment.set(category.department, {
+        id: category.department,
+        title: departmentLabels[category.department]?.[language] || category.department,
+        categories: [],
+      });
+    }
+
+    groupedByDepartment.get(category.department).categories.push(category);
+  });
+
   if (categories.length === 0) {
     return localizeStaticMenuPrices(fallbackData);
   }
@@ -104,5 +130,6 @@ export function buildMenuDataFromCms(items, language, fallbackData) {
   return {
     ...fallbackData,
     categories,
+    departments: Array.from(groupedByDepartment.values()),
   };
 }

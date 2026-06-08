@@ -106,5 +106,10 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Source).IsRequired().HasMaxLength(40);
             entity.Property(x => x.Kind).IsRequired().HasMaxLength(30);
         });
+
+        modelBuilder.Entity<MenuItem>(entity =>
+        {
+            entity.Property(x => x.Department).IsRequired().HasMaxLength(30);
+        });
     }
 }

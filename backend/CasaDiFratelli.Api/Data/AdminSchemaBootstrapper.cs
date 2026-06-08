@@ -60,6 +60,7 @@ public static class AdminSchemaBootstrapper
                 "ImageUrl" text NOT NULL DEFAULT '',
                 "Weight" text NOT NULL,
                 "Price" numeric NOT NULL,
+                "Department" text NOT NULL DEFAULT 'Kitchen',
                 "Category" text NOT NULL,
                 "IsActive" boolean NOT NULL,
                 "NotifySubscribers" boolean NOT NULL,
@@ -227,6 +228,7 @@ public static class AdminSchemaBootstrapper
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "ImageUrl" text NOT NULL DEFAULT '';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "Weight" text NOT NULL DEFAULT '';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "Price" numeric NOT NULL DEFAULT 0;
+            ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "Department" text NOT NULL DEFAULT 'Kitchen';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "Category" text NOT NULL DEFAULT 'Main';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "IsActive" boolean NOT NULL DEFAULT true;
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "NotifySubscribers" boolean NOT NULL DEFAULT false;

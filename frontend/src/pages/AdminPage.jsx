@@ -28,6 +28,7 @@ const emptyMenuItem = {
   imageUrl: "",
   weight: "",
   price: "",
+  department: "Kitchen",
   category: "Main",
   isActive: true,
   notifySubscribers: false,
@@ -532,6 +533,7 @@ const adminRoleOptions = [
   { value: "Administrator", labels: { bg: "Администратор", en: "Administrator" } },
   { value: "Waiter", labels: { bg: "Сервитьор", en: "Waiter" } },
   { value: "Kitchen", labels: { bg: "Кухня", en: "Kitchen" } },
+  { value: "Bar", labels: { bg: "Бар", en: "Bar" } },
   { value: "Developer", labels: { bg: "Програмист", en: "Developer" } },
 ];
 
@@ -542,6 +544,7 @@ function normalizeAdminRole(role) {
   if (["administrator", "admin", "manager"].includes(normalized)) return "Administrator";
   if (["waiter", "staff", "server"].includes(normalized)) return "Waiter";
   if (["kitchen", "chef", "cook"].includes(normalized)) return "Kitchen";
+  if (["bar", "bartender", "barman", "бар", "барман"].includes(normalized)) return "Bar";
   if (["developer", "dev", "programmer"].includes(normalized)) return "Developer";
 
   return "Administrator";
@@ -599,6 +602,10 @@ const categoryDisplayNames = {
     pizza: "Пица",
     bread: "Домашен хляб",
     desserts: "Десерти",
+    "cold-drinks": "Студени напитки",
+    "soft-drinks": "Безалкохолни",
+    lemonades: "Лимонади",
+    alcohol: "Алкохол",
     main: "Основни",
   },
   en: {
@@ -609,9 +616,31 @@ const categoryDisplayNames = {
     pizza: "Pizza",
     bread: "Bread",
     desserts: "Desserts",
+    "cold-drinks": "Cold drinks",
+    "soft-drinks": "Soft drinks",
+    lemonades: "Lemonades",
+    alcohol: "Alcohol",
     main: "Main",
   },
 };
+
+const menuDepartmentOptions = [
+  { value: "Kitchen", labels: { bg: "Кухня", en: "Kitchen" } },
+  { value: "Bar", labels: { bg: "Напитки", en: "Drinks" } },
+];
+
+function normalizeDepartment(value) {
+  return String(value || "Kitchen").trim().toLowerCase() === "bar" ? "Bar" : "Kitchen";
+}
+
+function getDepartmentLabel(department, language) {
+  const normalized = normalizeDepartment(department);
+  return menuDepartmentOptions.find((option) => option.value === normalized)?.labels[language] || normalized;
+}
+
+function getMenuItemKind(item) {
+  return normalizeDepartment(getValue(item, "department")) === "Bar" ? "Drink" : "Dish";
+}
 
 function getValue(item, key) {
   return item?.[key] ?? item?.[key[0].toUpperCase() + key.slice(1)];
@@ -2435,6 +2464,7 @@ function ReservationOperationsMap({
                                       menuItemId: getValue(item, "id"),
                                       name,
                                       unitPrice: price,
+                                      kind: getMenuItemKind(item),
                                       quantity: 1,
                                     })}
                                     className="flex w-full min-w-0 items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.035] p-2 text-left transition hover:border-[#c9a56a]/40 active:scale-[0.99]"
@@ -2751,6 +2781,7 @@ function RoleProfileIcon({ role, className = "h-12 w-12" }) {
   const normalized = normalizeAdminRole(role);
   const imageByRole = {
     Kitchen: "/admin-role-chef.jpeg",
+    Bar: "/admin-role-waiter.jpeg",
     Waiter: "/admin-role-waiter.jpeg",
     Administrator: "/admin-role-admin.jpeg",
     Owner: "/admin-role-owner.jpeg",
@@ -2896,10 +2927,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [expandedCustomerKey, setExpandedCustomerKey] = React.useState(null);
   const [menuMode, setMenuMode] = React.useState("list");
   const [eventMode, setEventMode] = React.useState("list");
+  const [selectedMenuDepartment, setSelectedMenuDepartment] = React.useState("Kitchen");
   const [selectedMenuCategory, setSelectedMenuCategory] = React.useState("");
   const menuItemsRef = React.useRef(null);
   const seenKitchenOrderIdsRef = React.useRef(new Set());
   const seenKitchenItemIdsRef = React.useRef(new Set());
+  const seenBarOrderIdsRef = React.useRef(new Set());
+  const seenBarItemIdsRef = React.useRef(new Set());
   const seenReadyItemIdsRef = React.useRef(new Set());
   const seenWaiterGuestItemIdsRef = React.useRef(new Set());
   const [blacklistMode, setBlacklistMode] = React.useState("list");
@@ -2962,12 +2996,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const currentAdminRole = normalizeAdminRole(adminUser?.role);
   const isWaiterRole = currentAdminRole === "Waiter";
   const isKitchenRole = currentAdminRole === "Kitchen";
-  const isOperationalRole = isWaiterRole || isKitchenRole;
+  const isBarRole = currentAdminRole === "Bar";
+  const isProductionRole = isKitchenRole || isBarRole;
+  const isOperationalRole = isWaiterRole || isProductionRole;
   const canClearOperationalData = currentAdminRole === "Developer";
   const canManageAdmins = ["Owner", "Developer"].includes(currentAdminRole);
   const hasDeveloperAdmin = adminUsers.some((user) => normalizeAdminRole(user.role || user.Role) === "Developer");
   const availableAdminRoleOptions = adminRoleOptions.filter((role) => {
-    if (!isProVersion && ["Waiter", "Kitchen"].includes(role.value)) return false;
+    if (!isProVersion && ["Waiter", "Kitchen", "Bar"].includes(role.value)) return false;
     return currentAdminRole === "Developer" || role.value !== "Developer" || !hasDeveloperAdmin;
   });
 
@@ -3138,7 +3174,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         return;
       }
 
-      if (isKitchenRole && isProVersion) {
+      if (isProductionRole && isProVersion) {
         setLoading(true);
         setAdminError("");
         await Promise.all([loadDiningOrders(), loadMenuItems()]);
@@ -3162,7 +3198,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return () => {
       cancelled = true;
     };
-  }, [isKitchenRole, isProVersion, isWaiterRole, loadBlacklist, loadDiningOrders, loadEvents, loadMenuItems, loadProductTier, loadReservations, loadTableLayout]);
+  }, [isProductionRole, isProVersion, isWaiterRole, loadBlacklist, loadDiningOrders, loadEvents, loadMenuItems, loadProductTier, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     setAdminError("");
@@ -3171,7 +3207,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadMenuItems();
     }
 
-    if (activeTab === "events" && !isWaiterRole && !isKitchenRole) {
+    if (activeTab === "events" && !isWaiterRole && !isProductionRole) {
       loadEvents();
     }
 
@@ -3180,7 +3216,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadMenuItems();
     }
 
-    if ((activeTab === "customers" || activeTab === "reports") && !isWaiterRole && !isKitchenRole) {
+    if ((activeTab === "customers" || activeTab === "reports") && !isWaiterRole && !isProductionRole) {
       loadReservations({ silent: true });
       if (isProVersion) {
         loadDiningOrders();
@@ -3208,10 +3244,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadAdminUsers();
       loadAuditLogs();
     }
-  }, [activeTab, canManageAdmins, isKitchenRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadEvents, loadMenuItems, loadReservations, loadTableLayout]);
+  }, [activeTab, canManageAdmins, isProductionRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadEvents, loadMenuItems, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
-    const pages = isKitchenRole
+    const pages = isProductionRole
       ? ["home", "orders"]
       : isWaiterRole
       ? ["home", "liveMap", "orders"]
@@ -3258,7 +3294,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [activeTab, canManageAdmins, isKitchenRole, isWaiterRole]);
+  }, [activeTab, canManageAdmins, isProductionRole, isWaiterRole]);
 
   function updateTableLayoutItem(tableId, nextItem) {
     const normalized = normalizeLayoutItem(nextItem);
@@ -3944,6 +3980,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     const payload = {
       ...menuForm,
       price: Number(menuForm.price || 0),
+      department: normalizeDepartment(menuForm.department),
     };
 
     const url = editingMenuId
@@ -4795,7 +4832,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const menuCategories = React.useMemo(() => {
     const grouped = new Map();
 
-    menuItems.forEach((item) => {
+    menuItems
+      .filter((item) => normalizeDepartment(getValue(item, "department")) === selectedMenuDepartment)
+      .forEach((item) => {
       const category = normalizeCategory(item.category || item.Category);
 
       if (!grouped.has(category)) {
@@ -4819,7 +4858,18 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return Array.from(grouped.values()).sort((first, second) =>
       first.label.localeCompare(second.label, adminLanguage === "bg" ? "bg" : "en")
     );
-  }, [adminLanguage, menuItems]);
+  }, [adminLanguage, menuItems, selectedMenuDepartment]);
+
+  const menuDepartmentCounts = React.useMemo(() => {
+    return menuDepartmentOptions.map((department) => {
+      const items = menuItems.filter((item) => normalizeDepartment(getValue(item, "department")) === department.value);
+      return {
+        ...department,
+        count: items.length,
+        activeCount: items.filter((item) => (getValue(item, "isActive") ?? true) === true).length,
+      };
+    });
+  }, [menuItems]);
 
   React.useEffect(() => {
     if (menuMode !== "list") return;
@@ -4923,9 +4973,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       }));
 
   const tabs = React.useMemo(
-    () => isKitchenRole && isProVersion
+    () => isProductionRole && isProVersion
       ? [
-          ["orders", adminLanguage === "bg" ? "Кухня" : "Kitchen"],
+          ["orders", isBarRole ? (adminLanguage === "bg" ? "Бар" : "Bar") : (adminLanguage === "bg" ? "Кухня" : "Kitchen")],
         ]
       : isWaiterRole && isProVersion
       ? [
@@ -4943,7 +4993,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           ["customers", a.tabs.customers],
           ...(canManageAdmins ? [["admins", adminLanguage === "bg" ? "Админи" : "Admins"]] : []),
         ],
-    [a.tabs, adminLanguage, canManageAdmins, isKitchenRole, isProVersion, isWaiterRole]
+    [a.tabs, adminLanguage, canManageAdmins, isBarRole, isProductionRole, isProVersion, isWaiterRole]
   );
   const readyWaiterItemsCount = React.useMemo(
     () => isWaiterRole
@@ -4989,16 +5039,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
   React.useEffect(() => {
     if (!allowedTabKeys.has(activeTab)) {
-      setActiveTab(isProVersion && (isWaiterRole || isKitchenRole) ? "orders" : "home");
+      setActiveTab(isProVersion && (isWaiterRole || isProductionRole) ? "orders" : "home");
     }
-  }, [activeTab, allowedTabKeys, isKitchenRole, isProVersion, isWaiterRole]);
+  }, [activeTab, allowedTabKeys, isProductionRole, isProVersion, isWaiterRole]);
 
   const refreshActiveTab = React.useCallback(async ({ silent = false } = {}) => {
     if (activeTab === "home") {
       await Promise.all([
-        ...(isWaiterRole || isKitchenRole ? [] : [loadReservations({ silent }), loadBlacklist()]),
+        ...(isWaiterRole || isProductionRole ? [] : [loadReservations({ silent }), loadBlacklist()]),
         ...(isProVersion ? [loadDiningOrders()] : []),
-        ...(isKitchenRole ? [] : [loadTableLayout()]),
+        ...(isProductionRole ? [] : [loadTableLayout()]),
       ]);
       return;
     }
@@ -5008,7 +5058,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
-    if (activeTab === "reports" && isProVersion && !isWaiterRole && !isKitchenRole) {
+    if (activeTab === "reports" && isProVersion && !isWaiterRole && !isProductionRole) {
       await Promise.all([loadReservations({ silent }), loadDiningOrders()]);
       return;
     }
@@ -5018,7 +5068,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
-    if (activeTab === "events" && !isWaiterRole && !isKitchenRole) {
+    if (activeTab === "events" && !isWaiterRole && !isProductionRole) {
       await loadEvents();
       return;
     }
@@ -5047,13 +5097,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
-    if (!isWaiterRole && !isKitchenRole) {
+    if (!isWaiterRole && !isProductionRole) {
       await loadReservations({ silent });
     }
   }, [
     activeTab,
     canManageAdmins,
-    isKitchenRole,
+    isProductionRole,
     isProVersion,
     isWaiterRole,
     loadAdminUsers,
@@ -5068,10 +5118,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
   const refreshLiveData = React.useCallback(async () => {
     await Promise.all([
-      ...(isKitchenRole ? [] : [loadReservations({ silent: true })]),
+      ...(isProductionRole ? [] : [loadReservations({ silent: true })]),
       loadDiningOrders({ silent: true }),
     ]);
-  }, [isKitchenRole, loadDiningOrders, loadReservations]);
+  }, [isProductionRole, loadDiningOrders, loadReservations]);
 
   const shouldPauseLiveDataRefresh = Boolean(
     showCreateReservation ||
@@ -5098,17 +5148,24 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   }, [activeTab, refreshLiveData, shouldPauseLiveDataRefresh]);
 
   React.useEffect(() => {
-    if (isKitchenRole) {
+    if (isProductionRole) {
+      const productionKind = isBarRole ? "Drink" : "Dish";
+      const productionLabel = isBarRole
+        ? adminLanguage === "bg" ? "бара" : "bar"
+        : adminLanguage === "bg" ? "кухнята" : "kitchen";
+      const orderIdsRef = isBarRole ? seenBarOrderIdsRef : seenKitchenOrderIdsRef;
+      const itemIdsRef = isBarRole ? seenBarItemIdsRef : seenKitchenItemIdsRef;
       const activeOrderIds = diningOrders
         .filter((order) => !["Done", "Cancelled"].includes(order.status))
+        .filter((order) => (order.items || []).some((item) => item.kind === productionKind))
         .map((order) => order.id);
-      const newOrderIds = activeOrderIds.filter((id) => !seenKitchenOrderIdsRef.current.has(id));
-      const hadSeenOrders = seenKitchenOrderIdsRef.current.size > 0;
+      const newOrderIds = activeOrderIds.filter((id) => !orderIdsRef.current.has(id));
+      const hadSeenOrders = orderIdsRef.current.size > 0;
 
-      activeOrderIds.forEach((id) => seenKitchenOrderIdsRef.current.add(id));
+      activeOrderIds.forEach((id) => orderIdsRef.current.add(id));
       if (hadSeenOrders && newOrderIds.length > 0) {
         const firstOrder = diningOrders.find((order) => order.id === newOrderIds[0]);
-        const title = adminLanguage === "bg" ? "Нова поръчка за кухнята" : "New kitchen order";
+        const title = adminLanguage === "bg" ? `Нова поръчка за ${productionLabel}` : `New ${productionLabel} order`;
         const body = firstOrder
           ? `${adminLanguage === "bg" ? "Маса" : "Table"} ${firstOrder.tableLabel} · #${firstOrder.id}`
           : title;
@@ -5118,16 +5175,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
       const newKitchenItems = diningOrders.flatMap((order) =>
         (order.items || [])
-          .filter((item) => item.status === "New" && item.kind === "Dish")
+          .filter((item) => item.status === "New" && item.kind === productionKind)
           .map((item) => ({ id: item.id, name: item.name, tableLabel: order.tableLabel }))
       );
-      const unseenKitchenItems = newKitchenItems.filter((item) => !seenKitchenItemIdsRef.current.has(item.id));
-      const hadSeenKitchenItems = seenKitchenItemIdsRef.current.size > 0;
+      const unseenKitchenItems = newKitchenItems.filter((item) => !itemIdsRef.current.has(item.id));
+      const hadSeenKitchenItems = itemIdsRef.current.size > 0;
 
-      newKitchenItems.forEach((item) => seenKitchenItemIdsRef.current.add(item.id));
+      newKitchenItems.forEach((item) => itemIdsRef.current.add(item.id));
       if (hadSeenKitchenItems && unseenKitchenItems.length > 0) {
         const first = unseenKitchenItems[0];
-        const title = adminLanguage === "bg" ? "Нова позиция за кухнята" : "New kitchen item";
+        const title = adminLanguage === "bg" ? `Нова позиция за ${productionLabel}` : `New ${productionLabel} item`;
         const body = `${first.name} · ${adminLanguage === "bg" ? "маса" : "table"} ${first.tableLabel}`;
         setAdminNotice(`${title} · ${body}`);
         showBrowserNotification(title, body);
@@ -5180,7 +5237,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         );
       }
     }
-  }, [adminLanguage, diningOrders, isKitchenRole, isWaiterRole]);
+  }, [adminLanguage, diningOrders, isBarRole, isProductionRole, isWaiterRole]);
 
   const isDashboard = activeTab === "home";
   const activeTabLabel =
@@ -6383,24 +6440,24 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       const visibleOrderItems = isWaiterRole
                         ? order.items.filter((item) => item.status !== "Done" && item.status !== "Cancelled")
                         : order.items;
-                      const kitchenOrderComplete =
-                        isKitchenRole &&
+                      const productionOrderComplete =
+                        isProductionRole &&
                         order.items.length > 0 &&
                         order.items.every((item) => ["Ready", "Done"].includes(item.status));
                       const waiterOrderServed =
                         isWaiterRole &&
                         order.items.length > 0 &&
                         visibleOrderItems.length === 0;
-                      const compactOrder = kitchenOrderComplete || waiterOrderServed;
-                      const expanded = isKitchenRole ? !kitchenOrderComplete : !waiterOrderServed && expandedOrderId === order.id;
+                      const compactOrder = productionOrderComplete || waiterOrderServed;
+                      const expanded = isProductionRole ? !productionOrderComplete : !waiterOrderServed && expandedOrderId === order.id;
 
                       return (
                         <article
                           key={order.id}
                           className={`rounded-[24px] border p-4 ${
-	                            kitchenOrderComplete
+	                            productionOrderComplete
 	                              ? "border-emerald-300/20 bg-emerald-400/[0.06]"
-	                            : isKitchenRole && order.status === "New"
+	                            : isProductionRole && order.status === "New"
 	                              ? "new-kitchen-order border-amber-300/45 bg-amber-400/10 shadow-[0_0_34px_rgba(251,191,36,0.14)]"
 	                              : isWaiterRole && hasNewItems
 	                              ? "waiter-new-alert border-amber-300/35 bg-amber-400/10"
@@ -6413,7 +6470,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             type="button"
 	                            aria-expanded={expanded}
 	                            aria-controls={detailsId}
-	                            disabled={isKitchenRole || compactOrder}
+	                            disabled={isProductionRole || compactOrder}
 	                            onClick={() => setExpandedOrderId(expanded ? null : order.id)}
 	                            className={`grid w-full gap-3 text-left md:items-center disabled:cursor-default ${
 	                              compactOrder ? "md:grid-cols-[1fr_auto]" : "md:grid-cols-[1fr_1fr_auto]"
@@ -6426,13 +6483,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               <div className="mt-1 text-xl font-semibold text-[#fff4df]">{order.tableLabel}</div>
                             </div>
 	                            {!compactOrder && (
-	                            <div className={isKitchenRole ? "hidden md:block" : ""}>
+	                            <div className={isProductionRole ? "hidden md:block" : ""}>
                               <div className="text-xs uppercase tracking-[0.2em] text-white/35">
-                                {isKitchenRole ? (adminLanguage === "bg" ? "Поръчка" : "Order") : a.orders.guest}
+                                {isProductionRole ? (adminLanguage === "bg" ? "Поръчка" : "Order") : a.orders.guest}
                               </div>
                               <div className="mt-1 text-base font-semibold text-white">
-                                {isKitchenRole ? `#${order.id}` : order.guestName}
-                                {!isKitchenRole && order.reservation?.isWalkIn && (
+                                {isProductionRole ? `#${order.id}` : order.guestName}
+                                {!isProductionRole && order.reservation?.isWalkIn && (
                                   <span className="ml-2 rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-emerald-100">
                                     Walk-in
                                   </span>
@@ -6450,15 +6507,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 	                            <div className="flex items-center justify-between gap-3 md:justify-end">
                               <div className="text-left md:text-right">
                                 <div className="text-xs uppercase tracking-[0.2em] text-white/35">
-                                  {isKitchenRole ? a.orders.status : a.orders.total}
+                                  {isProductionRole ? a.orders.status : a.orders.total}
                                 </div>
                                 <div className="mt-1 text-xl font-semibold text-[#f2d39a]">
-	                                  {kitchenOrderComplete
+	                                  {productionOrderComplete
 	                                    ? adminLanguage === "bg" ? "Готово" : "Ready"
-	                                    : isKitchenRole ? order.status : formatEuroAmount(order.totalPrice)}
+	                                    : isProductionRole ? order.status : formatEuroAmount(order.totalPrice)}
 	                                </div>
 	                              </div>
-	                              {!isKitchenRole && !waiterOrderServed && <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs text-white/65">
+	                              {!isProductionRole && !waiterOrderServed && <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs text-white/65">
 	                                {expanded ? a.reservations.close : a.reservations.open}
 	                              </span>}
 	                            </div>
@@ -6467,8 +6524,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 	                          {compactOrder && (
 	                            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/18 px-3 py-2">
 	                              <div className="text-xs text-white/50">
-	                                {kitchenOrderComplete
-	                                  ? adminLanguage === "bg" ? "Всички блюда са готови." : "All dishes are ready."
+	                                {productionOrderComplete
+	                                  ? isBarRole
+                                      ? adminLanguage === "bg" ? "Всички напитки са готови." : "All drinks are ready."
+                                      : adminLanguage === "bg" ? "Всички блюда са готови." : "All dishes are ready."
 	                                  : adminLanguage === "bg" ? "Всички блюда са сервирани." : "All dishes are served."}
 	                              </div>
 	                              {waiterOrderServed && (
@@ -6512,7 +6571,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                 </div>
 
                                 <div className="flex flex-wrap gap-2">
-                                  {isKitchenRole && order.status === "New" && (
+                                  {isProductionRole && order.status === "New" && (
                                     <button
                                       type="button"
                                       onClick={() => updateDiningOrderStatus(order.id, "Seen")}
@@ -6549,7 +6608,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                         {a.orders.paid}
                                       </button>
                                     </>
-                                  ) : !isKitchenRole && (
+                                  ) : !isProductionRole && (
                                     <>
                                       <button
                                         type="button"
@@ -6603,7 +6662,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                       </div>
                                       <div className="shrink-0 text-right">
                                         <div className="mb-1 text-xs text-white/45">{formatEuroAmount(item.unitPrice * item.quantity)}</div>
-                                        {isKitchenRole ? (
+                                        {isProductionRole ? (
                                           <button
                                             type="button"
                                             onClick={() => updateDiningOrderItemStatus(item.id, "Ready")}
@@ -6642,7 +6701,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                 ))}
                               </div>
 
-                              {!isKitchenRole && (
+                              {!isProductionRole && (
                               <div className="mt-4 rounded-2xl border border-emerald-300/15 bg-emerald-400/10 p-4">
                                 <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100">
                                   {a.orders.addItem}
@@ -6675,6 +6734,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                               menuItemId: getValue(item, "id"),
                                               name,
                                               unitPrice: price,
+                                              kind: getMenuItemKind(item),
                                               quantity: 1,
                                             })}
                                             className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-left transition hover:border-[#c9a56a]/40"
@@ -6896,7 +6956,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           onClick={() => {
                             if (key === "form" && menuMode !== "form") {
                               setEditingMenuId(null);
-                              setMenuForm(emptyMenuItem);
+                              setMenuForm({ ...emptyMenuItem, department: selectedMenuDepartment });
                             }
                             setMenuMode(key);
                           }}
@@ -7029,6 +7089,47 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     </div>
 
                     <div className="rounded-[26px] border border-white/10 bg-white/[0.04] p-5 md:p-6">
+                      <div className="mb-5">
+                        <div className="section-kicker">
+                          {adminLanguage === "bg" ? "Основен раздел" : "Main section"}
+                        </div>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {menuDepartmentOptions.map((department) => {
+                            const selected = normalizeDepartment(menuForm.department) === department.value;
+
+                            return (
+                              <button
+                                key={department.value}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedMenuDepartment(department.value);
+                                  setSelectedMenuCategory("");
+                                  setMenuForm((prev) => ({
+                                    ...prev,
+                                    department: department.value,
+                                    category: department.value === "Bar" ? "cold-drinks" : "Main",
+                                  }));
+                                }}
+                                className={`rounded-2xl border p-4 text-left transition ${
+                                  selected
+                                    ? "border-[#c9a56a]/50 bg-[#c9a56a]/15"
+                                    : "border-white/10 bg-black/20 hover:border-[#c9a56a]/35"
+                                }`}
+                              >
+                                <div className="font-semibold text-[#fff4df]">
+                                  {department.labels[adminLanguage]}
+                                </div>
+                                <div className="mt-1 text-xs text-stone-500">
+                                  {department.value === "Bar"
+                                    ? adminLanguage === "bg" ? "Изпраща се към бара" : "Sent to the bar"
+                                    : adminLanguage === "bg" ? "Изпраща се към кухнята" : "Sent to the kitchen"}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
                       <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                         <div>
                           <div className="section-kicker">{a.menu.category}</div>
@@ -7156,6 +7257,40 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       </div>
                     )}
 
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {menuDepartmentCounts.map((department) => {
+                        const selected = selectedMenuDepartment === department.value;
+
+                        return (
+                          <button
+                            key={department.value}
+                            type="button"
+                            onClick={() => {
+                              setSelectedMenuDepartment(department.value);
+                              setSelectedMenuCategory("");
+                            }}
+                            className={`menu-spark rounded-[24px] border p-5 text-left transition ${
+                              selected
+                                ? "border-[#c9a56a]/45 bg-[#c9a56a]/15 shadow-xl shadow-black/20"
+                                : "border-white/10 bg-white/[0.04] hover:border-[#c9a56a]/30 hover:bg-white/[0.07]"
+                            }`}
+                          >
+                            <div className="section-kicker">
+                              {department.value === "Bar"
+                                ? adminLanguage === "bg" ? "Бар" : "Bar"
+                                : adminLanguage === "bg" ? "Кухня" : "Kitchen"}
+                            </div>
+                            <div className="mt-2 text-2xl font-semibold text-[#fff4df]">
+                              {department.labels[adminLanguage]}
+                            </div>
+                            <div className="mt-2 text-sm text-stone-400">
+                              {department.count} {adminLanguage === "bg" ? "позиции" : "items"} · {department.activeCount} active
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
                     {menuCategories.length > 0 && (
                       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                         {menuCategories.map((category) => {
@@ -7235,6 +7370,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         </div>
 
                         <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                          <span className="rounded-full border border-[#c9a56a]/20 bg-[#c9a56a]/10 px-3 py-1 text-[#f2d39a]">
+                            {getDepartmentLabel(item.department || item.Department, adminLanguage)}
+                          </span>
                           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-stone-300">
                             {item.category || item.Category || "Main"}
                           </span>
@@ -7261,6 +7399,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           <button
                             type="button"
                             onClick={() => {
+                              const department = normalizeDepartment(item.department || item.Department);
+                              setSelectedMenuDepartment(department);
                               setEditingMenuId(item.id || item.Id);
                               setMenuForm({
                                 nameBg: item.nameBg || item.NameBg || "",
@@ -7270,6 +7410,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                 imageUrl: item.imageUrl || item.ImageUrl || "",
                                 weight: item.weight || item.Weight || "",
                                 price: item.price || item.Price || "",
+                                department,
                                 category: item.category || item.Category || "Main",
                                 isActive: item.isActive ?? item.IsActive ?? true,
                                 notifySubscribers: false,

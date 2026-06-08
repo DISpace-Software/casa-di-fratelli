@@ -35,7 +35,28 @@ public class DiningOrdersController : ControllerBase
             .SumAsync(x => x.UnitPrice * x.Quantity);
     }
 
-    private static void AddOrIncreaseItem(DiningOrder order, CreateDiningOrderItemRequest request, string source, string kind = "Dish")
+    private static string NormalizeItemKind(string? kind)
+    {
+        return string.Equals(kind, "Drink", StringComparison.OrdinalIgnoreCase) ? "Drink" : "Dish";
+    }
+
+    private async Task<string> ResolveItemKindAsync(CreateDiningOrderItemRequest request)
+    {
+        if (request.MenuItemId.HasValue)
+        {
+            var department = await _db.MenuItems
+                .Where(x => x.Id == request.MenuItemId.Value)
+                .Select(x => x.Department)
+                .FirstOrDefaultAsync();
+
+            if (string.Equals(department, "Bar", StringComparison.OrdinalIgnoreCase))
+                return "Drink";
+        }
+
+        return NormalizeItemKind(request.Kind);
+    }
+
+    private static void AddOrIncreaseItem(DiningOrder order, CreateDiningOrderItemRequest request, string source, string kind)
     {
         var name = request.Name.Trim();
         var quantity = Math.Min(request.Quantity, 99);
@@ -71,10 +92,20 @@ public class DiningOrdersController : ControllerBase
         order.TotalPrice = order.Items.Sum(x => x.UnitPrice * x.Quantity);
     }
 
-    private static bool IsKitchenOrManager(AdminPrincipal? admin)
+    private static bool IsProductionOrManager(AdminPrincipal? admin)
     {
         var role = AdminRoleAccess.Normalize(admin?.Role);
-        return role is AdminRoleAccess.Kitchen or AdminRoleAccess.Owner or AdminRoleAccess.Administrator or AdminRoleAccess.Developer;
+        return role is AdminRoleAccess.Kitchen or AdminRoleAccess.Bar or AdminRoleAccess.Owner or AdminRoleAccess.Administrator or AdminRoleAccess.Developer;
+    }
+
+    private static bool CanProductionRoleSeeItem(string role, DiningOrderItem item)
+    {
+        return role switch
+        {
+            AdminRoleAccess.Kitchen => item.Kind == "Dish",
+            AdminRoleAccess.Bar => item.Kind == "Drink",
+            _ => true
+        };
     }
 
     private static bool CanWorkWithOrder(AdminPrincipal? admin, DiningOrder order)
@@ -82,7 +113,7 @@ public class DiningOrdersController : ControllerBase
         if (admin == null) return false;
 
         var role = AdminRoleAccess.Normalize(admin.Role);
-        if (role is AdminRoleAccess.Owner or AdminRoleAccess.Administrator or AdminRoleAccess.Developer or AdminRoleAccess.Kitchen)
+        if (role is AdminRoleAccess.Owner or AdminRoleAccess.Administrator or AdminRoleAccess.Developer or AdminRoleAccess.Kitchen or AdminRoleAccess.Bar)
             return true;
 
         return role == AdminRoleAccess.Waiter &&
@@ -119,6 +150,10 @@ public class DiningOrdersController : ControllerBase
         {
             query = query.Where(x => x.Items.Any(item => item.Kind == "Dish"));
         }
+        else if (role == AdminRoleAccess.Bar)
+        {
+            query = query.Where(x => x.Items.Any(item => item.Kind == "Drink"));
+        }
 
         var orders = await query
             .OrderByDescending(x => x.CreatedAtUtc)
@@ -146,7 +181,7 @@ public class DiningOrdersController : ControllerBase
                     TableIds = x.Reservation.Tables.Select(t => t.TableCode).ToList()
                 },
                 Items = x.Items
-                    .Where(item => role != AdminRoleAccess.Kitchen || item.Kind == "Dish")
+                    .Where(item => CanProductionRoleSeeItem(role, item))
                     .Select(item => new
                 {
                     item.Id,
@@ -247,6 +282,17 @@ public class DiningOrdersController : ControllerBase
         if (!reservation.IsArrived || reservation.Status == "Cancelled")
             return BadRequest(new { message = "This order link is not active." });
 
+        var menuItemIds = request.Items
+            .Where(x => x.MenuItemId.HasValue)
+            .Select(x => x.MenuItemId!.Value)
+            .Distinct()
+            .ToList();
+        var barMenuItemIds = await _db.MenuItems
+            .Where(x => menuItemIds.Contains(x.Id) && x.Department == "Bar")
+            .Select(x => x.Id)
+            .ToListAsync();
+        var barMenuItemIdSet = barMenuItemIds.ToHashSet();
+
         var items = request.Items
             .Where(x => x.Quantity > 0 && !string.IsNullOrWhiteSpace(x.Name) && x.UnitPrice >= 0)
             .Select(x => new DiningOrderItem
@@ -257,7 +303,9 @@ public class DiningOrdersController : ControllerBase
                 Quantity = Math.Min(x.Quantity, 99),
                 Notes = string.IsNullOrWhiteSpace(x.Notes) ? null : x.Notes.Trim(),
                 Source = "GuestOnline",
-                Kind = "Dish"
+                Kind = x.MenuItemId.HasValue && barMenuItemIdSet.Contains(x.MenuItemId.Value)
+                    ? "Drink"
+                    : NormalizeItemKind(x.Kind)
             })
             .ToList();
 
@@ -387,7 +435,7 @@ public class DiningOrdersController : ControllerBase
 
         AssignToWaiterIfNeeded(order, admin);
         var itemSource = AdminRoleAccess.Normalize(admin?.Role) == AdminRoleAccess.Waiter ? "Waiter" : "Admin";
-        AddOrIncreaseItem(order, request, itemSource);
+        AddOrIncreaseItem(order, request, itemSource, await ResolveItemKindAsync(request));
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "add-item", "DiningOrder", order.Id.ToString(), after: new { order.Id, order.ReservationId, order.TotalPrice });
 
@@ -414,7 +462,7 @@ public class DiningOrdersController : ControllerBase
 
         AssignToWaiterIfNeeded(order, admin);
         var itemSource = AdminRoleAccess.Normalize(admin?.Role) == AdminRoleAccess.Waiter ? "Waiter" : "Admin";
-        AddOrIncreaseItem(order, request, itemSource);
+        AddOrIncreaseItem(order, request, itemSource, await ResolveItemKindAsync(request));
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "add-item", "DiningOrder", order.Id.ToString(), after: new { order.Id, order.ReservationId, order.TotalPrice });
 
@@ -602,7 +650,13 @@ public class DiningOrdersController : ControllerBase
 
             AssignToWaiterIfNeeded(item.DiningOrder, admin);
         }
-        else if (!IsKitchenOrManager(admin))
+        else if (!IsProductionOrManager(admin))
+        {
+            return Forbid();
+        }
+
+        if ((role == AdminRoleAccess.Kitchen && item.Kind != "Dish") ||
+            (role == AdminRoleAccess.Bar && item.Kind != "Drink"))
         {
             return Forbid();
         }

@@ -53,6 +53,7 @@ public class MenuController : ControllerBase
             ImageUrlLength = item.ImageUrl?.Length ?? 0,
             item.Weight,
             item.Price,
+            item.Department,
             item.Category,
             item.IsActive,
             item.NotifySubscribers
@@ -95,6 +96,7 @@ public class MenuController : ControllerBase
                 "ImageUrl" text NOT NULL DEFAULT '',
                 "Weight" text NOT NULL DEFAULT '',
                 "Price" numeric NOT NULL DEFAULT 0,
+                "Department" text NOT NULL DEFAULT 'Kitchen',
                 "Category" text NOT NULL DEFAULT 'main',
                 "IsActive" boolean NOT NULL DEFAULT true,
                 "NotifySubscribers" boolean NOT NULL DEFAULT false,
@@ -110,6 +112,7 @@ public class MenuController : ControllerBase
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "ImageUrl" text NOT NULL DEFAULT '';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "Weight" text NOT NULL DEFAULT '';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "Price" numeric NOT NULL DEFAULT 0;
+            ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "Department" text NOT NULL DEFAULT 'Kitchen';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "Category" text NOT NULL DEFAULT 'main';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "IsActive" boolean NOT NULL DEFAULT true;
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "NotifySubscribers" boolean NOT NULL DEFAULT false;
@@ -151,11 +154,12 @@ public class MenuController : ControllerBase
                 "ImageUrl",
                 "Weight",
                 "Price",
+                "Department",
                 "Category",
                 "IsActive",
                 "NotifySubscribers"
             FROM "MenuItems"
-            ORDER BY "Category", "NameBg";
+            ORDER BY "Department", "Category", "NameBg";
             """;
 
         var items = new List<object>();
@@ -173,9 +177,10 @@ public class MenuController : ControllerBase
                 ImageUrl = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
                 Weight = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
                 Price = reader.IsDBNull(7) ? 0m : Convert.ToDecimal(reader.GetValue(7)),
-                Category = reader.IsDBNull(8) ? "main" : reader.GetString(8),
-                IsActive = ReadBoolean(reader, 9, true),
-                NotifySubscribers = ReadBoolean(reader, 10)
+                Department = reader.IsDBNull(8) ? "Kitchen" : reader.GetString(8),
+                Category = reader.IsDBNull(9) ? "main" : reader.GetString(9),
+                IsActive = ReadBoolean(reader, 10, true),
+                NotifySubscribers = ReadBoolean(reader, 11)
             });
         }
 
@@ -246,15 +251,16 @@ public class MenuController : ControllerBase
             if (IsImageUrlTooLarge(item.ImageUrl))
                 return StatusCode(StatusCodes.Status413PayloadTooLarge, new { message = "Dish photo is too large. Please upload a smaller image." });
             item.Weight = item.Weight?.Trim() ?? string.Empty;
+            item.Department = string.IsNullOrWhiteSpace(item.Department) ? "Kitchen" : item.Department.Trim();
             item.Category = string.IsNullOrWhiteSpace(item.Category) ? "main" : item.Category.Trim();
             item.CreatedAtUtc = DateTime.UtcNow;
 
             await using var command = _db.Database.GetDbConnection().CreateCommand();
             command.CommandText = """
                 INSERT INTO "MenuItems"
-                ("NameBg", "NameEn", "DescriptionBg", "DescriptionEn", "ImageUrl", "Weight", "Price", "Category", "IsActive", "NotifySubscribers", "CreatedAtUtc")
+                ("NameBg", "NameEn", "DescriptionBg", "DescriptionEn", "ImageUrl", "Weight", "Price", "Department", "Category", "IsActive", "NotifySubscribers", "CreatedAtUtc")
                 VALUES
-                (@nameBg, @nameEn, @descriptionBg, @descriptionEn, @imageUrl, @weight, @price, @category, @isActive, @notifySubscribers, now())
+                (@nameBg, @nameEn, @descriptionBg, @descriptionEn, @imageUrl, @weight, @price, @department, @category, @isActive, @notifySubscribers, now())
                 RETURNING "Id";
                 """;
             AddParameter(command, "@nameBg", item.NameBg);
@@ -264,6 +270,7 @@ public class MenuController : ControllerBase
             AddParameter(command, "@imageUrl", item.ImageUrl);
             AddParameter(command, "@weight", item.Weight);
             AddParameter(command, "@price", item.Price);
+            AddParameter(command, "@department", item.Department);
             AddParameter(command, "@category", item.Category);
             AddParameter(command, "@isActive", item.IsActive);
             AddParameter(command, "@notifySubscribers", item.NotifySubscribers);
@@ -318,6 +325,7 @@ public class MenuController : ControllerBase
                 item.ImageUrl,
                 item.Weight,
                 item.Price,
+                item.Department,
                 item.Category,
                 item.IsActive,
                 item.NotifySubscribers
@@ -349,6 +357,7 @@ public class MenuController : ControllerBase
             updated.DescriptionEn = updated.DescriptionEn?.Trim() ?? string.Empty;
             updated.ImageUrl = imageUrl;
             updated.Weight = updated.Weight?.Trim() ?? string.Empty;
+            updated.Department = string.IsNullOrWhiteSpace(updated.Department) ? "Kitchen" : updated.Department.Trim();
             updated.Category = string.IsNullOrWhiteSpace(updated.Category) ? "main" : updated.Category.Trim();
 
             var before = await _db.MenuItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
@@ -363,6 +372,7 @@ public class MenuController : ControllerBase
                     "ImageUrl" = @imageUrl,
                     "Weight" = @weight,
                     "Price" = @price,
+                    "Department" = @department,
                     "Category" = @category,
                     "IsActive" = @isActive,
                     "NotifySubscribers" = @notifySubscribers,
@@ -377,6 +387,7 @@ public class MenuController : ControllerBase
             AddParameter(command, "@imageUrl", updated.ImageUrl);
             AddParameter(command, "@weight", updated.Weight);
             AddParameter(command, "@price", updated.Price);
+            AddParameter(command, "@department", updated.Department);
             AddParameter(command, "@category", updated.Category);
             AddParameter(command, "@isActive", updated.IsActive);
             AddParameter(command, "@notifySubscribers", updated.NotifySubscribers);
@@ -397,6 +408,7 @@ public class MenuController : ControllerBase
                 updated.ImageUrl,
                 updated.Weight,
                 updated.Price,
+                updated.Department,
                 updated.Category,
                 updated.IsActive,
                 updated.NotifySubscribers

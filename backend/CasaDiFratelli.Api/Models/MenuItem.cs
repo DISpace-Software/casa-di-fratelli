@@ -14,6 +14,7 @@ public class MenuItem
     public string Weight { get; set; } = string.Empty;
     public decimal Price { get; set; }
 
+    public string Department { get; set; } = "Kitchen";
     public string Category { get; set; } = "Main";
     public bool IsActive { get; set; } = true;
     public bool NotifySubscribers { get; set; } = false;

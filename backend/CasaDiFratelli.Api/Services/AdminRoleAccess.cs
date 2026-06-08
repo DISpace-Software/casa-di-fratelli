@@ -6,9 +6,10 @@ public static class AdminRoleAccess
     public const string Administrator = "Administrator";
     public const string Waiter = "Waiter";
     public const string Kitchen = "Kitchen";
+    public const string Bar = "Bar";
     public const string Developer = "Developer";
 
-    public static readonly string[] AllRoles = { Owner, Administrator, Waiter, Kitchen, Developer };
+    public static readonly string[] AllRoles = { Owner, Administrator, Waiter, Kitchen, Bar, Developer };
 
     public static string Normalize(string? role)
     {
@@ -20,6 +21,7 @@ public static class AdminRoleAccess
             "administrator" or "admin" or "manager" => Administrator,
             "waiter" or "staff" or "server" => Waiter,
             "kitchen" or "chef" or "cook" => Kitchen,
+            "bar" or "bartender" or "barman" or "бар" or "барман" => Bar,
             "developer" or "dev" or "programmer" => Developer,
             _ => Administrator
         };

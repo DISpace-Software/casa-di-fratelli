@@ -68,7 +68,7 @@ public class AdminAuthController : ControllerBase
         }
 
         if (!await _tiers.IsProAsync() &&
-            AdminRoleAccess.Normalize(login.User.Role) is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen)
+            AdminRoleAccess.Normalize(login.User.Role) is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen or AdminRoleAccess.Bar)
         {
             return Forbid();
         }
@@ -87,7 +87,7 @@ public class AdminAuthController : ControllerBase
         }
 
         if (!await _tiers.IsProAsync() &&
-            AdminRoleAccess.Normalize(login.User.Role) is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen)
+            AdminRoleAccess.Normalize(login.User.Role) is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen or AdminRoleAccess.Bar)
         {
             return Forbid();
         }
@@ -254,8 +254,8 @@ public class AdminAuthController : ControllerBase
             return BadRequest(new { message = "Email and password are required." });
 
         var requestedRole = AdminRoleAccess.Normalize(request.Role);
-        if (!await _tiers.IsProAsync() && requestedRole is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen)
-            return BadRequest(new { message = "Waiter and kitchen roles are available only in Pro version." });
+        if (!await _tiers.IsProAsync() && requestedRole is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen or AdminRoleAccess.Bar)
+            return BadRequest(new { message = "Waiter, kitchen, and bar roles are available only in Pro version." });
 
         var developerExists = await _db.AdminUsers.AnyAsync(x => x.Role == AdminRoleAccess.Developer);
         if (!AdminRoleAccess.CanCreateRole(current?.Role, requestedRole, developerExists))
@@ -300,8 +300,8 @@ public class AdminAuthController : ControllerBase
             return Forbid();
 
         var requestedRole = AdminRoleAccess.Normalize(request.Role);
-        if (!await _tiers.IsProAsync() && requestedRole is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen)
-            return BadRequest(new { message = "Waiter and kitchen roles are available only in Pro version." });
+        if (!await _tiers.IsProAsync() && requestedRole is AdminRoleAccess.Waiter or AdminRoleAccess.Kitchen or AdminRoleAccess.Bar)
+            return BadRequest(new { message = "Waiter, kitchen, and bar roles are available only in Pro version." });
 
         var developerExists = await _db.AdminUsers.AnyAsync(x => x.Id != id && x.Role == AdminRoleAccess.Developer);
         if (!AdminRoleAccess.CanCreateRole(current?.Role, requestedRole, developerExists))

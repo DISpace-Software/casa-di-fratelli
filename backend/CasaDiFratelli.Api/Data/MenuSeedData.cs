@@ -6,6 +6,7 @@ namespace CasaDiFratelli.Api.Data;
 public static class MenuSeedData
 {
     private sealed record SeedMenuItem(
+        string Department,
         string Category,
         string NameBg,
         string NameEn,
@@ -15,93 +16,208 @@ public static class MenuSeedData
         decimal Price,
         bool Featured = false);
 
+    private static string BuildSeedKey(string nameBg, string weight)
+    {
+        return $"{nameBg.Trim()}|{weight.Trim()}";
+    }
+
     private static readonly SeedMenuItem[] Items =
     {
-        new("salads", "Салата Dei Fratelli", "Dei Fratelli Salad", "Със запечено козе сирене, лоло росо, рукола, бейби спанак, круша, орех пекан и малинов хайвер", "Baked goat cheese, lollo rosso, arugula, baby spinach, pear, pecan, and raspberry caviar", "300 гр", 19.60m),
-        new("salads", "Салата от бурата", "Burrata Salad", "Чери домати, кедрови ядки, рукола, песто и домашна фокача", "Cherry tomatoes, pine nuts, arugula, pesto, and homemade focaccia", "360 гр", 20.56m),
-        new("salads", "Салата Цезар с пиле", "Chicken Caesar Salad", "Айсберг, пилешко филе, чери домати, пармезан, билкови крутони, сос Цезар и чипс от прошуто", "Iceberg lettuce, chicken fillet, cherry tomatoes, parmesan, herb croutons, Caesar dressing, and prosciutto crisp", "350 гр", 19.77m),
-        new("salads", "Салата с киноа и бейби спанак", "Quinoa and Baby Spinach Salad", "Киноа, бейби спанак, чери домати, печена чушка, мус от сирене и орехи", "Quinoa, baby spinach, cherry tomatoes, roasted pepper, cheese mousse, and walnuts", "350 гр", 18.40m),
-        new("salads", "Хориатики", "Choriatiki", "Класическа гръцка салата", "Classic Greek salad", "350 гр", 15.90m),
-        new("salads", "Домашна млечна салата", "Homemade Dairy Salad", "Свежа домашна млечна салата", "Fresh homemade dairy salad", "270 гр", 12.73m),
-        new("salads", "Салата със сотирани тигрови скариди", "Tiger Shrimp Salad", "Сотирани скариди върху канапе от микс зеленолистни салати и жулиени от зеленчуци, овкусени с дресинг", "Sauteed shrimp over mixed leafy greens and vegetable juliennes with dressing", "350 гр", 22.32m),
-        new("salads", "Салата Фермата", "Farm Salad", "Фермерско краве сирене, сезонни плодове, меден дресинг, сос от нар, бейби спанак, зелена и червена маруля", "Farm cow cheese, seasonal fruit, honey dressing, pomegranate sauce, baby spinach, green and red lettuce", "350 гр", 19.60m),
-        new("salads", "Салата Пирамида", "Pyramid Salad", "Палитра от шайби домати, тиквичка, патладжан, печена чушка и краве сирене", "Layers of tomato, zucchini, eggplant, roasted pepper, and cow cheese", "350 гр", 18.60m),
-
-        new("starters", "Антипасти за двама", "Antipasti for Two", "Плато от италиански колбаси, маслини каламата, сирена и изпечена фокача", "Italian cold cuts, Kalamata olives, cheeses, and baked focaccia", "300 гр", 27.38m),
-        new("starters", "Трио разядки с домашен хляб", "Trio of Spreads with Homemade Bread", "Тирокафтери, катък с чушка и млечна салата", "Tirokafteri, katak with pepper, and milk salad", "300 гр", 15.45m),
-        new("starters", "Патешки сърца с печурки", "Duck Hearts with Mushrooms", "Топло предястие с наситен вкус", "Warm starter with a rich flavor", "300 гр", 17.90m),
-        new("starters", "Бейби калмари с манго сос", "Baby Calamari with Mango Sauce", "Крехки калмари с плодов акцент", "Tender calamari with a fruity accent", "280 гр", 22.90m),
-        new("starters", "Скариди темпура", "Tempura Shrimp", "Поднесени с чипотле сос", "Served with chipotle sauce", "250 гр", 22.32m),
-        new("starters", "Телешки език с манатарка и скаморца", "Beef Tongue with Porcini and Scamorza", "Богат вкус и кремообразен завършек", "Deep savory flavor with creamy finish", "330 гр", 21.32m),
-
-        new("pasta-risotto", "Ризото с диви гъби и трюфел", "Wild Mushroom and Truffle Risotto", "Кладница, манатарка и пармезан", "Oyster mushrooms, porcini, and parmesan", "360 гр", 20.36m),
-        new("pasta-risotto", "Ризото Верде с филе от лаврак", "Verde Risotto with Sea Bass Fillet", "Зелено ризото, аспержи, лаврак и лимон", "Green risotto, asparagus, sea bass, and lemon", "360 гр", 25.25m),
-        new("pasta-risotto", "Ризото с рибай “Талиата”", "Ribeye Tagliata Risotto", "Signature dish by Chef Yurukov — ризото с шафран, рибай, спанак и чипс от пармезан", "Signature dish by Chef Yurukov — saffron risotto, ribeye, spinach, and parmesan chips", "380 гр", 29.14m, true),
-        new("pasta-risotto", "Талиателе песто и скариди", "Pesto Tagliatelle with Shrimp", "Босилеково песто, зехтин, пармезан, шамфъстък и скариди", "Basil pesto, olive oil, parmesan, pistachio, and shrimp", "400 гр", 22.32m),
-        new("pasta-risotto", "Талиатели с пистачио и панчета", "Tagliatelle with Pistachio and Pancetta", "Signature dish by Chef Yurukov — домашна паста с крем от шамфъстък и панчета", "Signature dish by Chef Yurukov — homemade pasta with pistachio cream and pancetta", "400 гр", 20.16m, true),
-        new("pasta-risotto", "Талиатели Болонезе", "Tagliatelle Bolognese", "Домашна паста с телешка кайма и пармезан", "Homemade pasta with minced beef and parmesan", "400 гр", 18.60m),
-        new("pasta-risotto", "Талиателе Карбонара", "Tagliatelle Carbonara", "Домашна паста, панчета и класически сос от жълтък и грана падано", "Homemade pasta, pancetta, and classic egg yolk and Grana Padano sauce", "400 гр", 20.36m),
-
-        new("mains", "Нашите свински ребра с BBQ сос", "BBQ Pork Ribs", "Бавно готвени ребра, глазирани с BBQ сос и бейби картофки", "Slow-cooked ribs glazed with BBQ sauce and baby potatoes", "450 гр", 28.95m),
-        new("mains", "Шницел от сочни пилешки гърди", "Chicken Schnitzel", "Поднесен с картофи соте и пармезан", "Served with sauteed potatoes and parmesan", "400 гр", 22.69m),
-        new("mains", "Телешки кюфтенца Black Angus", "Black Angus Beef Meatballs", "С опушен катък, домашна лютеница и фокача", "With smoked katak, homemade lutenitsa, and focaccia", "400 гр", 21.51m),
-        new("mains", "Рибай стек Black Angus", "Black Angus Ribeye Steak", "Зрял аржентински рибай с бейби картофки, аспержи и сос по избор", "Aged Argentine ribeye with baby potatoes, asparagus, and sauce of choice", "450 гр", 62.59m),
-        new("mains", "Филе от лаврак", "Sea Bass Fillet", "С картофено пюре, броколи и beurre blanc сос", "With mashed potatoes, broccoli, and beurre blanc sauce", "400 гр", 26.23m),
-        new("mains", "Филе от сьомга със задушени зеленчуци", "Salmon Fillet with Steamed Vegetables", "Бейби моркови, аспержи, тиквички и сос холандез", "Baby carrots, asparagus, zucchini, and hollandaise sauce", "350 гр", 27.40m),
-
-        new("pizza", "Пица с телешко FRATELLI", "Beef FRATELLI Pizza", "Доматен сос, топено сирене, моцарела и червен лук", "Tomato sauce, processed cheese, mozzarella, and red onion", "400 гр", 24.27m),
-        new("pizza", "Джорджио", "Giorgio", "Доматен сос, моцарела, кото, шамфъстък, песто, бурата, босилек и лимонови кори", "Tomato sauce, mozzarella, cotto, pistachio, pesto, burrata, basil, and lemon zest", "500 гр", 24.27m),
-        new("pizza", "Пица бурата", "Burrata Pizza", "Доматен сос, моцарела, пармезан, крудо, рукола, бурата, чери домати и песто", "Tomato sauce, mozzarella, parmesan, crudo, arugula, burrata, cherry tomatoes, and pesto", "550 гр", 22.90m),
-        new("pizza", "Пеперони специална", "Special Pepperoni Pizza", "Доматен сос, моцарела, борд Филаделфия, пеперони и панчета", "Tomato sauce, mozzarella, Philadelphia crust, pepperoni, and pancetta", "500 гр", 22.32m),
-        new("pizza", "Прошуто крудо", "Prosciutto Crudo", "Доматен сос, моцарела, крудо, рукола, чери домати и пармезан", "Tomato sauce, mozzarella, crudo, arugula, cherry tomatoes, and parmesan", "450 гр", 22.32m),
-        new("pizza", "Куатро стаджони", "Quattro Stagioni", "Доматен сос, моцарела, прошуто кото, панчета, гъби, маслини таджаска и ементал", "Tomato sauce, mozzarella, prosciutto cotto, pancetta, mushrooms, Taggiasca olives, and Emmental", "450 гр", 22.12m),
-        new("pizza", "Пица бианка", "Bianca Pizza", "Сметана, моцарела, пушено пуешко филе, царевица и топено сирене", "Cream, mozzarella, smoked turkey fillet, corn, and processed cheese", "450 гр", 21.53m),
-        new("pizza", "Капричоза", "Capricciosa", "Доматен сос, моцарела, маслини таджаска, артишок и кото", "Tomato sauce, mozzarella, Taggiasca olives, artichoke, and cotto", "500 гр", 20.36m),
-        new("pizza", "Пеперони класик", "Classic Pepperoni Pizza", "Доматен сос, моцарела, пеперони и халапеньо", "Tomato sauce, mozzarella, pepperoni, and jalapeno", "450 гр", 19.58m),
-        new("pizza", "Прошуто фунги", "Prosciutto Funghi", "Доматен сос, моцарела, гъби, кото и риган", "Tomato sauce, mozzarella, mushrooms, cotto, and oregano", "450 гр", 18.40m),
-        new("pizza", "Калцоне", "Calzone", "Доматен сос, моцарела, гъби, кисели краставички, топено сирене и кото", "Tomato sauce, mozzarella, mushrooms, pickles, processed cheese, and cotto", "500 гр", 18.40m),
-        new("pizza", "Салами", "Salami Pizza", "Доматен сос, моцарела, вентричина, топено сирене и червен лук", "Tomato sauce, mozzarella, ventricina, processed cheese, and red onion", "450 гр", 18.40m),
-        new("pizza", "Куатро формаджи", "Quattro Formaggi", "Сметана, моцарела, горгонзола, бри, пармезан и чери домати", "Cream, mozzarella, gorgonzola, brie, parmesan, and cherry tomatoes", "450 гр", 18.40m),
-        new("pizza", "Поло", "Pollo Pizza", "Доматен сос, моцарела, пилешко филе, кисели краставички, царевица и топено сирене", "Tomato sauce, mozzarella, chicken fillet, pickles, corn, and processed cheese", "450 гр", 18.40m),
-        new("pizza", "Примавера", "Primavera Pizza", "Доматен сос, моцарела, прошуто кото, гъби и капия", "Tomato sauce, mozzarella, prosciutto cotto, mushrooms, and kapia pepper", "450 гр", 18.40m),
-        new("pizza", "Вегетариана", "Vegetariana", "Доматен сос, моцарела, гъби, артишок, маслини таджаска и рукола", "Tomato sauce, mozzarella, mushrooms, artichoke, Taggiasca olives, and arugula", "400 гр", 18.01m),
-        new("pizza", "Маргарита", "Margherita", "Доматен сос, моцарела, риган и босилек", "Tomato sauce, mozzarella, oregano, and basil", "400 гр", 14.90m),
-
-        new("bread", "Цял домашен хляб", "Whole Homemade Bread", "Прясно изпечен домашен хляб", "Freshly baked homemade bread", "450 гр", 11.54m),
-        new("bread", "Фокача на парче", "Focaccia Slice", "Класическа фокача", "Classic focaccia", "150 гр", 5.67m),
-        new("bread", "Домашна питка с Филаделфия", "Homemade Bread Roll with Philadelphia", "Мека питка с крема сирене", "Soft bread roll with cream cheese", "250 гр", 7.63m),
-        new("bread", "Комбинирана пърленка със сирене и кашкавал", "Flatbread with White and Yellow Cheese", "Комбинирана пърленка с кашкавал и сирене", "Flatbread with yellow cheese and white cheese", "350 гр", 7.63m),
-        new("bread", "Пърленка с кашкавал", "Flatbread with Yellow Cheese", "Пърленка с кашкавал", "Flatbread with yellow cheese", "320 гр", 6.49m),
-        new("bread", "Пърленка със сирене", "Flatbread with White Cheese", "Пърленка със сирене", "Flatbread with white cheese", "320 гр", 6.49m),
-        new("bread", "Пърленка с чесново масло", "Flatbread with Garlic Butter", "Пърленка с чесново масло", "Flatbread with garlic butter", "250 гр", 5.87m),
-        new("bread", "Пърленка с масло", "Flatbread with Butter", "Пърленка с масло", "Flatbread with butter", "250 гр", 5.67m),
-
-        new("desserts", "Пистачио чийзкейк", "Pistachio Cheesecake", "Кремообразен десерт с шамфъстък", "Creamy pistachio dessert", "150 гр", 11.45m),
-        new("desserts", "Тирамису", "Tiramisu", "Класически италиански десерт", "Classic Italian dessert", "200 гр", 10.95m),
-        new("desserts", "Пица Нутела", "Nutella Pizza", "Нутела, пудра захар, портокалови кори и ягоди", "Nutella, powdered sugar, orange zest, and strawberries", "300 гр", 14.88m),
-        new("desserts", "Спаначена торта", "Spinach Cake", "Спаначена торта с шам фъстък и боровинки", "Spinach cake with pistachio and blueberries", "150 гр", 12.73m),
-        new("desserts", "Шоколадов мус by Chef Yurukov", "Chocolate Mousse by Chef Yurukov", "Авторски шоколадов финал", "Signature chocolate finish", "170 гр", 12.01m, true),
-        new("desserts", "Шоколадово суфле със сметанов сладолед", "Chocolate Souffle with Cream Ice Cream", "Топъл десерт с кремообразен център", "Warm dessert with a creamy center", "150 гр", 10.17m)
+        new(@"Kitchen", @"salads", @"Салата Dei Fratelli", @"Салата Dei Fratelli", @"Със запечено козе сирене, лоло росо, рукола, бейби спанак, круша, орех пекан и малинов хайвер", @"Със запечено козе сирене, лоло росо, рукола, бейби спанак, круша, орех пекан и малинов хайвер", @"300 гр", 9.51m, false),
+        new(@"Kitchen", @"salads", @"Салата от Бурата", @"Салата от Бурата", @"Чери домати, кедрови ядки, песто и домашна фокача", @"Чери домати, кедрови ядки, песто и домашна фокача", @"360 гр", 10.00m, false),
+        new(@"Kitchen", @"salads", @"Салата Цезар с пиле", @"Салата Цезар с пиле", @"Айсберг, пилешко филе, чери домати, пармезан, билкови крутони, сос Цезар и чипс от прошуто", @"Айсберг, пилешко филе, чери домати, пармезан, билкови крутони, сос Цезар и чипс от прошуто", @"380 гр", 9.60m, false),
+        new(@"Kitchen", @"salads", @"Салата със сотирани тигрови скариди", @"Салата със сотирани тигрови скариди", @"Върху канапе от микс зеленолистни салати и жулиени от зеленчуци, овкусени с дресинг песто", @"Върху канапе от микс зеленолистни салати и жулиени от зеленчуци, овкусени с дресинг песто", @"350 гр", 10.90m, false),
+        new(@"Kitchen", @"salads", @"Салата Фермата", @"Салата Фермата", @"Панирано фермерско сирене, сезонни плодове, меден дресинг, сос от нар, бейби спанак, зелена и червена маруля", @"Панирано фермерско сирене, сезонни плодове, меден дресинг, сос от нар, бейби спанак, зелена и червена маруля", @"350 гр", 9.51m, false),
+        new(@"Kitchen", @"salads", @"Градинска салата „Пирамида“", @"Градинска салата „Пирамида“", @"Палитра от шайби домат, тиквичка, патладжан, печена чушка и прясно сирене", @"Палитра от шайби домат, тиквичка, патладжан, печена чушка и прясно сирене", @"360 гр", 9.00m, false),
+        new(@"Kitchen", @"salads", @"Биволарска салата", @"Биволарска салата", @"Розов домат, краставица, пресносолно биволско сирене, печена чушка, каламата", @"Розов домат, краставица, пресносолно биволско сирене, печена чушка, каламата", @"350 гр", 9.57m, false),
+        new(@"Kitchen", @"salads", @"Салата Хориатики „Гръцка“", @"Салата Хориатики „Гръцка“", @"", @"", @"350 гр", 8.90m, false),
+        new(@"Kitchen", @"salads", @"Домашна млечна салата", @"Домашна млечна салата", @"", @"", @"270 гр", 6.00m, false),
+        new(@"Kitchen", @"salads", @"Салата с киноа и бейби спанак", @"Салата с киноа и бейби спанак", @"Чери домати, печена чушка, яйце, мус от сирена и орехи", @"Чери домати, печена чушка, яйце, мус от сирена и орехи", @"350 гр", 8.90m, false),
+        new(@"Kitchen", @"starters", @"Анти пасти за двама", @"Анти пасти за двама", @"Плато от италиански колбаси, маслини каламата, сирена, сервирано с изпечена фокача", @"Плато от италиански колбаси, маслини каламата, сирена, сервирано с изпечена фокача", @"300 гр", 14.00m, false),
+        new(@"Kitchen", @"starters", @"Трио разядки с домашен хляб", @"Трио разядки с домашен хляб", @"Тирокафтери, катък с чушка, млечна салата, поднесени с домашен хляб", @"Тирокафтери, катък с чушка, млечна салата, поднесени с домашен хляб", @"300 гр", 7.90m, false),
+        new(@"Kitchen", @"starters", @"Патешки сърца с печурки", @"Патешки сърца с печурки", @"", @"", @"300 гр", 9.15m, false),
+        new(@"Kitchen", @"starters", @"Бейби калмари с манго сос", @"Бейби калмари с манго сос", @"", @"", @"280 гр", 11.20m, false),
+        new(@"Kitchen", @"starters", @"Скариди темпура", @"Скариди темпура", @"Поднесени с чипотле сос", @"Поднесени с чипотле сос", @"250 гр", 10.90m, false),
+        new(@"Kitchen", @"starters", @"Панирани пилешки бон филенца", @"Панирани пилешки бон филенца", @"Поднесени с пържени картофки и млечен сос", @"Поднесени с пържени картофки и млечен сос", @"400 гр", 8.90m, false),
+        new(@"Kitchen", @"starters", @"Крокети от тиквички със сирена", @"Крокети от тиквички със сирена", @"Подправени с копър и млечен мус от катък", @"Подправени с копър и млечен мус от катък", @"300 гр", 9.90m, false),
+        new(@"Kitchen", @"starters", @"Телешки език с манатарка и скаморца", @"Телешки език с манатарка и скаморца", @"", @"", @"330 гр", 10.90m, false),
+        new(@"Kitchen", @"starters", @"Пържени сладки картофки с пармезан и трюфел сос", @"Пържени сладки картофки с пармезан и трюфел сос", @"", @"", @"250 гр", 7.00m, false),
+        new(@"Kitchen", @"starters", @"Пържени картофи", @"Пържени картофи", @"", @"", @"300 гр", 4.20m, false),
+        new(@"Kitchen", @"pasta-risotto", @"Ризото с диви гъби и трюфел", @"Ризото с диви гъби и трюфел", @"Кладница, манатарка, пармезан", @"Кладница, манатарка, пармезан", @"360 гр", 9.90m, false),
+        new(@"Kitchen", @"pasta-risotto", @"Ризото Verde с филе от лаврак", @"Ризото Verde с филе от лаврак", @"Зелено ризото, аспержи, лаврак, лимон", @"Зелено ризото, аспержи, лаврак, лимон", @"350 гр", 12.40m, false),
+        new(@"Kitchen", @"pasta-risotto", @"Ризото с рибай „Таглиата“", @"Ризото с рибай „Таглиата“", @"Signature dish by Chef Yurukov. Ризото с шафран, рибай, спанак и чипс от пармезан", @"Signature dish by Chef Yurukov. Ризото с шафран, рибай, спанак и чипс от пармезан", @"380 гр", 14.90m, true),
+        new(@"Kitchen", @"pasta-risotto", @"Талиателе песто и скариди", @"Талиателе песто и скариди", @"Босилеково песто, зехтин, пармезан, шам фъстък и скариди", @"Босилеково песто, зехтин, пармезан, шам фъстък и скариди", @"400 гр", 10.90m, false),
+        new(@"Kitchen", @"pasta-risotto", @"Талиателе с пистачио и панчета", @"Талиателе с пистачио и панчета", @"Signature dish by Chef Yurukov. Домашна паста с крем от шам фъстък и панчета", @"Signature dish by Chef Yurukov. Домашна паста с крем от шам фъстък и панчета", @"400 гр", 9.80m, true),
+        new(@"Kitchen", @"pasta-risotto", @"Талиателе Болонезе", @"Талиателе Болонезе", @"Домашна паста с телешка кайма и пармезан", @"Домашна паста с телешка кайма и пармезан", @"400 гр", 9.00m, false),
+        new(@"Kitchen", @"pasta-risotto", @"Талиателе Карбонара", @"Талиателе Карбонара", @"Домашна паста, панчета, класически сос от жълтък, Grana Padano", @"Домашна паста, панчета, класически сос от жълтък, Grana Padano", @"400 гр", 9.90m, false),
+        new(@"Kitchen", @"mains", @"Нашите свински ребра с BBQ сос", @"Нашите свински ребра с BBQ сос", @"Бавно готвени ребра, глазирани с BBQ сос и бейби картофки", @"Бавно готвени ребра, глазирани с BBQ сос и бейби картофки", @"450 гр", 14.80m, false),
+        new(@"Kitchen", @"mains", @"Шницел от сочни пилешки гърди", @"Шницел от сочни пилешки гърди", @"Поднесени с картофи соте и пармезан", @"Поднесени с картофи соте и пармезан", @"400 гр", 11.60m, false),
+        new(@"Kitchen", @"mains", @"Телешки кюфтенца Black Angus", @"Телешки кюфтенца Black Angus", @"С опушен катък, домашна лютеница и фокача", @"С опушен катък, домашна лютеница и фокача", @"400 гр", 11.00m, false),
+        new(@"Kitchen", @"mains", @"Рибай стек Black Angus", @"Рибай стек Black Angus", @"Зрял 36 дни аржентински рибай с бейби картофки, аспержи, сос гъбен/пепър", @"Зрял 36 дни аржентински рибай с бейби картофки, аспержи, сос гъбен/пепър", @"450 гр", 32.00m, false),
+        new(@"Kitchen", @"mains", @"Чийзбургер 100% телешко Black Angus", @"Чийзбургер 100% телешко Black Angus", @"С айсберг, домат, бекон, чедър, кисели краставички, яйце, карамелизиран лук, бургер сос и пържени картофки", @"С айсберг, домат, бекон, чедър, кисели краставички, яйце, карамелизиран лук, бургер сос и пържени картофки", @"500 гр", 10.90m, false),
+        new(@"Kitchen", @"mains", @"Пилешки бургер „Caesar“", @"Пилешки бургер „Caesar“", @"Пилешко филе на скара, чедър, айсберг, домат, Цезар сос и пържени картофки", @"Пилешко филе на скара, чедър, айсберг, домат, Цезар сос и пържени картофки", @"500 гр", 9.80m, false),
+        new(@"Kitchen", @"mains", @"Филе от лаврак", @"Филе от лаврак", @"С картофено пюре, броколи и beurre blanc сос (бял маслен сос)", @"С картофено пюре, броколи и beurre blanc сос (бял маслен сос)", @"400 гр", 12.90m, false),
+        new(@"Kitchen", @"mains", @"Филе от сьомга със задушени зеленчуци", @"Филе от сьомга със задушени зеленчуци", @"Бейби моркови, аспержи, тиквички и сос Холандез", @"Бейби моркови, аспержи, тиквички и сос Холандез", @"350 гр", 13.50m, false),
+        new(@"Kitchen", @"bbq", @"Свински кралски котлет", @"Свински кралски котлет", @"С печени картофи, микс от гриловани сезонни зеленчуци, пинджур", @"С печени картофи, микс от гриловани сезонни зеленчуци, пинджур", @"500 гр", 14.80m, false),
+        new(@"Kitchen", @"bbq", @"Свински врат", @"Свински врат", @"С печени картофи, микс от гриловани сезонни зеленчуци, пинджур", @"С печени картофи, микс от гриловани сезонни зеленчуци, пинджур", @"450 гр", 9.80m, false),
+        new(@"Kitchen", @"bbq", @"Свински гърдички", @"Свински гърдички", @"С печени картофи, микс от гриловани сезонни зеленчуци, пинджур", @"С печени картофи, микс от гриловани сезонни зеленчуци, пинджур", @"400 гр", 10.50m, false),
+        new(@"Kitchen", @"bbq", @"Рибай стек Black Angus", @"Рибай стек Black Angus", @"Зрял 36 дни аржентински рибай с бейби картофки, аспержи, сос гъбен/пепър", @"Зрял 36 дни аржентински рибай с бейби картофки, аспержи, сос гъбен/пепър", @"450 гр", 32.00m, false),
+        new(@"Kitchen", @"bbq", @"Пилешко филе", @"Пилешко филе", @"С бейби картофи, поднесено с микс от гриловани зеленчуци, сос гъбен/пепър", @"С бейби картофи, поднесено с микс от гриловани зеленчуци, сос гъбен/пепър", @"400 гр", 9.90m, false),
+        new(@"Kitchen", @"bbq", @"Домашната плескавица на Бране", @"Домашната плескавица на Бране", @"С печени картофи, микс гриловани сезонни зеленчуци и тирокафтери", @"С печени картофи, микс гриловани сезонни зеленчуци и тирокафтери", @"450 гр", 10.50m, false),
+        new(@"Kitchen", @"bbq", @"Балканска скара за четирима", @"Балканска скара за четирима", @"Сочни пилешки пържолки, свински гърдички, телешки кюфтенца, свински врат с чеснови бейби картофки и задушени гъби", @"Сочни пилешки пържолки, свински гърдички, телешки кюфтенца, свински врат с чеснови бейби картофки и задушени гъби", @"2000 гр", 58.90m, false),
+        new(@"Kitchen", @"bbq", @"Балканска скара за двама", @"Балканска скара за двама", @"Сочни пилешки пържолки, свински гърдички, телешки кюфтенца, свински врат с чеснови бейби картофки и задушени гъби", @"Сочни пилешки пържолки, свински гърдички, телешки кюфтенца, свински врат с чеснови бейби картофки и задушени гъби", @"1000 гр", 30.90m, false),
+        new(@"Kitchen", @"pizza", @"Маргарита", @"Маргарита", @"Доматен сос, моцарела, риган и босилек", @"Доматен сос, моцарела, риган и босилек", @"400 гр", 7.11m, false),
+        new(@"Kitchen", @"pizza", @"Маринара", @"Маринара", @"Доматен сос, чесън, зехтин, босилек", @"Доматен сос, чесън, зехтин, босилек", @"350 гр", 5.90m, false),
+        new(@"Kitchen", @"pizza", @"Прошуто фунги", @"Прошуто фунги", @"Доматен сос, моцарела, гъби, кото и риган", @"Доматен сос, моцарела, гъби, кото и риган", @"450 гр", 8.90m, false),
+        new(@"Kitchen", @"pizza", @"Пица с телешко „Fratelli“", @"Пица с телешко „Fratelli“", @"Доматен сос, топено сирене, червен лук, моцарела", @"Доматен сос, топено сирене, червен лук, моцарела", @"400 гр", 11.90m, false),
+        new(@"Kitchen", @"pizza", @"Капричоза", @"Капричоза", @"Доматен сос, моцарела, маслини каламата, артишок, кото и гъби", @"Доматен сос, моцарела, маслини каламата, артишок, кото и гъби", @"500 гр", 9.90m, false),
+        new(@"Kitchen", @"pizza", @"Калцоне", @"Калцоне", @"Доматен сос, моцарела, гъби, кисели краставички, топено сирене и кото", @"Доматен сос, моцарела, гъби, кисели краставички, топено сирене и кото", @"500 гр", 8.90m, false),
+        new(@"Kitchen", @"pizza", @"Салами", @"Салами", @"Доматен сос, моцарела, вентричина, топено сирене и червен лук", @"Доматен сос, моцарела, вентричина, топено сирене и червен лук", @"450 гр", 8.90m, false),
+        new(@"Kitchen", @"pizza", @"Пеперони специална", @"Пеперони специална", @"Борда Филаделфия, доматен сос, моцарела, пеперони и панчета", @"Борда Филаделфия, доматен сос, моцарела, пеперони и панчета", @"500 гр", 10.90m, false),
+        new(@"Kitchen", @"pizza", @"Куатро стаджони", @"Куатро стаджони", @"Доматен сос, моцарела, кото, панчета, гъби, маслини каламата", @"Доматен сос, моцарела, кото, панчета, гъби, маслини каламата", @"450 гр", 10.80m, false),
+        new(@"Kitchen", @"pizza", @"Куатро формажи", @"Куатро формажи", @"Сметана, моцарела, горгонзола, бри, пармезан и чери домати", @"Сметана, моцарела, горгонзола, бри, пармезан и чери домати", @"450 гр", 8.90m, false),
+        new(@"Kitchen", @"pizza", @"Бианка", @"Бианка", @"Сметана, моцарела, пушено пуешко филе, царевица, топено сирене", @"Сметана, моцарела, пушено пуешко филе, царевица, топено сирене", @"450 гр", 10.50m, false),
+        new(@"Kitchen", @"pizza", @"Поло", @"Поло", @"Доматен сос, моцарела, пилешко филе, кисели краставички, царевица и топено сирене", @"Доматен сос, моцарела, пилешко филе, кисели краставички, царевица и топено сирене", @"450 гр", 8.90m, false),
+        new(@"Kitchen", @"pizza", @"Примавера", @"Примавера", @"Доматен сос, моцарела, кото, гъби и капия", @"Доматен сос, моцарела, кото, гъби и капия", @"450 гр", 8.90m, false),
+        new(@"Kitchen", @"pizza", @"Прошуто крудо", @"Прошуто крудо", @"Доматен сос, моцарела, крудо, рукола, чери домати и пармезан", @"Доматен сос, моцарела, крудо, рукола, чери домати и пармезан", @"450 гр", 10.90m, false),
+        new(@"Kitchen", @"pizza", @"Вегетариана", @"Вегетариана", @"Доматен сос, моцарела, гъби, артишок, каламата и рукола", @"Доматен сос, моцарела, гъби, артишок, каламата и рукола", @"400 гр", 8.70m, false),
+        new(@"Kitchen", @"pizza", @"Пеперони класик", @"Пеперони класик", @"Пеперони сос, моцарела, пеперони и халапеньо", @"Пеперони сос, моцарела, пеперони и халапеньо", @"450 гр", 9.50m, false),
+        new(@"Kitchen", @"pizza", @"Бурата", @"Бурата", @"Доматен сос, моцарела, пармезан, крудо, рукола, бурата, чери домати и песто", @"Доматен сос, моцарела, пармезан, крудо, рукола, бурата, чери домати и песто", @"550 гр", 11.20m, false),
+        new(@"Kitchen", @"pizza", @"Аджораджио", @"Аджораджио", @"Доматен сос, моцарела, кото, шам фъстък, песто, бурата, босилек и лимонови кори", @"Доматен сос, моцарела, кото, шам фъстък, песто, бурата, босилек и лимонови кори", @"500 гр", 11.90m, false),
+        new(@"Kitchen", @"bread", @"Цял домашен хляб", @"Цял домашен хляб", @"", @"", @"450 гр", 5.90m, false),
+        new(@"Kitchen", @"bread", @"Фокача на парче", @"Фокача на парче", @"", @"", @"150 гр", 2.90m, false),
+        new(@"Kitchen", @"bread", @"Домашна питка с Филаделфия", @"Домашна питка с Филаделфия", @"", @"", @"250 гр", 3.90m, false),
+        new(@"Kitchen", @"bread", @"Домашна питка на пещ", @"Домашна питка на пещ", @"", @"", @"180 гр", 3.50m, false),
+        new(@"Kitchen", @"bread", @"Пърленка с кашкавал", @"Пърленка с кашкавал", @"", @"", @"320 гр", 3.32m, false),
+        new(@"Kitchen", @"bread", @"Пърленка със сирене", @"Пърленка със сирене", @"", @"", @"320 гр", 3.32m, false),
+        new(@"Kitchen", @"bread", @"Пърленка с масло", @"Пърленка с масло", @"", @"", @"250 гр", 2.90m, false),
+        new(@"Kitchen", @"bread", @"Пърленка с чесново масло", @"Пърленка с чесново масло", @"", @"", @"250 гр", 3.00m, false),
+        new(@"Kitchen", @"bread", @"Комбинирана пърленка със сирене и кашкавал", @"Комбинирана пърленка със сирене и кашкавал", @"", @"", @"350 гр", 3.90m, false),
+        new(@"Kitchen", @"desserts", @"Пистачио чийзкейк", @"Пистачио чийзкейк", @"", @"", @"150 гр", 5.90m, false),
+        new(@"Kitchen", @"desserts", @"Силанчена торта с шам фъстък и боровинки", @"Силанчена торта с шам фъстък и боровинки", @"", @"", @"150 гр", 6.00m, false),
+        new(@"Kitchen", @"desserts", @"Тирамису", @"Тирамису", @"", @"", @"200 гр", 5.60m, false),
+        new(@"Kitchen", @"desserts", @"Шоколадов мус by Chef Yurukov", @"Шоколадов мус by Chef Yurukov", @"", @"", @"170 гр", 6.14m, true),
+        new(@"Kitchen", @"desserts", @"Шоколадово суфле със сметанов сладолед", @"Шоколадово суфле със сметанов сладолед", @"", @"", @"150 гр", 5.20m, false),
+        new(@"Kitchen", @"desserts", @"Крем брюле лайм", @"Крем брюле лайм", @"", @"", @"150 гр", 5.90m, false),
+        new(@"Kitchen", @"desserts", @"Сладолед", @"Сладолед", @"Ванилия, белгийски ягодов с парченца ягоди, шоколадов", @"Ванилия, белгийски ягодов с парченца ягоди, шоколадов", @"300 гр", 7.11m, false),
+        new(@"Kitchen", @"desserts", @"Пица Нутела с ягоди", @"Пица Нутела с ягоди", @"", @"", @"220 гр", 7.50m, false),
+        new(@"Bar", @"cold-drinks", @"Банкя", @"Банкя", @"", @"", @"330 мл", 1.99m, false),
+        new(@"Bar", @"cold-drinks", @"Банкя Sparkling", @"Банкя Sparkling", @"", @"", @"330 мл", 2.35m, false),
+        new(@"Bar", @"cold-drinks", @"Сан Пелегрино", @"Сан Пелегрино", @"", @"", @"750 мл", 4.50m, false),
+        new(@"Bar", @"cold-drinks", @"Аква Пана", @"Аква Пана", @"", @"", @"750 мл", 4.50m, false),
+        new(@"Bar", @"cold-drinks", @"Аква Пана", @"Аква Пана", @"", @"", @"250 мл", 2.50m, false),
+        new(@"Bar", @"cold-drinks", @"Периер", @"Периер", @"", @"", @"330 мл", 3.10m, false),
+        new(@"Bar", @"cold-drinks", @"Капучино Фредо", @"Капучино Фредо", @"", @"", @"300 мл", 2.90m, false),
+        new(@"Bar", @"cold-drinks", @"Лате", @"Лате", @"", @"", @"300 мл", 2.80m, false),
+        new(@"Bar", @"cold-drinks", @"Чокофредо", @"Чокофредо", @"", @"", @"300 мл", 2.90m, false),
+        new(@"Bar", @"cold-drinks", @"Фрапе", @"Фрапе", @"", @"", @"400 мл", 2.80m, false),
+        new(@"Bar", @"cold-drinks", @"Порто Калма", @"Порто Калма", @"", @"", @"250 мл", 3.70m, false),
+        new(@"Bar", @"cold-drinks", @"Грейпфрут", @"Грейпфрут", @"", @"", @"250 мл", 3.10m, false),
+        new(@"Bar", @"cold-drinks", @"Цитрус микс", @"Цитрус микс", @"", @"", @"250 мл", 3.10m, false),
+        new(@"Bar", @"cold-drinks", @"Бренер", @"Бренер", @"", @"", @"500 мл", 4.35m, false),
+        new(@"Bar", @"cold-drinks", @"Будвайзер", @"Будвайзер", @"", @"", @"330 мл", 3.20m, false),
+        new(@"Bar", @"cold-drinks", @"Будвайзер", @"Будвайзер", @"", @"", @"500 мл", 2.99m, false),
+        new(@"Bar", @"cold-drinks", @"Крафт бирас", @"Крафт бирас", @"", @"", @"500 мл", 3.50m, false),
+        new(@"Bar", @"cold-drinks", @"Карасберг 0%", @"Карасберг 0%", @"", @"", @"330 мл", 2.99m, false),
+        new(@"Bar", @"cold-drinks", @"Шуменско малц", @"Шуменско малц", @"", @"", @"500 мл", 2.80m, false),
+        new(@"Bar", @"cold-drinks", @"Шуменско бомбичка", @"Шуменско бомбичка", @"", @"", @"330 мл", 2.20m, false),
+        new(@"Bar", @"cold-drinks", @"Корона", @"Корона", @"", @"", @"355 мл", 3.90m, false),
+        new(@"Bar", @"cold-drinks", @"Самърсби", @"Самърсби", @"", @"", @"330 мл", 3.90m, false),
+        new(@"Bar", @"cold-drinks", @"Ябълка, боровинка, горски плод", @"Ябълка, боровинка, горски плод", @"", @"", @"330 мл", 3.10m, false),
+        new(@"Bar", @"soft-drinks", @"Кока-Кола", @"Кока-Кола", @"", @"", @"250 мл", 2.09m, false),
+        new(@"Bar", @"soft-drinks", @"Кока-Кола Zero", @"Кока-Кола Zero", @"", @"", @"250 мл", 2.09m, false),
+        new(@"Bar", @"soft-drinks", @"Фанта", @"Фанта", @"", @"", @"250 мл", 2.09m, false),
+        new(@"Bar", @"soft-drinks", @"Спрайт", @"Спрайт", @"", @"", @"250 мл", 2.09m, false),
+        new(@"Bar", @"soft-drinks", @"Швепс сода", @"Швепс сода", @"", @"", @"250 мл", 2.09m, false),
+        new(@"Bar", @"soft-drinks", @"Швепс тоник", @"Швепс тоник", @"", @"", @"250 мл", 2.09m, false),
+        new(@"Bar", @"soft-drinks", @"Швепс розов тоник", @"Швепс розов тоник", @"", @"", @"250 мл", 2.09m, false),
+        new(@"Bar", @"soft-drinks", @"Сок Cappy", @"Сок Cappy", @"", @"", @"250 мл", 2.30m, false),
+        new(@"Bar", @"soft-drinks", @"Айрян малък", @"Айрян малък", @"", @"", @"250 мл", 1.80m, false),
+        new(@"Bar", @"soft-drinks", @"Айрян голям", @"Айрян голям", @"", @"", @"450 мл", 3.58m, false),
+        new(@"Bar", @"soft-drinks", @"Цитронада", @"Цитронада", @"", @"", @"250 мл", 3.60m, false),
+        new(@"Bar", @"soft-drinks", @"Лимонада", @"Лимонада", @"", @"", @"250 мл", 3.60m, false),
+        new(@"Bar", @"lemonades", @"Ягода", @"Ягода", @"", @"", @"450 мл", 3.90m, false),
+        new(@"Bar", @"lemonades", @"Малина", @"Малина", @"", @"", @"450 мл", 3.90m, false),
+        new(@"Bar", @"lemonades", @"Бъз и джинджифил", @"Бъз и джинджифил", @"", @"", @"450 мл", 3.90m, false),
+        new(@"Bar", @"lemonades", @"Боровинка", @"Боровинка", @"", @"", @"450 мл", 3.90m, false),
+        new(@"Bar", @"lemonades", @"Манго", @"Манго", @"", @"", @"450 мл", 3.90m, false),
+        new(@"Bar", @"lemonades", @"Праскова", @"Праскова", @"", @"", @"450 мл", 3.90m, false),
+        new(@"Bar", @"lemonades", @"Горска ягода", @"Горска ягода", @"", @"", @"450 мл", 3.90m, false),
+        new(@"Bar", @"lemonades", @"Цитронада", @"Цитронада", @"", @"", @"450 мл", 3.90m, false),
+        new(@"Bar", @"lemonades", @"Лимонада", @"Лимонада", @"", @"", @"450 мл", 3.90m, false),
+        new(@"Bar", @"alcohol", @"Уиски Шотландско - 50 мл: Джони Уокър Ред Лейбъл", @"Уиски Шотландско - 50 мл: Джони Уокър Ред Лейбъл", @"", @"", @"50 мл", 3.50m, false),
+        new(@"Bar", @"alcohol", @"Уиски Шотландско - 50 мл: Джони Уокър Блек Лейбъл", @"Уиски Шотландско - 50 мл: Джони Уокър Блек Лейбъл", @"", @"", @"50 мл", 6.65m, false),
+        new(@"Bar", @"alcohol", @"Уиски Шотландско - 50 мл: Чивас Регал 12", @"Уиски Шотландско - 50 мл: Чивас Регал 12", @"", @"", @"50 мл", 6.65m, false),
+        new(@"Bar", @"alcohol", @"Уиски Шотландско - 50 мл: Джей Б", @"Уиски Шотландско - 50 мл: Джей Б", @"", @"", @"50 мл", 5.37m, false),
+        new(@"Bar", @"alcohol", @"Уиски Шотландско - 50 мл: Булмитс", @"Уиски Шотландско - 50 мл: Булмитс", @"", @"", @"50 мл", 6.20m, false),
+        new(@"Bar", @"alcohol", @"Уиски Шотландско - 50 мл: Пропър Туелв", @"Уиски Шотландско - 50 мл: Пропър Туелв", @"", @"", @"50 мл", 4.53m, false),
+        new(@"Bar", @"alcohol", @"Уиски Шотландско - 50 мл: Джеймисън", @"Уиски Шотландско - 50 мл: Джеймисън", @"", @"", @"50 мл", 6.39m, false),
+        new(@"Bar", @"alcohol", @"Уиски Шотландско - 50 мл: Джак Даниелс", @"Уиски Шотландско - 50 мл: Джак Даниелс", @"", @"", @"50 мл", 6.39m, false),
+        new(@"Bar", @"alcohol", @"Бърбън и Тенеси - 50 мл: Джак Даниелс", @"Бърбън и Тенеси - 50 мл: Джак Даниелс", @"", @"", @"50 мл", 5.37m, false),
+        new(@"Bar", @"alcohol", @"Бърбън и Тенеси - 50 мл: Джентълмен Джак", @"Бърбън и Тенеси - 50 мл: Джентълмен Джак", @"", @"", @"50 мл", 6.39m, false),
+        new(@"Bar", @"alcohol", @"Бърбън и Тенеси - 50 мл: Джак Даниелс Хъни", @"Бърбън и Тенеси - 50 мл: Джак Даниелс Хъни", @"", @"", @"50 мл", 6.39m, false),
+        new(@"Bar", @"alcohol", @"Бърбън и Тенеси - 50 мл: Джим Бийм", @"Бърбън и Тенеси - 50 мл: Джим Бийм", @"", @"", @"50 мл", 3.90m, false),
+        new(@"Bar", @"alcohol", @"Бърбън и Тенеси - 50 мл: Форд Роузес", @"Бърбън и Тенеси - 50 мл: Форд Роузес", @"", @"", @"50 мл", 3.90m, false),
+        new(@"Bar", @"alcohol", @"Коняк и бренди - 50 мл: Черноморско злато", @"Коняк и бренди - 50 мл: Черноморско злато", @"", @"", @"50 мл", 2.76m, false),
+        new(@"Bar", @"alcohol", @"Коняк и бренди - 50 мл: Метакса 5", @"Коняк и бренди - 50 мл: Метакса 5", @"", @"", @"50 мл", 6.00m, false),
+        new(@"Bar", @"alcohol", @"Анасонови напитки - 50 мл: Узо Пломари", @"Анасонови напитки - 50 мл: Узо Пломари", @"", @"", @"50 мл", 3.07m, false),
+        new(@"Bar", @"alcohol", @"Анасонови напитки - 50 мл: Узо Мини", @"Анасонови напитки - 50 мл: Узо Мини", @"", @"", @"50 мл", 3.52m, false),
+        new(@"Bar", @"alcohol", @"Коктейли: Мохито", @"Коктейли: Мохито", @"", @"", @"", 6.90m, false),
+        new(@"Bar", @"alcohol", @"Коктейли: Aperol Spritz", @"Коктейли: Aperol Spritz", @"", @"", @"", 6.90m, false),
+        new(@"Bar", @"alcohol", @"Коктейли: Лондон Дайкири", @"Коктейли: Лондон Дайкири", @"", @"", @"", 6.90m, false),
+        new(@"Bar", @"alcohol", @"Коктейли: Маргарита", @"Коктейли: Маргарита", @"", @"", @"", 8.90m, false),
+        new(@"Bar", @"alcohol", @"Коктейли: Крашата", @"Коктейли: Крашата", @"", @"", @"", 3.07m, false),
+        new(@"Bar", @"alcohol", @"Коктейли: Синя Лагуна", @"Коктейли: Синя Лагуна", @"", @"", @"", 3.48m, false),
+        new(@"Bar", @"alcohol", @"Коктейли: Азиятско муле", @"Коктейли: Азиятско муле", @"", @"", @"", 7.67m, false),
+        new(@"Bar", @"alcohol", @"Коктейли: Страстко муле", @"Коктейли: Страстко муле", @"", @"", @"", 7.67m, false),
+        new(@"Bar", @"alcohol", @"Коктейли: Порнстар Мартини", @"Коктейли: Порнстар Мартини", @"", @"", @"", 10.74m, false)
     };
 
     public static async Task<int> SeedAsync(AppDbContext db)
     {
         var existingItems = await db.MenuItems.ToListAsync();
-        var existingItemByName = existingItems.ToDictionary(item => item.NameBg, StringComparer.OrdinalIgnoreCase);
+        var existingItemByName = existingItems
+            .GroupBy(item => BuildSeedKey(item.NameBg, item.Weight), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+        var existingItemsByName = existingItems
+            .GroupBy(item => item.NameBg.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.OrdinalIgnoreCase);
+        var seedNameCounts = Items
+            .GroupBy(item => item.NameBg.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
 
         var now = DateTime.UtcNow;
+        MenuItem? FindExistingItem(SeedMenuItem item)
+        {
+            if (existingItemByName.TryGetValue(BuildSeedKey(item.NameBg, item.Weight), out var exactMatch))
+                return exactMatch;
+
+            if (seedNameCounts.TryGetValue(item.NameBg.Trim(), out var seedCount) &&
+                seedCount == 1 &&
+                existingItemsByName.TryGetValue(item.NameBg.Trim(), out var nameMatches) &&
+                nameMatches.Count == 1)
+            {
+                return nameMatches[0];
+            }
+
+            return null;
+        }
+
         var missingItems = Items
-            .Where(item => !existingItemByName.ContainsKey(item.NameBg))
+            .Where(item => FindExistingItem(item) == null)
             .ToList();
 
         var updatedCount = 0;
         foreach (var item in Items)
         {
-            if (!existingItemByName.TryGetValue(item.NameBg, out var existingItem))
+            var existingItem = FindExistingItem(item);
+            if (existingItem == null)
                 continue;
 
             if (existingItem.Price == item.Price &&
                 existingItem.Weight == item.Weight &&
+                existingItem.Category == item.Category &&
+                existingItem.Department == item.Department &&
                 existingItem.DescriptionBg == item.DescriptionBg &&
                 existingItem.DescriptionEn == item.DescriptionEn)
             {
@@ -110,6 +226,8 @@ public static class MenuSeedData
 
             existingItem.Price = item.Price;
             existingItem.Weight = item.Weight;
+            existingItem.Category = item.Category;
+            existingItem.Department = item.Department;
             existingItem.DescriptionBg = item.DescriptionBg;
             existingItem.DescriptionEn = item.DescriptionEn;
             existingItem.UpdatedAtUtc = now;
@@ -121,6 +239,7 @@ public static class MenuSeedData
 
         db.MenuItems.AddRange(missingItems.Select(item => new MenuItem
         {
+            Department = item.Department,
             Category = item.Category,
             NameBg = item.NameBg,
             NameEn = item.NameEn,

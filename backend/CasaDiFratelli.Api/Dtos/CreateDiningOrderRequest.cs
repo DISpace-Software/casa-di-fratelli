@@ -22,4 +22,6 @@ public class CreateDiningOrderItemRequest
     public int Quantity { get; set; }
 
     public string? Notes { get; set; }
+
+    public string? Kind { get; set; }
 }

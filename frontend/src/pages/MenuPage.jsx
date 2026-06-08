@@ -267,6 +267,7 @@ export default function MenuPage({
           menuItemId: Number.isFinite(Number(item.id)) ? Number(item.id) : null,
           name: item.name,
           priceValue: Number(item.priceValue || 0),
+          kind: item.kind || (item.department === "Bar" ? "Drink" : "Dish"),
           quantity: 1,
         },
       ];
@@ -301,6 +302,7 @@ export default function MenuPage({
             menuItemId: item.menuItemId,
             name: item.name,
             unitPrice: item.priceValue,
+            kind: item.kind,
             quantity: item.quantity,
           })),
         }),
@@ -515,14 +517,28 @@ export default function MenuPage({
 
       <div className="flex flex-col">
         <div className={`${isOrderLink ? "order-1" : "order-2"} mx-auto grid max-w-7xl gap-6 px-3 pb-10 pt-5 md:gap-12 md:px-6 md:pb-20 md:pt-10`}>
-          {data.categories.map((category) => (
-            <MenuCategorySection
-              key={category.id}
-              category={category}
-              language={language}
-              orderEnabled={orderEnabled}
-              onAddToOrder={addToOrder}
-            />
+          {(data.departments || [{ id: "all", title: "", categories: data.categories }]).map((department) => (
+            <section key={department.id} className="grid gap-6 md:gap-8">
+              {department.title && (
+                <div className="menu-spark rounded-[28px] border border-[#c9a56a]/18 bg-[linear-gradient(135deg,rgba(201,165,106,0.16),rgba(255,255,255,0.035))] px-5 py-5 md:px-7">
+                  <div className="section-kicker">
+                    {language === "bg" ? "Основен раздел" : "Main section"}
+                  </div>
+                  <h2 className="mt-2 text-3xl font-semibold text-[#fff4df] md:text-4xl">
+                    {department.title}
+                  </h2>
+                </div>
+              )}
+              {department.categories.map((category) => (
+                <MenuCategorySection
+                  key={category.id}
+                  category={category}
+                  language={language}
+                  orderEnabled={orderEnabled}
+                  onAddToOrder={addToOrder}
+                />
+              ))}
+            </section>
           ))}
         </div>
 
