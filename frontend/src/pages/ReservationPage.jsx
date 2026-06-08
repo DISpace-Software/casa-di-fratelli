@@ -63,6 +63,40 @@ function buildBirthdayDate(day, month) {
   return `2000-${month}-${safeDay}`;
 }
 
+function normalizeDateForApi(value) {
+  if (!value) return "";
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+  }
+
+  const raw = String(value).trim();
+  const isoDateMatch = raw.match(/\d{4}-\d{2}-\d{2}/);
+  return isoDateMatch ? isoDateMatch[0] : raw;
+}
+
+function getReservationErrorMessage(result, rawText, language) {
+  const fallback =
+    language === "bg"
+      ? "Възникна проблем при изпращането на резервацията. Проверете датата, часа и опитайте отново."
+      : "There was a problem submitting the reservation. Check the date, time and try again.";
+
+  if (result?.message) return result.message;
+
+  const errors = result?.errors;
+  if (errors?.reservedDate || errors?.ReservedDate || errors?.["$.reservedDate"]) {
+    return language === "bg"
+      ? "Датата на резервацията не е валидна. Изберете дата от календара и опитайте отново."
+      : "Reservation date is not valid. Choose a date from the calendar and try again.";
+  }
+
+  if (errors && typeof errors === "object") {
+    return fallback;
+  }
+
+  if (rawText && !rawText.trim().startsWith("{")) return rawText;
+  return fallback;
+}
+
 function getBirthdayMonthOptions(day, language) {
   const selectedDay = Number(day || 0);
   if (!selectedDay) return birthdayMonths[language];
@@ -565,9 +599,9 @@ function BookingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] bg-black/78 backdrop-blur-md">
-      <div className="h-full overflow-y-auto overscroll-contain px-4 py-6">
-        <div className="luxury-panel mx-auto w-full max-w-2xl rounded-[28px] p-5 text-stone-100 sm:p-8">
+    <div className="booking-modal fixed inset-0 z-[70] bg-black/78 backdrop-blur-md">
+      <div className="h-full overflow-x-hidden overflow-y-auto overscroll-contain px-3 py-5 sm:px-4 sm:py-6">
+        <div className="booking-modal-card luxury-panel mx-auto w-full max-w-2xl rounded-[28px] p-4 text-stone-100 sm:p-8">
           <div className="mb-6 flex items-start justify-between gap-4">
             <div>
               <p className="section-kicker">
@@ -601,9 +635,9 @@ function BookingModal({
             onSubmit={onSubmit}
             onChange={updateFormReady}
             onInput={updateFormReady}
-            className="grid gap-4 sm:grid-cols-2"
+            className="booking-form-grid grid min-w-0 gap-4 sm:grid-cols-2"
           >
-            <div>
+            <div className="min-w-0">
               <label className="mb-2 block text-sm text-stone-300">{t.formName}</label>
               <input
                 name="guestName"
@@ -616,7 +650,7 @@ function BookingModal({
               />
             </div>
 
-            <div>
+            <div className="min-w-0">
               <label className="mb-2 block text-sm text-stone-300">{t.formPhone}</label>
               <input
                 name="phone"
@@ -631,7 +665,7 @@ function BookingModal({
               />
             </div>
 
-            <div className="sm:col-span-2">
+            <div className="min-w-0 sm:col-span-2">
               <label className="mb-2 block text-sm text-stone-300">{t.formEmail}</label>
               <input
                 name="email"
@@ -646,11 +680,11 @@ function BookingModal({
               />
             </div>
 
-            <div className="birthday-panel sm:col-span-2 rounded-[1.5rem] border border-amber-400/25 bg-amber-500/10 p-5">
+            <div className="birthday-panel min-w-0 sm:col-span-2 rounded-[1.5rem] border border-amber-400/25 bg-amber-500/10 p-4 sm:p-5">
               <label className="mb-2 block text-sm text-amber-100">
                 {language === "bg" ? "Рожден ден (опционално)" : "Birthday (optional)"}
               </label>
-              <div className="grid gap-3 sm:grid-cols-[0.75fr_1.25fr]">
+              <div className="grid min-w-0 gap-3 sm:grid-cols-[0.75fr_1.25fr]">
                 <select
                   name="birthDay"
                   autoComplete="bday-day"
@@ -687,7 +721,7 @@ function BookingModal({
               </p>
             </div>
 
-            <div className="sm:col-span-2">
+            <div className="min-w-0 sm:col-span-2">
               <label className="mb-2 block text-sm text-stone-300">
                 {t.formRequests}
               </label>
@@ -1072,18 +1106,20 @@ if (bookingMode === "single") {
     const formData = new FormData(form);
     const birthDay = String(formData.get("birthDay") || "");
     const birthMonth = String(formData.get("birthMonth") || "");
+    const normalizedReservationDate = normalizeDateForApi(reservationDate);
+    const birthdayDate = buildBirthdayDate(birthDay, birthMonth);
 
     const payload = {
       guestName: String(formData.get("guestName") || ""),
       phone: String(formData.get("phone") || ""),
       email: String(formData.get("email") || ""),
-      birthDate: buildBirthdayDate(birthDay, birthMonth),
+      birthDate: birthdayDate ? normalizeDateForApi(birthdayDate) : null,
       marketingConsent: formData.get("marketingConsent") === "on",
       privacyConsent: formData.get("privacyConsent") === "on",
       guestCount: Number(guestCount || 0),
       area: selectedArea,
       reservedTime: selectedTime,
-      reservedDate: reservationDate,
+      reservedDate: normalizedReservationDate,
       notes: String(formData.get("notes") || ""),
       tableIds: selectedTables.map((table) => table.id),
     };
@@ -1092,7 +1128,13 @@ if (bookingMode === "single") {
     setSubmitError("");
     setSubmitSuccess("");
 
-    if (isDateBeyondReservationWindow(reservationDate, 10)) {
+    if (!normalizedReservationDate) {
+      setIsSubmitting(false);
+      setSubmitError(language === "bg" ? "Изберете дата за резервацията." : "Choose a reservation date.");
+      return;
+    }
+
+    if (isDateBeyondReservationWindow(normalizedReservationDate, 10)) {
       setIsSubmitting(false);
       setSubmitError(distantDateMessage);
       return;
@@ -1122,15 +1164,8 @@ if (bookingMode === "single") {
           return;
         }
 
-        const backendMessage =
-          result?.message ||
-          rawText ||
-          (language === "bg"
-            ? "Възникна проблем при изпращането на резервацията."
-            : "There was a problem submitting the reservation.");
-
         setSubmitSuccess("");
-        setSubmitError(backendMessage);
+        setSubmitError(getReservationErrorMessage(result, rawText, language));
         return;
       }
 
@@ -1154,7 +1189,7 @@ if (bookingMode === "single") {
       if (requiresEmailConfirmation) {
         setEmailConfirmationNotice({
           email: payload.email,
-          date: reservationDate,
+          date: normalizedReservationDate,
           time: selectedTime,
         });
         setShowBookingForm(false);
@@ -1166,7 +1201,7 @@ if (bookingMode === "single") {
       if (isReturningCustomer) {
         setAutoConfirmationNotice({
           guestName,
-          date: reservationDate,
+          date: normalizedReservationDate,
           time: selectedTime,
           tables: selectedTables.map((table) => table.id).join(", "),
         });

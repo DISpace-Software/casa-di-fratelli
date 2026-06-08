@@ -1,4 +1,5 @@
 using CasaDiFratelli.Api.Data;
+using CasaDiFratelli.Api.Json;
 using Microsoft.EntityFrameworkCore;
 using CasaDiFratelli.Api.Services;
 using Npgsql;
@@ -6,7 +7,10 @@ using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new FlexibleDateOnlyJsonConverter());
+});
 builder.Services.AddHttpClient<EmailService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(5);
