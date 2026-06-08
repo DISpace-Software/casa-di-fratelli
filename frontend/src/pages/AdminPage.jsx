@@ -141,6 +141,17 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+async function getReadyAdminPushRegistration() {
+  await navigator.serviceWorker.register("/admin-push-sw.js", { scope: "/" });
+  const registration = await navigator.serviceWorker.ready;
+
+  if (!registration.active) {
+    throw new Error("Service worker is not active yet.");
+  }
+
+  return registration;
+}
+
 function toLocalDateTimeInputValue(value) {
   if (!value) return "";
 
@@ -4484,7 +4495,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       }
 
       const { publicKey } = await configResponse.json();
-      const registration = await navigator.serviceWorker.register("/admin-push-sw.js");
+      const registration = await getReadyAdminPushRegistration();
       const existingSubscription = await registration.pushManager.getSubscription();
       const subscription = existingSubscription || await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -4516,8 +4527,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       console.error("Failed to enable push notifications", error);
       setAdminError(
         adminLanguage === "bg"
-          ? "Не успях да включа push известията. Проверете дали сайтът е отворен през HTTPS и уведомленията са разрешени."
-          : "Could not enable push notifications. Check HTTPS and notification permission."
+          ? "Не успях да включа push известията. Презаредете админката, проверете HTTPS и дали уведомленията са разрешени за сайта."
+          : "Could not enable push notifications. Reload the admin app, then check HTTPS and site notification permission."
       );
     }
   }
