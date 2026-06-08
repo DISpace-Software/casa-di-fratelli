@@ -6,6 +6,17 @@
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <script>
+      if (window.location.pathname === "/admin") {
+        document.querySelector('link[rel="manifest"]')?.setAttribute("href", "/admin.webmanifest");
+        const robotsMeta = document.querySelector('meta[name="robots"]') || document.createElement("meta");
+        robotsMeta.setAttribute("name", "robots");
+        robotsMeta.setAttribute("content", "noindex, nofollow, noarchive");
+        if (!robotsMeta.parentElement) {
+          document.head.appendChild(robotsMeta);
+        }
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#15110e" />
     <meta name="color-scheme" content="dark light" />

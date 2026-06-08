@@ -528,6 +528,31 @@ export default function App() {
   }, [currentPage]);
 
   React.useEffect(() => {
+    if (typeof document === "undefined") return;
+
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    if (manifestLink) {
+      manifestLink.setAttribute("href", currentPage === "admin" ? "/admin.webmanifest" : "/site.webmanifest");
+    }
+
+    let robotsMeta = document.querySelector('meta[name="robots"]');
+    if (!robotsMeta) {
+      robotsMeta = document.createElement("meta");
+      robotsMeta.setAttribute("name", "robots");
+      document.head.appendChild(robotsMeta);
+    }
+
+    robotsMeta.setAttribute(
+      "content",
+      currentPage === "admin" ? "noindex, nofollow, noarchive" : "index, follow, max-image-preview:large"
+    );
+
+    document.title = currentPage === "admin"
+      ? "Casa di Fratelli Admin"
+      : "Casa di Fratelli | Италиански ресторант, пица и паста в Пловдив";
+  }, [currentPage]);
+
+  React.useEffect(() => {
     if (typeof window === "undefined") return;
 
     const handlePopState = () => {
