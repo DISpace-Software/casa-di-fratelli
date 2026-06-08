@@ -61,7 +61,7 @@ export default function EventsSection({ language, events = [] }) {
                       loading="lazy"
                       className={
                         featuredImages.length === 1
-                          ? "absolute inset-0 h-full w-full object-cover object-center"
+                          ? "absolute inset-0 h-full w-full object-contain object-center"
                           : `w-full object-cover ${index === 0 ? "h-72 md:h-80" : "h-44"}`
                       }
                     />
