@@ -28,6 +28,7 @@ public class ReservationsController : ControllerBase
     private readonly AdminAuthService _adminAuth;
     private readonly AuditService _audit;
     private readonly ProductTierService _tiers;
+    private readonly PushNotificationService _pushNotifications;
 
     public ReservationsController(
         AppDbContext db,
@@ -36,7 +37,8 @@ public class ReservationsController : ControllerBase
         ReservationConflictService reservationConflictService,
         AdminAuthService adminAuth,
         AuditService audit,
-        ProductTierService tiers)
+        ProductTierService tiers,
+        PushNotificationService pushNotifications)
     {
         _db = db;
         _emailService = emailService;
@@ -45,6 +47,7 @@ public class ReservationsController : ControllerBase
         _adminAuth = adminAuth;
         _audit = audit;
         _tiers = tiers;
+        _pushNotifications = pushNotifications;
     }
 
     private static DateTime GetRestaurantNow()
@@ -500,6 +503,7 @@ public class ReservationsController : ControllerBase
             await MarkReservationBlacklistFlagAsync(reservation);
             await _db.SaveChangesAsync();
             _ = SendAdminReservationEmailAsync(reservation);
+            await _pushNotifications.NotifyNewReservationAsync(reservation);
         }
 
         if (requiresEmailConfirmation && confirmationToken != null)
@@ -705,6 +709,7 @@ public class ReservationsController : ControllerBase
         await MarkReservationBlacklistFlagAsync(reservation);
         await _db.SaveChangesAsync();
         _ = SendAdminReservationEmailAsync(reservation);
+        await _pushNotifications.NotifyNewReservationAsync(reservation);
 
         return Ok(new
         {

@@ -15,6 +15,7 @@ builder.Services.AddScoped<ReservationConflictService>();
 builder.Services.AddScoped<AdminAuthService>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<ProductTierService>();
+builder.Services.AddScoped<PushNotificationService>();
 
 var databaseConnectionString = ResolveDatabaseConnectionString(builder.Configuration);
 builder.Services.AddDbContext<AppDbContext>(options =>

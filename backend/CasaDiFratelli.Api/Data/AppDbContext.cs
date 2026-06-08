@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<AdminSession> AdminSessions => Set<AdminSession>();
     public DbSet<AdminDeviceCredential> AdminDeviceCredentials => Set<AdminDeviceCredential>();
+    public DbSet<AdminPushSubscription> AdminPushSubscriptions => Set<AdminPushSubscription>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<DiningOrder> DiningOrders => Set<DiningOrder>();
     public DbSet<DiningOrderItem> DiningOrderItems => Set<DiningOrderItem>();
@@ -64,6 +65,14 @@ public class AppDbContext : DbContext
         {
             entity.Property(x => x.CredentialHash).IsRequired().HasMaxLength(128);
             entity.HasIndex(x => x.CredentialHash).IsUnique();
+        });
+
+        modelBuilder.Entity<AdminPushSubscription>(entity =>
+        {
+            entity.Property(x => x.Endpoint).IsRequired();
+            entity.Property(x => x.P256Dh).IsRequired();
+            entity.Property(x => x.Auth).IsRequired();
+            entity.HasIndex(x => x.Endpoint).IsUnique();
         });
 
         modelBuilder.Entity<AppSetting>(entity =>

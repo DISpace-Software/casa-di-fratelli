@@ -128,6 +128,19 @@ function showBrowserNotification(title, body) {
   }
 }
 
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = `${base64String}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let index = 0; index < rawData.length; index += 1) {
+    outputArray[index] = rawData.charCodeAt(index);
+  }
+
+  return outputArray;
+}
+
 function toLocalDateTimeInputValue(value) {
   if (!value) return "";
 
@@ -2897,6 +2910,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [hallBlock, setHallBlock] = React.useState(emptyHallBlock);
   const [adminNotice, setAdminNotice] = React.useState("");
   const [adminError, setAdminError] = React.useState("");
+  const [pushPermission, setPushPermission] = React.useState(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) return "unsupported";
+    return Notification.permission;
+  });
+  const [pushEnabled, setPushEnabled] = React.useState(false);
   const [statsPeriod, setStatsPeriod] = React.useState("today");
   const adminSwipeStartRef = React.useRef(null);
   const [blacklistForm, setBlacklistForm] = React.useState({
@@ -2957,6 +2975,35 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     (url, options = {}) => fetch(url, withAdminToken(options)),
     [withAdminToken]
   );
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    async function checkPushSubscription() {
+      if (typeof window === "undefined" || !adminToken || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+        return;
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        const subscription = await registration?.pushManager.getSubscription();
+        if (isMounted) {
+          setPushEnabled(Boolean(subscription));
+          setPushPermission(Notification.permission);
+        }
+      } catch {
+        if (isMounted) {
+          setPushEnabled(false);
+        }
+      }
+    }
+
+    checkPushSubscription();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [adminToken]);
 
   const loadReservations = React.useCallback(async ({ silent = false } = {}) => {
     if (!silent) {
@@ -4408,6 +4455,73 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
   }
 
+  async function enablePushNotifications() {
+    setAdminError("");
+    setAdminNotice("");
+
+    if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+      setAdminError(
+        adminLanguage === "bg"
+          ? "Това устройство или браузър не поддържа push известия. На iPad отворете админката от иконата на началния екран."
+          : "This device or browser does not support push notifications. On iPad, open the admin from the Home Screen icon."
+      );
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setPushPermission(permission);
+
+      if (permission !== "granted") {
+        setAdminError(adminLanguage === "bg" ? "Разрешете известията за Casa di Fratelli." : "Allow notifications for Casa di Fratelli.");
+        return;
+      }
+
+      const configResponse = await adminFetch(`${API_BASE_URL}/api/admin/push/config`);
+      if (!configResponse.ok) {
+        setAdminError(await readErrorMessage(configResponse, "Failed to load push configuration."));
+        return;
+      }
+
+      const { publicKey } = await configResponse.json();
+      const registration = await navigator.serviceWorker.register("/admin-push-sw.js");
+      const existingSubscription = await registration.pushManager.getSubscription();
+      const subscription = existingSubscription || await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+
+      const saveResponse = await adminFetch(`${API_BASE_URL}/api/admin/push/subscriptions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subscription.toJSON()),
+      });
+
+      if (!saveResponse.ok) {
+        setAdminError(await readErrorMessage(saveResponse, "Failed to save push subscription."));
+        return;
+      }
+
+      setPushEnabled(true);
+      setAdminNotice(
+        adminLanguage === "bg"
+          ? "Push известията са включени за това устройство."
+          : "Push notifications are enabled for this device."
+      );
+      showBrowserNotification(
+        adminLanguage === "bg" ? "Casa di Fratelli" : "Casa di Fratelli",
+        adminLanguage === "bg" ? "Известията са активни на това устройство." : "Notifications are active on this device."
+      );
+    } catch (error) {
+      console.error("Failed to enable push notifications", error);
+      setAdminError(
+        adminLanguage === "bg"
+          ? "Не успях да включа push известията. Проверете дали сайтът е отворен през HTTPS и уведомленията са разрешени."
+          : "Could not enable push notifications. Check HTTPS and notification permission."
+      );
+    }
+  }
+
   function isInStatsPeriod(dateValue) {
     if (!dateValue) return false;
 
@@ -5442,6 +5556,41 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     </div>
                   </div>
 
+                  <div className="grid gap-5">
+                    <div className="rounded-[26px] border border-white/10 bg-black/20 p-5 md:p-6">
+                      <div className="section-kicker">
+                        {adminLanguage === "bg" ? "Известия" : "Notifications"}
+                      </div>
+                      <h3 className="mt-2 text-2xl font-semibold text-[#fff4df]">
+                        {adminLanguage === "bg" ? "Push известия на това устройство" : "Push notifications on this device"}
+                      </h3>
+                      <p className="mt-2 text-sm leading-6 text-white/45">
+                        {adminLanguage === "bg"
+                          ? "Включете ги на iPad или таблет, за да получавате известие при нова потвърдена резервация."
+                          : "Enable them on the iPad or tablet to receive an alert for every new confirmed reservation."}
+                      </p>
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={enablePushNotifications}
+                          className="luxury-button rounded-2xl px-6 py-3 text-sm font-semibold"
+                        >
+                          {pushEnabled
+                            ? adminLanguage === "bg" ? "Включени са" : "Enabled"
+                            : adminLanguage === "bg" ? "Включи известия" : "Enable notifications"}
+                        </button>
+                        <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white/45">
+                          {pushPermission === "granted"
+                            ? adminLanguage === "bg" ? "разрешени" : "allowed"
+                            : pushPermission === "denied"
+                              ? adminLanguage === "bg" ? "блокирани" : "blocked"
+                              : pushPermission === "unsupported"
+                                ? adminLanguage === "bg" ? "неподдържани" : "unsupported"
+                                : adminLanguage === "bg" ? "изчаква разрешение" : "waiting for permission"}
+                        </span>
+                      </div>
+                    </div>
+
                   <form onSubmit={changeOwnPassword} className="rounded-[26px] border border-white/10 bg-black/20 p-5 md:p-6">
                     <div className="section-kicker">
                       {adminLanguage === "bg" ? "Сигурност" : "Security"}
@@ -5504,6 +5653,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       {adminLanguage === "bg" ? "Смени паролата" : "Change password"}
                     </button>
                   </form>
+                  </div>
                 </div>
               </Panel>
             )}
