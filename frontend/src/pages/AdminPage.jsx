@@ -4462,8 +4462,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
       setAdminError(
         adminLanguage === "bg"
-          ? "Това устройство или браузър не поддържа push известия. На iPad отворете админката от иконата на началния екран."
-          : "This device or browser does not support push notifications. On iPad, open the admin from the Home Screen icon."
+          ? "Това устройство или браузър не поддържа push известия. На iPhone/iPad добавете сайта на началния екран, а на Android/компютър разрешете известията в браузъра."
+          : "This device or browser does not support push notifications. On iPhone/iPad add the site to the Home Screen; on Android/desktop allow browser notifications."
       );
       return;
     }
@@ -5566,8 +5566,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       </h3>
                       <p className="mt-2 text-sm leading-6 text-white/45">
                         {adminLanguage === "bg"
-                          ? "Включете ги на iPad или таблет, за да получавате известие при нова потвърдена резервация."
-                          : "Enable them on the iPad or tablet to receive an alert for every new confirmed reservation."}
+                          ? "Включете ги на всяко устройство, което трябва да получава известие при нова потвърдена резервация."
+                          : "Enable them on every device that should receive an alert for each new confirmed reservation."}
+                      </p>
+                      <p className="mt-2 text-xs leading-5 text-white/35">
+                        {adminLanguage === "bg"
+                          ? "Компютър и Android работят директно от браузъра. На iPhone/iPad първо добавете админката на началния екран и я отворете от иконата."
+                          : "Desktop and Android work directly from the browser. On iPhone/iPad, first add the admin to the Home Screen and open it from the icon."}
                       </p>
                       <div className="mt-4 flex flex-wrap items-center gap-3">
                         <button
