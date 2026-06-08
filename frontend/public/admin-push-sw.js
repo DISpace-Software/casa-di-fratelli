@@ -13,8 +13,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Casa di Fratelli";
   const options = {
     body: data.body || "Имате ново известие.",
-    icon: "/favicon.svg",
-    badge: "/favicon.svg",
+    icon: "/casa-fratelli-icon-192.png",
+    badge: "/favicon-96x96.png",
     tag: data.tag || "casa-di-fratelli-admin",
     renotify: true,
     data: {
