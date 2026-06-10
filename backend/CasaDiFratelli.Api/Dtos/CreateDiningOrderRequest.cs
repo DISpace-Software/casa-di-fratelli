@@ -24,4 +24,15 @@ public class CreateDiningOrderItemRequest
     public string? Notes { get; set; }
 
     public string? Kind { get; set; }
+
+    public List<CreateDiningOrderItemInventoryExtraRequest> InventoryExtras { get; set; } = new();
+}
+
+public class CreateDiningOrderItemInventoryExtraRequest
+{
+    public int InventoryItemId { get; set; }
+
+    public decimal Quantity { get; set; }
+
+    public string? Notes { get; set; }
 }

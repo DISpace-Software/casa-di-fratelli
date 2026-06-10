@@ -26,6 +26,8 @@ public class DiningOrder
 
     public string? Notes { get; set; }
 
+    public DateTime? InventoryConsumedAtUtc { get; set; }
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
     public List<DiningOrderItem> Items { get; set; } = new();

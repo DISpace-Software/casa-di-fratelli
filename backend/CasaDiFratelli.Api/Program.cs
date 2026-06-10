@@ -20,6 +20,7 @@ builder.Services.AddScoped<AdminAuthService>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<ProductTierService>();
 builder.Services.AddScoped<PushNotificationService>();
+builder.Services.AddScoped<InventoryConsumptionService>();
 
 var databaseConnectionString = ResolveDatabaseConnectionString(builder.Configuration);
 builder.Services.AddDbContext<AppDbContext>(options =>

@@ -25,4 +25,6 @@ public class DiningOrderItem
     public string Kind { get; set; } = "Dish";
 
     public DateTime? WaiterSeenAtUtc { get; set; }
+
+    public List<DiningOrderItemInventoryExtra> InventoryExtras { get; set; } = new();
 }

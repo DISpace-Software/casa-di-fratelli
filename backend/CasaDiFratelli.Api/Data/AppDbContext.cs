@@ -23,6 +23,12 @@ public class AppDbContext : DbContext
     public DbSet<DiningOrderItem> DiningOrderItems => Set<DiningOrderItem>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
     public DbSet<RestaurantEvent> RestaurantEvents => Set<RestaurantEvent>();
+    public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+    public DbSet<MenuItemRecipeIngredient> MenuItemRecipeIngredients => Set<MenuItemRecipeIngredient>();
+    public DbSet<DiningOrderItemInventoryExtra> DiningOrderItemInventoryExtras => Set<DiningOrderItemInventoryExtra>();
+    public DbSet<InventoryMovement> InventoryMovements => Set<InventoryMovement>();
+    public DbSet<InventoryAudit> InventoryAudits => Set<InventoryAudit>();
+    public DbSet<InventoryAuditLine> InventoryAuditLines => Set<InventoryAuditLine>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -105,11 +111,59 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Status).IsRequired().HasMaxLength(30);
             entity.Property(x => x.Source).IsRequired().HasMaxLength(40);
             entity.Property(x => x.Kind).IsRequired().HasMaxLength(30);
+            entity.HasMany(x => x.InventoryExtras).WithOne(x => x.DiningOrderItem).HasForeignKey(x => x.DiningOrderItemId);
         });
 
         modelBuilder.Entity<MenuItem>(entity =>
         {
             entity.Property(x => x.Department).IsRequired().HasMaxLength(30);
+        });
+
+        modelBuilder.Entity<InventoryItem>(entity =>
+        {
+            entity.Property(x => x.Name).IsRequired().HasMaxLength(160);
+            entity.Property(x => x.Category).IsRequired().HasMaxLength(80);
+            entity.Property(x => x.Unit).IsRequired().HasMaxLength(20);
+            entity.HasIndex(x => x.Name);
+        });
+
+        modelBuilder.Entity<MenuItemRecipeIngredient>(entity =>
+        {
+            entity.Property(x => x.Notes).HasMaxLength(300);
+            entity.HasIndex(x => new { x.MenuItemId, x.InventoryItemId }).IsUnique();
+            entity.HasOne(x => x.MenuItem).WithMany().HasForeignKey(x => x.MenuItemId);
+            entity.HasOne(x => x.InventoryItem).WithMany().HasForeignKey(x => x.InventoryItemId);
+        });
+
+        modelBuilder.Entity<DiningOrderItemInventoryExtra>(entity =>
+        {
+            entity.Property(x => x.Notes).HasMaxLength(300);
+            entity.HasOne(x => x.InventoryItem).WithMany().HasForeignKey(x => x.InventoryItemId);
+        });
+
+        modelBuilder.Entity<InventoryMovement>(entity =>
+        {
+            entity.Property(x => x.Type).IsRequired().HasMaxLength(40);
+            entity.Property(x => x.AdminName).HasMaxLength(120);
+            entity.HasIndex(x => x.InventoryItemId);
+            entity.HasIndex(x => x.DiningOrderId);
+            entity.HasOne(x => x.InventoryItem).WithMany().HasForeignKey(x => x.InventoryItemId);
+        });
+
+        modelBuilder.Entity<InventoryAudit>(entity =>
+        {
+            entity.Property(x => x.Title).IsRequired().HasMaxLength(180);
+            entity.Property(x => x.Status).IsRequired().HasMaxLength(30);
+            entity.Property(x => x.CreatedByAdminName).HasMaxLength(120);
+            entity.Property(x => x.ConfirmedByAdminName).HasMaxLength(120);
+            entity.HasMany(x => x.Lines).WithOne(x => x.InventoryAudit).HasForeignKey(x => x.InventoryAuditId);
+        });
+
+        modelBuilder.Entity<InventoryAuditLine>(entity =>
+        {
+            entity.Property(x => x.Comment).HasMaxLength(300);
+            entity.HasIndex(x => new { x.InventoryAuditId, x.InventoryItemId }).IsUnique();
+            entity.HasOne(x => x.InventoryItem).WithMany().HasForeignKey(x => x.InventoryItemId);
         });
     }
 }

@@ -15,11 +15,13 @@ public class DiningOrdersController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly AuditService _audit;
+    private readonly InventoryConsumptionService _inventory;
 
-    public DiningOrdersController(AppDbContext db, AuditService audit)
+    public DiningOrdersController(AppDbContext db, AuditService audit, InventoryConsumptionService inventory)
     {
         _db = db;
         _audit = audit;
+        _inventory = inventory;
     }
 
     private async Task RecalculateOrderTotalAsync(DiningOrder order)
@@ -61,7 +63,8 @@ public class DiningOrdersController : ControllerBase
         var name = request.Name.Trim();
         var quantity = Math.Min(request.Quantity, 99);
         var notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
-        var existingItem = order.Items.FirstOrDefault(x =>
+        var hasInventoryExtras = request.InventoryExtras.Any(x => x.InventoryItemId > 0 && x.Quantity > 0);
+        var existingItem = hasInventoryExtras ? null : order.Items.FirstOrDefault(x =>
             x.Status == "New" &&
             x.Source == source &&
             x.Kind == kind &&
@@ -80,7 +83,16 @@ public class DiningOrdersController : ControllerBase
                 Quantity = quantity,
                 Notes = notes,
                 Source = source,
-                Kind = kind
+                Kind = kind,
+                InventoryExtras = request.InventoryExtras
+                    .Where(x => x.InventoryItemId > 0 && x.Quantity > 0)
+                    .Select(x => new DiningOrderItemInventoryExtra
+                    {
+                        InventoryItemId = x.InventoryItemId,
+                        Quantity = x.Quantity,
+                        Notes = string.IsNullOrWhiteSpace(x.Notes) ? null : x.Notes.Trim()
+                    })
+                    .ToList()
             });
         }
         else
@@ -170,6 +182,7 @@ public class DiningOrdersController : ControllerBase
                 x.ClaimedAtUtc,
                 x.TotalPrice,
                 x.Notes,
+                x.InventoryConsumedAtUtc,
                 x.CreatedAtUtc,
                 Reservation = x.Reservation == null ? null : new
                 {
@@ -226,6 +239,7 @@ public class DiningOrdersController : ControllerBase
             x.ClaimedAtUtc,
             x.TotalPrice,
             x.Notes,
+            x.InventoryConsumedAtUtc,
             x.CreatedAtUtc,
             Items = x.Items.Select(item => new
             {
@@ -305,7 +319,16 @@ public class DiningOrdersController : ControllerBase
                 Source = "GuestOnline",
                 Kind = x.MenuItemId.HasValue && barMenuItemIdSet.Contains(x.MenuItemId.Value)
                     ? "Drink"
-                    : NormalizeItemKind(x.Kind)
+                    : NormalizeItemKind(x.Kind),
+                InventoryExtras = x.InventoryExtras
+                    .Where(extra => extra.InventoryItemId > 0 && extra.Quantity > 0)
+                    .Select(extra => new DiningOrderItemInventoryExtra
+                    {
+                        InventoryItemId = extra.InventoryItemId,
+                        Quantity = extra.Quantity,
+                        Notes = string.IsNullOrWhiteSpace(extra.Notes) ? null : extra.Notes.Trim()
+                    })
+                    .ToList()
             })
             .ToList();
 
@@ -524,7 +547,7 @@ public class DiningOrdersController : ControllerBase
             return Forbid();
 
         var nextStatus = string.IsNullOrWhiteSpace(request.Status) ? "New" : request.Status.Trim();
-        if (!new[] { "New", "Seen", "Preparing", "Done", "Cancelled" }.Contains(nextStatus))
+        if (!new[] { "New", "Seen", "Preparing", "Done", "Paid", "Completed", "Cancelled" }.Contains(nextStatus))
             return BadRequest(new { message = "Invalid order status." });
 
         var previousStatus = order.Status;
@@ -544,6 +567,12 @@ public class DiningOrdersController : ControllerBase
 
         order.Status = nextStatus;
         await _db.SaveChangesAsync();
+
+        if (InventoryConsumptionService.IsFinalOrderStatus(nextStatus))
+        {
+            await _inventory.ConsumeOrderAsync(order.Id, admin, $"Order marked as {nextStatus}");
+        }
+
         await _audit.RecordAsync(HttpContext, "update-status", "DiningOrder", order.Id.ToString(), new { Status = previousStatus }, new { order.Status });
 
         return Ok(new { order.Id, order.Status });
@@ -681,6 +710,45 @@ public class DiningOrdersController : ControllerBase
         await _audit.RecordAsync(HttpContext, "update-item-status", "DiningOrderItem", item.Id.ToString(), new { Status = previousStatus }, new { item.Status, OrderStatus = item.DiningOrder.Status });
 
         return Ok(new { item.Id, item.Status, OrderId = item.DiningOrderId, OrderStatus = item.DiningOrder.Status });
+    }
+
+    [HttpPost("items/{itemId:int}/inventory-extras")]
+    [AdminAuthorize]
+    public async Task<IActionResult> AddItemInventoryExtra(int itemId, [FromBody] CreateDiningOrderItemInventoryExtraRequest request)
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        var item = await _db.DiningOrderItems
+            .Include(x => x.DiningOrder)
+            .Include(x => x.InventoryExtras)
+            .FirstOrDefaultAsync(x => x.Id == itemId);
+
+        if (item?.DiningOrder == null)
+            return NotFound();
+
+        if (!CanWorkWithOrder(admin, item.DiningOrder))
+            return Forbid();
+
+        if (item.DiningOrder.InventoryConsumedAtUtc.HasValue)
+            return Conflict(new { message = "Inventory was already consumed for this order." });
+
+        if (request.InventoryItemId <= 0 || request.Quantity <= 0)
+            return BadRequest(new { message = "Ingredient and positive quantity are required." });
+
+        var ingredientExists = await _db.InventoryItems.AnyAsync(x => x.Id == request.InventoryItemId && x.IsActive);
+        if (!ingredientExists)
+            return NotFound(new { message = "Ingredient was not found." });
+
+        item.InventoryExtras.Add(new DiningOrderItemInventoryExtra
+        {
+            InventoryItemId = request.InventoryItemId,
+            Quantity = request.Quantity,
+            Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim()
+        });
+
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "add-inventory-extra", "DiningOrderItem", item.Id.ToString(), after: new { item.Id, request.InventoryItemId, request.Quantity });
+
+        return Ok(new { item.Id, item.DiningOrderId });
     }
 }
 
