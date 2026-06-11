@@ -167,9 +167,11 @@ public class DiningOrdersController : ControllerBase
             query = query.Where(x => x.Items.Any(item => item.Kind == "Drink"));
         }
 
-        var orders = await query
+        var orderEntities = await query
             .OrderByDescending(x => x.CreatedAtUtc)
-            .Select(x => new
+            .ToListAsync();
+
+        var orders = orderEntities.Select(x => new
             {
                 x.Id,
                 x.ReservationId,
@@ -196,20 +198,20 @@ public class DiningOrdersController : ControllerBase
                 Items = x.Items
                     .Where(item => CanProductionRoleSeeItem(role, item))
                     .Select(item => new
-                {
-                    item.Id,
-                    item.MenuItemId,
-                    item.Name,
-                    item.UnitPrice,
-                    item.Quantity,
-                    item.Notes,
-                    item.Status,
-                    item.Source,
-                    item.Kind,
-                    item.WaiterSeenAtUtc
-                }).ToList()
+                    {
+                        item.Id,
+                        item.MenuItemId,
+                        item.Name,
+                        item.UnitPrice,
+                        item.Quantity,
+                        item.Notes,
+                        item.Status,
+                        item.Source,
+                        item.Kind,
+                        item.WaiterSeenAtUtc
+                    }).ToList()
             })
-            .ToListAsync();
+            .ToList();
 
         return Ok(orders);
     }
