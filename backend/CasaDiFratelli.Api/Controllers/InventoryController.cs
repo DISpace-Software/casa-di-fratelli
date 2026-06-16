@@ -18,11 +18,13 @@ public class InventoryController : ControllerBase
 
     private readonly AppDbContext _db;
     private readonly AuditService _audit;
+    private readonly InventoryRecipeSeedService _recipeSeed;
 
-    public InventoryController(AppDbContext db, AuditService audit)
+    public InventoryController(AppDbContext db, AuditService audit, InventoryRecipeSeedService recipeSeed)
     {
         _db = db;
         _audit = audit;
+        _recipeSeed = recipeSeed;
     }
 
     [HttpGet("items")]
@@ -129,6 +131,18 @@ public class InventoryController : ControllerBase
     public Task<IActionResult> GetLowStock()
     {
         return GetItems(lowStock: true);
+    }
+
+    [HttpPost("seed-test-recipes")]
+    public async Task<IActionResult> SeedTestRecipes()
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (AdminRoleAccess.Normalize(admin?.Role) is not (AdminRoleAccess.Administrator or AdminRoleAccess.Owner or AdminRoleAccess.Developer))
+            return Forbid();
+
+        var result = await _recipeSeed.SeedAsync();
+        await _audit.RecordAsync(HttpContext, "seed-test-recipes", "Inventory", "recipes", after: result);
+        return Ok(result);
     }
 
     [HttpGet("movements")]

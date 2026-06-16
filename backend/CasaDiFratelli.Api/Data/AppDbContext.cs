@@ -43,8 +43,11 @@ public class AppDbContext : DbContext
             entity.Property(x => x.OrderAccessToken).HasMaxLength(80);
             entity.Property(x => x.EmailConfirmationTokenHash).HasMaxLength(128);
             entity.Property(x => x.CreatedByAdminName).HasMaxLength(120);
+            entity.Property(x => x.DeletedByAdminName).HasMaxLength(120);
             entity.HasIndex(x => x.OrderAccessToken);
             entity.HasIndex(x => x.EmailConfirmationTokenHash);
+            entity.HasIndex(x => x.IsDeleted);
+            entity.HasQueryFilter(x => !x.IsDeleted);
         });
 
         modelBuilder.Entity<ReservationTable>(entity =>
@@ -102,6 +105,9 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Status).IsRequired().HasMaxLength(30);
             entity.Property(x => x.Source).IsRequired().HasMaxLength(40);
             entity.Property(x => x.AssignedWaiterName).HasMaxLength(120);
+            entity.Property(x => x.DeletedByAdminName).HasMaxLength(120);
+            entity.HasIndex(x => x.IsDeleted);
+            entity.HasQueryFilter(x => !x.IsDeleted);
             entity.HasMany(x => x.Items).WithOne(x => x.DiningOrder).HasForeignKey(x => x.DiningOrderId);
         });
 
@@ -111,6 +117,9 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Status).IsRequired().HasMaxLength(30);
             entity.Property(x => x.Source).IsRequired().HasMaxLength(40);
             entity.Property(x => x.Kind).IsRequired().HasMaxLength(30);
+            entity.Property(x => x.DeletedByAdminName).HasMaxLength(120);
+            entity.HasIndex(x => x.IsDeleted);
+            entity.HasQueryFilter(x => !x.IsDeleted);
             entity.HasMany(x => x.InventoryExtras).WithOne(x => x.DiningOrderItem).HasForeignKey(x => x.DiningOrderItemId);
         });
 

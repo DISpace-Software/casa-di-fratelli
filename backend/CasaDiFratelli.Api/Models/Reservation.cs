@@ -60,4 +60,14 @@ public class Reservation
     public DateTime? EmailConfirmationExpiresAtUtc { get; set; }
 
     public DateTime? EmailConfirmedAtUtc { get; set; }
+
+    public bool IsDeleted { get; set; } = false;
+
+    public DateTime? DeletedAtUtc { get; set; }
+
+    public int? DeletedByAdminUserId { get; set; }
+
+    public string? DeletedByAdminName { get; set; }
+
+    public string? DeleteReason { get; set; }
 }

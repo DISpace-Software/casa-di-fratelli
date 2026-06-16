@@ -30,5 +30,15 @@ public class DiningOrder
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 
+    public bool IsDeleted { get; set; } = false;
+
+    public DateTime? DeletedAtUtc { get; set; }
+
+    public int? DeletedByAdminUserId { get; set; }
+
+    public string? DeletedByAdminName { get; set; }
+
+    public string? DeleteReason { get; set; }
+
     public List<DiningOrderItem> Items { get; set; } = new();
 }

@@ -53,4 +53,29 @@ public static class AdminRoleAccess
     {
         return Normalize(role) == Developer;
     }
+
+    public static bool CanDeleteReservations(string? role)
+    {
+        return Normalize(role) is Administrator or Owner or Developer;
+    }
+
+    public static bool CanRestoreReservations(string? role)
+    {
+        return CanDeleteReservations(role);
+    }
+
+    public static bool CanDeleteOrders(string? role)
+    {
+        return Normalize(role) is Administrator or Owner or Developer or Waiter or Kitchen or Bar;
+    }
+
+    public static bool CanRestoreOrders(string? role)
+    {
+        return Normalize(role) is Administrator or Owner or Developer;
+    }
+
+    public static bool CanViewDeletedOperationalData(string? role)
+    {
+        return Normalize(role) is Administrator or Owner or Developer;
+    }
 }

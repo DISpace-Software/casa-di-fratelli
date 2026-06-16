@@ -26,5 +26,15 @@ public class DiningOrderItem
 
     public DateTime? WaiterSeenAtUtc { get; set; }
 
+    public bool IsDeleted { get; set; } = false;
+
+    public DateTime? DeletedAtUtc { get; set; }
+
+    public int? DeletedByAdminUserId { get; set; }
+
+    public string? DeletedByAdminName { get; set; }
+
+    public string? DeleteReason { get; set; }
+
     public List<DiningOrderItemInventoryExtra> InventoryExtras { get; set; } = new();
 }

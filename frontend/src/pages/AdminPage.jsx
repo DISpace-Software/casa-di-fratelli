@@ -193,6 +193,7 @@ const adminText = {
       customers: "Клиенти",
       reports: "Отчети",
       inventory: "Склад",
+      maintenance: "Поддръжка",
     },
     reservations: {
       title: "Резервации",
@@ -375,6 +376,7 @@ const adminText = {
       customers: "Customers",
       reports: "Reports",
       inventory: "Inventory",
+      maintenance: "Maintenance",
     },
     reservations: {
       title: "Reservations",
@@ -2779,6 +2781,185 @@ function ThemeIcon({ theme, className = "h-5 w-5" }) {
   );
 }
 
+function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDiningOrders }) {
+  const [mode, setMode] = React.useState("reservations");
+  const [reason, setReason] = React.useState("");
+  const [fromDate, setFromDate] = React.useState("");
+  const [toDate, setToDate] = React.useState("");
+  const [deletedReservations, setDeletedReservations] = React.useState([]);
+  const [deletedOrders, setDeletedOrders] = React.useState([]);
+  const [notice, setNotice] = React.useState("");
+  const [error, setError] = React.useState("");
+
+  const text = {
+    bg: {
+      title: "Поддръжка",
+      subtitle: "Безопасно скриване и възстановяване на резервации и поръчки. Данните не се трият физически.",
+      reservations: "Резервации",
+      orders: "Поръчки",
+      reason: "Причина за изтриване",
+      from: "От дата",
+      to: "До дата",
+      deleteAll: "Скрий всички",
+      deletePeriod: "Скрий за период",
+      deleted: "Изтрити записи",
+      restore: "Възстанови",
+      loadDeleted: "Покажи изтрити",
+      warning: "Това действие ще скрие избраните записи. Те могат да бъдат възстановени само от Admin, Собственик или Програмист.",
+    },
+    en: {
+      title: "Maintenance",
+      subtitle: "Safe soft delete and restore for reservations and orders. Data is not physically removed.",
+      reservations: "Reservations",
+      orders: "Orders",
+      reason: "Delete reason",
+      from: "From date",
+      to: "To date",
+      deleteAll: "Hide all",
+      deletePeriod: "Hide period",
+      deleted: "Deleted records",
+      restore: "Restore",
+      loadDeleted: "Show deleted",
+      warning: "This action will hide selected records. They can be restored only by Admin, Owner, or Developer.",
+    },
+  }[adminLanguage];
+
+  const target = mode === "reservations" ? "reservations" : "orders";
+
+  async function loadDeleted() {
+    setError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/maintenance/${target}/deleted`);
+    if (!response.ok) {
+      setError(await readErrorMessage(response, "Failed to load deleted records."));
+      return;
+    }
+    const data = await response.json();
+    if (target === "reservations") setDeletedReservations(Array.isArray(data) ? data : []);
+    else setDeletedOrders(Array.isArray(data) ? data : []);
+  }
+
+  async function deleteRecords(periodOnly = false) {
+    setNotice("");
+    setError("");
+    if (!reason.trim()) {
+      setError(adminLanguage === "bg" ? "Моля въведете причина." : "Please enter a reason.");
+      return;
+    }
+    const confirmed = window.confirm(text.warning);
+    if (!confirmed) return;
+
+    const response = await adminFetch(`${API_BASE_URL}/api/maintenance/${target}/delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reason,
+        fromDate: periodOnly ? fromDate || null : null,
+        toDate: periodOnly ? toDate || null : null,
+      }),
+    });
+    if (!response.ok) {
+      setError(await readErrorMessage(response, "Failed to delete records."));
+      return;
+    }
+    const result = await response.json();
+    setNotice(adminLanguage === "bg" ? `Скрити записи: ${result.count ?? result.Count ?? 0}` : `Hidden records: ${result.count ?? result.Count ?? 0}`);
+    await Promise.all([loadReservations?.({ silent: true }), loadDiningOrders?.({ silent: true }), loadDeleted()]);
+  }
+
+  async function restoreRecord(id) {
+    setNotice("");
+    setError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/maintenance/${target}/${id}/restore`, { method: "POST" });
+    if (!response.ok) {
+      setError(await readErrorMessage(response, "Failed to restore record."));
+      return;
+    }
+    setNotice(adminLanguage === "bg" ? "Записът е възстановен." : "Record restored.");
+    await Promise.all([loadReservations?.({ silent: true }), loadDiningOrders?.({ silent: true }), loadDeleted()]);
+  }
+
+  const deleted = target === "reservations" ? deletedReservations : deletedOrders;
+
+  return (
+    <Panel title={text.title} subtitle={text.subtitle}>
+      <div className="space-y-5">
+        {(notice || error) && (
+          <div className={`rounded-2xl border px-4 py-3 text-sm ${error ? "border-red-300/30 bg-red-500/15 text-red-100" : "border-emerald-300/25 bg-emerald-500/12 text-emerald-100"}`}>
+            {error || notice}
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2 rounded-[26px] border border-white/10 bg-black/20 p-2">
+          {[
+            ["reservations", text.reservations],
+            ["orders", text.orders],
+          ].map(([key, label]) => (
+            <button key={key} type="button" onClick={() => setMode(key)} className={`rounded-2xl px-4 py-2 text-sm font-semibold ${mode === key ? "luxury-button" : "text-white/70 hover:bg-white/[0.06] hover:text-white"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+            <div className="section-kicker">{mode === "reservations" ? text.reservations : text.orders}</div>
+            <div className="mt-4 grid gap-3">
+              <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={text.reason} rows={3} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+              <div className="grid gap-3 md:grid-cols-2">
+                <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" aria-label={text.from} />
+                <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" aria-label={text.to} />
+              </div>
+              <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100/80">
+                {text.warning}
+              </div>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button type="button" onClick={() => deleteRecords(false)} className="rounded-2xl border border-red-300/25 bg-red-500/15 px-5 py-3 text-sm font-semibold text-red-100">
+                {text.deleteAll}
+              </button>
+              <button type="button" onClick={() => deleteRecords(true)} className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold">
+                {text.deletePeriod}
+              </button>
+              <button type="button" onClick={loadDeleted} className="ghost-button rounded-2xl px-5 py-3 text-sm font-semibold">
+                {text.loadDeleted}
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="section-kicker">{text.deleted}</div>
+              <button type="button" onClick={loadDeleted} className="ghost-button rounded-xl px-4 py-2 text-xs font-semibold">
+                {text.loadDeleted}
+              </button>
+            </div>
+            <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
+              {deleted.length === 0 && <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/50">—</div>}
+              {deleted.map((record) => (
+                <div key={record.id || record.Id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-semibold text-[#fff4df]">{record.guestName || record.GuestName || record.tableLabel || record.TableLabel || `#${record.id || record.Id}`}</div>
+                      <div className="mt-1 text-xs text-white/45">
+                        {record.reservedDate || record.ReservedDate || record.status || record.Status} {record.reservedTime || record.ReservedTime || ""}
+                      </div>
+                      <div className="mt-2 text-sm text-white/55">{record.deleteReason || record.DeleteReason || "—"}</div>
+                      <div className="mt-1 text-xs text-white/35">{record.deletedByAdminName || record.DeletedByAdminName || "—"}</div>
+                    </div>
+                    <button type="button" onClick={() => restoreRecord(record.id || record.Id)} className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100">
+                      {text.restore}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
 function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }) {
   const [section, setSection] = React.useState("items");
   const [items, setItems] = React.useState([]);
@@ -2788,6 +2969,8 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
   const [recipe, setRecipe] = React.useState(null);
   const [recipeLines, setRecipeLines] = React.useState([]);
   const [search, setSearch] = React.useState("");
+  const [categoryFilter, setCategoryFilter] = React.useState("all");
+  const [movementTypeFilter, setMovementTypeFilter] = React.useState("all");
   const [notice, setNotice] = React.useState("");
   const [error, setError] = React.useState("");
   const [itemForm, setItemForm] = React.useState({
@@ -2843,6 +3026,8 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
       actual: "Фактически остатък",
       expected: "Очакван",
       diff: "Разлика",
+      seed: "Създай тестови рецепти",
+      allCategories: "Всички категории",
     },
     en: {
       title: "Inventory",
@@ -2879,13 +3064,10 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
       actual: "Actual stock",
       expected: "Expected",
       diff: "Difference",
+      seed: "Create test recipes",
+      allCategories: "All categories",
     },
   }[adminLanguage];
-
-  const loadItems = React.useCallback(async () => {
-    const data = await fetchJsonOrEmpty(`${API_BASE_URL}/api/inventory/items`, [], { headers: { "X-Admin-Token": adminFetch.token || "" } });
-    setItems(Array.isArray(data) ? data : []);
-  }, [adminFetch]);
 
   const loadItemsViaAdminFetch = React.useCallback(async () => {
     const response = await adminFetch(`${API_BASE_URL}/api/inventory/items`);
@@ -3016,11 +3198,43 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
     await loadAudits();
   }
 
+  async function seedTestRecipes() {
+    setNotice("");
+    setError("");
+    const confirmed = window.confirm(
+      adminLanguage === "bg"
+        ? "Да се създадат ли тестови ингредиенти и рецептури? Съществуващите рецепти няма да се презапишат."
+        : "Create test ingredients and recipes? Existing recipes will not be overwritten."
+    );
+    if (!confirmed) return;
+
+    const response = await adminFetch(`${API_BASE_URL}/api/inventory/seed-test-recipes`, { method: "POST" });
+    if (!response.ok) {
+      setError(await readErrorMessage(response, "Recipe seed failed."));
+      return;
+    }
+    const result = await response.json();
+    setNotice(
+      adminLanguage === "bg"
+        ? `Готово: ${result.createdIngredients ?? result.CreatedIngredients ?? 0} ингредиента, ${result.createdRecipes ?? result.CreatedRecipes ?? 0} рецепти.`
+        : `Done: ${result.createdIngredients ?? result.CreatedIngredients ?? 0} ingredients, ${result.createdRecipes ?? result.CreatedRecipes ?? 0} recipes.`
+    );
+    await Promise.all([loadItemsViaAdminFetch(), loadMenuItems?.()]);
+    if (selectedMenuItemId) {
+      const recipeResponse = await adminFetch(`${API_BASE_URL}/api/recipes/menu-item/${selectedMenuItemId}`);
+      if (recipeResponse.ok) setRecipe(await recipeResponse.json());
+    }
+  }
+
+  const itemCategories = Array.from(new Set(items.map((item) => item.category || item.Category).filter(Boolean))).sort();
   const visibleItems = items.filter((item) => {
     const text = `${item.name || item.Name} ${item.category || item.Category}`.toLowerCase();
-    return !search.trim() || text.includes(search.trim().toLowerCase());
+    const matchesSearch = !search.trim() || text.includes(search.trim().toLowerCase());
+    const matchesCategory = categoryFilter === "all" || (item.category || item.Category) === categoryFilter;
+    return matchesSearch && matchesCategory;
   });
   const lowStockItems = items.filter((item) => item.isLowStock || item.IsLowStock);
+  const visibleMovements = movements.filter((movement) => movementTypeFilter === "all" || (movement.type || movement.Type) === movementTypeFilter);
   const selectedRecipeMenuItem = menuItems.find((item) => String(item.id || item.Id) === String(selectedMenuItemId));
 
   return (
@@ -3051,6 +3265,20 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
           ))}
         </div>
 
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-[#c9a56a]/20 bg-[#c9a56a]/10 p-4">
+          <div>
+            <div className="text-sm font-semibold text-[#fff4df]">{adminLanguage === "bg" ? "Тестови рецептури" : "Test recipes"}</div>
+            <div className="mt-1 text-xs text-white/45">
+              {adminLanguage === "bg"
+                ? "Запълва склада с примерни ингредиенти и рецепти за текущото меню, без да презаписва съществуващи рецепти."
+                : "Fills inventory with sample ingredients and recipes for the current menu without overwriting existing recipes."}
+            </div>
+          </div>
+          <button type="button" onClick={seedTestRecipes} className="luxury-button rounded-2xl px-4 py-3 text-sm font-semibold">
+            {tr.seed}
+          </button>
+        </div>
+
         {section === "items" && (
           <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
             <form onSubmit={saveItem} className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
@@ -3078,7 +3306,13 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
             </form>
 
             <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
-              <input placeholder={adminLanguage === "bg" ? "Търси ингредиент..." : "Search ingredient..."} value={search} onChange={(e) => setSearch(e.target.value)} className="mb-4 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+              <div className="mb-4 grid gap-3 md:grid-cols-2">
+                <input placeholder={adminLanguage === "bg" ? "Търси ингредиент..." : "Search ingredient..."} value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300">
+                  <option value="all">{tr.allCategories}</option>
+                  {itemCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+                </select>
+              </div>
               <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
                 {visibleItems.map((item) => (
                   <button key={item.id || item.Id} type="button" onClick={() => { setEditingItemId(item.id || item.Id); setItemForm({ name: item.name || item.Name || "", category: item.category || item.Category || "", unit: item.unit || item.Unit || "g", currentQuantity: item.currentQuantity ?? item.CurrentQuantity ?? 0, minimumQuantity: item.minimumQuantity ?? item.MinimumQuantity ?? 0, unitCost: item.unitCost ?? item.UnitCost ?? 0, isActive: item.isActive ?? item.IsActive ?? true }); }} className={`grid w-full grid-cols-[1fr_auto] gap-3 rounded-2xl border p-3 text-left ${item.isLowStock || item.IsLowStock ? "border-red-300/30 bg-red-500/12" : "border-white/10 bg-black/20"}`}>
@@ -3167,7 +3401,11 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
               <button className="luxury-button mt-4 rounded-2xl px-5 py-3 font-semibold">{tr.save}</button>
             </form>
             <div className="max-h-[660px] space-y-2 overflow-y-auto rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
-              {movements.map((movement) => (
+              <select value={movementTypeFilter} onChange={(e) => setMovementTypeFilter(e.target.value)} className="mb-4 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                <option value="all">{adminLanguage === "bg" ? "Всички движения" : "All movements"}</option>
+                {["Receipt", "SaleConsumption", "ManualAdjustment", "InventoryCorrection", "Waste"].map((type) => <option key={type} value={type}>{type}</option>)}
+              </select>
+              {visibleMovements.map((movement) => (
                 <div key={movement.id || movement.Id} className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-3 md:grid-cols-[1fr_auto]">
                   <div>
                     <div className="font-semibold text-[#fff4df]">{movement.ingredient || movement.Ingredient}</div>
@@ -3443,6 +3681,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const isProductionRole = isKitchenRole || isBarRole;
   const isOperationalRole = isWaiterRole || isProductionRole;
   const canClearOperationalData = currentAdminRole === "Developer";
+  const canUseMaintenance = ["Administrator", "Owner", "Developer"].includes(currentAdminRole);
   const canManageAdmins = ["Owner", "Developer"].includes(currentAdminRole);
   const hasDeveloperAdmin = adminUsers.some((user) => normalizeAdminRole(user.role || user.Role) === "Developer");
   const availableAdminRoleOptions = adminRoleOptions.filter((role) => {
@@ -5434,9 +5673,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           ["events", a.tabs.events],
           ["layout", a.tabs.layout],
           ["customers", a.tabs.customers],
+          ...(canUseMaintenance ? [["maintenance", a.tabs.maintenance]] : []),
           ...(canManageAdmins ? [["admins", adminLanguage === "bg" ? "Админи" : "Admins"]] : []),
         ],
-    [a.tabs, adminLanguage, canManageAdmins, isBarRole, isProductionRole, isProVersion, isWaiterRole]
+    [a.tabs, adminLanguage, canManageAdmins, canUseMaintenance, isBarRole, isProductionRole, isProVersion, isWaiterRole]
   );
   const readyWaiterItemsCount = React.useMemo(
     () => isWaiterRole
@@ -8408,6 +8648,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 adminFetch={adminFetch}
                 menuItems={menuItems}
                 loadMenuItems={loadMenuItems}
+              />
+            )}
+
+            {activeTab === "maintenance" && canUseMaintenance && (
+              <MaintenanceModule
+                adminLanguage={adminLanguage}
+                adminFetch={adminFetch}
+                loadReservations={loadReservations}
+                loadDiningOrders={loadDiningOrders}
               />
             )}
 

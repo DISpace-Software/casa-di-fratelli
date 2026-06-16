@@ -21,6 +21,7 @@ builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<ProductTierService>();
 builder.Services.AddScoped<PushNotificationService>();
 builder.Services.AddScoped<InventoryConsumptionService>();
+builder.Services.AddScoped<InventoryRecipeSeedService>();
 
 var databaseConnectionString = ResolveDatabaseConnectionString(builder.Configuration);
 builder.Services.AddDbContext<AppDbContext>(options =>
