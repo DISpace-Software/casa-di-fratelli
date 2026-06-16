@@ -97,17 +97,19 @@ public class InventoryRecipeSeedService
             .ThenBy(x => x.Category)
             .ThenBy(x => x.NameBg)
             .ToListAsync();
-        var existingRecipeMenuIds = await _db.MenuItemRecipeIngredients
-            .Select(x => x.MenuItemId)
-            .Distinct()
-            .ToListAsync();
-        var existingRecipeSet = existingRecipeMenuIds.ToHashSet();
+        var existingRecipes = await _db.MenuItemRecipeIngredients.ToListAsync();
+        var existingByMenu = existingRecipes
+            .GroupBy(x => x.MenuItemId)
+            .ToDictionary(x => x.Key, x => x.ToList());
         var createdRecipes = 0;
         var createdRecipeLines = 0;
 
         foreach (var menuItem in menuItems)
         {
-            if (existingRecipeSet.Contains(menuItem.Id)) continue;
+            existingByMenu.TryGetValue(menuItem.Id, out var existingLines);
+            var existingIngredientIds = (existingLines ?? new List<MenuItemRecipeIngredient>())
+                .Select(x => x.InventoryItemId)
+                .ToHashSet();
 
             var lines = BuildRecipe(menuItem)
                 .GroupBy(x => Normalize(x.IngredientName))
@@ -118,6 +120,7 @@ public class InventoryRecipeSeedService
                     Notes = group.Select(x => x.Notes).FirstOrDefault(x => !string.IsNullOrWhiteSpace(x))
                 })
                 .Where(x => x.Ingredient != null && x.Quantity > 0)
+                .Where(x => !existingIngredientIds.Contains(x.Ingredient!.Id))
                 .ToList();
 
             if (lines.Count == 0) continue;
@@ -129,7 +132,8 @@ public class InventoryRecipeSeedService
                 Quantity = line.Quantity,
                 Notes = line.Notes
             }));
-            createdRecipes++;
+            if (existingLines == null || existingLines.Count == 0)
+                createdRecipes++;
             createdRecipeLines += lines.Count;
         }
 

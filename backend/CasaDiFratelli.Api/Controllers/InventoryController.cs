@@ -2,6 +2,7 @@ using CasaDiFratelli.Api.Data;
 using CasaDiFratelli.Api.Filters;
 using CasaDiFratelli.Api.Models;
 using CasaDiFratelli.Api.Services;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -119,12 +120,39 @@ public class InventoryController : ControllerBase
         var item = await _db.InventoryItems.FindAsync(id);
         if (item == null) return NotFound();
 
-        item.IsActive = false;
+        var hasUsage = await _db.MenuItemRecipeIngredients.AnyAsync(x => x.InventoryItemId == id)
+            || await _db.InventoryMovements.AnyAsync(x => x.InventoryItemId == id)
+            || await _db.InventoryAuditLines.AnyAsync(x => x.InventoryItemId == id)
+            || await _db.DiningOrderItemInventoryExtras.AnyAsync(x => x.InventoryItemId == id);
+
+        if (hasUsage)
+        {
+            item.IsActive = false;
+            item.UpdatedAtUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            await _audit.RecordAsync(HttpContext, "deactivate", "InventoryItem", item.Id.ToString(), after: new { item.Id, item.IsActive });
+            return Ok(new { item.Id, item.IsActive, Mode = "Deactivated" });
+        }
+
+        _db.InventoryItems.Remove(item);
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "delete", "InventoryItem", item.Id.ToString(), before: item);
+
+        return Ok(new { item.Id, Mode = "Deleted" });
+    }
+
+    [HttpPost("items/{id:int}/activate")]
+    public async Task<IActionResult> ActivateItem(int id)
+    {
+        var item = await _db.InventoryItems.FindAsync(id);
+        if (item == null) return NotFound();
+
+        item.IsActive = true;
         item.UpdatedAtUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync();
-        await _audit.RecordAsync(HttpContext, "deactivate", "InventoryItem", item.Id.ToString(), after: new { item.Id, item.IsActive });
+        await _audit.RecordAsync(HttpContext, "activate", "InventoryItem", item.Id.ToString(), after: new { item.Id, item.IsActive });
 
-        return NoContent();
+        return Ok(item);
     }
 
     [HttpGet("low-stock")]
@@ -296,6 +324,70 @@ public class RecipesController : ControllerBase
         });
     }
 
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetSummary()
+    {
+        var menuItems = await _db.MenuItems
+            .AsNoTracking()
+            .Where(x => x.IsActive)
+            .OrderBy(x => x.Department)
+            .ThenBy(x => x.Category)
+            .ThenBy(x => x.NameBg)
+            .Select(x => new
+            {
+                x.Id,
+                x.NameBg,
+                x.NameEn,
+                x.Category,
+                x.Department,
+                x.Price
+            })
+            .ToListAsync();
+
+        var recipes = await _db.MenuItemRecipeIngredients
+            .Include(x => x.InventoryItem)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var recipeLookup = recipes
+            .GroupBy(x => x.MenuItemId)
+            .ToDictionary(
+                group => group.Key,
+                group => new
+                {
+                    Lines = group.Count(),
+                    Cost = group.Sum(x => x.Quantity * (x.InventoryItem?.UnitCost ?? 0)),
+                    MissingInactive = group.Count(x => x.InventoryItem == null || !x.InventoryItem.IsActive)
+                });
+
+        var result = menuItems.Select(item =>
+        {
+            recipeLookup.TryGetValue(item.Id, out var recipe);
+            var cost = recipe?.Cost ?? 0;
+            return new
+            {
+                item.Id,
+                item.NameBg,
+                item.NameEn,
+                item.Category,
+                item.Department,
+                SalePrice = item.Price,
+                Lines = recipe?.Lines ?? 0,
+                Cost = cost,
+                Margin = item.Price - cost,
+                FoodCostPercent = item.Price > 0 ? Math.Round(cost / item.Price * 100, 2) : 0,
+                MissingInactive = recipe?.MissingInactive ?? 0,
+                Status = recipe == null || recipe.Lines == 0
+                    ? "Missing"
+                    : recipe.MissingInactive > 0
+                        ? "NeedsAttention"
+                        : "Ready"
+            };
+        });
+
+        return Ok(result);
+    }
+
     [HttpPost("menu-item/{menuItemId:int}")]
     [HttpPut("menu-item/{menuItemId:int}")]
     public async Task<IActionResult> SaveRecipe(int menuItemId, [FromBody] SaveRecipeRequest request)
@@ -332,6 +424,24 @@ public class RecipesController : ControllerBase
         await _audit.RecordAsync(HttpContext, "save-recipe", "MenuItem", menuItemId.ToString(), before, lines);
 
         return await GetRecipe(menuItemId);
+    }
+
+    [HttpDelete("menu-item/{menuItemId:int}")]
+    public async Task<IActionResult> DeleteRecipe(int menuItemId)
+    {
+        var existing = await _db.MenuItemRecipeIngredients
+            .Where(x => x.MenuItemId == menuItemId)
+            .ToListAsync();
+
+        if (existing.Count == 0)
+            return NoContent();
+
+        var before = existing.Select(x => new { x.InventoryItemId, x.Quantity, x.Notes }).ToList();
+        _db.MenuItemRecipeIngredients.RemoveRange(existing);
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "delete-recipe", "MenuItem", menuItemId.ToString(), before);
+
+        return NoContent();
     }
 }
 
@@ -402,6 +512,7 @@ public class InventoryAuditsController : ControllerBase
                 x.Id,
                 x.InventoryItemId,
                 Ingredient = x.InventoryItem?.Name,
+                Category = x.InventoryItem?.Category,
                 Unit = x.InventoryItem?.Unit,
                 x.ExpectedQuantity,
                 x.ActualQuantity,
@@ -409,6 +520,34 @@ public class InventoryAuditsController : ControllerBase
                 x.Comment
             })
         });
+    }
+
+    [HttpGet("{id:int}/export")]
+    public async Task<IActionResult> ExportAudit(int id)
+    {
+        var audit = await _db.InventoryAudits
+            .Include(x => x.Lines)
+                .ThenInclude(x => x.InventoryItem)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (audit == null) return NotFound();
+
+        var csv = new StringBuilder();
+        csv.AppendLine("Ingredient,Category,Expected,Actual,Difference,Unit,Comment");
+        foreach (var line in audit.Lines.OrderBy(x => x.InventoryItem!.Category).ThenBy(x => x.InventoryItem!.Name))
+        {
+            csv.AppendLine(string.Join(",",
+                Csv(line.InventoryItem?.Name),
+                Csv(line.InventoryItem?.Category),
+                line.ExpectedQuantity,
+                line.ActualQuantity,
+                line.DifferenceQuantity,
+                Csv(line.InventoryItem?.Unit),
+                Csv(line.Comment)));
+        }
+
+        return File(Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(csv.ToString())).ToArray(), "text/csv", $"inventory-audit-{audit.Id}.csv");
     }
 
     [HttpPost]
@@ -449,6 +588,32 @@ public class InventoryAuditsController : ControllerBase
         _db.InventoryAudits.Add(audit);
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "create-audit", "InventoryAudit", audit.Id.ToString(), after: new { audit.Id, audit.Title });
+
+        return await GetAudit(audit.Id);
+    }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> UpdateAudit(int id, [FromBody] ConfirmInventoryAuditRequest request)
+    {
+        var audit = await _db.InventoryAudits
+            .Include(x => x.Lines)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (audit == null) return NotFound();
+        if (audit.Status == "Confirmed") return Conflict(new { message = "Confirmed audit cannot be edited." });
+
+        var provided = request.Lines.ToDictionary(x => x.InventoryItemId, x => x);
+        foreach (var line in audit.Lines)
+        {
+            if (!provided.TryGetValue(line.InventoryItemId, out var next)) continue;
+
+            line.ActualQuantity = next.ActualQuantity;
+            line.DifferenceQuantity = line.ActualQuantity - line.ExpectedQuantity;
+            line.Comment = next.Comment;
+        }
+
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "update-audit", "InventoryAudit", audit.Id.ToString(), after: new { audit.Id, Lines = audit.Lines.Count });
 
         return await GetAudit(audit.Id);
     }
@@ -510,6 +675,31 @@ public class InventoryAuditsController : ControllerBase
         await _audit.RecordAsync(HttpContext, "confirm-audit", "InventoryAudit", audit.Id.ToString(), after: new { audit.Id, audit.Status });
 
         return await GetAudit(audit.Id);
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> DeleteAudit(int id)
+    {
+        var audit = await _db.InventoryAudits
+            .Include(x => x.Lines)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (audit == null) return NotFound();
+        if (audit.Status == "Confirmed")
+            return Conflict(new { message = "Confirmed audit cannot be deleted." });
+
+        _db.InventoryAuditLines.RemoveRange(audit.Lines);
+        _db.InventoryAudits.Remove(audit);
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "delete-audit", "InventoryAudit", id.ToString(), before: new { audit.Id, audit.Title });
+
+        return NoContent();
+    }
+
+    private static string Csv(string? value)
+    {
+        var escaped = (value ?? string.Empty).Replace("\"", "\"\"");
+        return $"\"{escaped}\"";
     }
 }
 
