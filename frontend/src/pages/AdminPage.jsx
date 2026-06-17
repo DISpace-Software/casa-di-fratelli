@@ -3059,7 +3059,7 @@ function capitalize(value) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 }
 
-function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDiningOrders }) {
+function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDiningOrders, isProVersion = false }) {
   const [mode, setMode] = React.useState("reservations");
   const [archiveKind, setArchiveKind] = React.useState("upcoming");
   const [reason, setReason] = React.useState("");
@@ -3072,7 +3072,9 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
   const text = {
     bg: {
       title: "Поддръжка",
-      subtitle: "Безопасно скриване и възстановяване на резервации и поръчки. Данните не се трият физически.",
+      subtitle: isProVersion
+        ? "Безопасно скриване и възстановяване на резервации и поръчки. Данните не се трият физически."
+        : "Безопасно скриване и възстановяване на резервации. Данните не се трият физически.",
       reservations: "Резервации",
       orders: "Поръчки",
       reason: "Причина за изтриване",
@@ -3098,7 +3100,9 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
     },
     en: {
       title: "Maintenance",
-      subtitle: "Safe soft delete and restore for reservations and orders. Data is not physically removed.",
+      subtitle: isProVersion
+        ? "Safe soft delete and restore for reservations and orders. Data is not physically removed."
+        : "Safe soft delete and restore for reservations. Data is not physically removed.",
       reservations: "Reservations",
       orders: "Orders",
       reason: "Delete reason",
@@ -3124,7 +3128,8 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
     },
   }[adminLanguage];
 
-  const target = mode === "reservations" ? "reservations" : "orders";
+  const safeMode = isProVersion ? mode : "reservations";
+  const target = safeMode === "reservations" ? "reservations" : "orders";
   const archiveOptions = target === "reservations"
     ? [
         ["upcoming", text.upcoming],
@@ -3138,9 +3143,14 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
       ];
 
   React.useEffect(() => {
-    setArchiveKind(mode === "reservations" ? "upcoming" : "active");
+    if (!isProVersion && mode === "orders")
+      setMode("reservations");
+  }, [isProVersion, mode]);
+
+  React.useEffect(() => {
+    setArchiveKind(safeMode === "reservations" ? "upcoming" : "active");
     setArchiveRecords([]);
-  }, [mode]);
+  }, [safeMode]);
 
   async function loadArchive(kindOverride = archiveKind) {
     setError("");
@@ -3182,7 +3192,10 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
     const result = await response.json();
     setNotice(adminLanguage === "bg" ? `Скрити записи: ${result.count ?? result.Count ?? 0}` : `Hidden records: ${result.count ?? result.Count ?? 0}`);
     setArchiveKind("deleted");
-    await Promise.all([loadReservations?.({ silent: true }), loadDiningOrders?.({ silent: true })]);
+    await Promise.all([
+      loadReservations?.({ silent: true }),
+      isProVersion ? loadDiningOrders?.({ silent: true }) : Promise.resolve(),
+    ]);
     await loadArchive("deleted");
   }
 
@@ -3203,7 +3216,10 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
       return;
     }
     setNotice(adminLanguage === "bg" ? "Записът е скрит." : "Record hidden.");
-    await Promise.all([loadReservations?.({ silent: true }), loadDiningOrders?.({ silent: true })]);
+    await Promise.all([
+      loadReservations?.({ silent: true }),
+      isProVersion ? loadDiningOrders?.({ silent: true }) : Promise.resolve(),
+    ]);
     await loadArchive();
   }
 
@@ -3216,7 +3232,10 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
       return;
     }
     setNotice(adminLanguage === "bg" ? "Записът е възстановен." : "Record restored.");
-    await Promise.all([loadReservations?.({ silent: true }), loadDiningOrders?.({ silent: true })]);
+    await Promise.all([
+      loadReservations?.({ silent: true }),
+      isProVersion ? loadDiningOrders?.({ silent: true }) : Promise.resolve(),
+    ]);
     await loadArchive();
   }
 
@@ -3232,7 +3251,7 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
         <div className="flex flex-wrap gap-2 rounded-[26px] border border-white/10 bg-black/20 p-2">
           {[
             ["reservations", text.reservations],
-            ["orders", text.orders],
+            ...(isProVersion ? [["orders", text.orders]] : []),
           ].map(([key, label]) => (
             <button key={key} type="button" onClick={() => setMode(key)} className={`rounded-2xl px-4 py-2 text-sm font-semibold ${mode === key ? "luxury-button" : "text-white/70 hover:bg-white/[0.06] hover:text-white"}`}>
               {label}
@@ -3242,7 +3261,7 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
 
         <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
           <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
-            <div className="section-kicker">{mode === "reservations" ? text.reservations : text.orders}</div>
+            <div className="section-kicker">{safeMode === "reservations" ? text.reservations : text.orders}</div>
             <div className="mt-4 grid gap-3">
               <div>
                 <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/40">{text.archive}</div>
@@ -9431,6 +9450,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 adminFetch={adminFetch}
                 loadReservations={loadReservations}
                 loadDiningOrders={loadDiningOrders}
+                isProVersion={isProVersion}
               />
             )}
 
