@@ -207,6 +207,7 @@ const adminText = {
       status: "Статус",
       actions: "Действия",
       cancel: "Откажи",
+      archive: "Архивирай",
       noShow: "No-show",
       contact: "Контакт",
       phone: "Телефон",
@@ -390,6 +391,7 @@ const adminText = {
       status: "Status",
       actions: "Actions",
       cancel: "Cancel",
+      archive: "Archive",
       noShow: "No-show",
       contact: "Contact",
       phone: "Phone",
@@ -2783,11 +2785,11 @@ function ThemeIcon({ theme, className = "h-5 w-5" }) {
 
 function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDiningOrders }) {
   const [mode, setMode] = React.useState("reservations");
+  const [archiveKind, setArchiveKind] = React.useState("upcoming");
   const [reason, setReason] = React.useState("");
   const [fromDate, setFromDate] = React.useState("");
   const [toDate, setToDate] = React.useState("");
-  const [deletedReservations, setDeletedReservations] = React.useState([]);
-  const [deletedOrders, setDeletedOrders] = React.useState([]);
+  const [archiveRecords, setArchiveRecords] = React.useState([]);
   const [notice, setNotice] = React.useState("");
   const [error, setError] = React.useState("");
 
@@ -2802,9 +2804,20 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
       to: "До дата",
       deleteAll: "Скрий всички",
       deletePeriod: "Скрий за период",
-      deleted: "Изтрити записи",
+      archive: "Архив",
+      upcoming: "Предстоящи",
+      completed: "Състояли се",
+      active: "Активни",
+      deleted: "Изтрити",
       restore: "Възстанови",
-      loadDeleted: "Покажи изтрити",
+      loadArchive: "Покажи архива",
+      period: "Период",
+      empty: "Няма записи за избрания филтър.",
+      guest: "Гост",
+      table: "Маса",
+      date: "Дата",
+      order: "Поръчка",
+      total: "Общо",
       warning: "Това действие ще скрие избраните записи. Те могат да бъдат възстановени само от Admin, Собственик или Програмист.",
     },
     en: {
@@ -2817,25 +2830,54 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
       to: "To date",
       deleteAll: "Hide all",
       deletePeriod: "Hide period",
-      deleted: "Deleted records",
+      archive: "Archive",
+      upcoming: "Upcoming",
+      completed: "Completed",
+      active: "Active",
+      deleted: "Deleted",
       restore: "Restore",
-      loadDeleted: "Show deleted",
+      loadArchive: "Show archive",
+      period: "Period",
+      empty: "No records for the selected filter.",
+      guest: "Guest",
+      table: "Table",
+      date: "Date",
+      order: "Order",
+      total: "Total",
       warning: "This action will hide selected records. They can be restored only by Admin, Owner, or Developer.",
     },
   }[adminLanguage];
 
   const target = mode === "reservations" ? "reservations" : "orders";
+  const archiveOptions = target === "reservations"
+    ? [
+        ["upcoming", text.upcoming],
+        ["completed", text.completed],
+        ["deleted", text.deleted],
+      ]
+    : [
+        ["active", text.active],
+        ["completed", text.completed],
+        ["deleted", text.deleted],
+      ];
 
-  async function loadDeleted() {
+  React.useEffect(() => {
+    setArchiveKind(mode === "reservations" ? "upcoming" : "active");
+    setArchiveRecords([]);
+  }, [mode]);
+
+  async function loadArchive(kindOverride = archiveKind) {
     setError("");
-    const response = await adminFetch(`${API_BASE_URL}/api/maintenance/${target}/deleted`);
+    const params = new URLSearchParams({ kind: kindOverride });
+    if (fromDate) params.set("fromDate", fromDate);
+    if (toDate) params.set("toDate", toDate);
+    const response = await adminFetch(`${API_BASE_URL}/api/maintenance/${target}/archive?${params.toString()}`);
     if (!response.ok) {
-      setError(await readErrorMessage(response, "Failed to load deleted records."));
+      setError(await readErrorMessage(response, "Failed to load archive records."));
       return;
     }
     const data = await response.json();
-    if (target === "reservations") setDeletedReservations(Array.isArray(data) ? data : []);
-    else setDeletedOrders(Array.isArray(data) ? data : []);
+    setArchiveRecords(Array.isArray(data) ? data : []);
   }
 
   async function deleteRecords(periodOnly = false) {
@@ -2863,7 +2905,30 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
     }
     const result = await response.json();
     setNotice(adminLanguage === "bg" ? `Скрити записи: ${result.count ?? result.Count ?? 0}` : `Hidden records: ${result.count ?? result.Count ?? 0}`);
-    await Promise.all([loadReservations?.({ silent: true }), loadDiningOrders?.({ silent: true }), loadDeleted()]);
+    setArchiveKind("deleted");
+    await Promise.all([loadReservations?.({ silent: true }), loadDiningOrders?.({ silent: true })]);
+    await loadArchive("deleted");
+  }
+
+  async function deleteRecord(id) {
+    setNotice("");
+    setError("");
+    const nextReason = reason.trim() || (adminLanguage === "bg" ? "Архивиране от поддръжка" : "Archived from maintenance");
+    const confirmed = window.confirm(text.warning);
+    if (!confirmed) return;
+
+    const response = await adminFetch(`${API_BASE_URL}/api/maintenance/${target}/${id}/delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason: nextReason }),
+    });
+    if (!response.ok) {
+      setError(await readErrorMessage(response, "Failed to hide record."));
+      return;
+    }
+    setNotice(adminLanguage === "bg" ? "Записът е скрит." : "Record hidden.");
+    await Promise.all([loadReservations?.({ silent: true }), loadDiningOrders?.({ silent: true })]);
+    await loadArchive();
   }
 
   async function restoreRecord(id) {
@@ -2875,10 +2940,9 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
       return;
     }
     setNotice(adminLanguage === "bg" ? "Записът е възстановен." : "Record restored.");
-    await Promise.all([loadReservations?.({ silent: true }), loadDiningOrders?.({ silent: true }), loadDeleted()]);
+    await Promise.all([loadReservations?.({ silent: true }), loadDiningOrders?.({ silent: true })]);
+    await loadArchive();
   }
-
-  const deleted = target === "reservations" ? deletedReservations : deletedOrders;
 
   return (
     <Panel title={text.title} subtitle={text.subtitle}>
@@ -2904,6 +2968,16 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
           <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
             <div className="section-kicker">{mode === "reservations" ? text.reservations : text.orders}</div>
             <div className="mt-4 grid gap-3">
+              <div>
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/40">{text.archive}</div>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {archiveOptions.map(([key, label]) => (
+                    <button key={key} type="button" onClick={() => { setArchiveKind(key); loadArchive(key); }} className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${archiveKind === key ? "border-[#d8b676]/60 bg-[#d8b676]/20 text-[#fff4df]" : "border-white/10 bg-black/20 text-white/65 hover:border-[#d8b676]/35"}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={text.reason} rows={3} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
               <div className="grid gap-3 md:grid-cols-2">
                 <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" aria-label={text.from} />
@@ -2920,35 +2994,57 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
               <button type="button" onClick={() => deleteRecords(true)} className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold">
                 {text.deletePeriod}
               </button>
-              <button type="button" onClick={loadDeleted} className="ghost-button rounded-2xl px-5 py-3 text-sm font-semibold">
-                {text.loadDeleted}
+              <button type="button" onClick={loadArchive} className="ghost-button rounded-2xl px-5 py-3 text-sm font-semibold">
+                {text.loadArchive}
               </button>
             </div>
           </div>
 
           <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
             <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="section-kicker">{text.deleted}</div>
-              <button type="button" onClick={loadDeleted} className="ghost-button rounded-xl px-4 py-2 text-xs font-semibold">
-                {text.loadDeleted}
+              <div>
+                <div className="section-kicker">{text.archive}</div>
+                <div className="mt-1 text-xs text-white/40">{archiveOptions.find(([key]) => key === archiveKind)?.[1]} · {archiveRecords.length}</div>
+              </div>
+              <button type="button" onClick={loadArchive} className="ghost-button rounded-xl px-4 py-2 text-xs font-semibold">
+                {text.loadArchive}
               </button>
             </div>
             <div className="max-h-[620px] space-y-2 overflow-y-auto pr-1">
-              {deleted.length === 0 && <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/50">—</div>}
-              {deleted.map((record) => (
+              {archiveRecords.length === 0 && <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/50">{text.empty}</div>}
+              {archiveRecords.map((record) => (
                 <div key={record.id || record.Id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <div className="font-semibold text-[#fff4df]">{record.guestName || record.GuestName || record.tableLabel || record.TableLabel || `#${record.id || record.Id}`}</div>
-                      <div className="mt-1 text-xs text-white/45">
-                        {record.reservedDate || record.ReservedDate || record.status || record.Status} {record.reservedTime || record.ReservedTime || ""}
+                      <div className="font-semibold text-[#fff4df]">
+                        {target === "reservations"
+                          ? `${record.guestName || record.GuestName || text.guest} · #${record.id || record.Id}`
+                          : `${text.order} #${record.id || record.Id} · ${record.tableLabel || record.TableLabel || text.table}`}
                       </div>
-                      <div className="mt-2 text-sm text-white/55">{record.deleteReason || record.DeleteReason || "—"}</div>
-                      <div className="mt-1 text-xs text-white/35">{record.deletedByAdminName || record.DeletedByAdminName || "—"}</div>
+                      <div className="mt-1 text-xs text-white/45">
+                        {target === "reservations"
+                          ? `${record.reservedDate || record.ReservedDate || ""} ${record.reservedTime || record.ReservedTime || ""} · ${text.table}: ${(record.tableIds || record.TableIds || []).join(", ") || "—"}`
+                          : `${new Date(record.createdAtUtc || record.CreatedAtUtc || record.deletedAtUtc || record.DeletedAtUtc).toLocaleString()} · ${text.total}: ${formatEuroAmount(record.totalPrice ?? record.TotalPrice ?? 0)}`}
+                      </div>
+                      <div className="mt-2 text-sm text-white/55">{record.status || record.Status || "—"}</div>
+                      {archiveKind === "deleted" && (
+                        <>
+                          <div className="mt-2 text-sm text-white/55">{record.deleteReason || record.DeleteReason || "—"}</div>
+                          <div className="mt-1 text-xs text-white/35">{record.deletedByAdminName || record.DeletedByAdminName || "—"}</div>
+                        </>
+                      )}
                     </div>
-                    <button type="button" onClick={() => restoreRecord(record.id || record.Id)} className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100">
-                      {text.restore}
-                    </button>
+                    <div className="flex shrink-0 flex-col gap-2">
+                      {archiveKind === "deleted" ? (
+                        <button type="button" onClick={() => restoreRecord(record.id || record.Id)} className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100">
+                          {text.restore}
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => deleteRecord(record.id || record.Id)} className="rounded-xl border border-red-300/25 bg-red-500/12 px-3 py-2 text-xs font-semibold text-red-100">
+                          {adminLanguage === "bg" ? "Скрий" : "Hide"}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -4409,6 +4505,34 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
+    await loadReservations();
+  }
+
+  async function archiveReservation(id) {
+    setAdminNotice("");
+    setAdminError("");
+
+    const confirmed = window.confirm(
+      adminLanguage === "bg"
+        ? "Да архивираме ли тази резервация? Тя ще се скрие от обичайните списъци, но може да се възстанови от Поддръжка."
+        : "Archive this reservation? It will be hidden from regular lists, but can be restored from Maintenance."
+    );
+    if (!confirmed) return;
+
+    const response = await adminFetch(`${API_BASE_URL}/api/maintenance/reservations/${id}/delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reason: adminLanguage === "bg" ? "Архивирана от списъка с резервации" : "Archived from reservations list",
+      }),
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to archive reservation."));
+      return;
+    }
+
+    setAdminNotice(adminLanguage === "bg" ? "Резервацията е архивирана." : "Reservation archived.");
     await loadReservations();
   }
 
@@ -6816,10 +6940,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       onChange={(e) => setStatusFilter(e.target.value)}
                       className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-amber-300"
                     >
-                      <option>All</option>
-                      <option>Pending</option>
-                      <option>Approved</option>
-                      <option>Cancelled</option>
+                      {[
+                        ["All", adminLanguage === "bg" ? "Всички" : "All"],
+                        ["Pending", adminLanguage === "bg" ? "Чакащи" : "Pending"],
+                        ["Approved", adminLanguage === "bg" ? "Потвърдени" : "Approved"],
+                        ["Cancelled", adminLanguage === "bg" ? "Отказани" : "Cancelled"],
+                      ].map(([value, label]) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
                     </select>
                   </div>
                 }
@@ -7108,10 +7236,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                 <div className="text-xs uppercase tracking-[0.22em] text-amber-300">
                                   {a.reservations.flags}
                                 </div>
-                                <div className="mt-3 text-sm text-stone-300">Blacklist: {r.isBlacklisted ? "Yes" : "No"}</div>
-                                <div className="mt-2 text-sm text-stone-300">Regular: {r.isRegularCustomer ? "Yes" : "No"}</div>
-                                <div className="mt-2 text-sm text-stone-300">Marketing: {r.marketingConsent ? "Yes" : "No"}</div>
-                                <div className="mt-2 text-sm text-stone-300">Privacy: {r.privacyConsent ? "Yes" : "No"}</div>
+                                <div className="mt-3 text-sm text-stone-300">Blacklist: {r.isBlacklisted ? (adminLanguage === "bg" ? "Да" : "Yes") : (adminLanguage === "bg" ? "Не" : "No")}</div>
+                                <div className="mt-2 text-sm text-stone-300">{adminLanguage === "bg" ? "Редовен клиент" : "Regular"}: {r.isRegularCustomer ? (adminLanguage === "bg" ? "Да" : "Yes") : (adminLanguage === "bg" ? "Не" : "No")}</div>
+                                <div className="mt-2 text-sm text-stone-300">Marketing: {r.marketingConsent ? (adminLanguage === "bg" ? "Да" : "Yes") : (adminLanguage === "bg" ? "Не" : "No")}</div>
+                                <div className="mt-2 text-sm text-stone-300">Privacy: {r.privacyConsent ? (adminLanguage === "bg" ? "Да" : "Yes") : (adminLanguage === "bg" ? "Не" : "No")}</div>
                               </div>
                             </div>
 
@@ -7122,6 +7250,12 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                 className="rounded-xl bg-red-500 px-3 py-2 text-xs font-medium text-white disabled:opacity-40"
                               >
                                 {a.reservations.cancel}
+                              </button>
+                              <button
+                                onClick={() => archiveReservation(r.id)}
+                                className="rounded-xl border border-red-300/25 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-100"
+                              >
+                                {a.reservations.archive}
                               </button>
                               <button
                                 onClick={() => addToBlacklist(r)}
@@ -7185,9 +7319,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   disabled={r.status === "Cancelled"}
                                   className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-amber-300 disabled:opacity-40"
                                 >
-                                  <option value="indoor">Hall / Non-smoking</option>
-                                  <option value="garden">Terrace / Smoking</option>
-                                  <option value="openTerrace">Open terrace / Smoking</option>
+                                  <option value="indoor">{adminLanguage === "bg" ? "Зала / непушачи" : "Hall / non-smoking"}</option>
+                                  <option value="garden">{adminLanguage === "bg" ? "Покрита тераса / пушачи" : "Covered terrace / smoking"}</option>
+                                  <option value="openTerrace">{adminLanguage === "bg" ? "Открита тераса / пушачи" : "Open terrace / smoking"}</option>
                                 </select>
                                 <button
                                   type="button"
@@ -7279,6 +7413,12 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   >
                                     {a.reservations.cancel}
                                   </button>
+                                  <button
+                                    onClick={() => archiveReservation(r.id)}
+                                    className="rounded-xl border border-red-300/25 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-100"
+                                  >
+                                    {a.reservations.archive}
+                                  </button>
 
                                   <button
                                     onClick={() => addToBlacklist(r)}
@@ -7338,16 +7478,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                         {a.reservations.flags}
                                       </div>
                                       <div className="mt-3 text-sm text-stone-300">
-                                        Blacklist: {r.isBlacklisted ? "Yes" : "No"}
+                                        Blacklist: {r.isBlacklisted ? (adminLanguage === "bg" ? "Да" : "Yes") : (adminLanguage === "bg" ? "Не" : "No")}
                                       </div>
                                       <div className="mt-2 text-sm text-stone-300">
-                                        Regular: {r.isRegularCustomer ? "Yes" : "No"}
+                                        {adminLanguage === "bg" ? "Редовен клиент" : "Regular"}: {r.isRegularCustomer ? (adminLanguage === "bg" ? "Да" : "Yes") : (adminLanguage === "bg" ? "Не" : "No")}
                                       </div>
                                       <div className="mt-2 text-sm text-stone-300">
-                                        Marketing: {r.marketingConsent ? "Yes" : "No"}
+                                        Marketing: {r.marketingConsent ? (adminLanguage === "bg" ? "Да" : "Yes") : (adminLanguage === "bg" ? "Не" : "No")}
                                       </div>
                                       <div className="mt-2 text-sm text-stone-300">
-                                        Privacy: {r.privacyConsent ? "Yes" : "No"}
+                                        Privacy: {r.privacyConsent ? (adminLanguage === "bg" ? "Да" : "Yes") : (adminLanguage === "bg" ? "Не" : "No")}
                                       </div>
                                     </div>
                                   </div>
@@ -7412,9 +7552,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                           disabled={r.status === "Cancelled"}
                                           className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-amber-300 disabled:opacity-40"
                                         >
-                                          <option value="indoor">Hall / Non-smoking</option>
-                                          <option value="garden">Terrace / Smoking</option>
-                                          <option value="openTerrace">Open terrace / Smoking</option>
+                                          <option value="indoor">{adminLanguage === "bg" ? "Зала / непушачи" : "Hall / non-smoking"}</option>
+                                          <option value="garden">{adminLanguage === "bg" ? "Покрита тераса / пушачи" : "Covered terrace / smoking"}</option>
+                                          <option value="openTerrace">{adminLanguage === "bg" ? "Открита тераса / пушачи" : "Open terrace / smoking"}</option>
                                         </select>
 
                                         <button

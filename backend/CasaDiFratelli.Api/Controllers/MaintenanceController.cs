@@ -115,6 +115,57 @@ public class MaintenanceController : ControllerBase
         return Ok(reservations);
     }
 
+    [HttpGet("reservations/archive")]
+    public async Task<IActionResult> GetReservationArchive([FromQuery] string kind = "upcoming", [FromQuery] DateOnly? fromDate = null, [FromQuery] DateOnly? toDate = null)
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanViewDeletedOperationalData(admin?.Role))
+            return Forbid();
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var normalizedKind = NormalizeArchiveKind(kind);
+        var query = normalizedKind == "deleted"
+            ? _db.Reservations.IgnoreQueryFilters().Where(x => x.IsDeleted)
+            : _db.Reservations.AsQueryable();
+
+        if (fromDate.HasValue) query = query.Where(x => x.ReservedDate >= fromDate.Value);
+        if (toDate.HasValue) query = query.Where(x => x.ReservedDate <= toDate.Value);
+
+        query = normalizedKind switch
+        {
+            "upcoming" => query.Where(x => !x.IsDeleted && x.ReservedDate >= today && x.Status != "Cancelled" && x.Status != "Released" && !x.IsNoShow),
+            "completed" => query.Where(x => !x.IsDeleted && (x.ReservedDate < today || x.Status == "Released" || x.IsArrived || x.IsNoShow || x.Status == "Cancelled")),
+            "deleted" => query,
+            _ => query
+        };
+
+        var reservations = await query
+            .Include(x => x.Tables)
+            .OrderByDescending(x => normalizedKind == "deleted" ? x.DeletedAtUtc : x.ReservedDate.ToDateTime(TimeOnly.MinValue))
+            .ThenBy(x => x.ReservedTime)
+            .Take(300)
+            .Select(x => new
+            {
+                x.Id,
+                x.GuestName,
+                x.Phone,
+                x.Email,
+                x.ReservedDate,
+                x.ReservedTime,
+                x.GuestCount,
+                x.Status,
+                x.IsArrived,
+                x.IsNoShow,
+                x.DeletedAtUtc,
+                x.DeletedByAdminName,
+                x.DeleteReason,
+                TableIds = x.Tables.Select(t => t.TableCode).ToList()
+            })
+            .ToListAsync();
+
+        return Ok(reservations);
+    }
+
     [HttpPost("orders/delete")]
     public async Task<IActionResult> DeleteOrders([FromBody] MaintenanceDeleteRequest request)
     {
@@ -186,6 +237,60 @@ public class MaintenanceController : ControllerBase
         return Ok(orders);
     }
 
+    [HttpGet("orders/archive")]
+    public async Task<IActionResult> GetOrderArchive([FromQuery] string kind = "active", [FromQuery] DateOnly? fromDate = null, [FromQuery] DateOnly? toDate = null)
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanViewDeletedOperationalData(admin?.Role))
+            return Forbid();
+
+        var normalizedKind = NormalizeArchiveKind(kind);
+        var query = normalizedKind == "deleted"
+            ? _db.DiningOrders.IgnoreQueryFilters().Where(x => x.IsDeleted)
+            : _db.DiningOrders.AsQueryable();
+
+        if (fromDate.HasValue)
+        {
+            var from = fromDate.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            query = query.Where(x => x.CreatedAtUtc >= from);
+        }
+
+        if (toDate.HasValue)
+        {
+            var to = toDate.Value.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            query = query.Where(x => x.CreatedAtUtc < to);
+        }
+
+        query = normalizedKind switch
+        {
+            "active" or "upcoming" => query.Where(x => !x.IsDeleted && x.Status != "Done" && x.Status != "Paid" && x.Status != "Completed" && x.Status != "Cancelled"),
+            "completed" => query.Where(x => !x.IsDeleted && (x.Status == "Done" || x.Status == "Paid" || x.Status == "Completed" || x.Status == "Cancelled")),
+            "deleted" => query,
+            _ => query
+        };
+
+        var orders = await query
+            .Include(x => x.Items)
+            .OrderByDescending(x => normalizedKind == "deleted" ? x.DeletedAtUtc : x.CreatedAtUtc)
+            .Take(300)
+            .Select(x => new
+            {
+                x.Id,
+                x.GuestName,
+                x.TableLabel,
+                x.Status,
+                x.TotalPrice,
+                x.CreatedAtUtc,
+                x.DeletedAtUtc,
+                x.DeletedByAdminName,
+                x.DeleteReason,
+                Items = x.Items.Count
+            })
+            .ToListAsync();
+
+        return Ok(orders);
+    }
+
     private IQueryable<Reservation> ApplyReservationPeriod(IQueryable<Reservation> query, MaintenanceDeleteRequest request)
     {
         if (request.EntityId.HasValue) query = query.Where(x => x.Id == request.EntityId.Value);
@@ -221,6 +326,18 @@ public class MaintenanceController : ControllerBase
     private static string RequireReason(MaintenanceDeleteRequest request)
     {
         return string.IsNullOrWhiteSpace(request.Reason) ? "Maintenance cleanup" : request.Reason.Trim();
+    }
+
+    private static string NormalizeArchiveKind(string? kind)
+    {
+        var value = (kind ?? string.Empty).Trim().ToLowerInvariant();
+        return value switch
+        {
+            "active" => "active",
+            "completed" or "past" or "held" => "completed",
+            "deleted" or "removed" => "deleted",
+            _ => "upcoming"
+        };
     }
 
     private async Task<int> SoftDeleteReservationsAsync(IQueryable<Reservation> query, AdminPrincipal? admin, string reason)
