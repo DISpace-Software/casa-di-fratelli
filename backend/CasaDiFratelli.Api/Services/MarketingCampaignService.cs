@@ -32,7 +32,7 @@ public class MarketingCampaignService
 
         try
         {
-            return JsonSerializer.Deserialize<MarketingSettings>(setting.Value, JsonOptions) ?? MarketingSettings.Default();
+            return (JsonSerializer.Deserialize<MarketingSettings>(setting.Value, JsonOptions) ?? MarketingSettings.Default()).Normalize();
         }
         catch
         {
@@ -171,8 +171,9 @@ public class MarketingCampaignService
 
     private static MarketingCandidate BuildCandidate(CustomerProfile customer, MarketingCampaignSettings campaign, string key, string customerKey, DateOnly date)
     {
-        var subject = ApplyTemplate(campaign.Subject, customer, campaign, date, html: false);
-        var html = ApplyTemplate(campaign.HtmlTemplate, customer, campaign, date, html: true);
+        var subject = ApplyTemplate(campaign.Subject, customer, campaign, date);
+        var message = ApplyTemplate(campaign.HtmlTemplate, customer, campaign, date);
+        var html = BuildEmailHtml(message);
         return new MarketingCandidate(
             key,
             customerKey,
@@ -184,14 +185,36 @@ public class MarketingCampaignService
             html);
     }
 
-    private static string ApplyTemplate(string template, CustomerProfile customer, MarketingCampaignSettings campaign, DateOnly date, bool html)
+    private static string ApplyTemplate(string template, CustomerProfile customer, MarketingCampaignSettings campaign, DateOnly date)
     {
-        var guest = html ? WebUtility.HtmlEncode(customer.GuestName ?? "приятелю") : customer.GuestName ?? "приятелю";
+        var guest = customer.GuestName ?? "приятелю";
         return (template ?? string.Empty)
             .Replace("{{guestName}}", guest)
             .Replace("{{discountPercent}}", campaign.DiscountPercent.ToString("0.##"))
             .Replace("{{date}}", date.ToString("dd.MM.yyyy"))
             .Replace("{{restaurantName}}", "Casa di Fratelli");
+    }
+
+    private static string BuildEmailHtml(string message)
+    {
+        var paragraphs = (message ?? string.Empty)
+            .Replace("\r\n", "\n")
+            .Split("\n\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(paragraph => WebUtility.HtmlEncode(paragraph).Replace("\n", "<br>"))
+            .ToList();
+
+        if (paragraphs.Count == 0)
+            paragraphs.Add("Очакваме Ви в Casa di Fratelli.");
+
+        var body = string.Join("\n", paragraphs.Select(paragraph => $"<p>{paragraph}</p>"));
+
+        return $$"""
+            <div style="font-family:Arial,sans-serif;line-height:1.65;color:#1f2937;background:#fffaf1;padding:28px;border-radius:18px">
+              <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#a87328;font-weight:700;margin-bottom:14px">Casa di Fratelli</div>
+              <div style="font-size:16px">{{body}}</div>
+              <div style="margin-top:24px;padding-top:18px;border-top:1px solid #eadcc6;color:#7a6b5c;font-size:13px">С уважение,<br>екипът на Casa di Fratelli</div>
+            </div>
+            """;
     }
 
     private static string CustomerKey(CustomerProfile customer)
@@ -250,12 +273,11 @@ public class MarketingSettings
             DaysBefore = 5,
             Subject = "Подарък за рождения Ви ден · Casa di Fratelli",
             HtmlTemplate = """
-                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-                  <h2>{{restaurantName}} помни Вашия рожден ден</h2>
-                  <p>Здравейте, {{guestName}},</p>
-                  <p>Искаме да Ви поканим да отпразнувате рождения си ден при нас. Подготвили сме подаръчна отстъпка <strong>{{discountPercent}}%</strong> за Вашия празник.</p>
-                  <p>Очакваме Ви с удоволствие в Casa di Fratelli.</p>
-                </div>
+                Здравейте, {{guestName}},
+
+                {{restaurantName}} помни Вашия рожден ден и с удоволствие Ви кани да отпразнувате този специален момент при нас.
+
+                Подготвили сме подаръчна отстъпка {{discountPercent}}% за Вашия празник. Очакваме Ви с топла атмосфера, хубава храна и внимание към всеки детайл.
                 """
         },
         Loyalty = new MarketingCampaignSettings
@@ -266,11 +288,11 @@ public class MarketingSettings
             RequiredVisits = 4,
             Subject = "Вашият комплимент като редовен гост · Casa di Fratelli",
             HtmlTemplate = """
-                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-                  <h2>Благодарим Ви, {{guestName}}</h2>
-                  <p>Забелязахме, че често избирате {{restaurantName}}. За нас това е чест.</p>
-                  <p>При следващото Ви посещение Ви очаква комплимент: <strong>{{discountPercent}}% отстъпка</strong>.</p>
-                </div>
+                Здравейте, {{guestName}},
+
+                Благодарим Ви, че често избирате {{restaurantName}}. За нас е истинско удоволствие да Ви посрещаме отново.
+
+                Като наш редовен гост Ви очаква комплимент: {{discountPercent}}% отстъпка при следващото Ви посещение.
                 """
         },
         Winback = new MarketingCampaignSettings
@@ -282,11 +304,11 @@ public class MarketingSettings
             MinVisitsInHistory = 4,
             Subject = "Липсвате ни · Casa di Fratelli",
             HtmlTemplate = """
-                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-                  <h2>Липсвате ни, {{guestName}}</h2>
-                  <p>Отдавна не сме Ви посрещали в {{restaurantName}} и ще се радваме да Ви видим отново.</p>
-                  <p>Като наш гост Ви предлагаме <strong>{{discountPercent}}% отстъпка</strong> при следващото посещение.</p>
-                </div>
+                Здравейте, {{guestName}},
+
+                Отдавна не сме Ви посрещали в {{restaurantName}} и ще се радваме да Ви видим отново.
+
+                Подготвили сме за Вас {{discountPercent}}% отстъпка като малък жест от нашия екип. Заповядайте, когато Ви е удобно.
                 """
         }
     };
@@ -315,7 +337,50 @@ public class MarketingCampaignSettings
         HistoryDays = Math.Clamp(HistoryDays, 1, 730);
         MinVisitsInHistory = Math.Clamp(MinVisitsInHistory, 1, 100);
         if (string.IsNullOrWhiteSpace(Subject)) Subject = fallback.Subject;
-        if (string.IsNullOrWhiteSpace(HtmlTemplate)) HtmlTemplate = fallback.HtmlTemplate;
+        HtmlTemplate = NormalizeMessageTemplate(HtmlTemplate, fallback.HtmlTemplate);
         return this;
+    }
+
+    private static string NormalizeMessageTemplate(string value, string fallback)
+    {
+        var text = StripLegacyHtml(value);
+        return string.IsNullOrWhiteSpace(text) ? fallback : text.Trim();
+    }
+
+    private static string StripLegacyHtml(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || !value.Contains('<'))
+            return value ?? string.Empty;
+
+        var text = value
+            .Replace("<br>", "\n", StringComparison.OrdinalIgnoreCase)
+            .Replace("<br/>", "\n", StringComparison.OrdinalIgnoreCase)
+            .Replace("<br />", "\n", StringComparison.OrdinalIgnoreCase)
+            .Replace("</p>", "\n\n", StringComparison.OrdinalIgnoreCase)
+            .Replace("</h2>", "\n\n", StringComparison.OrdinalIgnoreCase);
+
+        var result = new System.Text.StringBuilder();
+        var insideTag = false;
+        foreach (var character in text)
+        {
+            if (character == '<')
+            {
+                insideTag = true;
+                continue;
+            }
+
+            if (character == '>')
+            {
+                insideTag = false;
+                continue;
+            }
+
+            if (!insideTag)
+                result.Append(character);
+        }
+
+        return WebUtility.HtmlDecode(result.ToString())
+            .Replace("\n\n\n", "\n\n")
+            .Trim();
     }
 }

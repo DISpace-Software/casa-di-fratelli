@@ -2808,14 +2808,15 @@ function MarketingModule({ adminLanguage, adminFetch }) {
       historyDays: "История дни",
       minVisits: "Мин. посещения в историята",
       subject: "Тема на имейла",
-      html: "Текст на имейла HTML",
+      html: "Съобщение",
       save: "Запази маркетинга",
       preview: "Провери кандидати",
       run: "Изпрати сега",
       subscribers: "Абонати",
       sent: "Изпратени писма",
       candidates: "Кандидати",
-      placeholders: "Може да използвате: {{guestName}}, {{discountPercent}}, {{date}}, {{restaurantName}}.",
+      placeholders: "В текста може да използвате име, процент, дата и име на ресторанта.",
+      tokens: "Бързи променливи",
       warning: "Реалното изпращане ще изпрати писма към всички кандидати, които още не са получавали тази кампания за тази дата.",
     },
     en: {
@@ -2833,17 +2834,25 @@ function MarketingModule({ adminLanguage, adminFetch }) {
       historyDays: "History days",
       minVisits: "Min. visits in history",
       subject: "Email subject",
-      html: "Email HTML text",
+      html: "Message",
       save: "Save marketing",
       preview: "Preview candidates",
       run: "Send now",
       subscribers: "Subscribers",
       sent: "Emails sent",
       candidates: "Candidates",
-      placeholders: "You can use: {{guestName}}, {{discountPercent}}, {{date}}, {{restaurantName}}.",
+      placeholders: "You can use guest name, discount, date, and restaurant name in the text.",
+      tokens: "Quick variables",
       warning: "Real sending will email every candidate who has not already received this campaign for this date.",
     },
   }[adminLanguage];
+
+  const tokenOptions = [
+    ["{{guestName}}", adminLanguage === "bg" ? "Име" : "Name"],
+    ["{{discountPercent}}%", adminLanguage === "bg" ? "Отстъпка" : "Discount"],
+    ["{{restaurantName}}", adminLanguage === "bg" ? "Ресторант" : "Restaurant"],
+    ["{{date}}", adminLanguage === "bg" ? "Дата" : "Date"],
+  ];
 
   const campaignMeta = [
     ["birthday", text.birthday, ["discountPercent", "daysBefore"]],
@@ -2885,6 +2894,12 @@ function MarketingModule({ adminLanguage, adminFetch }) {
         [field]: value,
       },
     }));
+  }
+
+  function appendToken(campaignKey, token) {
+    const campaign = getCampaign(campaignKey);
+    const current = campaign.htmlTemplate ?? campaign.HtmlTemplate ?? "";
+    updateCampaign(campaignKey, "htmlTemplate", `${current}${current.endsWith(" ") || current.endsWith("\n") || current.length === 0 ? "" : " "}${token}`);
   }
 
   async function saveSettings(event) {
@@ -2990,8 +3005,24 @@ function MarketingModule({ adminLanguage, adminFetch }) {
 
                 <label className="mt-4 block">
                   <span className="mb-1 block text-xs text-white/45">{text.html}</span>
-                  <textarea rows={8} value={campaign.htmlTemplate ?? campaign.HtmlTemplate ?? ""} onChange={(event) => updateCampaign(key, "htmlTemplate", event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-amber-300" />
+                  <textarea rows={7} value={campaign.htmlTemplate ?? campaign.HtmlTemplate ?? ""} onChange={(event) => updateCampaign(key, "htmlTemplate", event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm leading-relaxed outline-none focus:border-amber-300" />
                 </label>
+
+                <div className="mt-3">
+                  <div className="mb-2 text-xs text-white/45">{text.tokens}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {tokenOptions.map(([token, label]) => (
+                      <button
+                        key={token}
+                        type="button"
+                        onClick={() => appendToken(key, token)}
+                        className="rounded-full border border-[#c9a56a]/25 bg-[#c9a56a]/10 px-3 py-1.5 text-xs font-semibold text-[#f2d39a] transition hover:border-[#f2d39a]/45 hover:bg-[#c9a56a]/18"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             );
           })}
