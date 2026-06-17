@@ -29,6 +29,7 @@ public class AppDbContext : DbContext
     public DbSet<InventoryMovement> InventoryMovements => Set<InventoryMovement>();
     public DbSet<InventoryAudit> InventoryAudits => Set<InventoryAudit>();
     public DbSet<InventoryAuditLine> InventoryAuditLines => Set<InventoryAuditLine>();
+    public DbSet<MarketingMessageLog> MarketingMessageLogs => Set<MarketingMessageLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -87,8 +88,17 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<AppSetting>(entity =>
         {
             entity.Property(x => x.Key).IsRequired().HasMaxLength(80);
-            entity.Property(x => x.Value).IsRequired().HasMaxLength(200);
+            entity.Property(x => x.Value).IsRequired();
             entity.HasIndex(x => x.Key).IsUnique();
+        });
+
+        modelBuilder.Entity<MarketingMessageLog>(entity =>
+        {
+            entity.Property(x => x.CampaignKey).IsRequired().HasMaxLength(80);
+            entity.Property(x => x.CustomerKey).IsRequired().HasMaxLength(180);
+            entity.Property(x => x.Email).IsRequired().HasMaxLength(180);
+            entity.Property(x => x.Subject).IsRequired().HasMaxLength(220);
+            entity.HasIndex(x => new { x.CampaignKey, x.CustomerKey, x.SentForDate }).IsUnique();
         });
 
         modelBuilder.Entity<RestaurantEvent>(entity =>

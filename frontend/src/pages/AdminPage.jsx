@@ -193,6 +193,7 @@ const adminText = {
       customers: "Клиенти",
       reports: "Отчети",
       inventory: "Склад",
+      marketing: "Маркетинг",
       maintenance: "Поддръжка",
     },
     reservations: {
@@ -377,6 +378,7 @@ const adminText = {
       customers: "Customers",
       reports: "Reports",
       inventory: "Inventory",
+      marketing: "Marketing",
       maintenance: "Maintenance",
     },
     reservations: {
@@ -2783,6 +2785,249 @@ function ThemeIcon({ theme, className = "h-5 w-5" }) {
   );
 }
 
+function MarketingModule({ adminLanguage, adminFetch }) {
+  const [settings, setSettings] = React.useState(null);
+  const [stats, setStats] = React.useState(null);
+  const [preview, setPreview] = React.useState(null);
+  const [notice, setNotice] = React.useState("");
+  const [error, setError] = React.useState("");
+
+  const text = {
+    bg: {
+      title: "Маркетинг",
+      subtitle: "Автоматични кампании за рожден ден, редовни гости и връщане на гости. Работи и в Basic, и в Pro.",
+      birthday: "Рожден ден",
+      loyalty: "Редовен гост",
+      winback: "Върни гост",
+      enabled: "Активна кампания",
+      discount: "Отстъпка %",
+      daysBefore: "Дни преди рожден ден",
+      windowDays: "Период дни",
+      requiredVisits: "Нужни посещения",
+      absenceDays: "Дни без посещение",
+      historyDays: "История дни",
+      minVisits: "Мин. посещения в историята",
+      subject: "Тема на имейла",
+      html: "Текст на имейла HTML",
+      save: "Запази маркетинга",
+      preview: "Провери кандидати",
+      run: "Изпрати сега",
+      subscribers: "Абонати",
+      sent: "Изпратени писма",
+      candidates: "Кандидати",
+      placeholders: "Може да използвате: {{guestName}}, {{discountPercent}}, {{date}}, {{restaurantName}}.",
+      warning: "Реалното изпращане ще изпрати писма към всички кандидати, които още не са получавали тази кампания за тази дата.",
+    },
+    en: {
+      title: "Marketing",
+      subtitle: "Automated birthday, loyal guest, and win-back campaigns. Available in Basic and Pro.",
+      birthday: "Birthday",
+      loyalty: "Loyal guest",
+      winback: "Win back",
+      enabled: "Campaign enabled",
+      discount: "Discount %",
+      daysBefore: "Days before birthday",
+      windowDays: "Window days",
+      requiredVisits: "Required visits",
+      absenceDays: "Days absent",
+      historyDays: "History days",
+      minVisits: "Min. visits in history",
+      subject: "Email subject",
+      html: "Email HTML text",
+      save: "Save marketing",
+      preview: "Preview candidates",
+      run: "Send now",
+      subscribers: "Subscribers",
+      sent: "Emails sent",
+      candidates: "Candidates",
+      placeholders: "You can use: {{guestName}}, {{discountPercent}}, {{date}}, {{restaurantName}}.",
+      warning: "Real sending will email every candidate who has not already received this campaign for this date.",
+    },
+  }[adminLanguage];
+
+  const campaignMeta = [
+    ["birthday", text.birthday, ["discountPercent", "daysBefore"]],
+    ["loyalty", text.loyalty, ["discountPercent", "windowDays", "requiredVisits"]],
+    ["winback", text.winback, ["discountPercent", "absenceDays", "historyDays", "minVisitsInHistory"]],
+  ];
+
+  const fieldLabels = {
+    discountPercent: text.discount,
+    daysBefore: text.daysBefore,
+    windowDays: text.windowDays,
+    requiredVisits: text.requiredVisits,
+    absenceDays: text.absenceDays,
+    historyDays: text.historyDays,
+    minVisitsInHistory: text.minVisits,
+  };
+
+  const loadSettings = React.useCallback(async () => {
+    setError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/marketing/settings`);
+    if (!response.ok) {
+      setError(await readErrorMessage(response, "Failed to load marketing settings."));
+      return;
+    }
+    const data = await response.json();
+    setSettings(data.settings || data.Settings);
+    setStats(data.stats || data.Stats);
+  }, [adminFetch]);
+
+  React.useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  function updateCampaign(campaignKey, field, value) {
+    setSettings((previous) => ({
+      ...previous,
+      [campaignKey]: {
+        ...(previous?.[campaignKey] || previous?.[capitalize(campaignKey)] || {}),
+        [field]: value,
+      },
+    }));
+  }
+
+  async function saveSettings(event) {
+    event.preventDefault();
+    setNotice("");
+    setError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/marketing/settings`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    });
+    if (!response.ok) {
+      setError(await readErrorMessage(response, "Failed to save marketing settings."));
+      return;
+    }
+    setSettings(await response.json());
+    setNotice(adminLanguage === "bg" ? "Маркетинг настройките са запазени." : "Marketing settings saved.");
+    await loadSettings();
+  }
+
+  async function runMarketing(dryRun) {
+    setNotice("");
+    setError("");
+    if (!dryRun && !window.confirm(text.warning)) return;
+
+    const response = await adminFetch(`${API_BASE_URL}/api/marketing/run?dryRun=${dryRun ? "true" : "false"}`, { method: "POST" });
+    if (!response.ok) {
+      setError(await readErrorMessage(response, "Marketing run failed."));
+      return;
+    }
+    const data = await response.json();
+    setPreview(data);
+    setNotice(dryRun
+      ? (adminLanguage === "bg" ? "Проверката е готова." : "Preview ready.")
+      : (adminLanguage === "bg" ? `Изпратени писма: ${data.sent ?? data.Sent ?? 0}` : `Emails sent: ${data.sent ?? data.Sent ?? 0}`));
+    await loadSettings();
+  }
+
+  function getCampaign(key) {
+    return settings?.[key] || settings?.[capitalize(key)] || {};
+  }
+
+  if (!settings) {
+    return (
+      <Panel title={text.title} subtitle={text.subtitle}>
+        <div className="rounded-3xl border border-white/10 bg-black/20 p-6 text-white/50">Loading...</div>
+      </Panel>
+    );
+  }
+
+  return (
+    <Panel title={text.title} subtitle={text.subtitle}>
+      <form onSubmit={saveSettings} className="space-y-5">
+        {(notice || error) && (
+          <div className={`rounded-2xl border px-4 py-3 text-sm ${error ? "border-red-300/30 bg-red-500/15 text-red-100" : "border-emerald-300/25 bg-emerald-500/12 text-emerald-100"}`}>
+            {error || notice}
+          </div>
+        )}
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+            <div className="section-kicker">{text.subscribers}</div>
+            <div className="mt-3 text-3xl font-semibold text-[#fff4df]">{stats?.subscribers ?? stats?.Subscribers ?? 0}</div>
+          </div>
+          <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+            <div className="section-kicker">{text.sent}</div>
+            <div className="mt-3 text-3xl font-semibold text-[#fff4df]">{stats?.totalSent ?? stats?.TotalSent ?? 0}</div>
+          </div>
+          <div className="rounded-[24px] border border-[#c9a56a]/20 bg-[#c9a56a]/10 p-4 text-sm text-[#f2d39a]">
+            {text.placeholders}
+          </div>
+        </div>
+
+        <div className="grid gap-5 xl:grid-cols-3">
+          {campaignMeta.map(([key, label, fields]) => {
+            const campaign = getCampaign(key);
+            return (
+              <div key={key} className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div>
+                    <div className="section-kicker">{label}</div>
+                    <div className="mt-2 text-sm text-white/45">{text.placeholders}</div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-white/70">
+                    <input type="checkbox" checked={Boolean(campaign.enabled ?? campaign.Enabled)} onChange={(event) => updateCampaign(key, "enabled", event.target.checked)} />
+                    {text.enabled}
+                  </label>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                  {fields.map((field) => (
+                    <label key={field} className="block">
+                      <span className="mb-1 block text-xs text-white/45">{fieldLabels[field]}</span>
+                      <input type="number" step="1" value={campaign[field] ?? campaign[capitalize(field)] ?? ""} onChange={(event) => updateCampaign(key, field, Number(event.target.value || 0))} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                    </label>
+                  ))}
+                </div>
+
+                <label className="mt-4 block">
+                  <span className="mb-1 block text-xs text-white/45">{text.subject}</span>
+                  <input value={campaign.subject ?? campaign.Subject ?? ""} onChange={(event) => updateCampaign(key, "subject", event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                </label>
+
+                <label className="mt-4 block">
+                  <span className="mb-1 block text-xs text-white/45">{text.html}</span>
+                  <textarea rows={8} value={campaign.htmlTemplate ?? campaign.HtmlTemplate ?? ""} onChange={(event) => updateCampaign(key, "htmlTemplate", event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-amber-300" />
+                </label>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold">{text.save}</button>
+          <button type="button" onClick={() => runMarketing(true)} className="ghost-button rounded-2xl px-5 py-3 text-sm font-semibold">{text.preview}</button>
+          <button type="button" onClick={() => runMarketing(false)} className="rounded-2xl border border-emerald-300/25 bg-emerald-400/15 px-5 py-3 text-sm font-semibold text-emerald-100">{text.run}</button>
+        </div>
+
+        {preview && (
+          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
+            <div className="section-kicker">{text.candidates}: {preview.candidates ?? preview.Candidates ?? 0}</div>
+            <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+              {(preview.preview || preview.Preview || []).map((item, index) => (
+                <div key={`${item.email || item.Email}-${index}`} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <div className="font-semibold text-[#fff4df]">{item.guestName || item.GuestName || "—"}</div>
+                  <div className="mt-1 text-sm text-white/45">{item.email || item.Email}</div>
+                  <div className="mt-3 rounded-full border border-[#c9a56a]/25 bg-[#c9a56a]/10 px-3 py-1 text-xs font-semibold text-[#f2d39a]">
+                    {item.campaignKey || item.CampaignKey} · {item.discountPercent ?? item.DiscountPercent}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </form>
+    </Panel>
+  );
+}
+
+function capitalize(value) {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+}
+
 function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDiningOrders }) {
   const [mode, setMode] = React.useState("reservations");
   const [archiveKind, setArchiveKind] = React.useState("upcoming");
@@ -3991,6 +4236,15 @@ function AdminNavIcon({ type, className = "h-6 w-6" }) {
           <path d="M11 17h3" {...common} />
         </>
       )}
+      {type === "marketing" && (
+        <>
+          <path d="M7 23c6.5-1.5 12.5-6 17-14" {...common} />
+          <path d="M22 8l4-1-1 4" {...common} />
+          <rect x="7" y="15" width="4" height="9" rx="1.4" {...common} />
+          <rect x="14" y="12" width="4" height="12" rx="1.4" {...common} />
+          <rect x="21" y="16" width="4" height="8" rx="1.4" {...common} />
+        </>
+      )}
       {type === "layout" && (
         <>
           <rect x="6" y="7" width="8" height="7" rx="2" {...common} />
@@ -4124,6 +4378,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const isProductionRole = isKitchenRole || isBarRole;
   const isOperationalRole = isWaiterRole || isProductionRole;
   const canClearOperationalData = currentAdminRole === "Developer";
+  const canManageMarketing = ["Owner", "Developer"].includes(currentAdminRole);
   const canUseMaintenance = ["Administrator", "Owner", "Developer"].includes(currentAdminRole);
   const canManageAdmins = ["Owner", "Developer"].includes(currentAdminRole);
   const hasDeveloperAdmin = adminUsers.some((user) => normalizeAdminRole(user.role || user.Role) === "Developer");
@@ -6142,12 +6397,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           ["block", a.tabs.block],
           ["menu", a.tabs.menu],
           ["events", a.tabs.events],
+          ...(canManageMarketing ? [["marketing", a.tabs.marketing]] : []),
           ["layout", a.tabs.layout],
           ["customers", a.tabs.customers],
           ...(canUseMaintenance ? [["maintenance", a.tabs.maintenance]] : []),
           ...(canManageAdmins ? [["admins", adminLanguage === "bg" ? "Админи" : "Admins"]] : []),
         ],
-    [a.tabs, adminLanguage, canManageAdmins, canUseMaintenance, isBarRole, isProductionRole, isProVersion, isWaiterRole]
+    [a.tabs, adminLanguage, canManageAdmins, canManageMarketing, canUseMaintenance, isBarRole, isProductionRole, isProVersion, isWaiterRole]
   );
   const readyWaiterItemsCount = React.useMemo(
     () => isWaiterRole
@@ -9144,6 +9400,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 adminFetch={adminFetch}
                 loadReservations={loadReservations}
                 loadDiningOrders={loadDiningOrders}
+              />
+            )}
+
+            {activeTab === "marketing" && canManageMarketing && (
+              <MarketingModule
+                adminLanguage={adminLanguage}
+                adminFetch={adminFetch}
               />
             )}
 
