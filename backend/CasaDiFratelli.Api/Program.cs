@@ -2,6 +2,7 @@ using CasaDiFratelli.Api.Data;
 using CasaDiFratelli.Api.Json;
 using Microsoft.EntityFrameworkCore;
 using CasaDiFratelli.Api.Services;
+using CasaDiFratelli.Api.Services.Tenancy;
 using Npgsql;
 using System.Diagnostics;
 
@@ -11,6 +12,10 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new FlexibleDateOnlyJsonConverter());
 });
+builder.Services.Configure<TenantResolutionOptions>(builder.Configuration.GetSection("Tenancy"));
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CurrentTenant>();
+builder.Services.AddScoped<ICurrentTenant>(provider => provider.GetRequiredService<CurrentTenant>());
 builder.Services.AddHttpClient<EmailService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(5);
@@ -52,6 +57,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseMiddleware<TenantResolutionMiddleware>();
 app.UseCors("AllowFrontend");
 
 app.Use(async (context, next) =>
