@@ -1221,6 +1221,74 @@ html[data-theme="light"] .menu-page .text-white\/70 {
   color: rgba(42, 28, 18, 0.66) !important;
 }
 
+html[data-theme="light"] .admin-page :where(.text-white, .text-\[\#fff4df\], .text-stone-100, .text-stone-200),
+html[data-theme="light"] .reservation-page :where(.text-white, .text-\[\#fff4df\], .text-stone-100, .text-stone-200),
+html[data-theme="light"] .menu-page :where(.text-white, .text-\[\#fff4df\], .text-stone-100, .text-stone-200) {
+  color: #2a1c12 !important;
+}
+
+html[data-theme="light"] .admin-page :where([class*="text-white/"], .text-stone-300, .text-stone-400, .text-stone-500),
+html[data-theme="light"] .reservation-page :where([class*="text-white/"], .text-stone-300, .text-stone-400, .text-stone-500),
+html[data-theme="light"] .menu-page :where([class*="text-white/"], .text-stone-300, .text-stone-400, .text-stone-500) {
+  color: rgba(42, 28, 18, 0.68) !important;
+}
+
+html[data-theme="light"] .admin-page :where(.text-\[\#f2d39a\], .text-\[\#d8b377\], .text-amber-100, .text-yellow-300),
+html[data-theme="light"] .reservation-page :where(.text-\[\#f2d39a\], .text-\[\#d8b377\], .text-amber-100, .text-yellow-300),
+html[data-theme="light"] .menu-page :where(.text-\[\#f2d39a\], .text-\[\#d8b377\], .text-amber-100, .text-yellow-300) {
+  color: #87521f !important;
+}
+
+html[data-theme="light"] .admin-page :where(.text-red-100, .text-red-200) {
+  color: #8f2623 !important;
+}
+
+html[data-theme="light"] .admin-page :where(.text-emerald-100, .text-emerald-200),
+html[data-theme="light"] .reservation-page :where(.text-emerald-100, .text-emerald-200) {
+  color: #236342 !important;
+}
+
+html[data-theme="light"] .admin-page :where(.text-sky-100, .text-sky-200, .text-sky-100\/86),
+html[data-theme="light"] .reservation-page :where(.text-sky-100, .text-sky-200, .text-sky-100\/86) {
+  color: #31556a !important;
+}
+
+html[data-theme="light"] .admin-page :where(.bg-white\/\[0\.03\], .bg-white\/\[0\.04\], .bg-white\/\[0\.045\], .bg-white\/\[0\.05\], .bg-white\/\[0\.06\], .bg-white\/\[0\.07\], .bg-white\/5, .bg-white\/10, .bg-black\/20, .bg-black\/25, .bg-black\/30, .bg-black\/35, .bg-black\/40, .bg-black\/50, .bg-black\/55, .bg-black\/60, .bg-black\/70),
+html[data-theme="light"] .reservation-page :where(.bg-white\/\[0\.03\], .bg-white\/\[0\.04\], .bg-white\/\[0\.045\], .bg-white\/\[0\.05\], .bg-white\/\[0\.06\], .bg-white\/\[0\.07\], .bg-white\/5, .bg-white\/10, .bg-black\/20, .bg-black\/25, .bg-black\/30, .bg-black\/35, .bg-black\/40, .bg-black\/50, .bg-black\/55, .bg-black\/60, .bg-black\/70),
+html[data-theme="light"] .menu-page :where(.bg-white\/\[0\.03\], .bg-white\/\[0\.04\], .bg-white\/\[0\.045\], .bg-white\/\[0\.05\], .bg-white\/\[0\.06\], .bg-white\/\[0\.07\], .bg-white\/5, .bg-white\/10, .bg-black\/20, .bg-black\/25, .bg-black\/30, .bg-black\/35, .bg-black\/40, .bg-black\/50, .bg-black\/55, .bg-black\/60, .bg-black\/70) {
+  background-color: rgba(255, 250, 242, 0.68) !important;
+}
+
+html[data-theme="light"] .admin-page :where(input, select, textarea),
+html[data-theme="light"] .reservation-page :where(input, select, textarea),
+html[data-theme="light"] .menu-page :where(input, select, textarea) {
+  color: #2a1c12 !important;
+  caret-color: #7d4a1d;
+}
+
+html[data-theme="light"] .admin-page :where(input, textarea)::placeholder,
+html[data-theme="light"] .reservation-page :where(input, textarea)::placeholder,
+html[data-theme="light"] .menu-page :where(input, textarea)::placeholder {
+  color: rgba(42, 28, 18, 0.48) !important;
+}
+
+html[data-theme="light"] .admin-hero-panel,
+html[data-theme="light"] .admin-hero-panel :where(.text-white, [class*="text-white/"], .text-\[\#fff4df\], .text-stone-100, .text-stone-200, .text-stone-300) {
+  color: #fff7e8 !important;
+}
+
+html[data-theme="light"] .admin-hero-panel .section-kicker,
+html[data-theme="light"] .admin-hero-panel :where(.text-\[\#f2d39a\], .text-\[\#d8b377\]) {
+  color: #f2d39a !important;
+}
+
+html[data-theme="light"] .reservation-photo-card,
+html[data-theme="light"] .reservation-photo-card :where(.text-white, [class*="text-white/"], .text-\[\#fff4df\], .text-stone-300, .text-red-100, .text-amber-100, .text-emerald-100),
+html[data-theme="light"] .zone-preview-card,
+html[data-theme="light"] .zone-preview-card :where(.text-white, [class*="text-white/"], .text-\[\#fff4df\], .font-serif) {
+  color: rgba(255, 244, 223, 0.95) !important;
+}
+
 .admin-hero-panel {
   isolation: isolate;
 }
