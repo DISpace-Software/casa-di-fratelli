@@ -6,7 +6,7 @@ import {
   gardenGroups,
   indoorGroups,
   openTerraceGroups,
-  reservationTimes,
+  adminReservationTimes,
   tableIdsByArea,
   tablesByArea,
 } from "../domain/reservations/tableConfig";
@@ -600,7 +600,6 @@ const emptyHallBlock = {
 const indoorTableIds = tableIdsByArea.indoor;
 const gardenTableIds = tableIdsByArea.garden;
 const areaTableIds = tableIdsByArea;
-const adminReservationTimes = reservationTimes;
 const gardenSpecialIds = defaultGardenTables.filter((table) => table.special).map((table) => table.id);
 
 const categoryDisplayNames = {
@@ -1098,12 +1097,13 @@ function AdminMapDecor({ area }) {
 
   if (area === "openTerrace") {
     return (
-      <>
-        <AdminMapWindow className="left-5 right-5 top-3 h-4" label="Открито" />
-        <div className="pointer-events-none absolute bottom-5 left-1/2 z-[3] -translate-x-1/2 rounded-full border border-emerald-200/20 bg-emerald-300/10 px-3 py-1 text-[8px] font-bold uppercase tracking-[0.22em] text-emerald-100/80 backdrop-blur">
-          Открита тераса
+      <div className="pointer-events-none absolute left-1/2 top-2 z-[3] w-[32%] -translate-x-1/2 text-center">
+        <div className="mx-auto h-6 w-16 rounded-b-full border-x border-b border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_0%,rgba(214,178,120,0.28),transparent_62%)]" />
+        <div className="mx-auto h-1 w-20 rounded-full bg-[#d6b278]/55" />
+        <div className="mx-auto mt-0.5 max-w-[116px] rounded-full border border-[#c9a56a]/28 bg-black/48 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.14em] text-[#f2d39a] backdrop-blur">
+          Вход в ресторан
         </div>
-      </>
+      </div>
     );
   }
 
@@ -7596,7 +7596,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                     disabled={r.status === "Cancelled"}
                                     className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-amber-300 disabled:opacity-40"
                                   >
-                                    {getAvailableReservationTimesForDate(reservationTimes, tableEdit.reservedDate).map((time) => (
+                                    {getAvailableReservationTimesForDate(adminReservationTimes, tableEdit.reservedDate).map((time) => (
                                       <option key={time} value={time}>{time}</option>
                                     ))}
                                   </select>
@@ -7830,7 +7830,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                     disabled={r.status === "Cancelled"}
                                     className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-amber-300 disabled:opacity-40"
                                   >
-                                    {getAvailableReservationTimesForDate(reservationTimes, tableEdit.reservedDate).map((time) => (
+                                    {getAvailableReservationTimesForDate(adminReservationTimes, tableEdit.reservedDate).map((time) => (
                                       <option key={time} value={time}>{time}</option>
                                     ))}
                                   </select>

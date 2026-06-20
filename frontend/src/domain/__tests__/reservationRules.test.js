@@ -5,6 +5,7 @@ import {
   defaultGardenTables,
   defaultIndoorTables,
   defaultOpenTerraceTables,
+  adminReservationTimes,
   reservationTimes,
 } from "../reservations/tableConfig.js";
 import {
@@ -29,10 +30,13 @@ import {
 
 const byId = (tables, id) => tables.find((table) => table.id === id);
 
-test("reservation times cover the restaurant day from 10:00 to 22:00", () => {
-  assert.equal(reservationTimes.length, 13);
+test("reservation times use 15 minute slots with separate public and admin cutoffs", () => {
+  assert.equal(reservationTimes.length, 45);
   assert.equal(reservationTimes[0], "10:00");
-  assert.equal(reservationTimes.at(-1), "22:00");
+  assert.equal(reservationTimes.at(-1), "21:00");
+  assert.equal(adminReservationTimes.length, 53);
+  assert.equal(adminReservationTimes[0], "10:00");
+  assert.equal(adminReservationTimes.at(-1), "23:00");
 });
 
 test("time helpers keep the 3 hour reservation buffer exclusive", () => {
@@ -65,11 +69,11 @@ test("date helpers identify past date-times and hide old slots for today", () =>
 });
 
 test("today availability keeps only remaining working-hour slots", () => {
-  const now = new Date("2026-05-14T21:30:00");
+  const now = new Date("2026-05-14T20:30:00");
 
   assert.deepEqual(
     getAvailableReservationTimesForDate(reservationTimes, "2026-05-14", now),
-    ["22:00"]
+    ["20:45", "21:00"]
   );
   assert.deepEqual(
     getAvailableReservationTimesForDate(reservationTimes, "2026-05-15", now),

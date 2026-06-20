@@ -71,12 +71,22 @@ export const openTerraceGroups = [
   ["48", "49"],
 ];
 
-export const reservationTimes = Array.from({ length: 55 }, (_, index) => {
-  const totalMinutes = 10 * 60 + index * 15;
-  const hour = Math.floor(totalMinutes / 60);
-  const minute = totalMinutes % 60;
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-});
+function buildReservationTimes(endHour) {
+  const startMinutes = 10 * 60;
+  const endMinutes = endHour * 60;
+  const slots = Math.floor((endMinutes - startMinutes) / 15) + 1;
+
+  return Array.from({ length: slots }, (_, index) => {
+    const totalMinutes = startMinutes + index * 15;
+    const hour = Math.floor(totalMinutes / 60);
+    const minute = totalMinutes % 60;
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  });
+}
+
+export const publicReservationTimes = buildReservationTimes(21);
+export const adminReservationTimes = buildReservationTimes(23);
+export const reservationTimes = publicReservationTimes;
 
 export const tableIdsByArea = {
   indoor: defaultIndoorTables.map((table) => table.id),

@@ -18,6 +18,8 @@ public class ReservationsController : ControllerBase
 {
     private const int PublicDailyContactReservationLimit = 2;
     private const int PublicMaxReservationDaysAhead = 10;
+    private static readonly TimeOnly PublicLatestReservationTime = new(21, 0);
+    private static readonly TimeOnly AdminLatestReservationTime = new(23, 0);
     private const string ReservationStatusAwaitingEmailConfirmation = "AwaitingEmailConfirmation";
     private const string ReservationStatusPending = "Pending";
     private const string ReservationStatusApproved = "Approved";
@@ -83,6 +85,14 @@ public class ReservationsController : ControllerBase
             selectedDateTime = selectedDateTime.AddDays(1);
 
         return selectedDateTime <= now;
+    }
+
+    private static bool IsReservationTimeAllowed(string reservedTime, bool createdByAdmin)
+    {
+        if (!TimeOnly.TryParse(reservedTime, out var time))
+            return false;
+
+        return time <= (createdByAdmin ? AdminLatestReservationTime : PublicLatestReservationTime);
     }
 
     private static string CreateOrderAccessToken()
@@ -452,6 +462,11 @@ public class ReservationsController : ControllerBase
 
         if (IsPastReservationTime(request.ReservedDate, request.ReservedTime))
             return BadRequest("Reservation date or time has already passed.");
+
+        if (!IsReservationTimeAllowed(request.ReservedTime, request.CreatedByAdmin))
+            return BadRequest(request.CreatedByAdmin
+                ? "Admin reservations are available until 23:00."
+                : "Online reservations are available until 21:00. For a later time, please call 088 821 8318.");
 
         var today = DateOnly.FromDateTime(GetRestaurantNow());
         if (!request.CreatedByAdmin && request.ReservedDate > today.AddDays(PublicMaxReservationDaysAhead))
@@ -949,6 +964,9 @@ public class ReservationsController : ControllerBase
         var changesReservationTime = request.ReservedDate.HasValue || !string.IsNullOrWhiteSpace(request.ReservedTime);
         if (changesReservationTime && IsPastReservationTime(nextReservedDate, nextReservedTime))
             return BadRequest("Reservation date or time has already passed.");
+
+        if (!IsReservationTimeAllowed(nextReservedTime, createdByAdmin: true))
+            return BadRequest("Admin reservations are available until 23:00.");
 
         var conflict = await _reservationConflictService.FindTableConflictAsync(
             nextReservedDate,

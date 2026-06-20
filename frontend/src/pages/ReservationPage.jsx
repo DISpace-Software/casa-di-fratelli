@@ -164,6 +164,18 @@ function TerraceEntry({ label }) {
   );
 }
 
+function TopRestaurantEntry({ label }) {
+  return (
+    <div className="pointer-events-none absolute left-1/2 top-2 z-10 w-[32%] -translate-x-1/2 text-center">
+      <div className="mx-auto h-6 w-16 rounded-b-full border-x border-b border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_0%,rgba(214,178,120,0.28),transparent_62%)] shadow-[0_0_18px_rgba(214,178,120,0.16)]" />
+      <div className="mx-auto h-1 w-20 rounded-full bg-[#d6b278]/55" />
+      <div className="mx-auto mt-0.5 max-w-[116px] rounded-full border border-[#c9a56a]/28 bg-black/48 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.14em] text-[#f2d39a] backdrop-blur">
+        {label}
+      </div>
+    </div>
+  );
+}
+
 function SideEntry({ label }) {
   return (
     <div className="pointer-events-none absolute left-1 top-[60%] z-10 flex -translate-y-1/2 items-center">
@@ -377,10 +389,7 @@ function OpenTerraceMap({ tables, allTables, selectedIds, onSelect, labels }) {
   return (
     <div className="reservation-map-surface open-terrace-map relative min-h-[440px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))] shadow-inner md:min-h-[520px]">
       <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
-      <MapWindow className="left-5 right-5 top-3 h-4" label={labels.openSky} />
-      <div className="pointer-events-none absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-full border border-emerald-200/20 bg-emerald-300/10 px-3 py-1 text-[8px] font-bold uppercase tracking-[0.22em] text-emerald-100/80 backdrop-blur">
-        {labels.openTerraceTitle}
-      </div>
+      <TopRestaurantEntry label={labels.restaurantEntrance} />
       {tables.map((table) => (
         <GardenTable
           key={table.id}
@@ -911,6 +920,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   const labels = {
     perimeter: language === "bg" ? "Периметър" : "Garden perimeter",
     entrance: language === "bg" ? "Вход" : "Entrance",
+    restaurantEntrance: language === "bg" ? "Вход в ресторан" : "Restaurant entrance",
     terraceEntrance: language === "bg" ? "Вход към терасата" : "Entrance to terrace",
     windows: language === "bg" ? "Прозорци" : "Windows",
     wall: language === "bg" ? "Стена" : "Wall",
@@ -919,7 +929,6 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
     gardenSubtitle: language === "bg" ? "Подходяща зона за пушачи" : "Smoking area",
     openTerraceTitle: language === "bg" ? "Открита тераса / Пушачи" : "Open terrace / Smoking",
     openTerraceSubtitle: language === "bg" ? "Малка външна зона с 4 маси" : "Small outdoor area with 4 tables",
-    openSky: language === "bg" ? "Открито" : "Open air",
     indoorTitle: language === "bg" ? "Зала / Непушачи" : "Hall / Non-smoking",
     indoorSubtitle: language === "bg" ? "Комбинация от маси за 4 и 6 души" : "Mix of 4-seat and 6-seat tables",
     selectedTable: language === "bg" ? "Избрана маса" : "Selected table",
