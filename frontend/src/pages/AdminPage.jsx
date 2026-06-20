@@ -343,6 +343,7 @@ const adminText = {
       reset: "Върни оригиналната",
       add: "Добави маса",
       area: "Зона",
+      tableNumber: "Номер на маса",
       seats: "Места",
       active: "Активна",
       remove: "Премахни",
@@ -528,6 +529,7 @@ const adminText = {
       reset: "Restore original",
       add: "Add table",
       area: "Area",
+      tableNumber: "Table number",
       seats: "Seats",
       active: "Active",
       remove: "Remove",
@@ -967,9 +969,12 @@ function isInteractiveSwipeTarget(target) {
 }
 
 function getLiveReservationCandidates(reservations, now = new Date()) {
+  const today = formatLocalDate(now);
+
   return reservations
     .filter((reservation) => {
       if (!["Pending", "Approved"].includes(reservation.status) || reservation.isNoShow) return false;
+      if (reservation.reservedDate !== today) return false;
 
       const minutes = getReservationMinutesFromNow(reservation, now);
       return minutes !== null && minutes >= -90;
@@ -1003,6 +1008,26 @@ function buildLiveReservationsByTable(reservations, now = new Date()) {
   return byTable;
 }
 
+function formatReservationLeadTime(minutes, language = "bg") {
+  const value = Math.max(0, Math.round(Number(minutes || 0)));
+  const hours = Math.floor(value / 60);
+  const restMinutes = value % 60;
+
+  if (language === "bg") {
+    if (hours > 0 && restMinutes > 0) {
+      return `след ${hours} ${hours === 1 ? "час" : "часа"} и ${restMinutes} ${restMinutes === 1 ? "минута" : "минути"}`;
+    }
+    if (hours > 0) return `след ${hours} ${hours === 1 ? "час" : "часа"}`;
+    return `след ${restMinutes} ${restMinutes === 1 ? "минута" : "минути"}`;
+  }
+
+  if (hours > 0 && restMinutes > 0) {
+    return `in ${hours} ${hours === 1 ? "hour" : "hours"} and ${restMinutes} ${restMinutes === 1 ? "minute" : "minutes"}`;
+  }
+  if (hours > 0) return `in ${hours} ${hours === 1 ? "hour" : "hours"}`;
+  return `in ${restMinutes} ${restMinutes === 1 ? "minute" : "minutes"}`;
+}
+
 function getReservationTimingLabel(reservation, text, now = new Date()) {
   const minutes = getReservationMinutesFromNow(reservation, now);
 
@@ -1011,12 +1036,12 @@ function getReservationTimingLabel(reservation, text, now = new Date()) {
   if (minutes <= -10) return `${Math.abs(minutes)} min ${text.late}`;
   if (minutes <= 0) return text.now;
 
-  return `${text.dueIn} ${minutes} min`;
+  return formatReservationLeadTime(minutes, text.dueIn === "след" ? "bg" : "en");
 }
 
-function hasLayoutOverlap(layout, candidate) {
+function hasLayoutOverlap(layout, candidate, ignoreId = candidate.id) {
   return layout.some((item) => {
-    if (item.id === candidate.id || item.area !== candidate.area || !item.isActive || !candidate.isActive) {
+    if (item.id === ignoreId || item.id === candidate.id || item.area !== candidate.area || !item.isActive || !candidate.isActive) {
       return false;
     }
 
@@ -1266,6 +1291,19 @@ function TableLayoutEditor({
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-2">
+                  <label className="col-span-2 text-xs text-white/55">
+                    {text.tableNumber}
+                    <input
+                      type="text"
+                      value={selectedTable.id}
+                      onChange={(event) => {
+                        const nextId = event.target.value.trim();
+                        onUpdate(selectedTable.id, { ...selectedTable, id: nextId });
+                        if (nextId) setSelectedTableId(nextId);
+                      }}
+                      className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white"
+                    />
+                  </label>
                   <label className="text-xs text-white/55">
                     X
                     <input
@@ -2060,8 +2098,8 @@ function ReservationOperationsMap({
                         {nextSoonReservationForSelectedTable && (
                           <div className="rounded-xl border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-xs leading-5 text-amber-100">
                             {language === "bg"
-                              ? `Има резервация след ${nextSoonReservationForSelectedTable.minutes} мин.`
-                              : `Reservation in ${nextSoonReservationForSelectedTable.minutes} min.`}
+                              ? `Има резервация ${formatReservationLeadTime(nextSoonReservationForSelectedTable.minutes, language)}.`
+                              : `Reservation ${formatReservationLeadTime(nextSoonReservationForSelectedTable.minutes, language)}.`}
                           </div>
                         )}
                         {canSeatWalkInForSelectedTable && (
@@ -2098,8 +2136,8 @@ function ReservationOperationsMap({
                         {nextSoonReservationForSelectedTable && (
                           <div className="rounded-xl border border-amber-300/25 bg-amber-400/10 px-3 py-2 text-xs leading-5 text-amber-100">
                             {language === "bg"
-                              ? `Има резервация след ${nextSoonReservationForSelectedTable.minutes} мин.`
-                              : `Reservation in ${nextSoonReservationForSelectedTable.minutes} min.`}
+                              ? `Има резервация ${formatReservationLeadTime(nextSoonReservationForSelectedTable.minutes, language)}.`
+                              : `Reservation ${formatReservationLeadTime(nextSoonReservationForSelectedTable.minutes, language)}.`}
                           </div>
                         )}
                         {canSeatWalkInForSelectedTable && (
@@ -4728,7 +4766,18 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
   function updateTableLayoutItem(tableId, nextItem) {
     const normalized = normalizeLayoutItem(nextItem);
-    if (hasLayoutOverlap(tableLayout, normalized)) {
+    if (!normalized.id) {
+      setAdminError(adminLanguage === "bg" ? "Въведете номер на масата." : "Enter a table number.");
+      return;
+    }
+    if (
+      normalized.id !== tableId &&
+      tableLayout.some((item) => item.id.toLowerCase() === normalized.id.toLowerCase())
+    ) {
+      setAdminError(adminLanguage === "bg" ? "Вече има маса с този номер." : "A table with this number already exists.");
+      return;
+    }
+    if (hasLayoutOverlap(tableLayout, normalized, tableId)) {
       setAdminError(a.layout.overlap);
       return;
     }
@@ -6059,6 +6108,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return reservation.status !== "Cancelled" && !reservation.isNoShow;
   }
 
+  function isUpcomingOperationalReservation(reservation) {
+    if (!["Pending", "Approved"].includes(reservation.status)) return false;
+    if (reservation.isNoShow || reservation.isArrived) return false;
+
+    const minutes = getReservationMinutesFromNow(reservation);
+    return minutes !== null && minutes >= 0;
+  }
+
   function isOrderInStatsPeriod(order) {
     const createdAt = order.createdAtUtc ? new Date(order.createdAtUtc) : null;
     if (!createdAt || Number.isNaN(createdAt.getTime())) return false;
@@ -6145,12 +6202,20 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     },
   ];
 
-  const filteredReservations = reservations.filter((r) => {
-    const matchesStatus = statusFilter === "All" || r.status === statusFilter;
-    const haystack = `${r.guestName} ${r.phone} ${r.email} ${r.tableIds.join(" ")} ${r.reservedDate}`.toLowerCase();
+  const filteredReservations = reservations
+    .filter((r) => {
+      if (!isUpcomingOperationalReservation(r)) return false;
 
-    return matchesStatus && haystack.includes(search.toLowerCase());
-  });
+      const matchesStatus = statusFilter === "All" || r.status === statusFilter;
+      const haystack = `${r.guestName} ${r.phone} ${r.email} ${r.tableIds.join(" ")} ${r.reservedDate}`.toLowerCase();
+
+      return matchesStatus && haystack.includes(search.toLowerCase());
+    })
+    .sort((first, second) => {
+      const firstMinutes = getReservationMinutesFromNow(first) ?? 999999;
+      const secondMinutes = getReservationMinutesFromNow(second) ?? 999999;
+      return firstMinutes - secondMinutes;
+    });
 
   const pendingCount = statsReservations.filter((r) => r.status === "Pending").length;
   const blacklistKeys = new Set(

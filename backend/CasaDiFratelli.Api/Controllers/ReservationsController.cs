@@ -5,8 +5,10 @@ using CasaDiFratelli.Api.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CasaDiFratelli.Api.Services;
+using System.Data;
 using System.Net;
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace CasaDiFratelli.Api.Controllers;
 
@@ -29,6 +31,8 @@ public class ReservationsController : ControllerBase
     private readonly AuditService _audit;
     private readonly ProductTierService _tiers;
     private readonly PushNotificationService _pushNotifications;
+
+    private sealed record TableLayoutCapacityItem(string? Id, int Seats, bool IsActive);
 
     public ReservationsController(
         AppDbContext db,
@@ -126,6 +130,51 @@ public class ReservationsController : ControllerBase
             "https://www.google.com/maps/search/?api=1&query=Casa%20di%20Fratelli%20Vechernitsa%209%20Plovdiv").Trim();
     }
 
+    private async Task<int> GetTableCapacityAsync(List<string> tableIds)
+    {
+        if (tableIds.Count == 0) return 0;
+
+        try
+        {
+            var connection = _db.Database.GetDbConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = """SELECT "LayoutJson" FROM "TableLayouts" WHERE "Id" = 1;""";
+            var rawJson = await command.ExecuteScalarAsync() as string;
+
+            if (!string.IsNullOrWhiteSpace(rawJson))
+            {
+                var layout = JsonSerializer.Deserialize<List<TableLayoutCapacityItem>>(rawJson, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (layout?.Count > 0)
+                {
+                    var capacityById = layout
+                        .Where(item => item.IsActive && !string.IsNullOrWhiteSpace(item.Id))
+                        .GroupBy(item => item.Id!.Trim(), StringComparer.OrdinalIgnoreCase)
+                        .ToDictionary(group => group.Key, group => group.First().Seats, StringComparer.OrdinalIgnoreCase);
+
+                    return tableIds.Sum(tableId =>
+                        capacityById.TryGetValue(tableId, out var capacity)
+                            ? capacity
+                            : TableCapacityService.GetCapacity(new[] { tableId }));
+                }
+            }
+        }
+        catch
+        {
+            // Table layout storage is optional; old static capacities keep reservations working.
+        }
+
+        return TableCapacityService.GetCapacity(tableIds);
+    }
+
     private async Task SendReservationConfirmationEmailAsync(Reservation reservation, string token)
     {
         if (string.IsNullOrWhiteSpace(reservation.Email))
@@ -147,7 +196,6 @@ public class ReservationsController : ControllerBase
                 <div style="background:#fff3df;border:1px solid #ead8bd;border-radius:16px;padding:16px;margin:20px 0">
                   <p style="margin:0"><strong>Дата:</strong> {reservation.ReservedDate}</p>
                   <p style="margin:6px 0 0"><strong>Час:</strong> {reservation.ReservedTime}</p>
-                  <p style="margin:6px 0 0"><strong>Маси:</strong> {string.Join(", ", reservation.Tables.Select(t => t.TableCode))}</p>
                   <p style="margin:6px 0 0"><strong>Гости:</strong> {reservation.GuestCount}</p>
                 </div>
                 <p>
@@ -326,7 +374,9 @@ public class ReservationsController : ControllerBase
         }
 
         var reservations = await query
-            .OrderByDescending(x => x.CreatedAtUtc)
+            .OrderBy(x => x.ReservedDate)
+            .ThenBy(x => x.ReservedTime)
+            .ThenBy(x => x.CreatedAtUtc)
             .Select(x => new
             {
                 x.Id,
@@ -418,8 +468,16 @@ public class ReservationsController : ControllerBase
         if (tableIds.Count == 0)
             return BadRequest("At least one valid table must be selected.");
 
-        if (!TableCapacityService.HasEnoughSeats(tableIds, request.GuestCount))
-            return BadRequest("Selected tables do not have enough seats.");
+        if (!request.CreatedByAdmin && request.GuestCount >= 9)
+            return BadRequest("For 9 or more guests, please call 088 821 8318 so the host can arrange the best table.");
+
+        if (!request.CreatedByAdmin && tableIds.Count != 1)
+            return BadRequest("Online reservations can use one table only. For larger groups, please call 088 821 8318.");
+
+        if (await GetTableCapacityAsync(tableIds) < request.GuestCount)
+            return BadRequest(!request.CreatedByAdmin
+                ? "For this number of guests, please call 088 821 8318 so the host can arrange the best table."
+                : "Selected tables do not have enough seats.");
 
         if (!request.CreatedByAdmin)
         {
@@ -502,8 +560,11 @@ public class ReservationsController : ControllerBase
             await UpsertCustomerProfileForConfirmedReservationAsync(reservation);
             await MarkReservationBlacklistFlagAsync(reservation);
             await _db.SaveChangesAsync();
-            _ = SendAdminReservationEmailAsync(reservation);
-            await _pushNotifications.NotifyNewReservationAsync(reservation);
+            if (!request.CreatedByAdmin)
+            {
+                _ = SendAdminReservationEmailAsync(reservation);
+                await _pushNotifications.NotifyNewReservationAsync(reservation);
+            }
         }
 
         if (requiresEmailConfirmation && confirmationToken != null)
@@ -551,7 +612,7 @@ public class ReservationsController : ControllerBase
             return BadRequest(new { message = "At least one table must be selected." });
 
         var guestCount = Math.Clamp(request.GuestCount <= 0 ? 2 : request.GuestCount, 1, 40);
-        if (!TableCapacityService.HasEnoughSeats(tableIds, guestCount))
+        if (await GetTableCapacityAsync(tableIds) < guestCount)
             return BadRequest(new { message = "Selected tables do not have enough seats." });
 
         var now = GetRestaurantNow();
@@ -893,7 +954,7 @@ public class ReservationsController : ControllerBase
         if (changesReservationTime && IsPastReservationTime(nextReservedDate, nextReservedTime))
             return BadRequest("Reservation date or time has already passed.");
 
-        if (!TableCapacityService.HasEnoughSeats(tableIds, nextGuestCount))
+        if (await GetTableCapacityAsync(tableIds) < nextGuestCount)
             return BadRequest("Selected tables do not have enough seats.");
 
         var conflict = await _reservationConflictService.FindTableConflictAsync(

@@ -5,16 +5,8 @@ import {
   defaultGardenTables,
   defaultIndoorTables,
   defaultOpenTerraceTables,
-  gardenGroups,
-  indoorGroups,
-  openTerraceGroups,
   reservationTimes,
 } from "../domain/reservations/tableConfig";
-import {
-  canCombineTables,
-  getEligibleIndoorGroups,
-  getEligibleOpenTerraceGroups,
-} from "../domain/reservations/tableRules";
 import {
   getAvailableReservationTimesForDate,
   getDateInputValueAfterDays,
@@ -131,6 +123,10 @@ function InfoRow({ label, value }) {
       <span className="info-row-value text-right text-white">{value}</span>
     </div>
   );
+}
+
+function getPublicTableLabel(language = "bg") {
+  return language === "bg" ? "Избрана маса" : "Selected table";
 }
 
 function MapWindow({ className = "", label, vertical = false }) {
@@ -330,7 +326,7 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
                 : "border-[#c9a56a]/35 bg-[linear-gradient(145deg,#4d3829,#251b15)] text-white/88"
             }`}
           >
-            {table.id}
+            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" />
           </div>
         </div>
       </button>
@@ -370,7 +366,7 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
           }`}
         >
           <span className="absolute inset-1 rounded-[11px] border border-white/8" />
-          {table.id}
+          <span className="relative h-1.5 w-1.5 rounded-full bg-current opacity-75" />
         </div>
       </div>
     </button>
@@ -385,8 +381,6 @@ function OpenTerraceMap({ tables, allTables, selectedIds, onSelect, labels }) {
       <div className="pointer-events-none absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-full border border-emerald-200/20 bg-emerald-300/10 px-3 py-1 text-[8px] font-bold uppercase tracking-[0.22em] text-emerald-100/80 backdrop-blur">
         {labels.openTerraceTitle}
       </div>
-      <MergedHorizontalTableRail tables={allTables} selectedIds={selectedIds} groups={openTerraceGroups} />
-
       {tables.map((table) => (
         <GardenTable
           key={table.id}
@@ -410,8 +404,6 @@ function GardenMap({ tables, allTables, selectedIds, onSelect, labels }) {
       <MapWindow className="bottom-5 right-3 top-5 w-4" label={labels.windows} vertical />
       <WallTv label={labels.tv} />
       <TerraceEntry label={labels.terraceEntrance} />
-      <MergedTableRail tables={allTables} selectedIds={selectedIds} groups={gardenGroups} />
-
       {tables.map((table) => (
         <GardenTable
           key={table.id}
@@ -487,7 +479,7 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
               : "border border-[#c9a56a]/35 bg-[linear-gradient(145deg,#5a4332,#2a1f18)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_10px_22px_rgba(0,0,0,0.26)]"
           }`}
         >
-          {table.id}
+          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" />
         </div>
 
         <div className="map-seat-label mt-2 text-center text-[10px] text-white/45">
@@ -507,8 +499,6 @@ function IndoorMap({ tables, allTables, selectedIds, onSelect, labels }) {
       <SideEntry label={labels.entrance} />
       <IndoorPartitionWall label={labels.wall} />
       <IndoorTerraceEntry label={labels.terraceEntrance} />
-      <MergedTableRail tables={allTables} selectedIds={selectedIds} groups={indoorGroups} />
-
       {tables.map((table) => (
         <IndoorTable
           key={table.id}
@@ -609,9 +599,7 @@ function BookingModal({
               </p>
 
               <h2 className="mt-3 text-3xl font-semibold text-[#fff4df]">
-                {selectedTables.length > 1
-                  ? `${language === "bg" ? "Маси" : "Tables"}: ${selectedTables.map((table) => table.id).join(", ")}`
-                  : `${t.selectedTable}: ${selectedTables[0]?.id}`}
+                {getPublicTableLabel(language)}
               </h2>
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
@@ -967,22 +955,14 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   const canShowSearchParams = Boolean(selectedArea && reservationDate && selectedTime && guestCount);
 
   React.useEffect(() => {
-    if (selectedArea === "indoor" && requestedGuests > 16) {
-      setSelectedArea("garden");
+    if (requestedGuests >= 9) {
       setSelectedTables([]);
-      setPartyNoticeType("indoorTooLarge");
+      setPartyNoticeType("phoneReservation");
       return;
     }
 
-    if (selectedArea === "openTerrace" && requestedGuests > 8) {
-      setSelectedTables([]);
-      setPartyNoticeType(requestedGuests > 16 ? "openTerraceVeryLarge" : "openTerraceLarge");
-
-      if (requestedGuests > 16) {
-        setSelectedArea("garden");
-      }
-    }
-  }, [requestedGuests, selectedArea]);
+    setPartyNoticeType((current) => (current === "phoneReservation" ? "" : current));
+  }, [requestedGuests]);
 
   React.useEffect(() => {
     if (!canShowSearchParams || window.innerWidth >= 1024 || showBookingForm) return;
@@ -996,16 +976,6 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
 
     return () => clearTimeout(scrollTimeout);
   }, [canShowSearchParams, guestCount, reservationDate, selectedArea, selectedTime, showBookingForm]);
-
-
-  const bookingMode =
-    selectedArea === "garden" || selectedArea === "openTerrace"
-      ? requestedGuests > 4
-        ? "group"
-        : "single"
-      : requestedGuests >= 7
-      ? "group"
-      : "single";
 
   const selectedDateBlockedSlots = blockedSlots.filter((slot) => {
     const slotDate = slot.reservedDate || slot.ReservedDate;
@@ -1021,39 +991,22 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   const selectedIds = selectedTables.map((table) => table.id);
   const totalSeats = selectedTables.reduce((sum, table) => sum + table.seats, 0);
   const hasEnoughSeats = totalSeats >= requestedGuests;
-  const shouldHideUnselectedTables = bookingMode === "group" && selectedTables.length > 0 && hasEnoughSeats;
+  const requiresPhoneReservation = canShowSearchParams && requestedGuests >= 9;
 
   const canShowTable = (table, area) => {
     if (!canShowSearchParams) return false;
+    if (requiresPhoneReservation) return false;
     if (area !== selectedArea) return false;
     if (blockedTableIds.has(table.id)) return false;
 
     const isSelected = selectedTables.some((selected) => selected.id === table.id);
 
-    if (shouldHideUnselectedTables) {
+    if (selectedTables.length > 0) {
       return isSelected;
     }
 
-if (bookingMode === "single") {
-  if (requestedGuests <= 2) return table.seats <= 4;
-  return table.seats >= requestedGuests && table.seats <= requestedGuests + 2;
-}
-
-    if (selectedTables.length === 0) {
-      if (area === "garden") return !table.special;
-      if (area === "openTerrace") {
-        const eligibleOpenTerraceIds = getEligibleOpenTerraceGroups(requestedGuests, openTerraceTables).flat();
-        return eligibleOpenTerraceIds.includes(table.id);
-      }
-      const eligibleIndoorIds = getEligibleIndoorGroups(requestedGuests, indoorTables).flat();
-      return eligibleIndoorIds.includes(table.id);
-    }
-
-    if (isSelected) return true;
-
-    const areaTables =
-      area === "openTerrace" ? openTerraceTables : area === "garden" ? gardenTables : indoorTables;
-    return canCombineTables(area, selectedTables, table, requestedGuests, areaTables);
+    if (requestedGuests <= 2) return table.seats <= 4;
+    return table.seats >= requestedGuests;
   };
 
   const visibleGardenTables = gardenTables.filter((table) => canShowTable(table, "garden"));
@@ -1062,42 +1015,25 @@ if (bookingMode === "single") {
 
   const handleSelect = (table, area) => {
     if (!canShowSearchParams) return;
+    if (requiresPhoneReservation) return;
     if (blockedTableIds.has(table.id)) return;
 
-    if (bookingMode === "single") {
-      setSelectedArea(area);
-      setSelectedTables([table]);
-
-      if (window.innerWidth < 1024) {
-        setTimeout(() => {
-          timeSelectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 250);
-      }
-
-      return;
-    }
-
     setSelectedArea(area);
+    setSelectedTables([table]);
 
-    setSelectedTables((prev) => {
-      const exists = prev.some((item) => item.id === table.id);
-
-      if (exists) {
-        return prev.filter((item) => item.id !== table.id);
-      }
-
-      const currentSeats = prev.reduce((sum, item) => sum + item.seats, 0);
-      if (currentSeats >= requestedGuests) return prev;
-
-      const areaTables =
-        area === "openTerrace" ? openTerraceTables : area === "garden" ? gardenTables : indoorTables;
-      if (!canCombineTables(area, prev, table, requestedGuests, areaTables)) return prev;
-
-      return [...prev, table];
-    });
+    if (window.innerWidth < 1024) {
+      setTimeout(() => {
+        timeSelectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 250);
+    }
   };
 
-  const canOpenForm = canShowSearchParams && selectedTables.length > 0 && hasEnoughSeats;
+  const noSingleTableAvailable =
+    canShowSearchParams &&
+    !requiresPhoneReservation &&
+    selectedTables.length === 0 &&
+    visibleGardenTables.length + visibleIndoorTables.length + visibleOpenTerraceTables.length === 0;
+  const canOpenForm = canShowSearchParams && !requiresPhoneReservation && selectedTables.length === 1 && hasEnoughSeats;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -1203,7 +1139,6 @@ if (bookingMode === "single") {
           guestName,
           date: normalizedReservationDate,
           time: selectedTime,
-          tables: selectedTables.map((table) => table.id).join(", "),
         });
         setShowBookingForm(false);
         setSelectedTables([]);
@@ -1493,14 +1428,6 @@ if (bookingMode === "single") {
                 </div>
               </div>
 
-              {bookingMode === "group" && (
-                <div className="mb-4 rounded-2xl border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                  {language === "bg"
-                    ? "За този брой гости ще изберем комбинирани маси."
-                    : "For this number of guests, combined tables will be used."}
-                </div>
-              )}
-
               <div className="zone-preview-card relative mb-4 aspect-[4/3] overflow-hidden rounded-[24px] border border-white/10 bg-[#1a1411] shadow-2xl shadow-black/25">
                 <img src={zonePreviewImage} alt="Restaurant zone preview" className="absolute inset-0 h-full w-full scale-[1.04] object-cover object-center opacity-55 blur-[1px] transition duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
@@ -1516,7 +1443,7 @@ if (bookingMode === "single") {
                   </div>
                   <div className="text-2xl font-serif">
                     {selectedTables.length
-                      ? selectedTables.map((table) => table.id).join(", ")
+                      ? getPublicTableLabel(language)
                       : language === "bg"
                       ? "Няма избрана маса"
                       : "No table selected"}
@@ -1528,7 +1455,7 @@ if (bookingMode === "single") {
               </div>
 
               <div className="space-y-3 text-sm">
-                <InfoRow label={labels.table} value={selectedTables.length ? selectedTables.map((table) => table.id).join(", ") : "—"} />
+                <InfoRow label={labels.table} value={selectedTables.length ? getPublicTableLabel(language) : "—"} />
                 <InfoRow label={labels.capacity} value={`${totalSeats || 0} / ${guestCount || 0} ${t.people}`} />
               </div>
 
@@ -1562,15 +1489,32 @@ if (bookingMode === "single") {
                   ? language === "bg"
                     ? "Избери маса"
                     : "Choose table"
-                  : !hasEnoughSeats
-                  ? language === "bg"
-                    ? "Избери още маси"
-                    : "Choose more tables"
                   : labels.reserveSelected}
               </button>
             </div>
 
-            {canShowSearchParams ? (
+            {requiresPhoneReservation || noSingleTableAvailable ? (
+              <div className="flex min-h-[520px] items-center justify-center rounded-[28px] border border-[#c9a56a]/25 bg-[radial-gradient(circle_at_top_left,rgba(201,165,106,0.18),transparent_36%),rgba(0,0,0,0.24)] p-8 text-center">
+                <div className="max-w-md">
+                  <div className="mb-3 text-xs uppercase tracking-[0.3em] text-[#c9a56a]">
+                    {language === "bg" ? "Телефонна резервация" : "Phone reservation"}
+                  </div>
+                  <h2 className="text-2xl font-serif text-[#fff4df]">
+                    {language === "bg"
+                      ? "За този брой гости ще Ви помогнем лично."
+                      : "For this party size, we will assist you personally."}
+                  </h2>
+                  <p className="mt-3 text-sm leading-7 text-white/65">
+                    {language === "bg"
+                      ? "Моля, обадете се на администратора, за да изберем най-подходящата маса и час за Вашата компания."
+                      : "Please call the host so we can choose the best table and time for your group."}
+                  </p>
+                  <a href={`tel:${adminPhone.replace(/\s/g, "")}`} className="luxury-button mt-6 inline-flex rounded-2xl px-6 py-3 font-semibold">
+                    {adminPhone}
+                  </a>
+                </div>
+              </div>
+            ) : canShowSearchParams ? (
               <div ref={mapSectionRef}>
                 <ZoneCard title={zoneTitle} subtitle={zoneSubtitle} accent={zoneAccent}>
                   {selectedArea === "garden" ? (
@@ -1616,8 +1560,8 @@ if (bookingMode === "single") {
               className="w-full rounded-2xl bg-[#c9a56a] py-4 font-semibold text-black"
             >
               {language === "bg"
-                ? `Резервирай маса ${selectedTables.map((table) => table.id).join(", ")}`
-                : `Reserve table ${selectedTables.map((table) => table.id).join(", ")}`}
+                ? "Резервирай избраната маса"
+                : "Reserve selected table"}
             </button>
           </div>
         )}
@@ -1777,7 +1721,6 @@ if (bookingMode === "single") {
             </p>
             <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-stone-300">
               {autoConfirmationNotice.date} · {autoConfirmationNotice.time}
-              {autoConfirmationNotice.tables ? ` · ${language === "bg" ? "Маси" : "Tables"} ${autoConfirmationNotice.tables}` : ""}
             </div>
             <button
               type="button"
