@@ -474,10 +474,8 @@ public class ReservationsController : ControllerBase
         if (!request.CreatedByAdmin && tableIds.Count != 1)
             return BadRequest("Online reservations can use one table only. For larger groups, please call 088 821 8318.");
 
-        if (await GetTableCapacityAsync(tableIds) < request.GuestCount)
-            return BadRequest(!request.CreatedByAdmin
-                ? "For this number of guests, please call 088 821 8318 so the host can arrange the best table."
-                : "Selected tables do not have enough seats.");
+        if (!request.CreatedByAdmin && await GetTableCapacityAsync(tableIds) < request.GuestCount)
+            return BadRequest("For this number of guests, please call 088 821 8318 so the host can arrange the best table.");
 
         if (!request.CreatedByAdmin)
         {
@@ -612,8 +610,6 @@ public class ReservationsController : ControllerBase
             return BadRequest(new { message = "At least one table must be selected." });
 
         var guestCount = Math.Clamp(request.GuestCount <= 0 ? 2 : request.GuestCount, 1, 40);
-        if (await GetTableCapacityAsync(tableIds) < guestCount)
-            return BadRequest(new { message = "Selected tables do not have enough seats." });
 
         var now = GetRestaurantNow();
         var openingTime = new TimeOnly(10, 0);
@@ -953,9 +949,6 @@ public class ReservationsController : ControllerBase
         var changesReservationTime = request.ReservedDate.HasValue || !string.IsNullOrWhiteSpace(request.ReservedTime);
         if (changesReservationTime && IsPastReservationTime(nextReservedDate, nextReservedTime))
             return BadRequest("Reservation date or time has already passed.");
-
-        if (await GetTableCapacityAsync(tableIds) < nextGuestCount)
-            return BadRequest("Selected tables do not have enough seats.");
 
         var conflict = await _reservationConflictService.FindTableConflictAsync(
             nextReservedDate,

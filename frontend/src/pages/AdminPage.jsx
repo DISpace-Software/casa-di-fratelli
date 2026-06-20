@@ -857,6 +857,7 @@ function TableChipSelector({
   areaTables,
   suggestedTableIds = new Set(),
   bestTableIds = new Set(),
+  unrestrictedSelection = false,
 }) {
   const tableIds = tableIdsOverride || areaTableIds[area] || indoorTableIds;
   const visibleTableIds = hideUnavailable
@@ -872,12 +873,13 @@ function TableChipSelector({
         const best = bestTableIds.has(tableId);
         const allowed =
           !unavailable &&
+          (unrestrictedSelection ||
           (selected ||
             canUseAdminTableSelection(area, [...selectedTableIds, tableId], {
               requiredSeats,
               allowPartial: true,
               ...(areaTables ? { areaTables } : {}),
-            }));
+            })));
 
         return (
           <button
@@ -1657,18 +1659,9 @@ function ReservationOperationsMap({
     const nextGuestCount = Math.max(1, Math.min(40, Number(value || 1)));
 
     setMoveDraft((prev) => {
-      const nextTableIds = canUseAdminTableSelection(prev.area, prev.tableIds, {
-        requiredSeats: nextGuestCount,
-        allowPartial: true,
-        areaTables: getActiveTablesForArea(prev.area),
-      })
-        ? prev.tableIds
-        : [];
-
       return {
         ...prev,
         guestCount: nextGuestCount,
-        tableIds: nextTableIds,
       };
     });
   }
@@ -1680,14 +1673,6 @@ function ReservationOperationsMap({
     const nextTableIds = exists
       ? moveDraft.tableIds.filter((id) => id !== tableId)
       : [...moveDraft.tableIds, tableId];
-
-    if (!canUseAdminTableSelection(moveDraft.area, nextTableIds, {
-      requiredSeats: Number(moveDraft.guestCount || selectedReservation.guestCount || 0),
-      allowPartial: true,
-      areaTables: moveAreaTables,
-    })) {
-      return;
-    }
 
     setMoveDraft((prev) => ({ ...prev, tableIds: nextTableIds }));
   }
@@ -1982,13 +1967,7 @@ function ReservationOperationsMap({
             const isMoveBest = isMoveMode && moveBestTableIds.has(table.id);
             const isMoveAllowed =
               isMoveMode &&
-              !isMoveUnavailable &&
-              (isMoveSelected ||
-                canUseAdminTableSelection(moveDraft.area, [...moveDraft.tableIds, table.id], {
-                  requiredSeats: Number(moveDraft.guestCount || selectedReservation?.guestCount || 0),
-                  allowPartial: true,
-                  areaTables: moveAreaTables,
-                }));
+              !isMoveUnavailable;
 
             return (
               <div
@@ -2358,6 +2337,7 @@ function ReservationOperationsMap({
                       unavailableTableIds={moveUnavailableTableIds}
                       hideUnavailable
                       requiredSeats={Number(moveDraft.guestCount || selectedReservation.guestCount || 0)}
+                      unrestrictedSelection
                       tableIdsOverride={moveAreaTables.map((table) => table.id)}
                       areaTables={moveAreaTables}
                       suggestedTableIds={moveSuggestedTableIds}
@@ -5174,18 +5154,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     setAdminError("");
 
     const nextGuestCount = Number(guestCount || reservation.guestCount || 0);
-    const selectionError = getTableSelectionError(
-      area,
-      tableIds,
-      nextGuestCount,
-      adminLanguage
-    );
-
-    if (selectionError) {
-      setAdminError(selectionError);
-      return false;
-    }
-
     const unavailableTableIds = getUnavailableTableIdsForSlot(
       reservations,
       reservation.reservedDate,
@@ -5284,13 +5252,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       ? current.tableIds.filter((id) => id !== tableId)
       : [...current.tableIds, tableId];
 
-    if (!canUseAdminTableSelection(current.area, nextTableIds, {
-      requiredSeats: Number(current.guestCount || reservation.guestCount || 0),
-      allowPartial: true,
-    })) {
-      return;
-    }
-
     setTableEdits((prev) => ({
       ...prev,
       [reservation.id]: {
@@ -5317,13 +5278,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     const nextTableIds = exists
       ? currentTableIds.filter((id) => id !== tableId)
       : [...currentTableIds, tableId];
-
-    if (!canUseAdminTableSelection(adminReservation.area, nextTableIds, {
-      requiredSeats: Number(adminReservation.guestCount || 0),
-      allowPartial: true,
-    })) {
-      return;
-    }
 
     setAdminReservation((prev) => ({
       ...prev,
@@ -5380,18 +5334,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     setAdminNotice("");
     setAdminError("");
-
-    const selectionError = getTableSelectionError(
-      edit.area,
-      edit.tableIds,
-      edit.guestCount,
-      adminLanguage
-    );
-
-    if (selectionError) {
-      setAdminError(selectionError);
-      return;
-    }
 
     if (isPastTimeForDate(edit.reservedDate, edit.reservedTime)) {
       setAdminError(
@@ -5676,18 +5618,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     setAdminNotice("");
     setAdminError("");
-
-    const selectionError = getTableSelectionError(
-      payload.area,
-      payload.tableIds,
-      payload.guestCount,
-      adminLanguage
-    );
-
-    if (selectionError) {
-      setAdminError(selectionError);
-      return;
-    }
 
     const unavailableTableIds = getUnavailableTableIdsForSlot(
       reservations,
@@ -7480,6 +7410,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             onToggle={toggleAdminReservationTable}
                             unavailableTableIds={adminReservationUnavailableTableIds}
                             requiredSeats={Number(adminReservation.guestCount || 0)}
+                            unrestrictedSelection
                             hideUnavailable={Boolean(adminReservation.reservedDate && adminReservation.reservedTime)}
                             emptyMessage={
                               adminLanguage === "bg"
@@ -7709,6 +7640,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   selectedTableIds={tableEdit.tableIds}
                                   onToggle={(tableId) => toggleTableEdit(r, tableId)}
                                   requiredSeats={Number(tableEdit.guestCount || r.guestCount || 0)}
+                                  unrestrictedSelection
                                   unavailableTableIds={getUnavailableTableIdsForSlot(
                                     reservations,
                                     tableEdit.reservedDate,
@@ -7945,6 +7877,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                         selectedTableIds={tableEdit.tableIds}
                                         onToggle={(tableId) => toggleTableEdit(r, tableId)}
                                         requiredSeats={Number(tableEdit.guestCount || r.guestCount || 0)}
+                                        unrestrictedSelection
                                         unavailableTableIds={getUnavailableTableIdsForSlot(
                                           reservations,
                                           tableEdit.reservedDate,
