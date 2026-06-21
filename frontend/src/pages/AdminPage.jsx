@@ -5775,7 +5775,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     setProductTier("Basic");
     setDiningOrders([]);
-    if (["orders", "reports"].includes(activeTab)) {
+    if (activeTab === "orders") {
       setActiveTab("home");
     }
     setAdminNotice(adminLanguage === "bg" ? "Системата е върната в Basic версия." : "System switched back to Basic version.");
@@ -6038,8 +6038,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return reservation.status !== "Cancelled" && !reservation.isNoShow;
   }
 
+  function isReportableVisit(reservation) {
+    if (!isActiveCustomerReservation(reservation)) return false;
+    if (reservation.createdByAdmin && (reservation.phone === "admin" || reservation.guestName === "Admin block")) return false;
+    return true;
+  }
+
   function isUpcomingOperationalReservation(reservation) {
     if (!["Pending", "Approved"].includes(reservation.status)) return false;
+    if (reservation.isWalkIn) return false;
     if (reservation.isNoShow || reservation.isArrived) return false;
 
     const minutes = getReservationMinutesFromNow(reservation);
@@ -6056,9 +6063,18 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     isInStatsPeriod(r.reservedDate)
   );
 
-  const reportsReservations = statsReservations.filter(isActiveCustomerReservation);
+  const reportsReservations = statsReservations.filter(isReportableVisit);
   const reportsOrders = diningOrders.filter((order) => order.status !== "Cancelled" && isOrderInStatsPeriod(order));
   const walkInReservations = reportsReservations.filter((reservation) => reservation.isWalkIn);
+  const reservationReportReservations = reportsReservations.filter((reservation) => !reservation.isWalkIn);
+  const siteReservations = reservationReportReservations.filter((reservation) => !reservation.createdByAdmin);
+  const adminReservations = reservationReportReservations.filter((reservation) => reservation.createdByAdmin);
+  const sumReservationGuests = (items) =>
+    items.reduce((total, reservation) => total + Number(reservation.guestCount || 0), 0);
+  const siteReservationGuests = sumReservationGuests(siteReservations);
+  const adminReservationGuests = sumReservationGuests(adminReservations);
+  const walkInGuests = sumReservationGuests(walkInReservations);
+  const totalVisitors = siteReservationGuests + adminReservationGuests + walkInGuests;
   const waiterReportRows = Object.values(
     reportsOrders.reduce((acc, order) => {
       const key = order.assignedWaiterId || "unassigned";
@@ -6101,34 +6117,48 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   ).sort((aRow, bRow) => bRow.quantity - aRow.quantity);
   const reportMetrics = [
     {
-      label: adminLanguage === "bg" ? "Резервации" : "Reservations",
-      value: reportsReservations.length,
-      detail: adminLanguage === "bg" ? "активни за периода" : "active for the period",
-    },
-    {
-      label: adminLanguage === "bg" ? "През системата" : "Via system",
-      value: reportsReservations.filter((reservation) => !reservation.createdByAdmin).length,
+      label: adminLanguage === "bg" ? "Резервации от сайта" : "Website reservations",
+      value: siteReservations.length,
       detail: adminLanguage === "bg" ? "направени от гости" : "made by guests",
     },
     {
-      label: adminLanguage === "bg" ? "Създадени от админ" : "Created by admin",
-      value: reportsReservations.filter((reservation) => reservation.createdByAdmin).length,
+      label: adminLanguage === "bg" ? "Резервации от админ" : "Admin reservations",
+      value: adminReservations.length,
       detail: adminLanguage === "bg" ? "ръчно въведени" : "entered manually",
     },
     {
       label: adminLanguage === "bg" ? "Без резервация" : "Walk-ins",
       value: walkInReservations.length,
-      detail: adminLanguage === "bg" ? "настанени директно" : "seated directly",
+      detail: adminLanguage === "bg" ? "настанявания без резервация" : "seated without reservation",
     },
     {
-      label: adminLanguage === "bg" ? "Онлайн поръчки" : "Online orders",
-      value: reportsOrders.length,
-      detail: formatEuroAmount(reportsOrders.reduce((total, order) => total + order.totalPrice, 0)),
+      label: adminLanguage === "bg" ? "Гости от сайта" : "Website guests",
+      value: siteReservationGuests,
+      detail: adminLanguage === "bg" ? "хора с онлайн резервации" : "people with online reservations",
     },
     {
-      label: adminLanguage === "bg" ? "Гости общо" : "Total guests",
-      value: reportsReservations.reduce((total, reservation) => total + Number(reservation.guestCount || 0), 0),
-      detail: adminLanguage === "bg" ? "по резервации" : "by reservations",
+      label: adminLanguage === "bg" ? "Гости от админ" : "Admin guests",
+      value: adminReservationGuests,
+      detail: adminLanguage === "bg" ? "хора с ръчни резервации" : "people with manual reservations",
+    },
+    {
+      label: adminLanguage === "bg" ? "Гости без резервация" : "Walk-in guests",
+      value: walkInGuests,
+      detail: adminLanguage === "bg" ? "хора настанени директно" : "people seated directly",
+    },
+    ...(isProVersion
+      ? [
+          {
+            label: adminLanguage === "bg" ? "Онлайн поръчки" : "Online orders",
+            value: reportsOrders.length,
+            detail: formatEuroAmount(reportsOrders.reduce((total, order) => total + order.totalPrice, 0)),
+          },
+        ]
+      : []),
+    {
+      label: adminLanguage === "bg" ? "Посетители общо" : "Total visitors",
+      value: totalVisitors,
+      detail: adminLanguage === "bg" ? "сайт, админ и без резервация" : "site, admin, and walk-ins",
     },
   ];
 
@@ -6438,7 +6468,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       : [
           ["liveMap", a.tabs.liveMap],
           ["reservations", a.tabs.reservations],
-          ...(isProVersion ? [["orders", a.tabs.orders], ["reports", a.tabs.reports], ["inventory", a.tabs.inventory]] : []),
+          ...(isProVersion ? [["orders", a.tabs.orders]] : []),
+          ["reports", a.tabs.reports],
+          ...(isProVersion ? [["inventory", a.tabs.inventory]] : []),
           ["block", a.tabs.block],
           ["menu", a.tabs.menu],
           ["events", a.tabs.events],
@@ -6513,8 +6545,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
-    if (activeTab === "reports" && isProVersion && !isWaiterRole && !isProductionRole) {
-      await Promise.all([loadReservations({ silent }), loadDiningOrders()]);
+    if (activeTab === "reports" && !isWaiterRole && !isProductionRole) {
+      await Promise.all([
+        loadReservations({ silent }),
+        ...(isProVersion ? [loadDiningOrders()] : []),
+      ]);
       return;
     }
 
@@ -9361,7 +9396,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   ))}
                 </div>
 
-                <div className="mt-6 grid gap-4 xl:grid-cols-2">
+                <div className={`mt-6 grid gap-4 ${isProVersion ? "xl:grid-cols-2" : ""}`}>
                   <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
                     <div className="section-kicker">
                       {adminLanguage === "bg" ? "Резервации по източник" : "Reservations by source"}
@@ -9369,11 +9404,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     <div className="mt-4 space-y-3 text-sm text-white/70">
                       <div className="flex justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                         <span>{adminLanguage === "bg" ? "През сайта" : "Website"}</span>
-                        <strong className="text-[#fff4df]">{reportsReservations.filter((reservation) => !reservation.createdByAdmin).length}</strong>
+                        <strong className="text-[#fff4df]">{siteReservations.length}</strong>
                       </div>
                       <div className="flex justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                         <span>{adminLanguage === "bg" ? "От админ" : "Admin created"}</span>
-                        <strong className="text-[#fff4df]">{reportsReservations.filter((reservation) => reservation.createdByAdmin).length}</strong>
+                        <strong className="text-[#fff4df]">{adminReservations.length}</strong>
                       </div>
                       <div className="flex justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
                         <span>{adminLanguage === "bg" ? "Без резервация" : "Walk-ins"}</span>
@@ -9382,54 +9417,58 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
-                    <div className="section-kicker">
-                      {adminLanguage === "bg" ? "Оборот по сервитьори" : "Revenue by waiter"}
+                  {isProVersion && (
+                    <div className="rounded-3xl border border-white/10 bg-black/20 p-5">
+                      <div className="section-kicker">
+                        {adminLanguage === "bg" ? "Оборот по сервитьори" : "Revenue by waiter"}
+                      </div>
+                      <div className="mt-4 space-y-3">
+                        {waiterReportRows.map((row) => (
+                          <div key={row.key} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="min-w-0 truncate font-semibold text-[#fff4df]">{row.waiterName}</span>
+                              <span className="shrink-0 text-[#f2d39a]">{formatEuroAmount(row.revenue)}</span>
+                            </div>
+                            <div className="mt-1 text-xs text-white/45">
+                              {row.orders} {adminLanguage === "bg" ? "поръчки" : "orders"} · {row.tableCount} {adminLanguage === "bg" ? "маси" : "tables"}
+                            </div>
+                          </div>
+                        ))}
+                        {waiterReportRows.length === 0 && (
+                          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/45">
+                            {adminLanguage === "bg" ? "Няма поръчки за периода." : "No orders for the period."}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="mt-4 space-y-3">
-                      {waiterReportRows.map((row) => (
-                        <div key={row.key} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
+                  )}
+                </div>
+
+                {isProVersion && (
+                  <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5">
+                    <div className="section-kicker">
+                      {adminLanguage === "bg" ? "Продадени артикули" : "Sold items"}
+                    </div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                      {soldItemRows.slice(0, 12).map((row) => (
+                        <div key={row.name} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
                           <div className="flex items-center justify-between gap-3">
-                            <span className="min-w-0 truncate font-semibold text-[#fff4df]">{row.waiterName}</span>
-                            <span className="shrink-0 text-[#f2d39a]">{formatEuroAmount(row.revenue)}</span>
+                            <span className="min-w-0 truncate font-semibold text-[#fff4df]">{row.name}</span>
+                            <span className="shrink-0 rounded-full border border-[#f2d39a]/20 bg-[#c9a56a]/10 px-2.5 py-1 text-xs font-semibold text-[#f2d39a]">
+                              {row.quantity}x
+                            </span>
                           </div>
-                          <div className="mt-1 text-xs text-white/45">
-                            {row.orders} {adminLanguage === "bg" ? "поръчки" : "orders"} · {row.tableCount} {adminLanguage === "bg" ? "маси" : "tables"}
-                          </div>
+                          <div className="mt-1 text-xs text-white/45">{formatEuroAmount(row.revenue)}</div>
                         </div>
                       ))}
-                      {waiterReportRows.length === 0 && (
+                      {soldItemRows.length === 0 && (
                         <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/45">
-                          {adminLanguage === "bg" ? "Няма поръчки за периода." : "No orders for the period."}
+                          {adminLanguage === "bg" ? "Няма продадени артикули за периода." : "No sold items for the period."}
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-5">
-                  <div className="section-kicker">
-                    {adminLanguage === "bg" ? "Продадени артикули" : "Sold items"}
-                  </div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {soldItemRows.slice(0, 12).map((row) => (
-                      <div key={row.name} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="min-w-0 truncate font-semibold text-[#fff4df]">{row.name}</span>
-                          <span className="shrink-0 rounded-full border border-[#f2d39a]/20 bg-[#c9a56a]/10 px-2.5 py-1 text-xs font-semibold text-[#f2d39a]">
-                            {row.quantity}x
-                          </span>
-                        </div>
-                        <div className="mt-1 text-xs text-white/45">{formatEuroAmount(row.revenue)}</div>
-                      </div>
-                    ))}
-                    {soldItemRows.length === 0 && (
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/45">
-                        {adminLanguage === "bg" ? "Няма продадени артикули за периода." : "No sold items for the period."}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                )}
               </Panel>
             )}
 

@@ -130,6 +130,7 @@ public class MaintenanceController : ControllerBase
 
         if (fromDate.HasValue) query = query.Where(x => x.ReservedDate >= fromDate.Value);
         if (toDate.HasValue) query = query.Where(x => x.ReservedDate <= toDate.Value);
+        query = query.Where(x => !x.IsWalkIn);
 
         query = normalizedKind switch
         {

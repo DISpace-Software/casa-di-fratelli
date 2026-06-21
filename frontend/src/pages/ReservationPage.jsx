@@ -1311,9 +1311,6 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                       >
                         <span className="block text-sm font-semibold text-[#fff4df]">{zone.title}</span>
                         <span className="mt-1 block text-xs leading-5 text-white/55">{zone.subtitle}</span>
-                        <span className="mt-3 inline-flex rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-[#f2d39a]">
-                          {language === "bg" ? "до" : "up to"} {zone.capacity}
-                        </span>
                       </button>
                     ))}
                   </div>
