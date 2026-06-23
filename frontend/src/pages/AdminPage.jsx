@@ -1800,7 +1800,7 @@ function ReservationOperationsMap({
 
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,0.75fr)]">
         <div
-          className={`relative min-w-0 min-h-[600px] overflow-hidden rounded-[26px] border border-white/10 ${
+          className={`admin-reservation-map-surface relative min-w-0 min-h-[600px] overflow-hidden rounded-[26px] border border-white/10 ${
             selectedArea === "garden"
               ? "bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] md:min-h-[820px]"
               : selectedArea === "openTerrace"
@@ -1808,7 +1808,7 @@ function ReservationOperationsMap({
               : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[850px]"
           }`}
         >
-          <div className="absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
+          <div className="admin-reservation-map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
           <AdminMapDecor area={selectedArea} />
 
           {liveReservations.map((reservation) => {
@@ -1986,6 +1986,10 @@ function ReservationOperationsMap({
               >
                 <button
                   type="button"
+                  data-reserved={reservation ? "true" : "false"}
+                  data-arrived={reservation?.isArrived ? "true" : "false"}
+                  data-selected={isSelectedTable || isMoveSelected ? "true" : "false"}
+                  data-orders={hasTableOrders ? "true" : "false"}
                   onClick={() => {
                     if (isMoveMode && isMoveAllowed) {
                       toggleMoveTable(table.id);
@@ -1995,7 +1999,7 @@ function ReservationOperationsMap({
 
                     setSelectedTableId((current) => (current === table.id ? null : table.id));
                   }}
-                  className={`flex items-center justify-center rounded-2xl border font-semibold shadow-2xl transition hover:scale-[1.04] ${
+                  className={`admin-map-table-node flex items-center justify-center rounded-2xl border font-semibold shadow-2xl transition hover:scale-[1.04] ${
                     isGroupTable
                       ? "h-9 min-w-[50px] px-2 text-xs sm:h-10 sm:min-w-[58px] sm:px-3 md:h-12 md:min-w-[68px] lg:h-16 lg:min-w-[88px]"
                       : "h-8 w-8 text-xs sm:h-9 sm:w-9 md:h-11 md:w-11 lg:h-14 lg:w-14 lg:text-sm"
@@ -4412,6 +4416,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [noteEdits, setNoteEdits] = React.useState({});
   const [orderMenuSearches, setOrderMenuSearches] = React.useState({});
   const [hallBlock, setHallBlock] = React.useState(emptyHallBlock);
+  const [hallBlockConflicts, setHallBlockConflicts] = React.useState([]);
   const [adminNotice, setAdminNotice] = React.useState("");
   const [adminError, setAdminError] = React.useState("");
   const [pushPermission, setPushPermission] = React.useState(() => {
@@ -5229,6 +5234,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     setActiveTab("reservations");
   }
 
+  function openReservationFromBlockConflict(conflict) {
+    const id = conflict.id || conflict.Id;
+    const guestName = conflict.guestName || conflict.GuestName || "";
+    const phone = conflict.phone || conflict.Phone || "";
+    setSearch(guestName || phone);
+    setStatusFilter("All");
+    if (id) setExpandedId(id);
+    setActiveTab("reservations");
+  }
+
   function getTableEdit(reservation) {
     return (
       tableEdits[reservation.id] || {
@@ -5691,6 +5706,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     setAdminNotice("");
     setAdminError("");
+    setHallBlockConflicts([]);
 
     if (!hallBlock.reservedDate || times.length === 0) {
       setAdminError("Choose a valid date and time range.");
@@ -5714,8 +5730,25 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
+    const result = await response.json().catch(() => null);
+    const conflicts = result?.conflicts || result?.Conflicts || [];
+
+    if (conflicts.length > 0 || Number(result?.created ?? result?.Created ?? 1) === 0) {
+      setHallBlockConflicts(conflicts);
+      setAdminNotice(
+        adminLanguage === "bg"
+          ? "В избрания период има резервации. Прегледайте ги преди да блокирате зоната."
+          : "There are reservations in the selected period. Review them before blocking the area."
+      );
+      return;
+    }
+
     setHallBlock(emptyHallBlock);
-    setAdminNotice(`Blocked ${times.length} time slots.`);
+    setAdminNotice(
+      adminLanguage === "bg"
+        ? `Блокирани са ${times.length} часови слота.`
+        : `Blocked ${times.length} time slots.`
+    );
     await loadReservations();
     setActiveTab("reservations");
   }
@@ -6824,7 +6857,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 <p className="section-kicker">
                   Casa di Fratelli Admin OS
                 </p>
-                <h1 className="mt-3 text-4xl font-semibold text-[#fff4df] md:text-5xl">
+                <h1 className="admin-hero-title mt-3 text-4xl font-semibold text-[#fff4df] md:text-5xl">
                   {a.appTitle}
                 </h1>
               </>
@@ -8328,12 +8361,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           <button
                             key={option.value}
                             type="button"
-                            onClick={() =>
+                            onClick={() => {
+                              setHallBlockConflicts([]);
                               setHallBlock((prev) => ({
                                 ...prev,
                                 area: option.value,
-                              }))
-                            }
+                              }));
+                            }}
                             className={`menu-spark rounded-[24px] border p-5 text-left transition ${
                               selected
                                 ? "border-[#c9a56a]/55 bg-[#c9a56a]/15 shadow-xl shadow-black/25"
@@ -8372,12 +8406,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       type="date"
                       value={hallBlock.reservedDate}
                       min={todayInput}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        setHallBlockConflicts([]);
                         setHallBlock((prev) => ({
                           ...prev,
                           reservedDate: e.target.value,
-                        }))
-                      }
+                        }));
+                      }}
                       required
                       className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
                     />
@@ -8389,12 +8424,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     </label>
                     <select
                       value={hallBlock.startTime}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        setHallBlockConflicts([]);
                         setHallBlock((prev) => ({
                           ...prev,
                           startTime: e.target.value,
-                        }))
-                      }
+                        }));
+                      }}
                       required
                       className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
                     >
@@ -8412,12 +8448,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     </label>
                     <select
                       value={hallBlock.endTime}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        setHallBlockConflicts([]);
                         setHallBlock((prev) => ({
                           ...prev,
                           endTime: e.target.value,
-                        }))
-                      }
+                        }));
+                      }}
                       required
                       className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
                     >
@@ -8475,6 +8512,83 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   <button className="luxury-button rounded-2xl px-6 py-4 font-semibold md:col-span-4">
                     {adminLanguage === "bg" ? "Блокирай избраната зона" : "Block selected area"}
                   </button>
+
+                  {hallBlockConflicts.length > 0 && (
+                    <div className="md:col-span-4 rounded-[26px] border border-[#f2d39a]/25 bg-[#c9a56a]/10 p-5 shadow-[0_20px_55px_rgba(0,0,0,0.18)]">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <div className="section-kicker text-[0.66rem]">
+                            {adminLanguage === "bg" ? "Намерени резервации" : "Existing reservations"}
+                          </div>
+                          <h3 className="mt-2 text-xl font-semibold text-[#fff4df]">
+                            {adminLanguage === "bg"
+                              ? "Този период вече има гости"
+                              : "This period already has guests"}
+                          </h3>
+                          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
+                            {adminLanguage === "bg"
+                              ? "Премести или откажи тези резервации, след което можеш спокойно да блокираш залата."
+                              : "Move or cancel these reservations, then you can block the area safely."}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => openReservationFromBlockConflict(hallBlockConflicts[0])}
+                          className="ghost-button rounded-2xl px-4 py-3 text-sm font-semibold"
+                        >
+                          {adminLanguage === "bg" ? "Открий в резервации" : "Open in reservations"}
+                        </button>
+                      </div>
+
+                      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                        {hallBlockConflicts.map((conflict, index) => {
+                          const id = conflict.id || conflict.Id || index;
+                          const guestName = conflict.guestName || conflict.GuestName || "Reservation";
+                          const phone = conflict.phone || conflict.Phone || "";
+                          const reservedDate = conflict.reservedDate || conflict.ReservedDate || hallBlock.reservedDate;
+                          const reservedTime = conflict.reservedTime || conflict.ReservedTime || conflict.requestedTime || conflict.RequestedTime || "";
+                          const requestedTime = conflict.requestedTime || conflict.RequestedTime || "";
+                          const tables = conflict.tableIds || conflict.TableIds || [];
+                          const guestCount = conflict.guestCount ?? conflict.GuestCount ?? 0;
+
+                          return (
+                            <button
+                              key={`${id}-${requestedTime}-${index}`}
+                              type="button"
+                              onClick={() => openReservationFromBlockConflict(conflict)}
+                              className="rounded-2xl border border-white/10 bg-black/20 p-4 text-left transition hover:border-[#f2d39a]/35 hover:bg-[#f2d39a]/10"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <div className="truncate text-base font-semibold text-[#fff4df]">{guestName}</div>
+                                  <div className="mt-1 text-sm text-white/58">
+                                    {reservedDate} · {reservedTime}
+                                    {requestedTime && requestedTime !== reservedTime ? ` · ${requestedTime}` : ""}
+                                  </div>
+                                </div>
+                                <span className="rounded-full border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-3 py-1 text-xs font-semibold text-[#f2d39a]">
+                                  #{id}
+                                </span>
+                              </div>
+                              <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/55">
+                                <span className="rounded-full border border-white/10 px-3 py-1">
+                                  {adminLanguage === "bg" ? "Маси" : "Tables"}: {tables.join(", ") || "—"}
+                                </span>
+                                <span className="rounded-full border border-white/10 px-3 py-1">
+                                  {guestCount} {adminLanguage === "bg" ? "гости" : "guests"}
+                                </span>
+                                {phone && (
+                                  <span className="rounded-full border border-white/10 px-3 py-1">
+                                    {phone}
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </form>
               </Panel>
             )}

@@ -1046,6 +1046,63 @@ html[data-theme="light"] .reservation-page .map-grid {
     linear-gradient(180deg, rgba(106, 77, 44, 0.055) 1px, transparent 1px) !important;
 }
 
+html[data-theme="light"] .admin-page .admin-reservation-map-surface {
+  border-color: rgba(103, 73, 38, 0.18) !important;
+  background:
+    radial-gradient(circle at top, rgba(205, 166, 105, 0.17), transparent 34%),
+    radial-gradient(circle at 18% 60%, rgba(143, 190, 176, 0.13), transparent 28%),
+    linear-gradient(180deg, rgba(248, 238, 220, 0.98), rgba(222, 207, 182, 0.96)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68), 0 18px 42px rgba(68, 43, 24, 0.1) !important;
+}
+
+html[data-theme="light"] .admin-page .admin-reservation-map-grid {
+  border-color: rgba(135, 95, 50, 0.16) !important;
+  background-image:
+    linear-gradient(90deg, rgba(106, 77, 44, 0.055) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(106, 77, 44, 0.055) 1px, transparent 1px) !important;
+}
+
+html[data-theme="light"] .admin-page .admin-map-table-node {
+  border-color: rgba(120, 78, 36, 0.36) !important;
+  background: linear-gradient(145deg, #fff4df, #d9bc8a) !important;
+  color: #2a1c12 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 10px 24px rgba(93, 61, 31, 0.18) !important;
+}
+
+html[data-theme="light"] .admin-page .admin-map-table-node[data-reserved="true"] {
+  border-color: rgba(146, 99, 44, 0.64) !important;
+  background: linear-gradient(145deg, #f1ce8d, #bd8542) !important;
+  color: #24180f !important;
+  box-shadow: 0 12px 30px rgba(128, 82, 35, 0.24) !important;
+}
+
+html[data-theme="light"] .admin-page .admin-map-table-node[data-arrived="true"],
+html[data-theme="light"] .admin-page .admin-map-table-node[data-orders="true"] {
+  border-color: rgba(36, 105, 70, 0.5) !important;
+  background: linear-gradient(145deg, #dcebd4, #9fc99f) !important;
+  color: #173f2b !important;
+}
+
+html[data-theme="light"] .admin-page .admin-map-table-node[data-selected="true"] {
+  border-color: rgba(72, 43, 20, 0.82) !important;
+  background: linear-gradient(145deg, #5d3c1f, #2c1d12) !important;
+  color: #fff5e4 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 5px rgba(201, 165, 106, 0.22),
+    0 18px 38px rgba(70, 42, 20, 0.34) !important;
+}
+
+@media (max-width: 640px) {
+  .reservation-page .reservation-map-table-node {
+    transform: translate(-50%, -50%) scale(0.78) !important;
+  }
+
+  .reservation-page .reservation-map-table-node[data-selected="true"] {
+    transform: translate(-50%, -50%) scale(0.86) !important;
+  }
+}
+
 html[data-theme="light"] .reservation-page .garden-chair,
 html[data-theme="light"] .reservation-page .garden-special-chair,
 html[data-theme="light"] .reservation-page .indoor-chair {
@@ -1059,6 +1116,24 @@ html[data-theme="light"] .reservation-page .indoor-table-surface {
   background: linear-gradient(145deg, #fff4df, #d9bc8a) !important;
   color: #2a1c12 !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 10px 24px rgba(93, 61, 31, 0.18) !important;
+}
+
+html[data-theme="light"] .reservation-page .reservation-map-table-node[data-selected="true"] .garden-table-surface,
+html[data-theme="light"] .reservation-page .reservation-map-table-node[data-selected="true"] .indoor-table-surface {
+  border-color: rgba(72, 43, 20, 0.82) !important;
+  background: linear-gradient(145deg, #5d3c1f, #2c1d12) !important;
+  color: #fff5e4 !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 0 0 5px rgba(201, 165, 106, 0.22),
+    0 18px 38px rgba(70, 42, 20, 0.34) !important;
+}
+
+html[data-theme="light"] .reservation-page .reservation-map-table-node[data-selected="true"] .garden-chair,
+html[data-theme="light"] .reservation-page .reservation-map-table-node[data-selected="true"] .garden-special-chair,
+html[data-theme="light"] .reservation-page .reservation-map-table-node[data-selected="true"] .indoor-chair {
+  border-color: rgba(72, 43, 20, 0.42) !important;
+  background: linear-gradient(145deg, #b78a4e, #5d3c1f) !important;
 }
 
 html[data-theme="light"] .reservation-page .map-seat-label {
@@ -1275,6 +1350,11 @@ html[data-theme="light"] .menu-page :where(input, textarea)::placeholder {
 html[data-theme="light"] .admin-hero-panel,
 html[data-theme="light"] .admin-hero-panel :where(.text-white, [class*="text-white/"], .text-\[\#fff4df\], .text-stone-100, .text-stone-200, .text-stone-300) {
   color: #fff7e8 !important;
+}
+
+html[data-theme="light"] .admin-hero-panel .admin-hero-title {
+  color: #24180f !important;
+  text-shadow: none !important;
 }
 
 html[data-theme="light"] .admin-hero-panel .section-kicker,

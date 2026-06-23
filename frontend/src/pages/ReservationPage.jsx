@@ -315,7 +315,8 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
         type="button"
         disabled={reserved}
         onClick={() => onSelect(table, area)}
-        className={commonClass}
+        data-selected={selected ? "true" : "false"}
+        className={`reservation-map-table-node ${commonClass}`}
         style={{ left: `${table.x}%`, top: `${table.y}%` }}
       >
         <div className="relative h-11 w-14">
@@ -350,7 +351,8 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
       type="button"
       disabled={reserved}
       onClick={() => onSelect(table, area)}
-      className={commonClass}
+      data-selected={selected ? "true" : "false"}
+      className={`reservation-map-table-node ${commonClass}`}
       style={{ left: `${table.x}%`, top: `${table.y}%` }}
     >
       <div className="relative h-[64px] w-[64px]">
@@ -464,7 +466,8 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
       type="button"
       disabled={reserved}
       onClick={() => onSelect(table, "indoor")}
-      className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
+      data-selected={selected ? "true" : "false"}
+      className={`reservation-map-table-node absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
         reserved
           ? "cursor-not-allowed scale-[0.86] opacity-75 md:scale-100"
           : selected

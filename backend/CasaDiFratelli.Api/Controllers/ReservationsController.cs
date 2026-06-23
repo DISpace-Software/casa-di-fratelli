@@ -1103,11 +1103,47 @@ public class ReservationsController : ControllerBase
         if (times.Count == 0)
             return BadRequest("At least one time must be selected.");
 
+        var conflicts = new List<object>();
+        var conflictIds = new HashSet<int>();
+
         foreach (var time in times)
         {
             var conflict = await _reservationConflictService.FindTableConflictAsync(request.ReservedDate, time, tableIds);
             if (conflict != null)
-                return Conflict(ReservationConflictService.ToConflictResponse(conflict));
+            {
+                if (!conflictIds.Add(conflict.Id))
+                    continue;
+
+                var reservation = await _db.Reservations
+                    .Include(x => x.Tables)
+                    .FirstOrDefaultAsync(x => x.Id == conflict.Id);
+
+                conflicts.Add(new
+                {
+                    conflict.Id,
+                    requestedTime = time,
+                    conflict.ReservedTime,
+                    conflict.TableIds,
+                    guestName = reservation?.GuestName ?? "Reservation",
+                    phone = reservation?.Phone ?? string.Empty,
+                    email = reservation?.Email ?? string.Empty,
+                    guestCount = reservation?.GuestCount ?? 0,
+                    reservedDate = reservation?.ReservedDate ?? request.ReservedDate
+                });
+            }
+        }
+
+        if (conflicts.Count > 0)
+        {
+            return Ok(new
+            {
+                Created = 0,
+                request.ReservedDate,
+                Times = times,
+                TableIds = tableIds,
+                Conflicts = conflicts,
+                Message = "There are existing reservations in the selected area and time range."
+            });
         }
 
         var note = string.IsNullOrWhiteSpace(request.Note)
