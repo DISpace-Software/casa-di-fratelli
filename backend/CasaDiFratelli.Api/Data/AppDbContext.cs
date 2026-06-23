@@ -30,6 +30,7 @@ public class AppDbContext : DbContext
     public DbSet<InventoryAudit> InventoryAudits => Set<InventoryAudit>();
     public DbSet<InventoryAuditLine> InventoryAuditLines => Set<InventoryAuditLine>();
     public DbSet<MarketingMessageLog> MarketingMessageLogs => Set<MarketingMessageLog>();
+    public DbSet<CustomerFeedback> CustomerFeedbacks => Set<CustomerFeedback>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -99,6 +100,15 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Email).IsRequired().HasMaxLength(180);
             entity.Property(x => x.Subject).IsRequired().HasMaxLength(220);
             entity.HasIndex(x => new { x.CampaignKey, x.CustomerKey, x.SentForDate }).IsUnique();
+        });
+
+        modelBuilder.Entity<CustomerFeedback>(entity =>
+        {
+            entity.Property(x => x.GuestName).HasMaxLength(120);
+            entity.Property(x => x.Email).HasMaxLength(180);
+            entity.Property(x => x.DiscountCode).HasMaxLength(40);
+            entity.HasIndex(x => x.ReservationId);
+            entity.HasIndex(x => x.CreatedAtUtc);
         });
 
         modelBuilder.Entity<RestaurantEvent>(entity =>

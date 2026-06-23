@@ -192,6 +192,7 @@ const adminText = {
       blacklist: "Blacklist",
       customers: "Клиенти",
       reports: "Отчети",
+      feedback: "Обратна връзка",
       inventory: "Склад",
       marketing: "Маркетинг",
       maintenance: "Поддръжка",
@@ -378,6 +379,7 @@ const adminText = {
       blacklist: "Blacklist",
       customers: "Customers",
       reports: "Reports",
+      feedback: "Feedback",
       inventory: "Inventory",
       marketing: "Marketing",
       maintenance: "Maintenance",
@@ -1670,8 +1672,15 @@ function ReservationOperationsMap({
     if (!selectedReservation || moveUnavailableTableIds.has(tableId)) return;
 
     const exists = moveDraft.tableIds.includes(tableId);
+    const originalTableIds = selectedReservation.tableIds || [];
+    const isStillOnOriginalSelection =
+      moveDraft.tableIds.length === originalTableIds.length &&
+      moveDraft.tableIds.every((id) => originalTableIds.includes(id));
+
     const nextTableIds = exists
       ? moveDraft.tableIds.filter((id) => id !== tableId)
+      : isStillOnOriginalSelection
+        ? [tableId]
       : [...moveDraft.tableIds, tableId];
 
     setMoveDraft((prev) => ({ ...prev, tableIds: nextTableIds }));
@@ -3103,6 +3112,7 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
       archive: "Архив",
       upcoming: "Предстоящи",
       completed: "Състояли се",
+      walkins: "Без резервация",
       active: "Активни",
       deleted: "Изтрити",
       restore: "Възстанови",
@@ -3131,6 +3141,7 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
       archive: "Archive",
       upcoming: "Upcoming",
       completed: "Completed",
+      walkins: "Walk-ins",
       active: "Active",
       deleted: "Deleted",
       restore: "Restore",
@@ -3152,6 +3163,7 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
     ? [
         ["upcoming", text.upcoming],
         ["completed", text.completed],
+        ["walkins", text.walkins],
         ["deleted", text.deleted],
       ]
     : [
@@ -3283,7 +3295,7 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
             <div className="mt-4 grid gap-3">
               <div>
                 <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/40">{text.archive}</div>
-                <div className="grid gap-2 sm:grid-cols-3">
+                <div className="grid gap-2 sm:grid-cols-4">
                   {archiveOptions.map(([key, label]) => (
                     <button key={key} type="button" onClick={() => { setArchiveKind(key); loadArchive(key); }} className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${archiveKind === key ? "border-[#d8b676]/60 bg-[#d8b676]/20 text-[#fff4df]" : "border-white/10 bg-black/20 text-white/65 hover:border-[#d8b676]/35"}`}>
                       {label}
@@ -4365,6 +4377,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [blacklist, setBlacklist] = React.useState([]);
   const [adminUsers, setAdminUsers] = React.useState([]);
   const [auditLogs, setAuditLogs] = React.useState([]);
+  const [feedbackEntries, setFeedbackEntries] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("All");
@@ -4448,6 +4461,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const canClearOperationalData = currentAdminRole === "Developer";
   const canManageMarketing = ["Owner", "Developer"].includes(currentAdminRole);
   const canUseMaintenance = ["Administrator", "Owner", "Developer"].includes(currentAdminRole);
+  const canViewFeedback = ["Administrator", "Owner", "Developer"].includes(currentAdminRole);
   const canManageAdmins = ["Owner", "Developer"].includes(currentAdminRole);
   const hasDeveloperAdmin = adminUsers.some((user) => normalizeAdminRole(user.role || user.Role) === "Developer");
   const availableAdminRoleOptions = adminRoleOptions.filter((role) => {
@@ -4538,6 +4552,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     } catch (error) {
       console.error("Failed to load events", error);
       setAdminError(error?.message || "Failed to load events.");
+    }
+  }, [withAdminToken]);
+
+  const loadFeedbackEntries = React.useCallback(async () => {
+    try {
+      const feedbackData = await fetchJsonOrEmpty(`${API_BASE_URL}/api/feedback`, [], withAdminToken());
+      setFeedbackEntries(Array.isArray(feedbackData) ? feedbackData : []);
+    } catch (error) {
+      console.error("Failed to load feedback", error);
+      setAdminError(error?.message || "Failed to load feedback.");
     }
   }, [withAdminToken]);
 
@@ -4639,6 +4663,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       }
       loadTableLayout();
       loadEvents();
+      if (canViewFeedback) {
+        loadFeedbackEntries();
+      }
     }
 
     loadInitialData();
@@ -4646,7 +4673,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return () => {
       cancelled = true;
     };
-  }, [isProductionRole, isProVersion, isWaiterRole, loadBlacklist, loadDiningOrders, loadEvents, loadMenuItems, loadProductTier, loadReservations, loadTableLayout]);
+  }, [canViewFeedback, isProductionRole, isProVersion, isWaiterRole, loadBlacklist, loadDiningOrders, loadEvents, loadFeedbackEntries, loadMenuItems, loadProductTier, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     setAdminError("");
@@ -4657,6 +4684,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     if (activeTab === "events" && !isWaiterRole && !isProductionRole) {
       loadEvents();
+    }
+
+    if (activeTab === "feedback" && canViewFeedback) {
+      loadFeedbackEntries();
     }
 
     if (activeTab === "orders" && isProVersion) {
@@ -4692,7 +4723,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadAdminUsers();
       loadAuditLogs();
     }
-  }, [activeTab, canManageAdmins, isProductionRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadEvents, loadMenuItems, loadReservations, loadTableLayout]);
+  }, [activeTab, canManageAdmins, canViewFeedback, isProductionRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadEvents, loadFeedbackEntries, loadMenuItems, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     const pages = isProductionRole
@@ -4700,8 +4731,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       : isWaiterRole
       ? ["home", "liveMap", "orders"]
       : canManageAdmins
-      ? ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "events", "layout", "customers", "admins"]
-      : ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "events", "layout", "customers"];
+      ? ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "events", ...(canViewFeedback ? ["feedback"] : []), "layout", "customers", "admins"]
+      : ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "events", ...(canViewFeedback ? ["feedback"] : []), "layout", "customers"];
 
     const handleTouchStart = (event) => {
       if (event.touches.length !== 1 || isInteractiveSwipeTarget(event.target)) {
@@ -4742,7 +4773,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [activeTab, canManageAdmins, isProductionRole, isWaiterRole]);
+  }, [activeTab, canManageAdmins, canViewFeedback, isProductionRole, isWaiterRole]);
 
   function updateTableLayoutItem(tableId, nextItem) {
     const normalized = normalizeLayoutItem(nextItem);
@@ -6474,13 +6505,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           ["block", a.tabs.block],
           ["menu", a.tabs.menu],
           ["events", a.tabs.events],
+          ...(canViewFeedback ? [["feedback", a.tabs.feedback]] : []),
           ...(canManageMarketing ? [["marketing", a.tabs.marketing]] : []),
           ["layout", a.tabs.layout],
           ["customers", a.tabs.customers],
           ...(canUseMaintenance ? [["maintenance", a.tabs.maintenance]] : []),
           ...(canManageAdmins ? [["admins", adminLanguage === "bg" ? "Админи" : "Admins"]] : []),
         ],
-    [a.tabs, adminLanguage, canManageAdmins, canManageMarketing, canUseMaintenance, isBarRole, isProductionRole, isProVersion, isWaiterRole]
+    [a.tabs, adminLanguage, canManageAdmins, canManageMarketing, canUseMaintenance, canViewFeedback, isBarRole, isProductionRole, isProVersion, isWaiterRole]
   );
   const readyWaiterItemsCount = React.useMemo(
     () => isWaiterRole
@@ -6563,6 +6595,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
+    if (activeTab === "feedback" && canViewFeedback) {
+      await loadFeedbackEntries();
+      return;
+    }
+
     if (activeTab === "blacklist" && !isWaiterRole) {
       await loadBlacklist();
       return;
@@ -6593,6 +6630,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   }, [
     activeTab,
     canManageAdmins,
+    canViewFeedback,
     isProductionRole,
     isProVersion,
     isWaiterRole,
@@ -6601,6 +6639,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     loadBlacklist,
     loadDiningOrders,
     loadEvents,
+    loadFeedbackEntries,
     loadMenuItems,
     loadReservations,
     loadTableLayout,
@@ -9489,6 +9528,121 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 loadDiningOrders={loadDiningOrders}
                 isProVersion={isProVersion}
               />
+            )}
+
+            {activeTab === "feedback" && canViewFeedback && (
+              <Panel
+                title={adminLanguage === "bg" ? "Обратна връзка" : "Customer feedback"}
+                subtitle={
+                  adminLanguage === "bg"
+                    ? "Кратки клиентски впечатления за атмосфера, храна, обслужване и дигиталната система."
+                    : "Guest impressions about atmosphere, food, service, and the digital system."
+                }
+                right={
+                  <button type="button" onClick={loadFeedbackEntries} className="ghost-button rounded-2xl px-4 py-3 text-sm font-semibold">
+                    {adminLanguage === "bg" ? "Обнови" : "Refresh"}
+                  </button>
+                }
+              >
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="rounded-3xl border border-[#c9a56a]/20 bg-[#c9a56a]/10 p-5">
+                    <div className="section-kicker">{adminLanguage === "bg" ? "Получени" : "Received"}</div>
+                    <div className="mt-3 text-4xl font-semibold text-[#fff4df]">{feedbackEntries.length}</div>
+                  </div>
+                  <div className="rounded-3xl border border-emerald-300/20 bg-emerald-500/10 p-5">
+                    <div className="section-kicker">{adminLanguage === "bg" ? "Средна оценка" : "Average rating"}</div>
+                    <div className="mt-3 text-4xl font-semibold text-emerald-100">
+                      {feedbackEntries.length
+                        ? (
+                            feedbackEntries.reduce((total, item) => {
+                              const ratings = [
+                                item.atmosphereRating,
+                                item.foodRating,
+                                item.serviceRating,
+                                item.onlineReservationRating,
+                                item.softwareRating,
+                              ].map(Number).filter(Boolean);
+                              return total + (ratings.reduce((sum, value) => sum + value, 0) / Math.max(1, ratings.length));
+                            }, 0) / feedbackEntries.length
+                          ).toFixed(1)
+                        : "—"}
+                    </div>
+                  </div>
+                  <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+                    <div className="section-kicker">Google</div>
+                    <div className="mt-3 text-4xl font-semibold text-[#fff4df]">
+                      {feedbackEntries.filter((item) => item.googleReviewClicked).length}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 grid gap-4 xl:grid-cols-2">
+                  {feedbackEntries.map((item) => {
+                    const ratings = [
+                      ["Атмосфера", item.atmosphereRating],
+                      ["Храна", item.foodRating],
+                      ["Обслужване", item.serviceRating],
+                      ["Онлайн", item.onlineReservationRating],
+                      ["Софтуер", item.softwareRating],
+                    ];
+                    const texts = [
+                      ["Атмосфера - приятно", item.atmosphereImpression],
+                      ["Атмосфера - промяна", item.atmosphereChange],
+                      ["Храна - приятно", item.foodImpression],
+                      ["Храна - промяна", item.foodChange],
+                      ["Обслужване - приятно", item.serviceImpression],
+                      ["Обслужване - промяна", item.serviceChange],
+                      ["Онлайн резервация", item.onlineReservationFeedback],
+                      ["Софтуер", item.softwareFeedback],
+                      ["Отношение към клиенти", item.clientCareFeedback],
+                      ["Малки детайли", item.smallDetailsFeedback],
+                    ].filter(([, value]) => String(value || "").trim());
+
+                    return (
+                      <div key={item.id} className="rounded-[28px] border border-white/10 bg-black/20 p-5">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <div className="text-lg font-semibold text-[#fff4df]">{item.guestName || "—"}</div>
+                            <div className="mt-1 text-sm text-white/45">{item.email || "—"} · #{item.reservationId || "—"}</div>
+                          </div>
+                          <div className="rounded-full border border-[#f2d39a]/25 bg-[#c9a56a]/12 px-3 py-1 text-xs font-semibold text-[#f2d39a]">
+                            {item.discountCode || "5%"}
+                          </div>
+                        </div>
+                        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                          {ratings.map(([label, rating]) => (
+                            <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-center">
+                              <div className="text-[10px] uppercase tracking-[0.16em] text-white/35">{label}</div>
+                              <div className="mt-1 text-lg font-semibold text-[#f2d39a]">{rating || "—"}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-4 space-y-2">
+                          {texts.length === 0 && (
+                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/45">
+                              {adminLanguage === "bg" ? "Няма текстови бележки." : "No text notes."}
+                            </div>
+                          )}
+                          {texts.map(([label, value]) => (
+                            <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm">
+                              <div className="text-[10px] uppercase tracking-[0.16em] text-[#f2d39a]/70">{label}</div>
+                              <div className="mt-1 leading-6 text-white/70">{value}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-4 text-xs text-white/35">
+                          {new Date(item.createdAtUtc).toLocaleString()}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {feedbackEntries.length === 0 && (
+                    <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-stone-400">
+                      {adminLanguage === "bg" ? "Все още няма обратна връзка." : "No feedback yet."}
+                    </div>
+                  )}
+                </div>
+              </Panel>
             )}
 
             {activeTab === "marketing" && canManageMarketing && (

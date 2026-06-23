@@ -898,17 +898,17 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   }, []);
 
   React.useEffect(() => {
-    if (reservationDate && selectedTime && isPastTimeForDate(reservationDate, selectedTime)) {
+    if (reservationDate && selectedTime && isPastTimeForDate(reservationDate, selectedTime, new Date(), 15)) {
       setSelectedTime("");
       setSelectedTables([]);
     }
   }, [reservationDate, selectedTime]);
 
   const availableReservationTimes = reservationDate
-    ? getAvailableReservationTimesForDate(reservationTimes, reservationDate)
+    ? getAvailableReservationTimesForDate(reservationTimes, reservationDate, new Date(), 15)
     : reservationTimes;
   const todayReservationTimes = React.useMemo(
-    () => getAvailableReservationTimesForDate(reservationTimes, today),
+    () => getAvailableReservationTimesForDate(reservationTimes, today, new Date(), 15),
     [today]
   );
   const isTodayBookable = todayReservationTimes.length > 0;

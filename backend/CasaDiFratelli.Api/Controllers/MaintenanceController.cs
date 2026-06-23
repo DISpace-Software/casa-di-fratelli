@@ -130,12 +130,14 @@ public class MaintenanceController : ControllerBase
 
         if (fromDate.HasValue) query = query.Where(x => x.ReservedDate >= fromDate.Value);
         if (toDate.HasValue) query = query.Where(x => x.ReservedDate <= toDate.Value);
-        query = query.Where(x => !x.IsWalkIn);
+        if (normalizedKind != "walkins")
+            query = query.Where(x => !x.IsWalkIn);
 
         query = normalizedKind switch
         {
             "upcoming" => query.Where(x => !x.IsDeleted && x.ReservedDate >= today && x.Status != "Cancelled" && x.Status != "Released" && !x.IsNoShow),
             "completed" => query.Where(x => !x.IsDeleted && (x.ReservedDate < today || x.Status == "Released" || x.IsArrived || x.IsNoShow || x.Status == "Cancelled")),
+            "walkins" => query.Where(x => !x.IsDeleted && x.IsWalkIn),
             "deleted" => query,
             _ => query
         };
@@ -157,6 +159,7 @@ public class MaintenanceController : ControllerBase
                 x.Status,
                 x.IsArrived,
                 x.IsNoShow,
+                x.IsWalkIn,
                 x.DeletedAtUtc,
                 x.DeletedByAdminName,
                 x.DeleteReason,
@@ -336,6 +339,7 @@ public class MaintenanceController : ControllerBase
         {
             "active" => "active",
             "completed" or "past" or "held" => "completed",
+            "walkins" or "walk-ins" or "walkin" => "walkins",
             "deleted" or "removed" => "deleted",
             _ => "upcoming"
         };

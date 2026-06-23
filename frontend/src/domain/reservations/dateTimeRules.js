@@ -51,7 +51,7 @@ export function isDateBeyondReservationWindow(dateValue, maxDays = 10, now = new
   return dateValue > getDateInputValueAfterDays(maxDays, now);
 }
 
-export function isPastTimeForDate(dateValue, timeValue, now = new Date()) {
+export function isPastTimeForDate(dateValue, timeValue, now = new Date(), minimumLeadMinutes = 0) {
   if (!dateValue || !timeValue) return false;
 
   const today = getTodayInputValue(now);
@@ -65,12 +65,12 @@ export function isPastTimeForDate(dateValue, timeValue, now = new Date()) {
     selected.setDate(selected.getDate() + 1);
   }
 
-  return selected <= now;
+  return selected.getTime() - now.getTime() < minimumLeadMinutes * 60 * 1000;
 }
 
-export function getAvailableReservationTimesForDate(times, dateValue, now = new Date()) {
+export function getAvailableReservationTimesForDate(times, dateValue, now = new Date(), minimumLeadMinutes = 0) {
   if (!dateValue) return times;
-  return times.filter((time) => !isPastTimeForDate(dateValue, time, now));
+  return times.filter((time) => !isPastTimeForDate(dateValue, time, now, minimumLeadMinutes));
 }
 
 export function isWithinReservationBuffer(

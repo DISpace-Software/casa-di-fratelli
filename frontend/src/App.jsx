@@ -50,6 +50,10 @@ const getInitialPage = () => {
     return "reservation-confirm";
   }
 
+  if (window.location.pathname === "/feedback") {
+    return "feedback";
+  }
+
   return "home";
 };
 
@@ -441,6 +445,243 @@ function ReservationConfirmPage({ onBackHome }) {
   );
 }
 
+function RatingControl({ label, value, onChange }) {
+  return (
+    <div>
+      <div className="mb-2 text-sm font-semibold text-white/70">{label}</div>
+      <div className="grid grid-cols-5 gap-2">
+        {[1, 2, 3, 4, 5].map((rating) => (
+          <button
+            key={rating}
+            type="button"
+            onClick={() => onChange(rating)}
+            className={`rounded-2xl border px-3 py-3 text-sm font-bold transition ${
+              Number(value) === rating
+                ? "border-[#f2d39a]/60 bg-[#c9a56a]/25 text-[#fff4df]"
+                : "border-white/10 bg-black/20 text-white/55 hover:border-[#c9a56a]/35"
+            }`}
+          >
+            {rating}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FeedbackPage({ onBackHome }) {
+  const params = React.useMemo(() => {
+    if (typeof window === "undefined") return new URLSearchParams();
+    return new URLSearchParams(window.location.search);
+  }, []);
+  const [form, setForm] = React.useState({
+    reservationId: params.get("reservationId") || "",
+    guestName: params.get("name") || "",
+    email: params.get("email") || "",
+    atmosphereRating: 5,
+    atmosphereImpression: "",
+    atmosphereChange: "",
+    foodRating: 5,
+    foodImpression: "",
+    foodChange: "",
+    serviceRating: 5,
+    serviceImpression: "",
+    serviceChange: "",
+    onlineReservationRating: 5,
+    onlineReservationFeedback: "",
+    softwareRating: 5,
+    softwareFeedback: "",
+    clientCareFeedback: "",
+    smallDetailsFeedback: "",
+    googleReviewClicked: false,
+  });
+  const [reviewUrl, setReviewUrl] = React.useState("");
+  const [status, setStatus] = React.useState("idle");
+  const [message, setMessage] = React.useState("");
+  const [discountCode, setDiscountCode] = React.useState("");
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadMeta() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/feedback/meta`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled) setReviewUrl(data.reviewUrl || data.ReviewUrl || "");
+      } catch {
+        // Feedback form still works without the optional Google link.
+      }
+    }
+
+    loadMeta();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function updateField(key, value) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function submitFeedback(event) {
+    event.preventDefault();
+    setStatus("submitting");
+    setMessage("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          reservationId: form.reservationId ? Number(form.reservationId) : null,
+        }),
+      });
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setStatus("error");
+        setMessage(payload?.message || "Не успяхме да запазим обратната връзка.");
+        return;
+      }
+
+      setDiscountCode(payload?.discountCode || payload?.DiscountCode || "");
+      setReviewUrl(payload?.reviewUrl || payload?.ReviewUrl || reviewUrl);
+      setStatus("success");
+      setMessage("Благодарим Ви. Вашата обратна връзка е записана.");
+    } catch {
+      setStatus("error");
+      setMessage("Няма връзка със сървъра. Опитайте отново.");
+    }
+  }
+
+  const textAreas = [
+    ["atmosphereImpression", "Какво Ви направи приятно впечатление в атмосферата?"],
+    ["atmosphereChange", "Какво бихте променили в атмосферата?"],
+    ["foodImpression", "Какво Ви хареса най-много в храната?"],
+    ["foodChange", "Какво бихте променили в храната?"],
+    ["serviceImpression", "Какво Ви хареса в обслужването?"],
+    ["serviceChange", "Какво можем да направим по-добре в обслужването?"],
+    ["onlineReservationFeedback", "Как оценявате онлайн резервацията?"],
+    ["softwareFeedback", "Как Ви се струва дигиталната система?"],
+    ["clientCareFeedback", "Как усетихте отношението към клиентите?"],
+    ["smallDetailsFeedback", "Има ли малки детайли, които да подобрим?"],
+  ];
+
+  return (
+    <div className="luxury-shell min-h-screen px-5 py-8 text-white md:px-8 md:py-12">
+      <form onSubmit={submitFeedback} className="luxury-panel mx-auto w-full max-w-5xl rounded-[32px] p-5 md:p-8">
+        <button type="button" onClick={onBackHome} className="ghost-button mb-6 rounded-2xl px-4 py-3 text-sm font-semibold">
+          ← Към сайта
+        </button>
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div>
+            <img src="/casa-di-fratelli-logo.svg" alt="Casa di Fratelli" className="brand-logo mb-8 h-16 w-[230px] object-left" />
+            <p className="section-kicker">Обратна връзка</p>
+            <h1 className="mt-3 text-4xl font-semibold leading-tight text-[#fff4df] md:text-5xl">
+              Помогнете ни да станем още по-добри.
+            </h1>
+            <p className="mt-5 max-w-xl text-sm leading-7 text-white/60">
+              Отнема около минута. След изпращане ще получите код за 5% отстъпка при следващо посещение.
+            </p>
+            {status === "success" && (
+              <div className="mt-6 rounded-3xl border border-emerald-300/25 bg-emerald-500/12 p-5 text-emerald-50">
+                <div className="text-lg font-semibold">{message}</div>
+                {discountCode && (
+                  <div className="mt-4 rounded-2xl border border-emerald-200/25 bg-black/20 px-4 py-3">
+                    Код за отстъпка: <strong>{discountCode}</strong>
+                  </div>
+                )}
+                {reviewUrl && (
+                  <a
+                    href={reviewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => updateField("googleReviewClicked", true)}
+                    className="mt-4 inline-flex rounded-2xl border border-[#f2d39a]/35 bg-[#c9a56a]/15 px-5 py-3 text-sm font-semibold text-[#f2d39a]"
+                  >
+                    Оставете и Google отзив
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="block text-sm font-semibold text-white/60">
+                Име
+                <input
+                  value={form.guestName}
+                  onChange={(event) => updateField("guestName", event.target.value)}
+                  required
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
+                />
+              </label>
+              <label className="block text-sm font-semibold text-white/60">
+                Email
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => updateField("email", event.target.value)}
+                  required
+                  className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
+                />
+              </label>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <RatingControl label="Атмосфера" value={form.atmosphereRating} onChange={(value) => updateField("atmosphereRating", value)} />
+              <RatingControl label="Храна" value={form.foodRating} onChange={(value) => updateField("foodRating", value)} />
+              <RatingControl label="Обслужване" value={form.serviceRating} onChange={(value) => updateField("serviceRating", value)} />
+              <RatingControl label="Онлайн резервация" value={form.onlineReservationRating} onChange={(value) => updateField("onlineReservationRating", value)} />
+              <RatingControl label="Дигитална система" value={form.softwareRating} onChange={(value) => updateField("softwareRating", value)} />
+            </div>
+
+            <div className="grid gap-3">
+              {textAreas.map(([key, label]) => (
+                <label key={key} className="block text-sm font-semibold text-white/60">
+                  {label}
+                  <textarea
+                    value={form[key]}
+                    onChange={(event) => updateField(key, event.target.value)}
+                    rows={2}
+                    className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
+                  />
+                </label>
+              ))}
+            </div>
+
+            <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/70">
+              <input
+                type="checkbox"
+                checked={form.googleReviewClicked}
+                onChange={(event) => updateField("googleReviewClicked", event.target.checked)}
+              />
+              Ще оставя или вече оставих отзив в Google Maps.
+            </label>
+
+            {status === "error" && (
+              <div className="rounded-2xl border border-red-300/25 bg-red-500/12 px-4 py-3 text-sm text-red-100">
+                {message}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={status === "submitting" || status === "success"}
+              className="luxury-button w-full rounded-2xl px-5 py-4 text-sm font-semibold disabled:opacity-60"
+            >
+              {status === "submitting" ? "Изпращаме..." : status === "success" ? "Изпратено" : "Изпрати обратна връзка"}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function App() {
   const [language, setLanguage] = React.useState(safeReadStoredLanguage);
   const [theme, setTheme] = React.useState(safeReadStoredTheme);
@@ -519,6 +760,7 @@ export default function App() {
       menu: "/menu",
       privacy: "/privacy",
       "reservation-confirm": "/reservation-confirm",
+      feedback: "/feedback",
       home: "/",
     };
     const nextPath = pagePaths[currentPage] || "/";
@@ -580,6 +822,11 @@ export default function App() {
 
       if (path === "/reservation-confirm") {
         setCurrentPage("reservation-confirm");
+        return;
+      }
+
+      if (path === "/feedback") {
+        setCurrentPage("feedback");
         return;
       }
 
@@ -776,6 +1023,15 @@ export default function App() {
     return (
       <>
         <ReservationConfirmPage onBackHome={() => setCurrentPage("home")} />
+        <BackToTopButton />
+      </>
+    );
+  }
+
+  if (currentPage === "feedback") {
+    return (
+      <>
+        <FeedbackPage onBackHome={() => setCurrentPage("home")} />
         <BackToTopButton />
       </>
     );

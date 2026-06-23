@@ -87,6 +87,24 @@ public class ReservationsController : ControllerBase
         return selectedDateTime <= now;
     }
 
+    private static bool IsPublicReservationTooSoon(DateOnly reservedDate, string reservedTime)
+    {
+        if (!TimeOnly.TryParse(reservedTime, out var time))
+            return false;
+
+        var now = GetRestaurantNow();
+        var today = DateOnly.FromDateTime(now);
+
+        if (reservedDate != today)
+            return false;
+
+        var selectedDateTime = reservedDate.ToDateTime(time);
+        if (time.Hour <= 3 && now.Hour >= 10)
+            selectedDateTime = selectedDateTime.AddDays(1);
+
+        return selectedDateTime < now.AddMinutes(15);
+    }
+
     private static bool IsReservationTimeAllowed(string reservedTime, bool createdByAdmin)
     {
         if (!TimeOnly.TryParse(reservedTime, out var time))
@@ -232,26 +250,32 @@ public class ReservationsController : ControllerBase
         );
         var isFirstReservation = customer == null || customer.ReservationCount <= 1;
         var guestName = WebUtility.HtmlEncode(reservation.GuestName);
+        var feedbackUrl = WebUtility.HtmlEncode($"{GetFrontendUrl()}/feedback?reservationId={reservation.Id}&email={Uri.EscapeDataString(reservation.Email)}&name={Uri.EscapeDataString(reservation.GuestName)}");
+        var reviewUrl = WebUtility.HtmlEncode(GetReviewUrl());
 
         if (isFirstReservation)
         {
-            var reviewUrl = WebUtility.HtmlEncode(GetReviewUrl());
-
             await _emailService.SendAsync(
                 reservation.Email,
                 "Благодарим Ви за посещението · Casa di Fratelli",
                 $"""
-                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-                  <h2>Благодарим Ви, че бяхте наши гости</h2>
+                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937;background:#f8f3ea;padding:28px">
+                  <div style="max-width:640px;margin:0 auto;background:#fffaf2;border:1px solid #ead8bd;border-radius:22px;padding:28px">
+                  <p style="letter-spacing:0.22em;text-transform:uppercase;color:#9a682d;font-size:12px;font-weight:700;margin:0 0 12px">Casa di Fratelli</p>
+                  <h2 style="margin:0 0 14px;color:#2b1d15">Благодарим Ви, че бяхте наши гости</h2>
                   <p>Здравейте, {guestName},</p>
                   <p>За нас беше удоволствие да Ви посрещнем в <strong>Casa di Fratelli</strong>.</p>
-                  <p>Ако храната, обслужването и атмосферата са Ви харесали, ще сме благодарни да ни оставите отзив. Това помага на повече гости да открият нашия ресторант.</p>
+                  <p>Ще ни помогнете много, ако отделите минута за кратка обратна връзка за атмосферата, храната, обслужването и онлайн резервацията. Като благодарност ще получите <strong>5% за следващото посещение</strong>.</p>
                   <p>
-                    <a href="{reviewUrl}" style="display:inline-block;background:#c9a56a;color:#111827;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:700">
-                      Оставете отзив
+                    <a href="{feedbackUrl}" style="display:inline-block;background:#c9a56a;color:#111827;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:700;margin-right:8px">
+                      Попълнете обратна връзка
+                    </a>
+                    <a href="{reviewUrl}" style="display:inline-block;border:1px solid #c9a56a;color:#7a4a17;padding:11px 18px;border-radius:12px;text-decoration:none;font-weight:700">
+                      Оставете Google отзив
                     </a>
                   </p>
                   <p style="color:#6b7280">Очакваме Ви отново с удоволствие.</p>
+                  </div>
                 </div>
                 """
             );
@@ -263,11 +287,23 @@ public class ReservationsController : ControllerBase
             reservation.Email,
             "Благодарим Ви отново · Casa di Fratelli",
             $"""
-            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-              <h2>Благодарим Ви отново</h2>
+            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937;background:#f8f3ea;padding:28px">
+              <div style="max-width:640px;margin:0 auto;background:#fffaf2;border:1px solid #ead8bd;border-radius:22px;padding:28px">
+              <p style="letter-spacing:0.22em;text-transform:uppercase;color:#9a682d;font-size:12px;font-weight:700;margin:0 0 12px">Casa di Fratelli</p>
+              <h2 style="margin:0 0 14px;color:#2b1d15">Благодарим Ви отново</h2>
               <p>Здравейте, {guestName},</p>
               <p>Благодарим Ви, че отново избрахте <strong>Casa di Fratelli</strong>.</p>
-              <p>За нас е чест да Ви посрещаме и ще се радваме скоро пак да бъдете наши гости.</p>
+              <p>Ако искате да ни споделите какво Ви хареса и какво можем да направим още по-добре, попълнете кратката форма. Като благодарност ще получите <strong>5% за следващото посещение</strong>.</p>
+              <p>
+                <a href="{feedbackUrl}" style="display:inline-block;background:#c9a56a;color:#111827;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:700;margin-right:8px">
+                  Попълнете обратна връзка
+                </a>
+                <a href="{reviewUrl}" style="display:inline-block;border:1px solid #c9a56a;color:#7a4a17;padding:11px 18px;border-radius:12px;text-decoration:none;font-weight:700">
+                  Оставете Google отзив
+                </a>
+              </p>
+              <p style="color:#6b7280">За нас е чест да Ви посрещаме и ще се радваме скоро пак да бъдете наши гости.</p>
+              </div>
             </div>
             """
         );
@@ -467,6 +503,9 @@ public class ReservationsController : ControllerBase
             return BadRequest(request.CreatedByAdmin
                 ? "Admin reservations are available until 23:00."
                 : "Online reservations are available until 21:00. For a later time, please call 088 821 8318.");
+
+        if (!request.CreatedByAdmin && IsPublicReservationTooSoon(request.ReservedDate, request.ReservedTime))
+            return BadRequest("Online reservations must be made at least 15 minutes before the selected time.");
 
         var today = DateOnly.FromDateTime(GetRestaurantNow());
         if (!request.CreatedByAdmin && request.ReservedDate > today.AddDays(PublicMaxReservationDaysAhead))
