@@ -4384,6 +4384,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [feedbackEntries, setFeedbackEntries] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
+  const [feedbackSearch, setFeedbackSearch] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("All");
   const [expandedId, setExpandedId] = React.useState(null);
   const [expandedOrderId, setExpandedOrderId] = React.useState(null);
@@ -4562,13 +4563,36 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
   const loadFeedbackEntries = React.useCallback(async () => {
     try {
-      const feedbackData = await fetchJsonOrEmpty(`${API_BASE_URL}/api/feedback`, [], withAdminToken());
+      const query = feedbackSearch.trim() ? `?search=${encodeURIComponent(feedbackSearch.trim())}` : "";
+      const feedbackData = await fetchJsonOrEmpty(`${API_BASE_URL}/api/feedback${query}`, [], withAdminToken());
       setFeedbackEntries(Array.isArray(feedbackData) ? feedbackData : []);
     } catch (error) {
       console.error("Failed to load feedback", error);
       setAdminError(error?.message || "Failed to load feedback.");
     }
-  }, [withAdminToken]);
+  }, [feedbackSearch, withAdminToken]);
+
+  async function markFeedbackDiscountUsed(id) {
+    setAdminError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/feedback/${id}/discount-used`, { method: "PATCH" });
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to mark discount as used."));
+      return;
+    }
+    await loadFeedbackEntries();
+  }
+
+  async function deleteFeedbackEntry(id) {
+    if (!window.confirm(adminLanguage === "bg" ? "Да изтрия ли тази обратна връзка?" : "Delete this feedback entry?")) return;
+
+    setAdminError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/feedback/${id}`, { method: "DELETE" });
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to delete feedback."));
+      return;
+    }
+    await loadFeedbackEntries();
+  }
 
   const loadDiningOrders = React.useCallback(async ({ silent = false, force = false } = {}) => {
     if (!isProVersion && !force) {
@@ -9653,9 +9677,20 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     : "Guest impressions about atmosphere, food, service, and the digital system."
                 }
                 right={
-                  <button type="button" onClick={loadFeedbackEntries} className="ghost-button rounded-2xl px-4 py-3 text-sm font-semibold">
-                    {adminLanguage === "bg" ? "Обнови" : "Refresh"}
-                  </button>
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <input
+                      value={feedbackSearch}
+                      onChange={(event) => setFeedbackSearch(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") loadFeedbackEntries();
+                      }}
+                      placeholder={adminLanguage === "bg" ? "Промокод, име, email..." : "Promo code, name, email..."}
+                      className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none placeholder:text-white/35 focus:border-amber-300"
+                    />
+                    <button type="button" onClick={loadFeedbackEntries} className="ghost-button rounded-2xl px-4 py-3 text-sm font-semibold">
+                      {adminLanguage === "bg" ? "Търси / обнови" : "Search / refresh"}
+                    </button>
+                  </div>
                 }
               >
                 <div className="grid gap-4 md:grid-cols-3">
@@ -9697,8 +9732,18 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       ["Храна", item.foodRating],
                       ["Обслужване", item.serviceRating],
                       ["Онлайн", item.onlineReservationRating],
+                      ["Карта", item.tableMapRating],
+                      ["Полезност", item.tableMapUsefulnessRating],
                       ["Софтуер", item.softwareRating],
                     ];
+                    const analytics = [
+                      ["Процес резервация", item.onlineReservationEase],
+                      ["Пак избор на маса", item.tableMapReuseIntent],
+                      ["Важност маса", item.tableChoiceImportance],
+                      ["Най-полезна функция", item.mostUsefulDigitalFeature],
+                      ["Повторно посещение", item.returnLikelihood ? `${item.returnLikelihood}/10` : ""],
+                      ["Препоръка", item.recommendLikelihood || item.recommendLikelihood === 0 ? `${item.recommendLikelihood}/10` : ""],
+                    ].filter(([, value]) => String(value ?? "").trim());
                     const texts = [
                       ["Атмосфера - приятно", item.atmosphereImpression],
                       ["Атмосфера - промяна", item.atmosphereChange],
@@ -9707,9 +9752,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       ["Обслужване - приятно", item.serviceImpression],
                       ["Обслужване - промяна", item.serviceChange],
                       ["Онлайн резервация", item.onlineReservationFeedback],
+                      ["Интерактивна карта", item.tableMapFavoriteFeature],
                       ["Софтуер", item.softwareFeedback],
                       ["Отношение към клиенти", item.clientCareFeedback],
                       ["Малки детайли", item.smallDetailsFeedback],
+                      ["Едно нещо за промяна", item.oneThingToChange],
                     ].filter(([, value]) => String(value || "").trim());
 
                     return (
@@ -9719,16 +9766,27 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             <div className="text-lg font-semibold text-[#fff4df]">{item.guestName || "—"}</div>
                             <div className="mt-1 text-sm text-white/45">{item.email || "—"} · #{item.reservationId || "—"}</div>
                           </div>
-                          <div className="rounded-full border border-[#f2d39a]/25 bg-[#c9a56a]/12 px-3 py-1 text-xs font-semibold text-[#f2d39a]">
-                            {item.discountCode || "5%"}
+                          <div className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                            item.discountCodeUsed
+                              ? "border-emerald-300/25 bg-emerald-400/12 text-emerald-100"
+                              : "border-[#f2d39a]/25 bg-[#c9a56a]/12 text-[#f2d39a]"
+                          }`}>
+                            {item.discountCode || "5%"} {item.discountCodeUsed ? "· използван" : ""}
                           </div>
                         </div>
-                        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
                           {ratings.map(([label, rating]) => (
                             <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-center">
                               <div className="text-[10px] uppercase tracking-[0.16em] text-white/35">{label}</div>
                               <div className="mt-1 text-lg font-semibold text-[#f2d39a]">{rating || "—"}</div>
                             </div>
+                          ))}
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {analytics.map(([label, value]) => (
+                            <span key={label} className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1.5 text-xs text-white/62">
+                              <span className="text-[#f2d39a]/70">{label}:</span> {value}
+                            </span>
                           ))}
                         </div>
                         <div className="mt-4 space-y-2">
@@ -9746,6 +9804,24 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         </div>
                         <div className="mt-4 text-xs text-white/35">
                           {new Date(item.createdAtUtc).toLocaleString()}
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {!item.discountCodeUsed && (
+                            <button
+                              type="button"
+                              onClick={() => markFeedbackDiscountUsed(item.id)}
+                              className="rounded-2xl border border-emerald-300/25 bg-emerald-500/12 px-4 py-2 text-xs font-semibold text-emerald-100"
+                            >
+                              {adminLanguage === "bg" ? "Маркирай кода използван" : "Mark code used"}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => deleteFeedbackEntry(item.id)}
+                            className="rounded-2xl border border-red-300/25 bg-red-500/12 px-4 py-2 text-xs font-semibold text-red-100"
+                          >
+                            {adminLanguage === "bg" ? "Изтрий" : "Delete"}
+                          </button>
                         </div>
                       </div>
                     );

@@ -863,6 +863,10 @@ html[data-theme="light"] .site-hero .ghost-button {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+.hero-chef-overlay {
+  filter: drop-shadow(0 34px 60px rgba(0, 0, 0, 0.52));
+}
+
 html[data-theme="light"] .site-footer {
   background:
     linear-gradient(180deg, rgba(11, 8, 6, 0.78), rgba(7, 5, 4, 0.92)),
@@ -1567,6 +1571,13 @@ html[data-theme="light"] .zone-preview-card :where(.text-white, [class*="text-wh
     max-width: 19rem;
     font-size: 0.85rem;
     line-height: 1.65;
+  }
+
+  .site-hero .hero-chef-overlay {
+    left: -18vw;
+    width: 76vw;
+    height: 52svh;
+    opacity: 0.72;
   }
 
   .site-hero .mt-8 {

@@ -191,16 +191,29 @@ public static class AdminSchemaBootstrapper
                 "ServiceChange" text NOT NULL DEFAULT '',
                 "OnlineReservationRating" integer NOT NULL DEFAULT 0,
                 "OnlineReservationFeedback" text NOT NULL DEFAULT '',
+                "OnlineReservationEase" varchar(80) NOT NULL DEFAULT '',
+                "TableMapRating" integer NOT NULL DEFAULT 0,
+                "TableMapUsefulnessRating" integer NOT NULL DEFAULT 0,
+                "TableMapFavoriteFeature" text NOT NULL DEFAULT '',
+                "TableMapReuseIntent" varchar(80) NOT NULL DEFAULT '',
+                "TableChoiceImportance" varchar(80) NOT NULL DEFAULT '',
                 "SoftwareRating" integer NOT NULL DEFAULT 0,
                 "SoftwareFeedback" text NOT NULL DEFAULT '',
+                "MostUsefulDigitalFeature" varchar(120) NOT NULL DEFAULT '',
                 "ClientCareFeedback" text NOT NULL DEFAULT '',
                 "SmallDetailsFeedback" text NOT NULL DEFAULT '',
+                "ReturnLikelihood" integer NOT NULL DEFAULT 0,
+                "RecommendLikelihood" integer NOT NULL DEFAULT 0,
+                "OneThingToChange" text NOT NULL DEFAULT '',
                 "GoogleReviewClicked" boolean NOT NULL DEFAULT false,
                 "DiscountCode" varchar(40) NOT NULL DEFAULT '',
+                "DiscountCodeUsed" boolean NOT NULL DEFAULT false,
+                "DiscountCodeUsedAtUtc" timestamp with time zone NULL,
                 "CreatedAtUtc" timestamp with time zone NOT NULL DEFAULT now(),
                 CONSTRAINT "PK_CustomerFeedbacks" PRIMARY KEY ("Id")
             );
             CREATE INDEX IF NOT EXISTS "IX_CustomerFeedbacks_ReservationId" ON "CustomerFeedbacks" ("ReservationId");
+            CREATE INDEX IF NOT EXISTS "IX_CustomerFeedbacks_DiscountCode" ON "CustomerFeedbacks" ("DiscountCode");
             CREATE INDEX IF NOT EXISTS "IX_CustomerFeedbacks_CreatedAtUtc" ON "CustomerFeedbacks" ("CreatedAtUtc");
 
             CREATE TABLE IF NOT EXISTS "RestaurantEvents" (
@@ -269,6 +282,20 @@ public static class AdminSchemaBootstrapper
             ALTER TABLE "CustomerProfiles" ADD COLUMN IF NOT EXISTS "MarketingConsent" boolean NOT NULL DEFAULT false;
             ALTER TABLE "CustomerProfiles" ADD COLUMN IF NOT EXISTS "FirstReservationAtUtc" timestamp with time zone NOT NULL DEFAULT now();
             ALTER TABLE "CustomerProfiles" ADD COLUMN IF NOT EXISTS "LastReservationAtUtc" timestamp with time zone NOT NULL DEFAULT now();
+
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "OnlineReservationEase" varchar(80) NOT NULL DEFAULT '';
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "TableMapRating" integer NOT NULL DEFAULT 0;
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "TableMapUsefulnessRating" integer NOT NULL DEFAULT 0;
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "TableMapFavoriteFeature" text NOT NULL DEFAULT '';
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "TableMapReuseIntent" varchar(80) NOT NULL DEFAULT '';
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "TableChoiceImportance" varchar(80) NOT NULL DEFAULT '';
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "MostUsefulDigitalFeature" varchar(120) NOT NULL DEFAULT '';
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "ReturnLikelihood" integer NOT NULL DEFAULT 0;
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "RecommendLikelihood" integer NOT NULL DEFAULT 0;
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "OneThingToChange" text NOT NULL DEFAULT '';
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "DiscountCodeUsed" boolean NOT NULL DEFAULT false;
+            ALTER TABLE "CustomerFeedbacks" ADD COLUMN IF NOT EXISTS "DiscountCodeUsedAtUtc" timestamp with time zone NULL;
+            CREATE INDEX IF NOT EXISTS "IX_CustomerFeedbacks_DiscountCode" ON "CustomerFeedbacks" ("DiscountCode");
 
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "NameBg" text NOT NULL DEFAULT '';
             ALTER TABLE "MenuItems" ADD COLUMN IF NOT EXISTS "NameEn" text NOT NULL DEFAULT '';

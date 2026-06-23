@@ -445,17 +445,19 @@ function ReservationConfirmPage({ onBackHome }) {
   );
 }
 
-function RatingControl({ label, value, onChange }) {
+function RatingControl({ label, value, onChange, max = 5, min = 1, compact = false }) {
+  const values = Array.from({ length: max - min + 1 }, (_, index) => index + min);
+
   return (
     <div>
       <div className="mb-2 text-sm font-semibold text-white/70">{label}</div>
-      <div className="grid grid-cols-5 gap-2">
-        {[1, 2, 3, 4, 5].map((rating) => (
+      <div className={`grid gap-2 ${max > 5 ? "grid-cols-5 sm:grid-cols-11" : "grid-cols-5"}`}>
+        {values.map((rating) => (
           <button
             key={rating}
             type="button"
             onClick={() => onChange(rating)}
-            className={`rounded-2xl border px-3 py-3 text-sm font-bold transition ${
+            className={`rounded-2xl border px-2 ${compact ? "py-2 text-xs" : "py-3 text-sm"} font-bold transition ${
               Number(value) === rating
                 ? "border-[#f2d39a]/60 bg-[#c9a56a]/25 text-[#fff4df]"
                 : "border-white/10 bg-black/20 text-white/55 hover:border-[#c9a56a]/35"
@@ -466,6 +468,63 @@ function RatingControl({ label, value, onChange }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function OptionGroup({ label, value, options, onChange }) {
+  return (
+    <div>
+      <div className="mb-2 text-sm font-semibold text-white/70">{label}</div>
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => onChange(option)}
+            className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+              value === option
+                ? "border-[#f2d39a]/70 bg-[#c9a56a]/25 text-[#fff4df]"
+                : "border-white/10 bg-black/20 text-white/58 hover:border-[#c9a56a]/35"
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FeedbackTextarea({ label, value, onChange, placeholder, important = false }) {
+  return (
+    <label className="block text-sm font-semibold text-white/64">
+      {label}
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        rows={important ? 4 : 2}
+        placeholder={placeholder}
+        className={`mt-2 w-full rounded-[22px] border px-4 py-3 text-white outline-none transition placeholder:text-white/30 focus:border-[#f2d39a]/55 ${
+          important
+            ? "border-[#f2d39a]/28 bg-[#c9a56a]/10 shadow-[0_18px_45px_rgba(0,0,0,0.2)]"
+            : "border-white/10 bg-black/25"
+        }`}
+      />
+    </label>
+  );
+}
+
+function FeedbackSection({ number, title, children }) {
+  return (
+    <section className="rounded-[28px] border border-white/10 bg-white/[0.035] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.16)] md:p-5">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#f2d39a]/30 bg-[#c9a56a]/12 text-sm font-bold text-[#f2d39a]">
+          {number}
+        </span>
+        <h2 className="text-xl font-semibold text-[#fff4df]">{title}</h2>
+      </div>
+      <div className="grid gap-4">{children}</div>
+    </section>
   );
 }
 
@@ -489,10 +548,20 @@ function FeedbackPage({ onBackHome }) {
     serviceChange: "",
     onlineReservationRating: 5,
     onlineReservationFeedback: "",
+    onlineReservationEase: "Изключително лесен",
+    tableMapRating: 5,
+    tableMapUsefulnessRating: 5,
+    tableMapFavoriteFeature: "",
+    tableMapReuseIntent: "Да, определено",
+    tableChoiceImportance: "Много важно",
     softwareRating: 5,
     softwareFeedback: "",
+    mostUsefulDigitalFeature: "Избор на маса от карта",
     clientCareFeedback: "",
     smallDetailsFeedback: "",
+    returnLikelihood: 10,
+    recommendLikelihood: 10,
+    oneThingToChange: "",
     googleReviewClicked: false,
   });
   const [reviewUrl, setReviewUrl] = React.useState("");
@@ -556,43 +625,70 @@ function FeedbackPage({ onBackHome }) {
     }
   }
 
-  const textAreas = [
-    ["atmosphereImpression", "Какво Ви направи приятно впечатление в атмосферата?"],
-    ["atmosphereChange", "Какво бихте променили в атмосферата?"],
-    ["foodImpression", "Какво Ви хареса най-много в храната?"],
-    ["foodChange", "Какво бихте променили в храната?"],
-    ["serviceImpression", "Какво Ви хареса в обслужването?"],
-    ["serviceChange", "Какво можем да направим по-добре в обслужването?"],
-    ["onlineReservationFeedback", "Как оценявате онлайн резервацията?"],
-    ["softwareFeedback", "Как Ви се струва дигиталната система?"],
-    ["clientCareFeedback", "Как усетихте отношението към клиентите?"],
-    ["smallDetailsFeedback", "Има ли малки детайли, които да подобрим?"],
-  ];
+  const completedSignals = [
+    form.guestName,
+    form.email,
+    form.atmosphereImpression,
+    form.foodImpression,
+    form.serviceImpression,
+    form.onlineReservationEase,
+    form.tableMapReuseIntent,
+    form.mostUsefulDigitalFeature,
+    form.oneThingToChange,
+  ].filter((value) => String(value || "").trim()).length;
+  const progress = Math.min(100, Math.round((completedSignals / 9) * 100));
+  const showGooglePrompt =
+    Number(form.atmosphereRating) === 5 &&
+    Number(form.foodRating) === 5 &&
+    Number(form.serviceRating) === 5;
 
   return (
-    <div className="luxury-shell min-h-screen px-5 py-8 text-white md:px-8 md:py-12">
-      <form onSubmit={submitFeedback} className="luxury-panel mx-auto w-full max-w-5xl rounded-[32px] p-5 md:p-8">
-        <button type="button" onClick={onBackHome} className="ghost-button mb-6 rounded-2xl px-4 py-3 text-sm font-semibold">
-          ← Към сайта
-        </button>
-        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div>
-            <img src="/casa-di-fratelli-logo.svg" alt="Casa di Fratelli" className="brand-logo mb-8 h-16 w-[230px] object-left" />
+    <div className="luxury-shell min-h-screen px-4 py-6 text-white md:px-8 md:py-10">
+      <form onSubmit={submitFeedback} className="feedback-premium-form luxury-panel mx-auto w-full max-w-6xl rounded-[34px] p-4 md:p-8">
+        <div className="sticky top-3 z-20 mb-5 rounded-[24px] border border-white/10 bg-[#14100d]/90 p-3 backdrop-blur md:static md:bg-transparent md:p-0">
+          <div className="flex items-center justify-between gap-3">
+            <button type="button" onClick={onBackHome} className="ghost-button rounded-2xl px-4 py-3 text-sm font-semibold">
+              ← Към сайта
+            </button>
+            <div className="min-w-[130px] text-right text-xs font-semibold uppercase tracking-[0.18em] text-[#f2d39a]">
+              {progress}% готово
+            </div>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-[linear-gradient(90deg,#f2d39a,#b8843f)] transition-all" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+
+        <div className="grid gap-7 lg:grid-cols-[0.8fr_1.2fr]">
+          <aside className="lg:sticky lg:top-8 lg:self-start">
+            <img src="/casa-di-fratelli-logo.svg" alt="Casa di Fratelli" className="brand-logo mb-7 h-16 w-[230px] object-left" />
             <p className="section-kicker">Обратна връзка</p>
             <h1 className="mt-3 text-4xl font-semibold leading-tight text-[#fff4df] md:text-5xl">
-              Помогнете ни да станем още по-добри.
+              Вашето мнение оформя следващото посещение.
             </h1>
-            <p className="mt-5 max-w-xl text-sm leading-7 text-white/60">
-              Отнема около минута. След изпращане ще получите код за 5% отстъпка при следващо посещение.
+            <p className="mt-5 max-w-xl text-sm leading-7 text-white/62">
+              Кратка анкета за атмосфера, кухня, обслужване и дигиталното изживяване. Отнема 1-2 минути.
             </p>
+            <div className="mt-6 rounded-[26px] border border-[#f2d39a]/22 bg-[#c9a56a]/10 p-5 text-sm leading-7 text-[#f8ddb0]">
+              След изпращане ще получите персонален код за 5% отстъпка при следващо посещение.
+            </div>
+
             {status === "success" && (
               <div className="mt-6 rounded-3xl border border-emerald-300/25 bg-emerald-500/12 p-5 text-emerald-50">
-                <div className="text-lg font-semibold">{message}</div>
+                <div className="text-xl font-semibold">{message}</div>
+                <p className="mt-2 text-sm leading-6 text-emerald-50/78">
+                  Благодарим Ви за отделеното време. Тези отговори помагат на екипа ни да подобрява ресторанта с конкретика, а не с догадки.
+                </p>
                 {discountCode && (
                   <div className="mt-4 rounded-2xl border border-emerald-200/25 bg-black/20 px-4 py-3">
-                    Код за отстъпка: <strong>{discountCode}</strong>
+                    Код за 5% отстъпка: <strong>{discountCode}</strong>
                   </div>
                 )}
+                <div className="mt-4 grid gap-2 text-sm text-emerald-50/80">
+                  <div>Средна оценка ресторант: {((Number(form.atmosphereRating) + Number(form.foodRating) + Number(form.serviceRating)) / 3).toFixed(1)}/5</div>
+                  <div>SeatMap изживяване: {((Number(form.onlineReservationRating) + Number(form.tableMapRating) + Number(form.softwareRating)) / 3).toFixed(1)}/5</div>
+                  <div>Препоръка: {form.recommendLikelihood}/10</div>
+                </div>
                 {reviewUrl && (
                   <a
                     href={reviewUrl}
@@ -601,15 +697,16 @@ function FeedbackPage({ onBackHome }) {
                     onClick={() => updateField("googleReviewClicked", true)}
                     className="mt-4 inline-flex rounded-2xl border border-[#f2d39a]/35 bg-[#c9a56a]/15 px-5 py-3 text-sm font-semibold text-[#f2d39a]"
                   >
-                    Оставете и Google отзив
+                    Остави Google Review
                   </a>
                 )}
               </div>
             )}
-          </div>
+          </aside>
 
           <div className="space-y-4">
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-[28px] border border-white/10 bg-white/[0.035] p-4 md:p-5">
+              <div className="grid gap-3 md:grid-cols-2">
               <label className="block text-sm font-semibold text-white/60">
                 Име
                 <input
@@ -629,29 +726,66 @@ function FeedbackPage({ onBackHome }) {
                   className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
                 />
               </label>
+              </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <FeedbackSection number="01" title="Атмосфера">
               <RatingControl label="Атмосфера" value={form.atmosphereRating} onChange={(value) => updateField("atmosphereRating", value)} />
-              <RatingControl label="Храна" value={form.foodRating} onChange={(value) => updateField("foodRating", value)} />
-              <RatingControl label="Обслужване" value={form.serviceRating} onChange={(value) => updateField("serviceRating", value)} />
-              <RatingControl label="Онлайн резервация" value={form.onlineReservationRating} onChange={(value) => updateField("onlineReservationRating", value)} />
-              <RatingControl label="Дигитална система" value={form.softwareRating} onChange={(value) => updateField("softwareRating", value)} />
-            </div>
+              <FeedbackTextarea label="Какво най-много Ви хареса в атмосферата?" value={form.atmosphereImpression} onChange={(value) => updateField("atmosphereImpression", value)} placeholder="Например: интериорът, музиката, гледката, спокойствието, уютът..." />
+              <FeedbackTextarea label="Имаше ли нещо, което намали комфорта Ви по време на посещението?" value={form.atmosphereChange} onChange={(value) => updateField("atmosphereChange", value)} />
+            </FeedbackSection>
 
-            <div className="grid gap-3">
-              {textAreas.map(([key, label]) => (
-                <label key={key} className="block text-sm font-semibold text-white/60">
-                  {label}
-                  <textarea
-                    value={form[key]}
-                    onChange={(event) => updateField(key, event.target.value)}
-                    rows={2}
-                    className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
-                  />
-                </label>
-              ))}
-            </div>
+            <FeedbackSection number="02" title="Храна">
+              <RatingControl label="Храна" value={form.foodRating} onChange={(value) => updateField("foodRating", value)} />
+              <FeedbackTextarea label="Кое ястие или напитка Ви направи най-силно впечатление?" value={form.foodImpression} onChange={(value) => updateField("foodImpression", value)} />
+              <FeedbackTextarea label="Има ли нещо в храната или менюто, което бихте подобрили?" value={form.foodChange} onChange={(value) => updateField("foodChange", value)} />
+            </FeedbackSection>
+
+            <FeedbackSection number="03" title="Обслужване">
+              <RatingControl label="Обслужване" value={form.serviceRating} onChange={(value) => updateField("serviceRating", value)} />
+              <FeedbackTextarea label="Какво най-много Ви хареса в обслужването?" value={form.serviceImpression} onChange={(value) => updateField("serviceImpression", value)} />
+              <FeedbackTextarea label="Как можем да направим обслужването още по-добро?" value={form.serviceChange} onChange={(value) => updateField("serviceChange", value)} />
+            </FeedbackSection>
+
+            <FeedbackSection number="04" title="Онлайн резервация">
+              <RatingControl label="Онлайн резервация" value={form.onlineReservationRating} onChange={(value) => updateField("onlineReservationRating", value)} />
+              <OptionGroup label="Как Ви се стори процесът по онлайн резервация?" value={form.onlineReservationEase} onChange={(value) => updateField("onlineReservationEase", value)} options={["Изключително лесен", "Лесен", "Нормален", "Малко объркващ", "Труден"]} />
+            </FeedbackSection>
+
+            <FeedbackSection number="05" title="Избор на маса от интерактивна карта">
+              <RatingControl label="Избор на маса от интерактивна карта" value={form.tableMapRating} onChange={(value) => updateField("tableMapRating", value)} />
+              <RatingControl label="Колко полезна беше възможността сами да изберете конкретна маса?" value={form.tableMapUsefulnessRating} onChange={(value) => updateField("tableMapUsefulnessRating", value)} />
+              <FeedbackTextarea label="Какво Ви хареса най-много в избора на маса чрез интерактивната карта?" value={form.tableMapFavoriteFeature} onChange={(value) => updateField("tableMapFavoriteFeature", value)} placeholder="Например: маса до прозореца, любима зона, по-добра ориентация, удобство..." />
+              <OptionGroup label="Бихте ли използвали отново възможността сами да изберете маса?" value={form.tableMapReuseIntent} onChange={(value) => updateField("tableMapReuseIntent", value)} options={["Да, определено", "Вероятно да", "Няма значение", "Вероятно не", "Не"]} />
+              <OptionGroup label="Колко важно е за Вас да можете сами да избирате къде да седнете в ресторант?" value={form.tableChoiceImportance} onChange={(value) => updateField("tableChoiceImportance", value)} options={["Много важно", "Важно", "Без значение", "Не е важно"]} />
+            </FeedbackSection>
+
+            <FeedbackSection number="06" title="Дигитална система">
+              <RatingControl label="Дигитална система" value={form.softwareRating} onChange={(value) => updateField("softwareRating", value)} />
+              <OptionGroup label="Коя функция Ви беше най-полезна?" value={form.mostUsefulDigitalFeature} onChange={(value) => updateField("mostUsefulDigitalFeature", value)} options={["Онлайн резервация", "Избор на маса от карта", "Дигитално меню", "Информация за ресторанта", "Навигация в сайта", "Друго"]} />
+              <FeedbackTextarea label="Какво бихте подобрили в дигиталното изживяване?" value={form.softwareFeedback} onChange={(value) => updateField("softwareFeedback", value)} />
+            </FeedbackSection>
+
+            <FeedbackSection number="07" title="Лоялност">
+              <RatingControl label="Колко вероятно е да посетите Casa di Fratelli отново?" value={form.returnLikelihood} onChange={(value) => updateField("returnLikelihood", value)} max={10} min={1} compact />
+              <RatingControl label="Колко вероятно е да препоръчате Casa di Fratelli на приятел или колега?" value={form.recommendLikelihood} onChange={(value) => updateField("recommendLikelihood", value)} max={10} min={0} compact />
+            </FeedbackSection>
+
+            <FeedbackSection number="08" title="Най-важният въпрос">
+              <FeedbackTextarea important label="Ако можехте да промените само едно нещо в Casa di Fratelli, какво би било то?" value={form.oneThingToChange} onChange={(value) => updateField("oneThingToChange", value)} placeholder="Един конкретен детайл, който би направил преживяването още по-добро..." />
+            </FeedbackSection>
+
+            {showGooglePrompt && reviewUrl && (
+              <div className="rounded-[28px] border border-[#f2d39a]/25 bg-[#c9a56a]/12 p-5">
+                <div className="text-lg font-semibold text-[#fff4df]">Благодарим Ви!</div>
+                <p className="mt-2 text-sm leading-6 text-white/65">
+                  Ако сте останали доволни, ще се радваме да споделите мнението си и в Google Maps.
+                </p>
+                <a href={reviewUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-2xl border border-[#f2d39a]/35 bg-[#c9a56a]/20 px-5 py-3 text-sm font-semibold text-[#f2d39a]">
+                  Остави Google Review
+                </a>
+              </div>
+            )}
 
             <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/70">
               <input

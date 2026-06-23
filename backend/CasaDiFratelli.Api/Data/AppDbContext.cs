@@ -107,7 +107,12 @@ public class AppDbContext : DbContext
             entity.Property(x => x.GuestName).HasMaxLength(120);
             entity.Property(x => x.Email).HasMaxLength(180);
             entity.Property(x => x.DiscountCode).HasMaxLength(40);
+            entity.Property(x => x.OnlineReservationEase).HasMaxLength(80);
+            entity.Property(x => x.TableMapReuseIntent).HasMaxLength(80);
+            entity.Property(x => x.TableChoiceImportance).HasMaxLength(80);
+            entity.Property(x => x.MostUsefulDigitalFeature).HasMaxLength(120);
             entity.HasIndex(x => x.ReservationId);
+            entity.HasIndex(x => x.DiscountCode);
             entity.HasIndex(x => x.CreatedAtUtc);
         });
 

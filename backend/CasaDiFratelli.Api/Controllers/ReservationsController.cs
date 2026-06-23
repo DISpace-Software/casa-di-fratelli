@@ -249,11 +249,12 @@ public class ReservationsController : ControllerBase
             (!string.IsNullOrWhiteSpace(reservation.Phone) && x.Phone == reservation.Phone)
         );
         var isFirstReservation = customer == null || customer.ReservationCount <= 1;
+        var hasFeedbackAlready = await _db.CustomerFeedbacks.AnyAsync(x => x.Email == reservation.Email);
         var guestName = WebUtility.HtmlEncode(reservation.GuestName);
         var feedbackUrl = WebUtility.HtmlEncode($"{GetFrontendUrl()}/feedback?reservationId={reservation.Id}&email={Uri.EscapeDataString(reservation.Email)}&name={Uri.EscapeDataString(reservation.GuestName)}");
         var reviewUrl = WebUtility.HtmlEncode(GetReviewUrl());
 
-        if (isFirstReservation)
+        if (isFirstReservation && !hasFeedbackAlready)
         {
             await _emailService.SendAsync(
                 reservation.Email,
@@ -293,11 +294,8 @@ public class ReservationsController : ControllerBase
               <h2 style="margin:0 0 14px;color:#2b1d15">Благодарим Ви отново</h2>
               <p>Здравейте, {guestName},</p>
               <p>Благодарим Ви, че отново избрахте <strong>Casa di Fratelli</strong>.</p>
-              <p>Ако искате да ни споделите какво Ви хареса и какво можем да направим още по-добре, попълнете кратката форма. Като благодарност ще получите <strong>5% за следващото посещение</strong>.</p>
+              <p>За нас е чест да Ви посрещаме отново. Надяваме се вечерта Ви да е била спокойна, вкусна и запомняща се.</p>
               <p>
-                <a href="{feedbackUrl}" style="display:inline-block;background:#c9a56a;color:#111827;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:700;margin-right:8px">
-                  Попълнете обратна връзка
-                </a>
                 <a href="{reviewUrl}" style="display:inline-block;border:1px solid #c9a56a;color:#7a4a17;padding:11px 18px;border-radius:12px;text-decoration:none;font-weight:700">
                   Оставете Google отзив
                 </a>
