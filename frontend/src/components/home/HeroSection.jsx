@@ -50,7 +50,7 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
           </div>
 
           <div className="mt-12 grid max-w-xl grid-cols-3 gap-3 text-center sm:gap-4">
-            <div className="luxury-panel rounded-2xl p-4">
+            <div className="hero-days-stat luxury-panel rounded-2xl p-4">
               <div className="text-2xl font-semibold text-[#fff4df]">4,8</div>
               <div className="mt-1 text-[0.68rem] font-semibold tracking-[0.18em] text-[#f2c76f]" aria-label="5 stars">
                 ★★★★★

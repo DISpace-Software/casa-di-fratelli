@@ -1544,7 +1544,8 @@ html[data-theme="light"] .zone-preview-card :where(.text-white, [class*="text-wh
 
   .site-hero > .relative {
     min-height: calc(100svh - 108px);
-    padding-top: 2.25rem;
+    align-items: flex-start;
+    padding-top: 1rem;
     padding-bottom: 2.75rem;
   }
 
@@ -1574,11 +1575,11 @@ html[data-theme="light"] .zone-preview-card :where(.text-white, [class*="text-wh
   }
 
   .site-hero .hero-chef-overlay {
-    right: -18vw;
+    right: -24vw;
     left: auto;
-    width: 76vw;
-    height: 52svh;
-    opacity: 0.72;
+    width: 92vw;
+    height: 58svh;
+    opacity: 0.82;
   }
 
   .site-hero .mt-8 {
@@ -1586,7 +1587,13 @@ html[data-theme="light"] .zone-preview-card :where(.text-white, [class*="text-wh
   }
 
   .site-hero .mt-12 {
-    margin-top: 1.75rem;
+    margin-top: 1.35rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 18rem;
+  }
+
+  .site-hero .hero-days-stat {
+    display: none;
   }
 
   .site-hero .mt-10 {
