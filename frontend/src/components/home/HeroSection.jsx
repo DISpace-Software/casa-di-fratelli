@@ -18,10 +18,10 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
       <div className="hero-warmth absolute inset-0 bg-[radial-gradient(circle_at_72%_18%,rgba(201,165,106,0.18),transparent_24rem),radial-gradient(circle_at_16%_82%,rgba(36,115,78,0.2),transparent_24rem)]" />
       <div className="hero-bottom-fade absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#090705] to-transparent" />
       <img
-        src="/hero-chef-plating.png"
+        src="/hero-chef-plating-cutout.png"
         alt=""
         aria-hidden="true"
-        className="hero-chef-overlay pointer-events-none absolute bottom-0 left-0 z-[2] h-[48vh] max-h-[620px] w-[58vw] max-w-[720px] object-contain object-left-bottom opacity-95 md:h-[82vh] md:w-[54vw]"
+        className="hero-chef-overlay pointer-events-none absolute bottom-0 right-0 z-[2] h-[48vh] max-h-[620px] w-[58vw] max-w-[720px] object-contain object-right-bottom opacity-95 md:h-[82vh] md:w-[54vw]"
       />
 
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-92px)] max-w-7xl items-center px-6 py-16 md:py-20">

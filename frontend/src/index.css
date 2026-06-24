@@ -1574,7 +1574,8 @@ html[data-theme="light"] .zone-preview-card :where(.text-white, [class*="text-wh
   }
 
   .site-hero .hero-chef-overlay {
-    left: -18vw;
+    right: -18vw;
+    left: auto;
     width: 76vw;
     height: 52svh;
     opacity: 0.72;
