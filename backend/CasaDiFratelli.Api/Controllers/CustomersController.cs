@@ -96,6 +96,34 @@ public class CustomersController : ControllerBase
 
         return Ok(customer);
     }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var customer = await _db.CustomerProfiles.FirstOrDefaultAsync(x => x.Id == id);
+        if (customer == null)
+            return NotFound(new { message = "Customer not found." });
+
+        var before = new
+        {
+            customer.Id,
+            customer.GuestName,
+            customer.Phone,
+            customer.Email,
+            customer.ReservationCount,
+            customer.IsRegularCustomer,
+            customer.BirthDate,
+            customer.MarketingConsent,
+            customer.FirstReservationAtUtc,
+            customer.LastReservationAtUtc
+        };
+
+        _db.CustomerProfiles.Remove(customer);
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "delete", "CustomerProfile", id.ToString(), before: before);
+
+        return NoContent();
+    }
 }
 
 public sealed class CreateCustomerRequest

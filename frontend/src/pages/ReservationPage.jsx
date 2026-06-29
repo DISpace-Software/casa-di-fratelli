@@ -152,7 +152,7 @@ function InfoRow({ label, value }) {
 }
 
 function getPublicTableLabel(language = "bg") {
-  return language === "bg" ? "Избрана маса" : "Selected table";
+  return localText(language, "Избрана маса", "Selected table", "Выбранный стол");
 }
 
 function MapWindow({ className = "", label, vertical = false }) {
@@ -708,7 +708,7 @@ function BookingModal({
 
             <div className="birthday-panel min-w-0 sm:col-span-2 rounded-[1.5rem] border border-amber-400/25 bg-amber-500/10 p-4 sm:p-5">
               <label className="mb-2 block text-sm text-amber-100">
-                {language === "bg" ? "Рожден ден (опционално)" : "Birthday (optional)"}
+                {localText(language, "Рожден ден (опционално)", "Birthday (optional)", "День рождения (необязательно)")}
               </label>
               <div className="grid min-w-0 gap-3 sm:grid-cols-[0.75fr_1.25fr]">
                 <select
@@ -720,7 +720,7 @@ function BookingModal({
                   value={birthDay}
                   onChange={handleBirthDayChange}
                 >
-                  <option value="">{language === "bg" ? "Ден" : "Day"}</option>
+                  <option value="">{localText(language, "Ден", "Day", "День")}</option>
                   {birthdayDays.map((day) => (
                     <option key={day} value={day}>{day}</option>
                   ))}
@@ -734,16 +734,19 @@ function BookingModal({
                   value={birthMonth}
                   onChange={(event) => setBirthMonth(event.target.value)}
                 >
-                  <option value="">{language === "bg" ? "Месец" : "Month"}</option>
+                  <option value="">{localText(language, "Месец", "Month", "Месяц")}</option>
                   {availableBirthdayMonths.map(([value, label]) => (
                     <option key={value} value={value}>{label}</option>
                   ))}
                 </select>
               </div>
               <p className="mt-3 text-sm text-amber-100/80">
-                {language === "bg"
-                  ? "Само ден и месец, без година. Очаква ви приятен бонус за вашия празник."
-                  : "Day and month only, no year. A special birthday bonus is waiting for you."}
+                {localText(
+                  language,
+                  "Само ден и месец, без година. Очаква ви приятен бонус за вашия празник.",
+                  "Day and month only, no year. A special birthday bonus is waiting for you.",
+                  "Только день и месяц, без года. Вас ждёт приятный бонус к празднику."
+                )}
               </p>
             </div>
 
@@ -764,9 +767,12 @@ function BookingModal({
               <label className="flex items-start gap-3 text-sm text-stone-300">
                 <input name="marketingConsent" type="checkbox" className="mt-1" />
                 <span>
-                  {language === "bg"
-                    ? "Съгласявам се да получавам нови предложения и оферти по имейл."
-                    : "I agree to receive offers and promotions by email."}
+                  {localText(
+                    language,
+                    "Съгласявам се да получавам нови предложения и оферти по имейл.",
+                    "I agree to receive offers and promotions by email.",
+                    "Согласен получать новые предложения и акции по email."
+                  )}
                 </span>
               </label>
             </div>
@@ -775,15 +781,18 @@ function BookingModal({
               <label className="flex items-start gap-3 text-sm leading-6 text-stone-200">
                 <input name="privacyConsent" type="checkbox" required className="mt-1" />
                 <span>
-                  {language === "bg"
-                    ? "Съгласявам се Casa di Fratelli да обработи данните ми за целите на резервацията и приемам "
-                    : "I agree that Casa di Fratelli may process my data for this reservation and I accept the "}
+                  {localText(
+                    language,
+                    "Съгласявам се Casa di Fratelli да обработи данните ми за целите на резервацията и приемам ",
+                    "I agree that Casa di Fratelli may process my data for this reservation and I accept the ",
+                    "Согласен, чтобы Casa di Fratelli обработал мои данные для резервации, и принимаю "
+                  )}
                   <button
                     type="button"
                     onClick={onOpenPrivacy}
                     className="font-semibold text-[#f2d39a] underline underline-offset-4 transition hover:text-white"
                   >
-                    {language === "bg" ? "Политиката за поверителност" : "Privacy Policy"}
+                    {localText(language, "Политиката за поверителност", "Privacy Policy", "Политику конфиденциальности")}
                   </button>
                   .
                 </span>
@@ -817,17 +826,18 @@ function BookingModal({
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-[#f2d39a]" />
                 )}
                 {isSubmitting
-                  ? language === "bg"
-                    ? "Изпращаме резервацията..."
-                    : "Sending reservation..."
+                  ? localText(language, "Изпращаме резервацията...", "Sending reservation...", "Отправляем резервацию...")
                   : t.submit}
               </span>
             </button>
             {isSubmitting && (
               <div className="sm:col-span-2 text-center text-sm text-stone-400" role="status" aria-live="polite">
-                {language === "bg"
-                  ? "Моля, изчакайте. Проверяваме масата и изпращаме заявката."
-                  : "Please wait. We are checking the table and sending the request."}
+                {localText(
+                  language,
+                  "Моля, изчакайте. Проверяваме масата и изпращаме заявката.",
+                  "Please wait. We are checking the table and sending the request.",
+                  "Пожалуйста, подождите. Проверяем стол и отправляем заявку."
+                )}
               </div>
             )}
           </form>
@@ -975,19 +985,19 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
     {
       value: "indoor",
       title: labels.indoorTitle,
-      subtitle: language === "bg" ? "Уютна вътрешна зала" : "Elegant indoor hall",
+      subtitle: localText(language, "Уютна вътрешна зала", "Elegant indoor hall", "Уютный внутренний зал"),
       capacity: "16",
     },
     {
       value: "garden",
       title: labels.gardenTitle,
-      subtitle: language === "bg" ? "Покрита тераса" : "Covered terrace",
+      subtitle: localText(language, "Покрита тераса", "Covered terrace", "Крытая терраса"),
       capacity: "24+",
     },
     {
       value: "openTerrace",
       title: labels.openTerraceTitle,
-      subtitle: language === "bg" ? "Свежа външна зона" : "Open air corner",
+      subtitle: localText(language, "Свежа външна зона", "Open air corner", "Свежая открытая зона"),
       capacity: "8",
     },
   ];
@@ -1107,7 +1117,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
 
     if (!normalizedReservationDate) {
       setIsSubmitting(false);
-      setSubmitError(language === "bg" ? "Изберете дата за резервацията." : "Choose a reservation date.");
+      setSubmitError(localText(language, "Изберете дата за резервацията.", "Choose a reservation date.", "Выберите дату резервации."));
       return;
     }
 
@@ -1153,12 +1163,13 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
       setSubmitError("");
       setSubmitSuccess(
         requiresEmailConfirmation
-          ? language === "bg"
-            ? "Изпратихме Ви имейл за потвърждение."
-            : "We sent you a confirmation email."
-          : language === "bg"
-          ? "Резервацията беше изпратена успешно. Връщаме Ви към началото..."
-          : "Reservation submitted successfully. Taking you back to the home page..."
+          ? localText(language, "Изпратихме Ви имейл за потвърждение.", "We sent you a confirmation email.", "Мы отправили вам email для подтверждения.")
+          : localText(
+              language,
+              "Резервацията беше изпратена успешно. Връщаме Ви към началото...",
+              "Reservation submitted successfully. Taking you back to the home page...",
+              "Резервация успешно отправлена. Возвращаем вас на главную..."
+            )
       );
 
       form?.reset?.();
@@ -1201,6 +1212,8 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
       setSubmitError(
         language === "bg"
           ? "Възникна проблем при връзката със сървъра."
+          : language === "ru"
+          ? "Возникла проблема с подключением к серверу."
           : "There was a problem connecting to the server."
       );
     } finally {
@@ -1225,39 +1238,45 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   const partyNotice =
     partyNoticeType === "openTerraceLarge"
       ? {
-          kicker: language === "bg" ? "Откритата тераса е до 8 души" : "Open terrace fits up to 8",
-          title: language === "bg" ? "Изберете по-подходяща зона" : "Choose a better area",
+          kicker: localText(language, "Откритата тераса е до 8 души", "Open terrace fits up to 8", "Открытая терраса до 8 гостей"),
+          title: localText(language, "Изберете по-подходяща зона", "Choose a better area", "Выберите более подходящую зону"),
           text:
             language === "bg"
               ? "За тази компания може да резервирате залата за непушачи или покритата тераса. Ако поводът е специален, администраторът ще помогне с най-добрата подредба."
+              : language === "ru"
+              ? "Для такой компании можно забронировать зал для некурящих или крытую террасу. Если повод особенный, администратор поможет с лучшей рассадкой."
               : "For this party size, you can book the non-smoking hall or the covered terrace. For a special occasion, the administrator can help with the best setup.",
           actions: [
-            { area: "indoor", label: language === "bg" ? "Зала / Непушачи" : "Hall / Non-smoking" },
-            { area: "garden", label: language === "bg" ? "Покрита тераса" : "Covered terrace" },
+            { area: "indoor", label: localText(language, "Зала / Непушачи", "Hall / Non-smoking", "Зал / Некурящие") },
+            { area: "garden", label: localText(language, "Покрита тераса", "Covered terrace", "Крытая терраса") },
           ],
         }
       : partyNoticeType === "openTerraceVeryLarge"
       ? {
-          kicker: language === "bg" ? "Голяма компания" : "Large party",
-          title: language === "bg" ? "Най-подходяща е покритата тераса" : "The covered terrace is the best fit",
+          kicker: localText(language, "Голяма компания", "Large party", "Большая компания"),
+          title: localText(language, "Най-подходяща е покритата тераса", "The covered terrace is the best fit", "Лучше всего подойдёт крытая терраса"),
           text:
             language === "bg"
               ? "Откритата тераса е малка зона до 8 души, а залата за непушачи се комбинира онлайн до 16 гости. За тази компания може да продължите към покритата тераса или да се обадите на администратор."
+              : language === "ru"
+              ? "Открытая терраса рассчитана до 8 гостей, а зал для некурящих онлайн бронируется до 16 гостей. Для такой компании можно перейти к крытой террасе или позвонить администратору."
               : "The open terrace is a small area for up to 8 guests, and the non-smoking hall can be booked online for up to 16. For this party size, continue with the covered terrace or call an administrator.",
           actions: [
-            { area: "garden", label: language === "bg" ? "Покрита тераса" : "Covered terrace" },
+            { area: "garden", label: localText(language, "Покрита тераса", "Covered terrace", "Крытая терраса") },
           ],
         }
       : partyNoticeType === "indoorTooLarge"
       ? {
-          kicker: language === "bg" ? "Голяма компания" : "Large party",
-          title: language === "bg" ? "Преместихме ви към терасата" : "We moved you to the terrace",
+          kicker: localText(language, "Голяма компания", "Large party", "Большая компания"),
+          title: localText(language, "Преместихме ви към терасата", "We moved you to the terrace", "Мы переместили вас к террасе"),
           text:
             language === "bg"
               ? "В залата за непушачи онлайн могат да се комбинират маси до 16 гости. За по-голяма компания може да разгледате покритата тераса или да се свържете с администратор за събитие."
+              : language === "ru"
+              ? "В зале для некурящих онлайн можно забронировать до 16 гостей. Для большей компании посмотрите крытую террасу или свяжитесь с администратором для события."
               : "The non-smoking hall can be booked online for up to 16 guests. For a larger party, view the covered terrace or contact an administrator to arrange an event.",
           actions: [
-            { area: "garden", label: language === "bg" ? "Виж терасата" : "View terrace" },
+            { area: "garden", label: localText(language, "Виж терасата", "View terrace", "Посмотреть террасу") },
           ],
         }
       : null;
@@ -1324,13 +1343,13 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
               </div>
 
               <h3 className="mb-4 text-2xl font-semibold text-[#fff4df]">
-                {language === "bg" ? "Данни за посещението" : "Visit details"}
+                {localText(language, "Данни за посещението", "Visit details", "Данные посещения")}
               </h3>
 
               <div className="mb-5 grid gap-3 md:grid-cols-2">
                 <div className="md:col-span-2">
                   <label className="mb-2 block text-sm text-white/60">
-                    {language === "bg" ? "Зона" : "Area"}
+                    {localText(language, "Зона", "Area", "Зона")}
                   </label>
                   <div className="grid gap-2 sm:grid-cols-3">
                     {zoneOptions.map((zone) => (
@@ -1356,7 +1375,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
 
                 <div className="md:col-span-2">
                   <label className="mb-2 block text-sm text-white/60">
-                    {language === "bg" ? "Дата" : "Date"}
+                    {localText(language, "Дата", "Date", "Дата")}
                   </label>
                   <input
                     type="date"
@@ -1383,14 +1402,14 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                   <p className="mt-2 text-xs leading-5 text-white/45">{distantDateMessage}</p>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     {[
-                      [today, language === "bg" ? "Днес" : "Today", !isTodayBookable],
+                      [today, localText(language, "Днес", "Today", "Сегодня"), !isTodayBookable],
                       [
                         (() => {
                           const tomorrow = new Date();
                           tomorrow.setDate(tomorrow.getDate() + 1);
                           return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`;
                         })(),
-                        language === "bg" ? "Утре" : "Tomorrow",
+                        localText(language, "Утре", "Tomorrow", "Завтра"),
                         false,
                       ],
                     ].map(([value, label, disabled]) => (
@@ -1421,7 +1440,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
 
                 <div>
                   <label className="mb-2 block text-sm text-white/60">
-                    {language === "bg" ? "Час" : "Time"}
+                    {localText(language, "Час", "Time", "Время")}
                   </label>
                   <select
                     value={selectedTime}
@@ -1431,7 +1450,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                     }}
                     className="quiet-input w-full cursor-pointer rounded-2xl px-4 py-3 [color-scheme:dark]"
                   >
-                    <option value="">{language === "bg" ? "Избери час" : "Select time"}</option>
+                    <option value="">{localText(language, "Избери час", "Select time", "Выберите время")}</option>
                     {availableReservationTimes.map((time) => (
                       <option
                         key={time}
@@ -1443,16 +1462,19 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                   </select>
                   {reservationDate === today && availableReservationTimes.length === 0 && (
                     <p className="mt-2 text-xs text-red-200/80">
-                      {language === "bg"
-                        ? "За днес няма останали часове за резервация."
-                        : "There are no reservation times left for today."}
+                      {localText(
+                        language,
+                        "За днес няма останали часове за резервация.",
+                        "There are no reservation times left for today.",
+                        "На сегодня больше нет доступного времени для резервации."
+                      )}
                     </p>
                   )}
                 </div>
 
                 <div>
                   <label className="mb-2 block text-sm text-white/60">
-                    {language === "bg" ? "Брой гости" : "Guests"}
+                    {localText(language, "Брой гости", "Guests", "Гостей")}
                   </label>
                   <select
                     value={guestCount}
@@ -1462,7 +1484,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                     }}
                     className="quiet-input w-full cursor-pointer rounded-2xl px-4 py-3 [color-scheme:dark]"
                   >
-                    <option value="">{language === "bg" ? "Избери" : "Select"}</option>
+                    <option value="">{localText(language, "Избери", "Select", "Выберите")}</option>
                     {Array.from({ length: 24 }, (_, i) => i + 1).map((count) => (
                       <option key={count} value={count}>
                         {count}
@@ -1480,9 +1502,13 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                     {canShowSearchParams
                       ? language === "bg"
                         ? "Свободни маси"
+                        : language === "ru"
+                        ? "Свободные столы"
                         : "Available tables"
                       : language === "bg"
                       ? "Първо изберете детайли"
+                      : language === "ru"
+                      ? "Сначала выберите детали"
                       : "Select details first"}
                   </div>
                   <div className="text-2xl font-serif">
@@ -1490,6 +1516,8 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                       ? getPublicTableLabel(language)
                       : language === "bg"
                       ? "Няма избрана маса"
+                      : language === "ru"
+                      ? "Стол не выбран"
                       : "No table selected"}
                   </div>
                   <div className="mt-1 text-sm text-white/70">
@@ -1507,6 +1535,8 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                 <div className="mt-4 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                   {language === "bg"
                     ? "Избраните маси не са достатъчни за броя гости."
+                    : language === "ru"
+                    ? "Выбранных столов недостаточно для этого количества гостей."
                     : "Selected tables are not enough for the number of guests."}
                 </div>
               )}
@@ -1528,10 +1558,14 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                 {!canShowSearchParams
                   ? language === "bg"
                     ? "Избери зона, дата, час и гости"
+                    : language === "ru"
+                    ? "Выберите зону, дату, время и гостей"
                     : "Choose area, date, time and guests"
                   : !selectedTables.length
                   ? language === "bg"
                     ? "Избери маса"
+                    : language === "ru"
+                    ? "Выберите стол"
                     : "Choose table"
                   : labels.reserveSelected}
               </button>
@@ -1541,17 +1575,23 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
               <div className="flex min-h-[520px] items-center justify-center rounded-[28px] border border-[#c9a56a]/25 bg-[radial-gradient(circle_at_top_left,rgba(201,165,106,0.18),transparent_36%),rgba(0,0,0,0.24)] p-8 text-center">
                 <div className="max-w-md">
                   <div className="mb-3 text-xs uppercase tracking-[0.3em] text-[#c9a56a]">
-                    {language === "bg" ? "Телефонна резервация" : "Phone reservation"}
+                    {localText(language, "Телефонна резервация", "Phone reservation", "Резервация по телефону")}
                   </div>
                   <h2 className="text-2xl font-serif text-[#fff4df]">
-                    {language === "bg"
-                      ? "За този брой гости ще Ви помогнем лично."
-                      : "For this party size, we will assist you personally."}
+                    {localText(
+                      language,
+                      "За този брой гости ще Ви помогнем лично.",
+                      "For this party size, we will assist you personally.",
+                      "Для такого количества гостей мы поможем лично."
+                    )}
                   </h2>
                   <p className="mt-3 text-sm leading-7 text-white/65">
-                    {language === "bg"
-                      ? "Моля, обадете се на администратора, за да изберем най-подходящата маса и час за Вашата компания."
-                      : "Please call the host so we can choose the best table and time for your group."}
+                    {localText(
+                      language,
+                      "Моля, обадете се на администратора, за да изберем най-подходящата маса и час за Вашата компания.",
+                      "Please call the host so we can choose the best table and time for your group.",
+                      "Пожалуйста, позвоните администратору, чтобы мы подобрали лучший стол и время для вашей компании."
+                    )}
                   </p>
                   <a href={`tel:${adminPhone.replace(/\s/g, "")}`} className="luxury-button mt-6 inline-flex rounded-2xl px-6 py-3 font-semibold">
                     {adminPhone}
@@ -1574,17 +1614,23 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
               <div className="flex min-h-[520px] items-center justify-center rounded-[28px] border border-[#c9a56a]/20 bg-white/5 p-8 text-center">
                 <div>
                   <div className="mb-3 text-xs uppercase tracking-[0.3em] text-[#c9a56a]">
-                    {language === "bg" ? "Първа стъпка" : "First step"}
+                    {localText(language, "Първа стъпка", "First step", "Первый шаг")}
                   </div>
                   <h2 className="text-2xl font-serif">
-                    {language === "bg"
-                      ? "Изберете зона, дата, час и брой гости"
-                      : "Select area, date, time and number of guests"}
+                    {localText(
+                      language,
+                      "Изберете зона, дата, час и брой гости",
+                      "Select area, date, time and number of guests",
+                      "Выберите зону, дату, время и количество гостей"
+                    )}
                   </h2>
                   <p className="mt-3 max-w-md text-sm leading-7 text-white/60">
-                    {language === "bg"
-                      ? "След това ще покажем само подходящите свободни маси."
-                      : "Then we will show only suitable available tables."}
+                    {localText(
+                      language,
+                      "След това ще покажем само подходящите свободни маси.",
+                      "Then we will show only suitable available tables.",
+                      "После этого мы покажем только подходящие свободные столы."
+                    )}
                   </p>
                 </div>
               </div>
@@ -1605,6 +1651,8 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
             >
               {language === "bg"
                 ? "Резервирай избраната маса"
+                : language === "ru"
+                ? "Забронировать выбранный стол"
                 : "Reserve selected table"}
             </button>
           </div>
@@ -1618,7 +1666,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
               type="button"
               onClick={() => setPartyNoticeType("")}
               className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/70 transition hover:text-white"
-              aria-label={language === "bg" ? "Затвори" : "Close"}
+              aria-label={localText(language, "Затвори", "Close", "Закрыть")}
             >
               ×
             </button>
@@ -1653,7 +1701,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                 href="tel:+359888218318"
                 className="ghost-button rounded-2xl px-5 py-3 text-sm font-semibold"
               >
-                {language === "bg" ? "Позвъни на администратор" : "Call administrator"}
+                {localText(language, "Позвъни на администратор", "Call administrator", "Позвонить администратору")}
               </a>
             </div>
           </div>
@@ -1721,12 +1769,15 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
             </div>
             <p className="section-kicker mt-5">Casa di Fratelli</p>
             <h2 className="mt-3 text-2xl font-semibold text-[#fff4df]">
-              {language === "bg" ? "Потвърдете от имейла" : "Confirm from your email"}
+              {localText(language, "Потвърдете от имейла", "Confirm from your email", "Подтвердите через email")}
             </h2>
             <p className="mt-4 text-sm leading-7 text-stone-300">
-              {language === "bg"
-                ? `Изпратихме писмо на ${emailConfirmationNotice.email}. Отворете го и натиснете бутона за потвърждение, за да запазим резервацията окончателно.`
-                : `We sent an email to ${emailConfirmationNotice.email}. Open it and press the confirmation button to finalize your reservation.`}
+              {localText(
+                language,
+                `Изпратихме писмо на ${emailConfirmationNotice.email}. Отворете го и натиснете бутона за потвърждение, за да запазим резервацията окончателно.`,
+                `We sent an email to ${emailConfirmationNotice.email}. Open it and press the confirmation button to finalize your reservation.`,
+                `Мы отправили письмо на ${emailConfirmationNotice.email}. Откройте его и нажмите кнопку подтверждения, чтобы окончательно сохранить резервацию.`
+              )}
             </p>
             <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-stone-300">
               {emailConfirmationNotice.date} · {emailConfirmationNotice.time}
@@ -1740,7 +1791,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
               }}
               className="luxury-button mt-6 w-full rounded-2xl px-5 py-3 text-sm font-semibold"
             >
-              {language === "bg" ? "Разбрах" : "Got it"}
+              {localText(language, "Разбрах", "Got it", "Понятно")}
             </button>
           </div>
         </div>
@@ -1754,14 +1805,20 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
             </div>
             <p className="section-kicker mt-5">Casa di Fratelli</p>
             <h2 className="mt-3 text-2xl font-semibold text-[#fff4df]">
-              {language === "bg"
-                ? `Добре дошли отново, ${autoConfirmationNotice.guestName}!`
-                : `Welcome back, ${autoConfirmationNotice.guestName}!`}
+              {localText(
+                language,
+                `Добре дошли отново, ${autoConfirmationNotice.guestName}!`,
+                `Welcome back, ${autoConfirmationNotice.guestName}!`,
+                `С возвращением, ${autoConfirmationNotice.guestName}!`
+              )}
             </h2>
             <p className="mt-4 text-sm leading-7 text-stone-300">
-              {language === "bg"
-                ? "Вашата резервация е автоматично потвърдена, защото вече сте клиент на нашия ресторант."
-                : "Your reservation is automatically confirmed because you are already a guest of our restaurant."}
+              {localText(
+                language,
+                "Вашата резервация е автоматично потвърдена, защото вече сте клиент на нашия ресторант.",
+                "Your reservation is automatically confirmed because you are already a guest of our restaurant.",
+                "Ваша резервация подтверждена автоматически, потому что вы уже были гостем нашего ресторана."
+              )}
             </p>
             <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-stone-300">
               {autoConfirmationNotice.date} · {autoConfirmationNotice.time}
@@ -1776,7 +1833,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
               }}
               className="luxury-button mt-6 w-full rounded-2xl px-5 py-3 text-sm font-semibold"
             >
-              {language === "bg" ? "Готово" : "Done"}
+              {localText(language, "Готово", "Done", "Готово")}
             </button>
           </div>
         </div>

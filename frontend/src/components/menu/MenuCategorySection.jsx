@@ -1,5 +1,33 @@
+const menuCategoryText = {
+  bg: {
+    selection: "Подбор Casa",
+    description: "Ясни вкусове, точни цени и удобен преглед.",
+    items: "позиции",
+    signature: "Signature",
+    prepared: "Приготвя се на момента",
+    add: "Добави",
+  },
+  en: {
+    selection: "Casa selection",
+    description: "Clear flavors, exact prices, and an easy scan.",
+    items: "items",
+    signature: "Signature",
+    prepared: "Prepared to order",
+    add: "Add",
+  },
+  ru: {
+    selection: "Подбор Casa",
+    description: "Понятные вкусы, точные цены и удобный просмотр.",
+    items: "позиций",
+    signature: "Signature",
+    prepared: "Готовится на заказ",
+    add: "Добавить",
+  },
+};
+
 export default function MenuCategorySection({ category, language, orderEnabled = false, onAddToOrder }) {
   const featuredCount = category.items.filter((item) => item.featured).length;
+  const text = menuCategoryText[language] || menuCategoryText.bg;
 
   return (
     <section id={category.id} className="reveal-up scroll-mt-44 md:scroll-mt-56">
@@ -7,25 +35,23 @@ export default function MenuCategorySection({ category, language, orderEnabled =
         <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="section-kicker">
-              {language === "bg" ? "Подбор Casa" : "Casa selection"}
+              {text.selection}
             </div>
             <h2 className="mt-2 text-2xl font-semibold text-[#fff4df] md:text-4xl">
               {category.title}
             </h2>
             <p className="mt-2 max-w-2xl text-xs leading-6 text-white/62 md:mt-3 md:text-sm md:leading-7">
-              {language === "bg"
-                ? "Ясни вкусове, точни цени и удобен преглед."
-                : "Clear flavors, exact prices, and an easy scan."}
+              {text.description}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs">
             <span className="rounded-full border border-white/10 bg-black/25 px-3 py-2 text-stone-300">
-              {category.items.length} {language === "bg" ? "позиции" : "items"}
+              {category.items.length} {text.items}
             </span>
             {featuredCount > 0 && (
               <span className="rounded-full border border-[#c9a56a]/30 bg-[#c9a56a]/10 px-3 py-2 text-[#f2d39a]">
-                {featuredCount} Signature
+                {featuredCount} {text.signature}
               </span>
             )}
           </div>
@@ -58,7 +84,7 @@ export default function MenuCategorySection({ category, language, orderEnabled =
                 {item.featured && (
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="floating-glow rounded-full border border-[#c9a56a]/30 bg-[#c9a56a]/10 px-2.5 py-0.5 text-[9px] uppercase tracking-[0.18em] text-[#d8b377]">
-                      Signature
+                      {text.signature}
                     </span>
                   </div>
                 )}
@@ -77,7 +103,7 @@ export default function MenuCategorySection({ category, language, orderEnabled =
                     {item.price}
                   </div>
                   <div className="prepared-badge hidden rounded-full border border-[#c9a56a]/20 bg-[#c9a56a]/10 px-2.5 py-1 text-xs text-[#f2d3a0] md:inline-flex md:text-sm">
-                    {language === "bg" ? "Приготвя се на момента" : "Prepared to order"}
+                    {text.prepared}
                   </div>
                 </div>
               </div>
@@ -89,7 +115,7 @@ export default function MenuCategorySection({ category, language, orderEnabled =
                     onClick={() => onAddToOrder?.(item)}
                     className="luxury-button rounded-full px-3 py-2 text-xs font-semibold md:px-4"
                   >
-                    {language === "bg" ? "Добави" : "Add"}
+                    {text.add}
                   </button>
                 </div>
               )}

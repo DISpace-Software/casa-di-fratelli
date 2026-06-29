@@ -750,6 +750,27 @@ function getAdminRoleLabel(role, language = "bg") {
   return adminRoleOptions.find((option) => option.value === normalized)?.labels[language] || normalized;
 }
 
+function adminLocalText(language, bg, en, ru = bg) {
+  if (language === "en") return en;
+  if (language === "ru") return ru;
+  return bg;
+}
+
+function getCustomerProfileKey(profile) {
+  const email = String(profile.email ?? profile.Email ?? "").trim().toLowerCase();
+  const phone = String(profile.phone ?? profile.Phone ?? "").trim().toLowerCase();
+  const id = profile.id ?? profile.Id;
+
+  return email || phone || `profile-${id}`;
+}
+
+function getReservationCustomerKey(reservation) {
+  const email = String(reservation.email || "").trim().toLowerCase();
+  const phone = String(reservation.phone || "").trim().toLowerCase();
+
+  return email || phone;
+}
+
 function getAdminUserId(user) {
   return user?.id ?? user?.Id;
 }
@@ -2208,12 +2229,12 @@ function ReservationOperationsMap({
                     onClick={() => setSelectedReservationId(isSelected ? null : reservation.id)}
 	                    className={`relative z-40 min-w-[96px] rounded-full border px-2.5 py-1 text-[9px] font-semibold shadow-2xl backdrop-blur transition hover:scale-[1.03] sm:min-w-[112px] sm:px-3 sm:py-1.5 sm:text-[10px] lg:min-w-[128px] lg:text-[11px] ${
 	                      hasNewOrderItems
-	                        ? "waiter-new-alert border-amber-300/55 bg-amber-400/22 text-amber-50"
+	                        ? "admin-reservation-guest-marker waiter-new-alert border-amber-300/55 bg-amber-400/22 text-amber-50"
 	                      : reservation.isArrived
-	                        ? "border-emerald-300/40 bg-emerald-400/20 text-emerald-100"
+	                        ? "admin-reservation-guest-marker border-emerald-300/40 bg-emerald-400/20 text-emerald-100"
                         : isLate
-                        ? "border-red-300/50 bg-red-500/25 text-red-100"
-                        : "border-[#f2d39a]/45 bg-[#2f241b]/90 text-[#fff4df]"
+                        ? "admin-reservation-guest-marker border-red-300/50 bg-red-500/25 text-red-100"
+                        : "admin-reservation-guest-marker border-[#f2d39a]/45 bg-[#2f241b]/90 text-[#fff4df]"
                     }`}
                   >
                     <span className="block truncate">{reservation.guestName}</span>
@@ -5024,12 +5045,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   }
 
   async function deleteFeedbackEntry(id) {
-    if (!window.confirm(adminLanguage === "bg" ? "Да изтрия ли тази обратна връзка?" : "Delete this feedback entry?")) return;
+    if (!window.confirm(adminLocalText(adminLanguage, "Да изтрия ли тази обратна връзка?", "Delete this feedback entry?", "Удалить эту обратную связь?"))) return;
 
     setAdminError("");
     const response = await adminFetch(`${API_BASE_URL}/api/feedback/${id}`, { method: "DELETE" });
     if (!response.ok) {
-      setAdminError(await readErrorMessage(response, "Failed to delete feedback."));
+      setAdminError(await readErrorMessage(
+        response,
+        adminLocalText(adminLanguage, "Неуспешно изтриване на обратна връзка.", "Failed to delete feedback.", "Не удалось удалить обратную связь.")
+      ));
       return;
     }
     await loadFeedbackEntries();
@@ -5078,9 +5102,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       setCustomerProfiles(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to load customer profiles", error);
-      setAdminError(error?.message || "Failed to load customer profiles.");
+      setAdminError(error?.message || adminLocalText(adminLanguage, "Неуспешно зареждане на клиенти.", "Failed to load customer profiles.", "Не удалось загрузить клиентов."));
     }
-  }, [withAdminToken]);
+  }, [adminLanguage, withAdminToken]);
 
   const loadTableLayout = React.useCallback(async () => {
     try {
@@ -6273,14 +6297,49 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     });
 
     if (!response.ok) {
-      setAdminError(await readErrorMessage(response, "Failed to save customer."));
+      setAdminError(await readErrorMessage(response, adminLocalText(adminLanguage, "Неуспешно записване на клиент.", "Failed to save customer.", "Не удалось сохранить клиента.")));
       return;
     }
 
     setManualCustomerForm(emptyManualCustomer);
     setShowManualCustomerForm(false);
     await loadCustomerProfiles();
-    setAdminNotice(adminLanguage === "bg" ? "Клиентът е запазен." : "Customer saved.");
+    setAdminNotice(adminLocalText(adminLanguage, "Клиентът е запазен.", "Customer saved.", "Клиент сохранён."));
+  }
+
+  async function deleteCustomerProfile(customer) {
+    const profileId = customer.profileId;
+    if (!profileId) return;
+
+    const confirmed = window.confirm(
+      adminLocalText(
+        adminLanguage,
+        `Да изтрием ли клиента "${customer.guestName}" от статистиката?`,
+        `Delete "${customer.guestName}" from customer statistics?`,
+        `Удалить клиента "${customer.guestName}" из статистики?`
+      )
+    );
+
+    if (!confirmed) return;
+
+    setAdminNotice("");
+    setAdminError("");
+
+    const response = await adminFetch(`${API_BASE_URL}/api/customers/${profileId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(
+        response,
+        adminLocalText(adminLanguage, "Неуспешно изтриване на клиент.", "Failed to delete customer.", "Не удалось удалить клиента.")
+      ));
+      return;
+    }
+
+    setExpandedCustomerKey(null);
+    await loadCustomerProfiles();
+    setAdminNotice(adminLocalText(adminLanguage, "Клиентът е изтрит от статистиката.", "Customer removed from statistics.", "Клиент удалён из статистики."));
   }
 
   async function deleteBlacklistEntry(id) {
@@ -6766,7 +6825,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const customerProfileAccumulator = customerProfiles.reduce((acc, profile) => {
     const phone = profile.phone ?? profile.Phone ?? "";
     const email = profile.email ?? profile.Email ?? "";
-    const key = email || phone || `profile-${profile.id ?? profile.Id}`;
+    const key = getCustomerProfileKey(profile);
     if (!key || key === "—") return acc;
 
     const firstReservationAt = profile.firstReservationAtUtc ?? profile.FirstReservationAtUtc ?? "";
@@ -6775,6 +6834,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     acc[key] = {
       key,
+      profileId: profile.id ?? profile.Id,
       guestName: profile.guestName ?? profile.GuestName ?? "—",
       phone,
       email,
@@ -6803,27 +6863,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         return acc;
       }
 
-      const key = r.email || r.phone;
+      const key = getReservationCustomerKey(r);
       if (!key || key === "—") return acc;
 
       if (!acc[key]) {
-        acc[key] = {
-          key,
-          guestName: r.guestName,
-          phone: r.phone,
-          email: r.email,
-          count: 0,
-          firstReservation: r.reservedDate,
-          lastReservation: r.reservedDate,
-          reservations: [],
-          isRegularCustomer: false,
-          marketingConsent: r.marketingConsent,
-          isManualProfile: false,
-          isBlacklisted:
-            r.isBlacklisted ||
-            blacklistKeys.has(String(r.phone || "").trim().toLowerCase()) ||
-            blacklistKeys.has(String(r.email || "").trim().toLowerCase()),
-        };
+        return acc;
       }
 
       acc[key].count += 1;
@@ -6918,7 +6962,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
 
     if (customerSort === "name") {
-      return first.guestName.localeCompare(second.guestName, adminLanguage === "bg" ? "bg" : "en");
+      return first.guestName.localeCompare(
+        second.guestName,
+        adminLanguage === "ru" ? "ru" : adminLanguage === "bg" ? "bg" : "en"
+      );
     }
 
     return second.periodCount - first.periodCount || second.count - first.count;
@@ -6958,7 +7005,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     });
 
     return Array.from(grouped.values()).sort((first, second) =>
-      first.label.localeCompare(second.label, adminLanguage === "bg" ? "bg" : "en")
+      first.label.localeCompare(second.label, adminLanguage === "ru" ? "ru" : adminLanguage === "bg" ? "bg" : "en")
     );
   }, [adminLanguage, menuItems, selectedMenuDepartment]);
 
@@ -9959,12 +10006,17 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             {activeTab === "blacklist" && (
               <Panel
                 title="Blacklist"
-                subtitle="No-show клиенти и проблемни резервации."
+                subtitle={adminLocalText(
+                  adminLanguage,
+                  "No-show клиенти и проблемни резервации.",
+                  "No-show guests and problematic reservations.",
+                  "No-show гости и проблемные резервации."
+                )}
                 right={
                   <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
                     {[
-                      ["list", adminLanguage === "bg" ? "Списък" : "List"],
-                      ["form", adminLanguage === "bg" ? "Добави ръчно" : "Add manually"],
+                      ["list", adminLocalText(adminLanguage, "Списък", "List", "Список")],
+                      ["form", adminLocalText(adminLanguage, "Добави ръчно", "Add manually", "Добавить вручную")],
                     ].map(([key, label]) => (
                       <button
                         key={key}
@@ -9983,10 +10035,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 {blacklistMode === "form" ? (
                   <form onSubmit={saveBlacklistEntry} className="grid gap-4 md:grid-cols-3">
                     {[
-                      ["guestName", "Guest name"],
-                      ["phone", "Phone"],
+                      ["guestName", adminLocalText(adminLanguage, "Име", "Guest name", "Имя гостя")],
+                      ["phone", adminLocalText(adminLanguage, "Телефон", "Phone", "Телефон")],
                       ["email", "Email"],
-                      ["reason", "Reason"],
+                      ["reason", adminLocalText(adminLanguage, "Причина", "Reason", "Причина")],
                     ].map(([key, label]) => (
                       <div key={key}>
                         <label className="mb-2 block text-sm text-stone-400">{label}</label>
@@ -10005,7 +10057,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     ))}
 
                     <div className="md:col-span-3">
-                      <label className="mb-2 block text-sm text-stone-400">Notes</label>
+                      <label className="mb-2 block text-sm text-stone-400">
+                        {adminLocalText(adminLanguage, "Бележки", "Notes", "Заметки")}
+                      </label>
                       <textarea
                         value={blacklistForm.notes}
                         onChange={(e) =>
@@ -10021,14 +10075,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
                     <div className="flex flex-col gap-3 md:col-span-3 md:flex-row">
                       <button className="rounded-2xl bg-yellow-400 px-6 py-4 font-semibold text-black">
-                        Add to blacklist
+                        {adminLocalText(adminLanguage, "Добави в blacklist", "Add to blacklist", "Добавить в blacklist")}
                       </button>
                       <button
                         type="button"
                         onClick={() => setBlacklistMode("list")}
                         className="ghost-button rounded-2xl px-6 py-4 font-semibold"
                       >
-                        Back to list
+                        {adminLocalText(adminLanguage, "Назад към списъка", "Back to list", "Назад к списку")}
                       </button>
                     </div>
                   </form>
@@ -10036,7 +10090,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   <div className="space-y-4">
                     {blacklist.length === 0 && (
                       <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-stone-400">
-                        {adminLanguage === "bg" ? "Blacklist е празен." : "Blacklist is empty."}
+                        {adminLocalText(adminLanguage, "Blacklist е празен.", "Blacklist is empty.", "Blacklist пуст.")}
                       </div>
                     )}
 
@@ -10202,11 +10256,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
             {activeTab === "feedback" && canViewFeedback && (
               <Panel
-                title={adminLanguage === "bg" ? "Обратна връзка" : "Customer feedback"}
+                title={adminLocalText(adminLanguage, "Обратна връзка", "Customer feedback", "Обратная связь")}
                 subtitle={
-                  adminLanguage === "bg"
-                    ? "Кратки клиентски впечатления за атмосфера, храна, обслужване и дигиталната система."
-                    : "Guest impressions about atmosphere, food, service, and the digital system."
+                  adminLocalText(
+                    adminLanguage,
+                    "Кратки клиентски впечатления за атмосфера, храна, обслужване и дигиталната система.",
+                    "Guest impressions about atmosphere, food, service, and the digital system.",
+                    "Короткие впечатления гостей об атмосфере, еде, обслуживании и цифровой системе."
+                  )
                 }
                 right={
                   <div className="flex flex-col gap-3 sm:flex-row">
@@ -10216,22 +10273,22 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       onKeyDown={(event) => {
                         if (event.key === "Enter") loadFeedbackEntries();
                       }}
-                      placeholder={adminLanguage === "bg" ? "Промокод, име, email..." : "Promo code, name, email..."}
+                      placeholder={adminLocalText(adminLanguage, "Промокод, име, email...", "Promo code, name, email...", "Промокод, имя, email...")}
                       className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none placeholder:text-white/35 focus:border-amber-300"
                     />
                     <button type="button" onClick={loadFeedbackEntries} className="ghost-button rounded-2xl px-4 py-3 text-sm font-semibold">
-                      {adminLanguage === "bg" ? "Търси / обнови" : "Search / refresh"}
+                      {adminLocalText(adminLanguage, "Търси / обнови", "Search / refresh", "Искать / обновить")}
                     </button>
                   </div>
                 }
               >
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="rounded-3xl border border-[#c9a56a]/20 bg-[#c9a56a]/10 p-5">
-                    <div className="section-kicker">{adminLanguage === "bg" ? "Получени" : "Received"}</div>
+                    <div className="section-kicker">{adminLocalText(adminLanguage, "Получени", "Received", "Получено")}</div>
                     <div className="mt-3 text-4xl font-semibold text-[#fff4df]">{feedbackEntries.length}</div>
                   </div>
                   <div className="rounded-3xl border border-emerald-300/20 bg-emerald-500/10 p-5">
-                    <div className="section-kicker">{adminLanguage === "bg" ? "Средна оценка" : "Average rating"}</div>
+                    <div className="section-kicker">{adminLocalText(adminLanguage, "Средна оценка", "Average rating", "Средняя оценка")}</div>
                     <div className="mt-3 text-4xl font-semibold text-emerald-100">
                       {feedbackEntries.length
                         ? (
@@ -10324,7 +10381,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <div className="mt-4 space-y-2">
                           {texts.length === 0 && (
                             <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white/45">
-                              {adminLanguage === "bg" ? "Няма текстови бележки." : "No text notes."}
+                              {adminLocalText(adminLanguage, "Няма текстови бележки.", "No text notes.", "Текстовых заметок нет.")}
                             </div>
                           )}
                           {texts.map(([label, value]) => (
@@ -10344,7 +10401,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               onClick={() => markFeedbackDiscountUsed(item.id)}
                               className="rounded-2xl border border-emerald-300/25 bg-emerald-500/12 px-4 py-2 text-xs font-semibold text-emerald-100"
                             >
-                              {adminLanguage === "bg" ? "Маркирай кода използван" : "Mark code used"}
+                              {adminLocalText(adminLanguage, "Маркирай кода използван", "Mark code used", "Отметить код использованным")}
                             </button>
                           )}
                           <button
@@ -10352,7 +10409,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             onClick={() => deleteFeedbackEntry(item.id)}
                             className="rounded-2xl border border-red-300/25 bg-red-500/12 px-4 py-2 text-xs font-semibold text-red-100"
                           >
-                            {adminLanguage === "bg" ? "Изтрий" : "Delete"}
+                            {adminLocalText(adminLanguage, "Изтрий", "Delete", "Удалить")}
                           </button>
                         </div>
                       </div>
@@ -10360,7 +10417,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   })}
                   {feedbackEntries.length === 0 && (
                     <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-stone-400">
-                      {adminLanguage === "bg" ? "Все още няма обратна връзка." : "No feedback yet."}
+                      {adminLocalText(adminLanguage, "Все още няма обратна връзка.", "No feedback yet.", "Обратной связи пока нет.")}
                     </div>
                   )}
                 </div>
@@ -10376,11 +10433,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
             {activeTab === "customers" && (
               <Panel
-                title={adminLanguage === "bg" ? "Клиенти" : "Customers"}
+                title={adminLocalText(adminLanguage, "Клиенти", "Customers", "Клиенты")}
                 subtitle={
-                  adminLanguage === "bg"
-                    ? "Рейтинг по посещения, детайли при отваряне и blacklist в една секция."
-                    : "Visit ranking, expandable details, and blacklist in one section."
+                  adminLocalText(
+                    adminLanguage,
+                    "Рейтинг по посещения, детайли при отваряне и blacklist в една секция.",
+                    "Visit ranking, expandable details, and blacklist in one section.",
+                    "Рейтинг по посещениям, детали и blacklist в одном разделе."
+                  )
                 }
                 right={
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -10391,13 +10451,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         className="luxury-button rounded-full px-4 py-2 text-sm font-semibold"
                       >
                         {showManualCustomerForm
-                          ? adminLanguage === "bg" ? "Скрий формата" : "Hide form"
-                          : adminLanguage === "bg" ? "Добави клиент" : "Add customer"}
+                          ? adminLocalText(adminLanguage, "Скрий формата", "Hide form", "Скрыть форму")
+                          : adminLocalText(adminLanguage, "Добави клиент", "Add customer", "Добавить клиента")}
                       </button>
                     )}
                     <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
                       {[
-                        ["customers", adminLanguage === "bg" ? "Клиенти" : "Customers"],
+                        ["customers", adminLocalText(adminLanguage, "Клиенти", "Customers", "Клиенты")],
                         ["blacklist", "Blacklist"],
                       ].map(([key, label]) => (
                         <button
@@ -10420,8 +10480,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     <div className="flex justify-end">
                       <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
                         {[
-                          ["list", adminLanguage === "bg" ? "Списък" : "List"],
-                          ["form", adminLanguage === "bg" ? "Добави ръчно" : "Add manually"],
+                          ["list", adminLocalText(adminLanguage, "Списък", "List", "Список")],
+                          ["form", adminLocalText(adminLanguage, "Добави ръчно", "Add manually", "Добавить вручную")],
                         ].map(([key, label]) => (
                           <button
                             key={key}
@@ -10440,10 +10500,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     {blacklistMode === "form" ? (
                       <form onSubmit={saveBlacklistEntry} className="grid gap-4 md:grid-cols-3">
                         {[
-                          ["guestName", adminLanguage === "bg" ? "Име" : "Guest name"],
-                          ["phone", adminLanguage === "bg" ? "Телефон" : "Phone"],
+                          ["guestName", adminLocalText(adminLanguage, "Име", "Guest name", "Имя гостя")],
+                          ["phone", adminLocalText(adminLanguage, "Телефон", "Phone", "Телефон")],
                           ["email", "Email"],
-                          ["reason", adminLanguage === "bg" ? "Причина" : "Reason"],
+                          ["reason", adminLocalText(adminLanguage, "Причина", "Reason", "Причина")],
                         ].map(([key, label]) => (
                           <div key={key}>
                             <label className="mb-2 block text-sm text-stone-400">{label}</label>
@@ -10463,7 +10523,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
                         <div className="md:col-span-3">
                           <label className="mb-2 block text-sm text-stone-400">
-                            {adminLanguage === "bg" ? "Бележки" : "Notes"}
+                            {adminLocalText(adminLanguage, "Бележки", "Notes", "Заметки")}
                           </label>
                           <textarea
                             value={blacklistForm.notes}
@@ -10480,14 +10540,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
                         <div className="flex flex-col gap-3 md:col-span-3 md:flex-row">
                           <button className="luxury-button rounded-2xl px-6 py-4 font-semibold">
-                            {adminLanguage === "bg" ? "Добави в blacklist" : "Add to blacklist"}
+                            {adminLocalText(adminLanguage, "Добави в blacklist", "Add to blacklist", "Добавить в blacklist")}
                           </button>
                           <button
                             type="button"
                             onClick={() => setBlacklistMode("list")}
                             className="ghost-button rounded-2xl px-6 py-4 font-semibold"
                           >
-                            {adminLanguage === "bg" ? "Назад към списъка" : "Back to list"}
+                            {adminLocalText(adminLanguage, "Назад към списъка", "Back to list", "Назад к списку")}
                           </button>
                         </div>
                       </form>
@@ -10495,7 +10555,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       <div className="space-y-4">
                         {blacklist.length === 0 && (
                           <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-stone-400">
-                            {adminLanguage === "bg" ? "Blacklist е празен." : "Blacklist is empty."}
+                            {adminLocalText(adminLanguage, "Blacklist е празен.", "Blacklist is empty.", "Blacklist пуст.")}
                           </div>
                         )}
 
@@ -10515,7 +10575,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                 onClick={() => deleteBlacklistEntry(item.id || item.Id)}
                                 className="mt-5 rounded-xl border border-red-300/25 bg-red-500/20 px-4 py-2 text-sm font-semibold text-red-100"
                               >
-                                {adminLanguage === "bg" ? "Премахни" : "Remove"}
+                                {adminLocalText(adminLanguage, "Премахни", "Remove", "Убрать")}
                               </button>
                             </div>
                           ))}
@@ -10530,12 +10590,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
                           <div>
                             <div className="section-kicker">
-                              {adminLanguage === "bg" ? "Ръчен клиент" : "Manual customer"}
+                              {adminLocalText(adminLanguage, "Ръчен клиент", "Manual customer", "Ручной клиент")}
                             </div>
                             <p className="mt-2 text-sm text-white/50">
-                              {adminLanguage === "bg"
-                                ? "Добави контакт без резервация. Ако телефонът или имейлът вече съществува, профилът ще се обнови."
-                                : "Add a contact without a reservation. Existing phone or email will update the profile."}
+                              {adminLocalText(
+                                adminLanguage,
+                                "Добави контакт без резервация. Ако телефонът или имейлът вече съществува, профилът ще се обнови.",
+                                "Add a contact without a reservation. Existing phone or email will update the profile.",
+                                "Добавьте контакт без резервации. Если телефон или email уже существует, профиль обновится."
+                              )}
                             </p>
                           </div>
                           <button
@@ -10546,13 +10609,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             }}
                             className="ghost-button rounded-full px-4 py-2 text-sm font-semibold"
                           >
-                            {adminLanguage === "bg" ? "Откажи" : "Cancel"}
+                            {adminLocalText(adminLanguage, "Откажи", "Cancel", "Отмена")}
                           </button>
                         </div>
 
                         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                           <label className="block text-sm text-white/60 xl:col-span-2">
-                            {adminLanguage === "bg" ? "Име" : "Name"}
+                            {adminLocalText(adminLanguage, "Име", "Name", "Имя")}
                             <input
                               value={manualCustomerForm.guestName}
                               onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, guestName: event.target.value }))}
@@ -10561,7 +10624,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             />
                           </label>
                           <label className="block text-sm text-white/60">
-                            {adminLanguage === "bg" ? "Телефон" : "Phone"}
+                            {adminLocalText(adminLanguage, "Телефон", "Phone", "Телефон")}
                             <input
                               value={manualCustomerForm.phone}
                               onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, phone: event.target.value }))}
@@ -10578,7 +10641,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             />
                           </label>
                           <label className="block text-sm text-white/60">
-                            {adminLanguage === "bg" ? "Рожден ден" : "Birthday"}
+                            {adminLocalText(adminLanguage, "Рожден ден", "Birthday", "День рождения")}
                             <input
                               type="date"
                               value={manualCustomerForm.birthDate}
@@ -10592,10 +10655,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               checked={manualCustomerForm.marketingConsent}
                               onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, marketingConsent: event.target.checked }))}
                             />
-                            {adminLanguage === "bg" ? "Съгласие за маркетинг имейли" : "Marketing email consent"}
+                            {adminLocalText(adminLanguage, "Съгласие за маркетинг имейли", "Marketing email consent", "Согласие на маркетинговые email")}
                           </label>
                           <button type="submit" className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold xl:col-span-1">
-                            {adminLanguage === "bg" ? "Запази клиент" : "Save customer"}
+                            {adminLocalText(adminLanguage, "Запази клиент", "Save customer", "Сохранить клиента")}
                           </button>
                         </div>
                       </form>
@@ -10604,19 +10667,19 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     <div className="grid gap-3 md:grid-cols-3">
                       <div className="rounded-3xl border border-[#c9a56a]/18 bg-[#c9a56a]/10 p-5">
                         <div className="text-xs uppercase tracking-[0.22em] text-[#f2d39a]/70">
-                          {adminLanguage === "bg" ? "Клиенти" : "Customers"}
+                          {adminLocalText(adminLanguage, "Клиенти", "Customers", "Клиенты")}
                         </div>
                         <div className="mt-2 text-3xl font-semibold text-[#fff4df]">{customersForPeriod.length}</div>
                       </div>
                       <div className="rounded-3xl border border-emerald-300/18 bg-emerald-400/10 p-5">
                         <div className="text-xs uppercase tracking-[0.22em] text-emerald-100/70">
-                          {adminLanguage === "bg" ? "Нови клиенти" : "New customers"}
+                          {adminLocalText(adminLanguage, "Нови клиенти", "New customers", "Новые клиенты")}
                         </div>
                         <div className="mt-2 text-3xl font-semibold text-emerald-100">{newCustomersCount}</div>
                       </div>
                       <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
                         <div className="text-xs uppercase tracking-[0.22em] text-stone-500">
-                          {adminLanguage === "bg" ? "Посещения" : "Visits"}
+                          {adminLocalText(adminLanguage, "Посещения", "Visits", "Посещения")}
                         </div>
                         <div className="mt-2 text-3xl font-semibold text-[#fff4df]">{totalCustomerVisits}</div>
                       </div>
@@ -10625,14 +10688,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     <div className="grid gap-3 xl:grid-cols-2">
                       <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
                         <div className="mb-3 text-xs uppercase tracking-[0.22em] text-stone-500">
-                          {adminLanguage === "bg" ? "Период" : "Period"}
+                          {adminLocalText(adminLanguage, "Период", "Period", "Период")}
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {[
-                            ["today", adminLanguage === "bg" ? "Днес" : "Today"],
-                            ["week", adminLanguage === "bg" ? "Седмица" : "Week"],
-                            ["month", adminLanguage === "bg" ? "Месец" : "Month"],
-                            ["all", adminLanguage === "bg" ? "Цялото време" : "All time"],
+                            ["today", adminLocalText(adminLanguage, "Днес", "Today", "Сегодня")],
+                            ["week", adminLocalText(adminLanguage, "Седмица", "Week", "Неделя")],
+                            ["month", adminLocalText(adminLanguage, "Месец", "Month", "Месяц")],
+                            ["all", adminLocalText(adminLanguage, "Цялото време", "All time", "Всё время")],
                           ].map(([key, label]) => (
                             <button
                               key={key}
@@ -10650,14 +10713,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
                       <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
                         <div className="mb-3 text-xs uppercase tracking-[0.22em] text-stone-500">
-                          {adminLanguage === "bg" ? "Сортиране" : "Sort"}
+                          {adminLocalText(adminLanguage, "Сортиране", "Sort", "Сортировка")}
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {[
-                            ["visits", adminLanguage === "bg" ? "Най-чести" : "Top visits"],
-                            ["new", adminLanguage === "bg" ? "Най-нови" : "Newest"],
-                            ["recent", adminLanguage === "bg" ? "Последно дошли" : "Recent"],
-                            ["name", adminLanguage === "bg" ? "Име" : "Name"],
+                            ["visits", adminLocalText(adminLanguage, "Най-чести", "Top visits", "Чаще всего")],
+                            ["new", adminLocalText(adminLanguage, "Най-нови", "Newest", "Новые")],
+                            ["recent", adminLocalText(adminLanguage, "Последно дошли", "Recent", "Недавние")],
+                            ["name", adminLocalText(adminLanguage, "Име", "Name", "Имя")],
                           ].map(([key, label]) => (
                             <button
                               key={key}
@@ -10676,13 +10739,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
                     {sortedCustomers.length === 0 && (
                       <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-stone-400">
-                        {adminLanguage === "bg" ? "Няма клиенти за избрания период." : "No customers for the selected period."}
+                        {adminLocalText(adminLanguage, "Няма клиенти за избрания период.", "No customers for the selected period.", "Нет клиентов за выбранный период.")}
                       </div>
                     )}
 
                     {sortedCustomers.map((c, index) => {
                       const expanded = expandedCustomerKey === c.key;
-                      const visitsLabel = adminLanguage === "bg" ? "посещения" : "visits";
+                      const visitsLabel = adminLocalText(adminLanguage, "посещения", "visits", "посещений");
 
                       return (
                         <div key={c.key} className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 md:p-5">
@@ -10699,16 +10762,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                 <div className="truncate text-lg font-semibold text-[#fff4df]">{c.guestName}</div>
                                 <div className="mt-1 text-sm text-stone-400">
                                   {c.count === 0
-                                    ? adminLanguage === "bg" ? "ръчен контакт" : "manual contact"
+                                    ? adminLocalText(adminLanguage, "ръчен контакт", "manual contact", "ручной контакт")
                                     : `${c.periodCount} ${visitsLabel}`}
-                                  {customerPeriod !== "all" ? ` · ${c.count} ${adminLanguage === "bg" ? "общо" : "total"}` : ""}
+                                  {customerPeriod !== "all" ? ` · ${c.count} ${adminLocalText(adminLanguage, "общо", "total", "всего")}` : ""}
                                 </div>
                               </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
                               {c.isRegularCustomer && (
                                 <span className="hidden rounded-full bg-emerald-400/15 px-3 py-1 text-xs text-emerald-300 sm:inline-flex">
-                                  Regular
+                                  {adminLocalText(adminLanguage, "Редовен", "Regular", "Постоянный")}
                                 </span>
                               )}
                               {c.isBlacklisted && (
@@ -10717,7 +10780,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                 </span>
                               )}
                               <span className="ghost-button rounded-full px-3 py-1 text-xs">
-                                {expanded ? (adminLanguage === "bg" ? "Скрий" : "Hide") : (adminLanguage === "bg" ? "Детайли" : "Details")}
+                                {expanded
+                                  ? adminLocalText(adminLanguage, "Скрий", "Hide", "Скрыть")
+                                  : adminLocalText(adminLanguage, "Детайли", "Details", "Детали")}
                               </span>
                             </div>
                           </button>
@@ -10727,32 +10792,41 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               <div className="space-y-3 text-sm text-stone-300">
                                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                                   <div className="text-xs uppercase tracking-[0.2em] text-stone-500">
-                                    {adminLanguage === "bg" ? "Контакт" : "Contact"}
+                                    {adminLocalText(adminLanguage, "Контакт", "Contact", "Контакт")}
                                   </div>
                                   <div className="mt-3">{c.phone || "—"}</div>
                                   <div className="mt-2">{c.email || "—"}</div>
                                   <div className="mt-2 text-stone-500">
-                                    {adminLanguage === "bg" ? "Последна резервация" : "Last reservation"}: {c.lastReservation || "—"}
+                                    {adminLocalText(adminLanguage, "Последна резервация", "Last reservation", "Последняя резервация")}: {c.lastReservation || "—"}
                                   </div>
                                   <div className="mt-2 text-stone-500">
-                                    {adminLanguage === "bg" ? "Първа резервация" : "First reservation"}: {c.firstReservation || "—"}
+                                    {adminLocalText(adminLanguage, "Първа резервация", "First reservation", "Первая резервация")}: {c.firstReservation || "—"}
                                   </div>
                                 </div>
-                                <button
-                                  type="button"
-                                  onClick={() => addCustomerToBlacklist(c)}
-                                  disabled={c.isBlacklisted}
-                                  className="w-full rounded-2xl border border-red-300/25 bg-red-500/12 px-4 py-3 text-sm font-semibold text-red-100 disabled:opacity-40"
-                                >
-                                  {c.isBlacklisted
-                                    ? adminLanguage === "bg" ? "В blacklist" : "Blacklisted"
-                                    : adminLanguage === "bg" ? "Добави в blacklist" : "Add to blacklist"}
-                                </button>
+                                <div className="grid gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => addCustomerToBlacklist(c)}
+                                    disabled={c.isBlacklisted}
+                                    className="w-full rounded-2xl border border-red-300/25 bg-red-500/12 px-4 py-3 text-sm font-semibold text-red-100 disabled:opacity-40"
+                                  >
+                                    {c.isBlacklisted
+                                      ? adminLocalText(adminLanguage, "В blacklist", "Blacklisted", "В blacklist")
+                                      : adminLocalText(adminLanguage, "Добави в blacklist", "Add to blacklist", "Добавить в blacklist")}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteCustomerProfile(c)}
+                                    className="w-full rounded-2xl border border-red-300/35 bg-red-500/20 px-4 py-3 text-sm font-semibold text-red-50"
+                                  >
+                                    {adminLocalText(adminLanguage, "Изтрий клиент", "Delete customer", "Удалить клиента")}
+                                  </button>
+                                </div>
                               </div>
 
                               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                                 <div className="text-xs uppercase tracking-[0.2em] text-stone-500">
-                                  {adminLanguage === "bg" ? "Последни резервации" : "Recent reservations"}
+                                  {adminLocalText(adminLanguage, "Последни резервации", "Recent reservations", "Последние резервации")}
                                 </div>
                                 <div className="mt-3 space-y-2">
                                   {c.reservations.slice(0, 6).map((reservation) => {
@@ -10774,7 +10848,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                             }}
                                             className="rounded-full border border-[#c9a56a]/25 bg-[#c9a56a]/12 px-3 py-1 text-xs font-semibold text-[#f2d39a] transition hover:bg-[#c9a56a]/20"
                                           >
-                                            {adminLanguage === "bg" ? "Виж поръчката" : "View order"} · {formatEuroAmount(firstOrder.totalPrice)}
+                                            {adminLocalText(adminLanguage, "Виж поръчката", "View order", "Посмотреть заказ")} · {formatEuroAmount(firstOrder.totalPrice)}
                                           </button>
                                         )}
                                       </div>
