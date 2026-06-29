@@ -11,7 +11,7 @@ const categoryLabels = {
 };
 
 const departmentLabels = {
-  Kitchen: { bg: "Кухня", en: "Kitchen" },
+  Kitchen: { bg: "Ястия", en: "Dishes" },
   Bar: { bg: "Напитки", en: "Drinks" },
 };
 

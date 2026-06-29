@@ -104,6 +104,48 @@ function MenuExperienceStrip({ data, language, onCategoryClick }) {
   );
 }
 
+function buildDisplayDepartments(data, language) {
+  if (Array.isArray(data.departments) && data.departments.length > 0) {
+    return data.departments
+      .map((department) => ({
+        ...department,
+        title:
+          department.id === "Bar"
+            ? language === "bg" ? "Напитки" : "Drinks"
+            : language === "bg" ? "Ястия" : "Dishes",
+      }))
+      .filter((department) => department.categories?.length);
+  }
+
+  const drinkCategories = data.categories.filter(
+    (category) => category.id === "drinks" || category.department === "Bar"
+  );
+  const dishCategories = data.categories.filter(
+    (category) => category.id !== "drinks" && category.department !== "Bar"
+  );
+
+  return [
+    {
+      id: "Kitchen",
+      title: language === "bg" ? "Ястия" : "Dishes",
+      description:
+        language === "bg"
+          ? "Пица, паста, салати, основни и десерти."
+          : "Pizza, pasta, salads, mains, and desserts.",
+      categories: dishCategories,
+    },
+    {
+      id: "Bar",
+      title: language === "bg" ? "Напитки" : "Drinks",
+      description:
+        language === "bg"
+          ? "Бар, кафе, вина и освежаващи напитки."
+          : "Bar, coffee, wines, and refreshments.",
+      categories: drinkCategories,
+    },
+  ].filter((department) => department.categories.length > 0);
+}
+
 export default function MenuPage({
   t,
   language,
@@ -120,8 +162,16 @@ export default function MenuPage({
     () => buildMenuDataFromCms(cmsMenuItems, language, menuPageData[language]),
     [cmsMenuItems, language]
   );
+  const menuDepartments = React.useMemo(() => buildDisplayDepartments(data, language), [data, language]);
+  const [activeDepartment, setActiveDepartment] = React.useState(
+    menuDepartments[0]?.id || "Kitchen"
+  );
+  const activeDepartmentData =
+    menuDepartments.find((department) => department.id === activeDepartment) ||
+    menuDepartments[0];
+  const visibleCategories = activeDepartmentData?.categories || data.categories;
   const [activeCategory, setActiveCategory] = React.useState(
-    data.categories[0]?.id || ""
+    visibleCategories[0]?.id || ""
   );
   const [orderParams] = React.useState(readOrderLinkParams);
   const [orderSession, setOrderSession] = React.useState(null);
@@ -137,13 +187,13 @@ export default function MenuPage({
   const manualCategoryRef = React.useRef("");
   const manualCategoryTimerRef = React.useRef(null);
   const activeCategoryData =
-    data.categories.find((category) => category.id === activeCategory) ||
-    data.categories[0];
+    visibleCategories.find((category) => category.id === activeCategory) ||
+    visibleCategories[0];
   const orderEnabled = Boolean(orderParams.reservationId && orderParams.token && orderSession);
   const orderTotal = orderItems.reduce((total, item) => total + Number(item.priceValue || 0) * item.quantity, 0);
 
   React.useEffect(() => {
-    const sectionIds = data.categories.map((category) => category.id);
+    const sectionIds = visibleCategories.map((category) => category.id);
 
     const handleScroll = () => {
       if (manualCategoryRef.current) return;
@@ -168,7 +218,14 @@ export default function MenuPage({
     window.addEventListener("scroll", handleScroll);
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [data.categories]);
+  }, [visibleCategories]);
+
+  React.useEffect(() => {
+    if (!activeDepartmentData) return;
+    if (!activeDepartmentData.categories.some((category) => category.id === activeCategory)) {
+      setActiveCategory(activeDepartmentData.categories[0]?.id || "");
+    }
+  }, [activeCategory, activeDepartmentData]);
 
   React.useEffect(() => {
     const container = categoryNavRef.current;
@@ -212,6 +269,22 @@ export default function MenuPage({
       behavior: "smooth",
       block: "start",
     });
+  };
+
+  const handleDepartmentClick = (id) => {
+    const nextDepartment = menuDepartments.find((department) => department.id === id);
+    if (!nextDepartment) return;
+
+    setActiveDepartment(id);
+    const firstCategoryId = nextDepartment.categories[0]?.id || "";
+    setActiveCategory(firstCategoryId);
+
+    window.setTimeout(() => {
+      const element = firstCategoryId ? document.getElementById(firstCategoryId) : null;
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 80);
   };
 
   const isOrderLink = Boolean(orderParams.reservationId && orderParams.token);
@@ -438,7 +511,32 @@ export default function MenuPage({
       )}
 
       <div className={`sticky ${isOrderLink ? "top-[88px] md:top-[92px]" : "top-[124px] md:top-[152px]"} z-40 border-y border-white/10 bg-[#090705]/90 backdrop-blur-2xl`}>
-        <div className="mx-auto max-w-7xl px-4 py-3 md:px-6 md:py-3">
+        <div className="mx-auto max-w-7xl px-4 py-3 md:px-6 md:py-4">
+          <div className="mb-3 grid grid-cols-2 gap-2 md:mb-4 md:max-w-xl">
+            {menuDepartments.map((department) => {
+              const isActive = activeDepartmentData?.id === department.id;
+
+              return (
+                <button
+                  key={department.id}
+                  type="button"
+                  onClick={() => handleDepartmentClick(department.id)}
+                  className={`menu-department-chip rounded-[20px] border px-4 py-3 text-left transition active:scale-[0.98] md:px-5 md:py-3.5 ${
+                    isActive
+                      ? "border-[#c9a56a]/55 bg-[#c9a56a] text-black shadow-lg shadow-[#c9a56a]/20"
+                      : "border-white/10 bg-white/[0.055] text-white hover:border-[#c9a56a]/35 hover:bg-[#c9a56a]/10"
+                  }`}
+                  aria-current={isActive ? "true" : undefined}
+                >
+                  <span className="block text-base font-semibold">{department.title}</span>
+                  <span className={`mt-1 block text-xs ${isActive ? "text-black/60" : "text-white/45"}`}>
+                    {department.categories.length} {language === "bg" ? "секции" : "sections"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           <div className="mb-2 flex items-center justify-between gap-3 md:hidden">
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.22em] text-[#d8b377]">
@@ -465,7 +563,7 @@ export default function MenuPage({
               ref={categoryNavRef}
               className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 scrollbar-none md:px-0 md:gap-3"
             >
-              {data.categories.map((category) => {
+              {visibleCategories.map((category) => {
                 const isActive = activeCategory === category.id;
 
                 return (
@@ -509,7 +607,7 @@ export default function MenuPage({
 
       {!isOrderLink && (
         <MenuExperienceStrip
-          data={data}
+          data={{ ...data, categories: visibleCategories }}
           language={language}
           onCategoryClick={handleCategoryClick}
         />
@@ -517,7 +615,7 @@ export default function MenuPage({
 
       <div className="flex flex-col">
         <div className={`${isOrderLink ? "order-1" : "order-2"} mx-auto grid max-w-7xl gap-6 px-3 pb-10 pt-5 md:gap-12 md:px-6 md:pb-20 md:pt-10`}>
-          {(data.departments || [{ id: "all", title: "", categories: data.categories }]).map((department) => (
+          {[activeDepartmentData || { id: "all", title: "", categories: visibleCategories }].map((department) => (
             <section key={department.id} className="grid gap-6 md:gap-8">
               {department.title && (
                 <div className="menu-spark rounded-[28px] border border-[#c9a56a]/18 bg-[linear-gradient(135deg,rgba(201,165,106,0.16),rgba(255,255,255,0.035))] px-5 py-5 md:px-7">

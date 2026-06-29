@@ -1563,7 +1563,7 @@ html[data-theme="light"] .zone-preview-card :where(.text-white, [class*="text-wh
   .site-hero > .relative {
     min-height: calc(100svh - 108px);
     align-items: flex-start;
-    padding-top: 1rem;
+    padding-top: 2.15rem;
     padding-bottom: 2.75rem;
   }
 
@@ -1606,8 +1606,8 @@ html[data-theme="light"] .zone-preview-card :where(.text-white, [class*="text-wh
 
   .site-hero .mt-12 {
     margin-top: 1.35rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: 18rem;
+    grid-template-columns: minmax(0, 8.75rem);
+    max-width: 8.75rem;
   }
 
   .site-hero .hero-days-stat {
