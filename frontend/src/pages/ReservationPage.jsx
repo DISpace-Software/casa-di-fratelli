@@ -46,7 +46,27 @@ const birthdayMonths = {
     ["11", "November"],
     ["12", "December"],
   ],
+  ru: [
+    ["01", "Январь"],
+    ["02", "Февраль"],
+    ["03", "Март"],
+    ["04", "Апрель"],
+    ["05", "Май"],
+    ["06", "Июнь"],
+    ["07", "Июль"],
+    ["08", "Август"],
+    ["09", "Сентябрь"],
+    ["10", "Октябрь"],
+    ["11", "Ноябрь"],
+    ["12", "Декабрь"],
+  ],
 };
+
+function localText(language, bg, en, ru = bg) {
+  if (language === "en") return en;
+  if (language === "ru") return ru;
+  return bg;
+}
 
 function buildBirthdayDate(day, month) {
   if (!day || !month) return null;
@@ -68,17 +88,23 @@ function normalizeDateForApi(value) {
 
 function getReservationErrorMessage(result, rawText, language) {
   const fallback =
-    language === "bg"
-      ? "Възникна проблем при изпращането на резервацията. Проверете датата, часа и опитайте отново."
-      : "There was a problem submitting the reservation. Check the date, time and try again.";
+    localText(
+      language,
+      "Възникна проблем при изпращането на резервацията. Проверете датата, часа и опитайте отново.",
+      "There was a problem submitting the reservation. Check the date, time and try again.",
+      "Возникла проблема при отправке резервации. Проверьте дату, время и попробуйте снова."
+    );
 
   if (result?.message) return result.message;
 
   const errors = result?.errors;
   if (errors?.reservedDate || errors?.ReservedDate || errors?.["$.reservedDate"]) {
-    return language === "bg"
-      ? "Датата на резервацията не е валидна. Изберете дата от календара и опитайте отново."
-      : "Reservation date is not valid. Choose a date from the calendar and try again.";
+    return localText(
+      language,
+      "Датата на резервацията не е валидна. Изберете дата от календара и опитайте отново.",
+      "Reservation date is not valid. Choose a date from the calendar and try again.",
+      "Дата резервации некорректна. Выберите дату из календаря и попробуйте снова."
+    );
   }
 
   if (errors && typeof errors === "object") {
@@ -91,7 +117,7 @@ function getReservationErrorMessage(result, rawText, language) {
 
 function getBirthdayMonthOptions(day, language) {
   const selectedDay = Number(day || 0);
-  if (!selectedDay) return birthdayMonths[language];
+  if (!selectedDay) return birthdayMonths[language] || birthdayMonths.bg;
 
   return birthdayMonths[language].filter(([month]) => {
     const daysInMonth = new Date(2000, Number(month), 0).getDate();
@@ -916,30 +942,33 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   );
   const isTodayBookable = todayReservationTimes.length > 0;
   const distantDateMessage =
-    language === "bg"
-      ? `Онлайн резервации се приемат до 10 дни напред. За по-далечна дата се обадете на ${adminPhone}.`
-      : `Online reservations are available up to 10 days ahead. For a later date, please call ${adminPhone}.`;
+    localText(
+      language,
+      `Онлайн резервации се приемат до 10 дни напред. За по-далечна дата се обадете на ${adminPhone}.`,
+      `Online reservations are available up to 10 days ahead. For a later date, please call ${adminPhone}.`,
+      `Онлайн-резервации доступны максимум на 10 дней вперёд. Для более поздней даты позвоните ${adminPhone}.`
+    );
 
   const labels = {
-    perimeter: language === "bg" ? "Периметър" : "Garden perimeter",
-    entrance: language === "bg" ? "Вход" : "Entrance",
-    restaurantEntrance: language === "bg" ? "Вход в ресторан" : "Restaurant entrance",
-    terraceEntrance: language === "bg" ? "Вход към терасата" : "Entrance to terrace",
-    windows: language === "bg" ? "Прозорци" : "Windows",
-    wall: language === "bg" ? "Стена" : "Wall",
-    tv: language === "bg" ? "Телевизор" : "TV",
-    gardenTitle: language === "bg" ? "Тераса / Пушачи" : "Terrace / Smoking",
-    gardenSubtitle: language === "bg" ? "Подходяща зона за пушачи" : "Smoking area",
-    openTerraceTitle: language === "bg" ? "Открита тераса / Пушачи" : "Open terrace / Smoking",
-    openTerraceSubtitle: language === "bg" ? "Малка външна зона с 4 маси" : "Small outdoor area with 4 tables",
-    indoorTitle: language === "bg" ? "Зала / Непушачи" : "Hall / Non-smoking",
-    indoorSubtitle: language === "bg" ? "Комбинация от маси за 4 и 6 души" : "Mix of 4-seat and 6-seat tables",
-    selectedTable: language === "bg" ? "Избрана маса" : "Selected table",
-    reservationPreview: language === "bg" ? "Детайли за резервацията" : "Reservation details",
-    table: language === "bg" ? "Маса" : "Table",
-    capacity: language === "bg" ? "Капацитет" : "Capacity",
-    reserveSelected: language === "bg" ? "Резервирай" : "Reserve",
-    seats: language === "bg" ? "места" : "seats",
+    perimeter: localText(language, "Периметър", "Garden perimeter", "Периметр"),
+    entrance: localText(language, "Вход", "Entrance", "Вход"),
+    restaurantEntrance: localText(language, "Вход в ресторан", "Restaurant entrance", "Вход в ресторан"),
+    terraceEntrance: localText(language, "Вход към терасата", "Entrance to terrace", "Вход на террасу"),
+    windows: localText(language, "Прозорци", "Windows", "Окна"),
+    wall: localText(language, "Стена", "Wall", "Стена"),
+    tv: localText(language, "Телевизор", "TV", "Телевизор"),
+    gardenTitle: localText(language, "Тераса / Пушачи", "Terrace / Smoking", "Терраса / Курящие"),
+    gardenSubtitle: localText(language, "Подходяща зона за пушачи", "Smoking area", "Зона для курящих"),
+    openTerraceTitle: localText(language, "Открита тераса / Пушачи", "Open terrace / Smoking", "Открытая терраса / Курящие"),
+    openTerraceSubtitle: localText(language, "Малка външна зона с 4 маси", "Small outdoor area with 4 tables", "Небольшая внешняя зона с 4 столами"),
+    indoorTitle: localText(language, "Зала / Непушачи", "Hall / Non-smoking", "Зал / Некурящие"),
+    indoorSubtitle: localText(language, "Комбинация от маси за 4 и 6 души", "Mix of 4-seat and 6-seat tables", "Столы на 4 и 6 гостей"),
+    selectedTable: localText(language, "Избрана маса", "Selected table", "Выбранный стол"),
+    reservationPreview: localText(language, "Детайли за резервацията", "Reservation details", "Детали резервации"),
+    table: localText(language, "Маса", "Table", "Стол"),
+    capacity: localText(language, "Капацитет", "Capacity", "Вместимость"),
+    reserveSelected: localText(language, "Резервирай", "Reserve", "Забронировать"),
+    seats: localText(language, "места", "seats", "мест"),
   };
 
   const zoneOptions = [
@@ -1249,20 +1278,26 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
               </div>
               <h1 className="text-4xl font-semibold leading-tight text-[#fff4df] md:text-6xl">Casa di Fratelli</h1>
               <p className="mt-3 max-w-2xl text-sm text-white/70 md:text-base">
-                {language === "bg"
-                  ? "Изберете зона, дата, час и брой гости, след което ще видите подходящите свободни маси."
-                  : "Select area, date, time and number of guests, then view suitable available tables."}
+                {localText(
+                  language,
+                  "Изберете зона, дата, час и брой гости, след което ще видите подходящите свободни маси.",
+                  "Select area, date, time and number of guests, then view suitable available tables.",
+                  "Выберите зону, дату, время и количество гостей, после чего увидите подходящие свободные столы."
+                )}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3 text-sm">
-              <button type="button" onClick={() => setLanguage("bg")} className={`rounded-full px-4 py-2 ${language === "bg" ? "bg-[#c9a56a] text-black" : "border border-white/15 bg-white/5 text-white"}`}>
-                BG
-              </button>
-
-              <button type="button" onClick={() => setLanguage("en")} className={`rounded-full px-4 py-2 ${language === "en" ? "bg-[#c9a56a] text-black" : "border border-white/15 bg-white/5 text-white"}`}>
-                EN
-              </button>
+              {["bg", "en", "ru"].map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setLanguage(code)}
+                  className={`rounded-full px-4 py-2 ${language === code ? "bg-[#c9a56a] text-black" : "border border-white/15 bg-white/5 text-white"}`}
+                >
+                  {code.toUpperCase()}
+                </button>
+              ))}
 
               {onToggleTheme ? (
                 <button

@@ -39,6 +39,12 @@ const demoReviews = [
   },
 ];
 
+function localText(language, bg, en, ru = bg) {
+  if (language === "en") return en;
+  if (language === "ru") return ru;
+  return bg;
+}
+
 export default function ReviewsSection({ language }) {
   const [reviews, setReviews] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -54,12 +60,10 @@ export default function ReviewsSection({ language }) {
       <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm uppercase tracking-[0.35em] text-amber-300">
-            {language === "bg" ? "Отзиви" : "Reviews"}
+            {localText(language, "Отзиви", "Reviews", "Отзывы")}
           </p>
           <h2 className="mt-3 text-3xl font-semibold md:text-4xl">
-            {language === "bg"
-              ? "Какво казват гостите за нас"
-              : "What guests say about us"}
+            {localText(language, "Какво казват гостите за нас", "What guests say about us", "Что гости говорят о нас")}
           </h2>
         </div>
 
@@ -70,7 +74,7 @@ export default function ReviewsSection({ language }) {
             rel="noreferrer"
             className="review-link rounded-2xl border border-[#c9a56a]/30 bg-[#c9a56a]/10 px-5 py-3 text-sm font-medium text-[#f2d3a0] transition hover:bg-[#c9a56a]/20"
           >
-            {language === "bg" ? "Остави отзив в Google" : "Leave a review on Google"}
+            {localText(language, "Остави отзив в Google", "Leave a review on Google", "Оставить отзыв в Google")}
           </a>
           <a
             href={tripadvisorReviewLink}
@@ -78,22 +82,18 @@ export default function ReviewsSection({ language }) {
             rel="noreferrer"
             className="review-link rounded-2xl border border-emerald-300/25 bg-emerald-400/10 px-5 py-3 text-sm font-medium text-emerald-100 transition hover:border-emerald-200/45 hover:bg-emerald-400/16"
           >
-            {language === "bg" ? "Виж Tripadvisor" : "View Tripadvisor"}
+            {localText(language, "Виж Tripadvisor", "View Tripadvisor", "Смотреть Tripadvisor")}
           </a>
         </div>
       </div>
 
       {loading ? (
         <div className="text-white/60">
-          {language === "bg"
-            ? "Зареждане на отзиви..."
-            : "Loading reviews..."}
+          {localText(language, "Зареждане на отзиви...", "Loading reviews...", "Загружаем отзывы...")}
         </div>
       ) : reviews.length === 0 ? (
         <div className="text-white/60">
-          {language === "bg"
-            ? "Отзивите ще бъдат добавени скоро."
-            : "Reviews will be added soon."}
+          {localText(language, "Отзивите ще бъдат добавени скоро.", "Reviews will be added soon.", "Отзывы скоро появятся.")}
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -117,9 +117,7 @@ export default function ReviewsSection({ language }) {
 
               <p className="mt-5 text-sm leading-7 text-white/70">
                 {review.comment ||
-                  (language === "bg"
-                    ? "Без текстов коментар."
-                    : "No text review.")}
+                  localText(language, "Без текстов коментар.", "No text review.", "Без текстового отзыва.")}
               </p>
             </div>
           ))}

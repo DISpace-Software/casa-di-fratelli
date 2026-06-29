@@ -13,7 +13,7 @@ import BackToTopButton from "./components/layout/BackToTopButton";
 const safeReadStoredLanguage = () => {
   if (typeof window === "undefined") return "bg";
   const stored = window.localStorage.getItem("restaurant-lang");
-  return stored === "en" ? "en" : "bg";
+  return ["bg", "en", "ru"].includes(stored) ? stored : "bg";
 };
 
 const safeReadStoredTheme = () => {
@@ -834,7 +834,7 @@ export default function App() {
   const swipeStartRef = React.useRef(null);
   const pendingHomeSectionRef = React.useRef("");
 
-  const t = translations[language];
+  const t = translations[language] || translations.bg;
 
   const loadMenuItems = React.useCallback(async () => {
     try {

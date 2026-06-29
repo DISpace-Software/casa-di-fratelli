@@ -1,18 +1,18 @@
 const categoryLabels = {
-  salads: { bg: "Салати", en: "Salads" },
-  starters: { bg: "Нещо за начало", en: "Starters" },
-  "pasta-risotto": { bg: "Паста и ризото", en: "Pasta & Risotto" },
-  mains: { bg: "Основни и рибни", en: "Mains & Fish" },
-  pizza: { bg: "Пица", en: "Pizza" },
-  bread: { bg: "Домашен хляб", en: "Homemade Bread" },
-  desserts: { bg: "Десерти", en: "Desserts" },
-  main: { bg: "Основни", en: "Main" },
-  drinks: { bg: "Напитки", en: "Drinks" },
+  salads: { bg: "Салати", en: "Salads", ru: "Салаты" },
+  starters: { bg: "Нещо за начало", en: "Starters", ru: "Закуски" },
+  "pasta-risotto": { bg: "Паста и ризото", en: "Pasta & Risotto", ru: "Паста и ризотто" },
+  mains: { bg: "Основни и рибни", en: "Mains & Fish", ru: "Основные блюда и рыба" },
+  pizza: { bg: "Пица", en: "Pizza", ru: "Пицца" },
+  bread: { bg: "Домашен хляб", en: "Homemade Bread", ru: "Домашний хлеб" },
+  desserts: { bg: "Десерти", en: "Desserts", ru: "Десерты" },
+  main: { bg: "Основни", en: "Main", ru: "Основные" },
+  drinks: { bg: "Напитки", en: "Drinks", ru: "Напитки" },
 };
 
 const departmentLabels = {
-  Kitchen: { bg: "Ястия", en: "Dishes" },
-  Bar: { bg: "Напитки", en: "Drinks" },
+  Kitchen: { bg: "Ястия", en: "Dishes", ru: "Блюда" },
+  Bar: { bg: "Напитки", en: "Drinks", ru: "Напитки" },
 };
 
 export function formatEuro(value) {
@@ -96,14 +96,19 @@ export function buildMenuDataFromCms(items, language, fallbackData) {
       category: categoryId,
       department,
       kind: department === "Bar" ? "Drink" : "Dish",
-      name: getValue(item, language === "bg" ? "nameBg" : "nameEn") || getValue(item, "nameBg") || "",
+      name:
+        getValue(item, language === "en" ? "nameEn" : "nameBg") ||
+        getValue(item, "nameBg") ||
+        getValue(item, "nameEn") ||
+        "",
       weight: getValue(item, "weight") || "",
       price: formatEuro(getValue(item, "price")),
       priceValue: Number(getValue(item, "price") || 0),
       imageUrl: getValue(item, "imageUrl") || "",
       description:
-        getValue(item, language === "bg" ? "descriptionBg" : "descriptionEn") ||
+        getValue(item, language === "en" ? "descriptionEn" : "descriptionBg") ||
         getValue(item, "descriptionBg") ||
+        getValue(item, "descriptionEn") ||
         "",
       featured: Boolean(getValue(item, "notifySubscribers")),
     });

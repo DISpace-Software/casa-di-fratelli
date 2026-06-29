@@ -1,5 +1,11 @@
 import React from "react";
 
+function localText(language, bg, en, ru = bg) {
+  if (language === "en") return en;
+  if (language === "ru") return ru;
+  return bg;
+}
+
 export default function BookingModal({
   t,
   language = "bg",
@@ -14,9 +20,8 @@ export default function BookingModal({
   const [birthDay, setBirthDay] = React.useState("");
   const [birthMonth, setBirthMonth] = React.useState("");
   const birthdayDays = Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(2, "0"));
-  const birthdayMonths =
-    language === "bg"
-      ? [
+  const birthdayMonthsByLanguage = {
+    bg: [
           ["01", "Януари"],
           ["02", "Февруари"],
           ["03", "Март"],
@@ -29,8 +34,8 @@ export default function BookingModal({
           ["10", "Октомври"],
           ["11", "Ноември"],
           ["12", "Декември"],
-        ]
-      : [
+        ],
+    en: [
           ["01", "January"],
           ["02", "February"],
           ["03", "March"],
@@ -43,7 +48,23 @@ export default function BookingModal({
           ["10", "October"],
           ["11", "November"],
           ["12", "December"],
-        ];
+        ],
+    ru: [
+          ["01", "Январь"],
+          ["02", "Февраль"],
+          ["03", "Март"],
+          ["04", "Апрель"],
+          ["05", "Май"],
+          ["06", "Июнь"],
+          ["07", "Июль"],
+          ["08", "Август"],
+          ["09", "Сентябрь"],
+          ["10", "Октябрь"],
+          ["11", "Ноябрь"],
+          ["12", "Декабрь"],
+        ],
+  };
+  const birthdayMonths = birthdayMonthsByLanguage[language] || birthdayMonthsByLanguage.bg;
   const availableBirthdayMonths = birthdayMonths.filter(([month]) => {
     const selectedDay = Number(birthDay || 0);
     if (!selectedDay) return true;
@@ -159,7 +180,7 @@ export default function BookingModal({
 
           <div className="sm:col-span-2 rounded-[1.5rem] border border-amber-400/25 bg-amber-500/10 p-5">
             <label className="mb-2 block text-sm text-amber-100">
-              {language === "bg" ? "Рожден ден (опционално)" : "Birthday (optional)"}
+              {localText(language, "Рожден ден (опционално)", "Birthday (optional)", "День рождения (опционально)")}
             </label>
             <div className="grid gap-3 sm:grid-cols-[0.75fr_1.25fr]">
               <select
@@ -168,7 +189,7 @@ export default function BookingModal({
                 value={birthDay}
                 onChange={handleBirthDayChange}
               >
-                <option value="">{language === "bg" ? "Ден" : "Day"}</option>
+                <option value="">{localText(language, "Ден", "Day", "День")}</option>
                 {birthdayDays.map((day) => (
                   <option key={day} value={day}>{day}</option>
                 ))}
@@ -179,16 +200,19 @@ export default function BookingModal({
                 value={birthMonth}
                 onChange={(event) => setBirthMonth(event.target.value)}
               >
-                <option value="">{language === "bg" ? "Месец" : "Month"}</option>
+                <option value="">{localText(language, "Месец", "Month", "Месяц")}</option>
                 {availableBirthdayMonths.map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </div>
             <p className="mt-3 text-sm leading-6 text-amber-100/80">
-              {language === "bg"
-                ? "Само ден и месец, без година. Очаква ви приятен бонус за вашия празник."
-                : "Day and month only, no year. A special birthday bonus is waiting for your celebration."}
+              {localText(
+                language,
+                "Само ден и месец, без година. Очаква ви приятен бонус за вашия празник.",
+                "Day and month only, no year. A special birthday bonus is waiting for your celebration.",
+                "Только день и месяц, без года. Для вашего праздника вас ждёт приятный бонус."
+              )}
             </p>
           </div>
 
@@ -212,9 +236,12 @@ export default function BookingModal({
                 className="mt-1 h-4 w-4 rounded border-white/20 bg-stone-900"
               />
               <span>
-                {language === "bg"
-                  ? "Съгласявам се да получавам нови предложения, сезонни менюта и специални оферти от Casa di Fratelli по имейл."
-                  : "I agree to receive new offers, seasonal menus, and special promotions from Casa di Fratelli by email."}
+                {localText(
+                  language,
+                  "Съгласявам се да получавам нови предложения, сезонни менюта и специални оферти от Casa di Fratelli по имейл.",
+                  "I agree to receive new offers, seasonal menus, and special promotions from Casa di Fratelli by email.",
+                  "Я согласен получать новые предложения, сезонные меню и специальные оферты от Casa di Fratelli по email."
+                )}
               </span>
             </label>
           </div>
@@ -228,23 +255,26 @@ export default function BookingModal({
                 className="mt-1 h-4 w-4 rounded border-white/20 bg-stone-900"
               />
               <span>
-                {language === "bg"
-                  ? "Съгласявам се Casa di Fratelli да обработи данните ми за целите на резервацията и приемам "
-                  : "I agree that Casa di Fratelli may process my data for this reservation and I accept the "}
+                {localText(
+                  language,
+                  "Съгласявам се Casa di Fratelli да обработи данните ми за целите на резервацията и приемам ",
+                  "I agree that Casa di Fratelli may process my data for this reservation and I accept the ",
+                  "Я согласен, что Casa di Fratelli обработает мои данные для резервации, и принимаю "
+                )}
                 {onOpenPrivacy ? (
                   <button
                     type="button"
                     onClick={onOpenPrivacy}
                     className="font-semibold text-amber-200 underline underline-offset-4 transition hover:text-white"
                   >
-                    {language === "bg" ? "Политиката за поверителност" : "Privacy Policy"}
+                    {localText(language, "Политиката за поверителност", "Privacy Policy", "Политику конфиденциальности")}
                   </button>
                 ) : (
                   <a
                     href="/privacy"
                     className="font-semibold text-amber-200 underline underline-offset-4 transition hover:text-white"
                   >
-                    {language === "bg" ? "Политиката за поверителност" : "Privacy Policy"}
+                    {localText(language, "Политиката за поверителност", "Privacy Policy", "Политику конфиденциальности")}
                   </a>
                 )}
                 .

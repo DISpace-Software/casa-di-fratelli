@@ -540,13 +540,196 @@ const adminText = {
   },
 };
 
+adminText.ru = {
+  ...adminText.bg,
+  appSubtitle: "Резервации, заказы, меню, клиенты, склад и маркетинг в одной системе.",
+  refresh: "Обновить",
+  language: "Язык",
+  stats: {
+    ...adminText.bg.stats,
+    today: "Сегодня",
+    week: "Неделя",
+    month: "Месяц",
+    year: "Год",
+    allReservations: "Все резервации",
+    orders: "Заказы",
+    pending: "Ожидают",
+    approved: "Подтверждены",
+  },
+  tabs: {
+    ...adminText.bg.tabs,
+    liveMap: "Карта резерваций",
+    reservations: "Резервации",
+    orders: "Заказы",
+    create: "Новая резервация",
+    block: "Заблокировать зал",
+    menu: "Меню",
+    events: "События",
+    layout: "Карта",
+    customers: "Клиенты",
+    reports: "Отчёты",
+    feedback: "Обратная связь",
+    inventory: "Склад",
+    marketing: "Маркетинг",
+    maintenance: "Поддержка",
+  },
+  reservations: {
+    ...adminText.bg.reservations,
+    title: "Резервации",
+    subtitle: "Компактный CRM-вид: на телефоне видно главное, детали открываются касанием.",
+    search: "Поиск по имени, телефону, email, столу...",
+    guest: "Гость",
+    date: "Дата",
+    time: "Время",
+    tables: "Столы",
+    guests: "Гости",
+    status: "Статус",
+    actions: "Действия",
+    cancel: "Отменить",
+    archive: "В архив",
+    contact: "Контакт",
+    phone: "Телефон",
+    email: "Email",
+    birthday: "День рождения",
+    notes: "Заметки",
+    client: "Клиент",
+    internal: "Внутренняя",
+    flags: "Метки",
+    changeTables: "Смена столов",
+    changeTablesHint: "Измените дату, время, гостей и столы. Сохранение проверяет подтверждённые резервации с буфером 3 часа.",
+    saveTables: "Сохранить столы",
+    sourceWebsite: "Сайт",
+    open: "Детали",
+    close: "Скрыть",
+  },
+  orders: {
+    ...adminText.bg.orders,
+    title: "Заказы со столов",
+    subtitle: "Заказы из дигитального меню после отметки гостя как прибывшего.",
+    empty: "Отправленных заказов пока нет.",
+    table: "Стол",
+    guest: "Гость",
+    total: "Итого",
+    status: "Статус",
+    items: "Позиции",
+    notes: "Заметка",
+    addItem: "Добавить позицию",
+    searchDish: "Поиск блюда...",
+    markSeen: "Просмотрено",
+    preparing: "Готовится",
+    done: "Готово",
+    paid: "Оплачено",
+    served: "Подано",
+    kitchenReady: "Готово на кухне",
+    waitingKitchen: "Ждёт кухню",
+  },
+  liveMap: {
+    ...adminText.bg.liveMap,
+    title: "Карта резерваций",
+    subtitle: "Оперативный вид следующих гостей. Резервации показываются до 30 минут до времени.",
+    indoor: "Зал / некурящие",
+    garden: "Крытая терраса",
+    openTerrace: "Открытая терраса",
+    next: "Следующая резервация",
+    empty: "В этой зоне нет резерваций в ближайшие 30 минут.",
+    arrived: "Прибыл",
+    noShow: "Не пришёл",
+    move: "Переместить",
+    release: "Освободить",
+    consumption: "Консумация",
+    noConsumption: "Консумация ещё не добавлена.",
+    addConsumption: "Добавить к заказу",
+    searchDish: "Поиск блюда...",
+    allDishes: "Все",
+    close: "Закрыть",
+    moveTitle: "Переместить резервацию",
+    bestOptions: "Лучшие свободные варианты",
+    noMoveOptions: "Нет подходящего свободного стола для этих гостей.",
+    saveMove: "Сохранить перемещение",
+    tableTodayTitle: "Резервации на сегодня",
+    tableTodayEmpty: "Сегодня нет резерваций для этого стола.",
+    ordersTitle: "Активные заказы",
+    ordersEmpty: "Нет активных заказов для этого стола.",
+    openReservation: "Открыть резервацию",
+    call: "Позвонить",
+    late: "опаздывает",
+    dueIn: "через",
+    now: "сейчас",
+    arrivedStatus: "Прибыл",
+    guests: "гостей",
+    table: "Стол",
+    tables: "столы",
+  },
+  menu: {
+    ...adminText.bg.menu,
+    title: "Меню CMS",
+    subtitle: "Список, редактирование и добавление блюд. Сайт автоматически берёт эти данные.",
+    list: "Список блюд",
+    add: "Добавить блюдо",
+    edit: "Редактирование",
+    addTitle: "Добавить новое блюдо",
+    editTitle: "Редактировать блюдо",
+    weight: "Граммовка",
+    price: "Цена EUR",
+    category: "Категория",
+    imageUrl: "Фото",
+    imageHelp: "Загрузите фото с устройства или вставьте URL. Фото оптимизируется автоматически.",
+    uploadImage: "Загрузить фото",
+    removeImage: "Убрать фото",
+    active: "Активно на сайте",
+    notify: "Отправить подписчикам",
+    saveAdd: "Добавить блюдо",
+    saveEdit: "Сохранить изменения",
+    cancelEdit: "Назад к списку",
+    delete: "Удалить",
+    empty: "В CMS пока нет блюд.",
+  },
+  events: {
+    ...adminText.bg.events,
+    title: "События CMS",
+    subtitle: "Добавляйте праздники, новости и специальные вечера с фотографиями. Раздел доступен и в Basic.",
+    list: "Список событий",
+    add: "Добавить событие",
+    edit: "Редактирование",
+    addTitle: "Новое событие",
+    editTitle: "Редактировать событие",
+    badge: "Метка / дата",
+    activeUntil: "Активно до",
+    activeUntilHelp: "Оставьте пустым, если у события нет срока. После этого момента сайт автоматически скроет событие.",
+    photos: "Фото",
+    uploadPhotos: "Загрузить фото",
+    removePhoto: "Убрать",
+    active: "Активно на сайте",
+    saveAdd: "Добавить событие",
+    saveEdit: "Сохранить изменения",
+    cancelEdit: "Назад к списку",
+    delete: "Удалить",
+    empty: "Событий пока нет.",
+    photoHelp: "Можно загрузить несколько фото. Система оптимизирует их автоматически.",
+  },
+  layout: {
+    ...adminText.bg.layout,
+    title: "Карта ресторана",
+    subtitle: "Перемещайте столы, добавляйте новые и скрывайте неактивные. Сайт использует эту карту автоматически.",
+    save: "Сохранить карту",
+    reset: "Вернуть оригинал",
+    add: "Добавить стол",
+    area: "Зона",
+    tableNumber: "Номер стола",
+    seats: "Места",
+    active: "Активен",
+    remove: "Удалить",
+    overlap: "Столы не должны пересекаться.",
+  },
+};
+
 const adminRoleOptions = [
-  { value: "Owner", labels: { bg: "Собственик", en: "Owner" } },
-  { value: "Administrator", labels: { bg: "Администратор", en: "Administrator" } },
-  { value: "Waiter", labels: { bg: "Сервитьор", en: "Waiter" } },
-  { value: "Kitchen", labels: { bg: "Кухня", en: "Kitchen" } },
-  { value: "Bar", labels: { bg: "Бар", en: "Bar" } },
-  { value: "Developer", labels: { bg: "Програмист", en: "Developer" } },
+  { value: "Owner", labels: { bg: "Собственик", en: "Owner", ru: "Собственник" } },
+  { value: "Administrator", labels: { bg: "Администратор", en: "Administrator", ru: "Администратор" } },
+  { value: "Waiter", labels: { bg: "Сервитьор", en: "Waiter", ru: "Официант" } },
+  { value: "Kitchen", labels: { bg: "Кухня", en: "Kitchen", ru: "Кухня" } },
+  { value: "Bar", labels: { bg: "Бар", en: "Bar", ru: "Бар" } },
+  { value: "Developer", labels: { bg: "Програмист", en: "Developer", ru: "Разработчик" } },
 ];
 
 function normalizeAdminRole(role) {
@@ -641,11 +824,25 @@ const categoryDisplayNames = {
     alcohol: "Alcohol",
     main: "Main",
   },
+  ru: {
+    salads: "Салаты",
+    starters: "Закуски",
+    "pasta-risotto": "Паста и ризотто",
+    mains: "Основные блюда и рыба",
+    pizza: "Пицца",
+    bread: "Домашний хлеб",
+    desserts: "Десерты",
+    "cold-drinks": "Холодные напитки",
+    "soft-drinks": "Безалкогольные",
+    lemonades: "Лимонады",
+    alcohol: "Алкоголь",
+    main: "Основные",
+  },
 };
 
 const menuDepartmentOptions = [
-  { value: "Kitchen", labels: { bg: "Кухня", en: "Kitchen" } },
-  { value: "Bar", labels: { bg: "Напитки", en: "Drinks" } },
+  { value: "Kitchen", labels: { bg: "Кухня", en: "Kitchen", ru: "Кухня" } },
+  { value: "Bar", labels: { bg: "Напитки", en: "Drinks", ru: "Напитки" } },
 ];
 
 function normalizeDepartment(value) {
@@ -675,7 +872,7 @@ function getCategoryLabel(category, language) {
 }
 
 function getMenuItemName(item, language = "bg") {
-  return getValue(item, language === "bg" ? "nameBg" : "nameEn") || getValue(item, "nameBg") || getValue(item, "nameEn") || "";
+  return getValue(item, language === "en" ? "nameEn" : "nameBg") || getValue(item, "nameBg") || getValue(item, "nameEn") || "";
 }
 
 function getMenuCategoryGroups(items, language = "bg") {
@@ -697,7 +894,7 @@ function getMenuCategoryGroups(items, language = "bg") {
     });
 
   return Array.from(grouped.values()).sort((first, second) =>
-    first.label.localeCompare(second.label, language === "bg" ? "bg" : "en")
+    first.label.localeCompare(second.label, language === "ru" ? "ru" : language === "bg" ? "bg" : "en")
   );
 }
 
@@ -3023,7 +3220,32 @@ function MarketingModule({ adminLanguage, adminFetch }) {
       tokens: "Quick variables",
       warning: "Real sending will email every candidate who has not already received this campaign for this date.",
     },
-  }[adminLanguage];
+  }[adminLanguage] || {
+    title: "Маркетинг",
+    subtitle: "Автоматические кампании для дней рождения, постоянных гостей и возвращения гостей. Доступно в Basic и Pro.",
+    birthday: "День рождения",
+    loyalty: "Постоянный гость",
+    winback: "Вернуть гостя",
+    enabled: "Кампания активна",
+    discount: "Скидка %",
+    daysBefore: "Дней до дня рождения",
+    windowDays: "Период дней",
+    requiredVisits: "Нужно посещений",
+    absenceDays: "Дней без посещения",
+    historyDays: "История дней",
+    minVisits: "Мин. посещений в истории",
+    subject: "Тема письма",
+    html: "Сообщение",
+    save: "Сохранить маркетинг",
+    preview: "Проверить кандидатов",
+    run: "Отправить сейчас",
+    subscribers: "Подписчики",
+    sent: "Отправленные письма",
+    candidates: "Кандидаты",
+    placeholders: "В тексте можно использовать имя, скидку, дату и название ресторана.",
+    tokens: "Быстрые переменные",
+    warning: "Реальная отправка отправит письма всем кандидатам, которые ещё не получали эту кампанию на эту дату.",
+  };
 
   const tokenOptions = [
     ["{{guestName}}", adminLanguage === "bg" ? "Име" : "Name"],
@@ -3306,7 +3528,35 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
       total: "Total",
       warning: "This action will hide selected records. They can be restored only by Admin, Owner, or Developer.",
     },
-  }[adminLanguage];
+  }[adminLanguage] || {
+    title: "Поддержка",
+    subtitle: isProVersion
+      ? "Безопасное скрытие и восстановление резерваций и заказов. Данные не удаляются физически."
+      : "Безопасное скрытие и восстановление резерваций. Данные не удаляются физически.",
+    reservations: "Резервации",
+    orders: "Заказы",
+    reason: "Причина удаления",
+    from: "С даты",
+    to: "До даты",
+    deleteAll: "Скрыть всё",
+    deletePeriod: "Скрыть период",
+    archive: "Архив",
+    upcoming: "Предстоящие",
+    completed: "Состоялись",
+    walkins: "Walk-in",
+    active: "Активные",
+    deleted: "Удалённые",
+    restore: "Восстановить",
+    loadArchive: "Показать архив",
+    period: "Период",
+    empty: "Нет записей по выбранному фильтру.",
+    guest: "Гость",
+    table: "Стол",
+    date: "Дата",
+    order: "Заказ",
+    total: "Итого",
+    warning: "Это действие скроет выбранные записи. Их смогут восстановить только Admin, Собственник или Разработчик.",
+  };
 
   const safeMode = isProVersion ? mode : "reservations";
   const target = safeMode === "reservations" ? "reservations" : "orders";
@@ -3664,7 +3914,48 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
       recipeMissing: "Missing",
       recipeAttention: "Needs review",
     },
-  }[adminLanguage];
+  }[adminLanguage] || {
+    title: "Склад",
+    subtitle: "Ингредиенты, рецептуры, движения склада, ревизии и себестоимость блюд.",
+    ingredients: "Ингредиенты",
+    recipes: "Рецептуры",
+    movements: "Движения",
+    audits: "Ревизии",
+    low: "Низкие остатки",
+    active: "Активен",
+    inactive: "Неактивен",
+    add: "Добавить",
+    save: "Сохранить",
+    delete: "Удалить",
+    receipt: "Приход",
+    adjustment: "Корректировка",
+    waste: "Списание",
+    comment: "Комментарий",
+    menuItem: "Позиция меню",
+    ingredient: "Ингредиент",
+    quantity: "Количество",
+    recipeCost: "Себестоимость",
+    salePrice: "Цена продажи",
+    margin: "Маржа",
+    foodCost: "Food cost",
+    createAudit: "Создать ревизию",
+    confirmAudit: "Подтвердить ревизию",
+    actual: "Фактический остаток",
+    expected: "Ожидаемый",
+    diff: "Разница",
+    seed: "Создать тестовые рецептуры",
+    allCategories: "Все категории",
+    dashboard: "Центр контроля",
+    deactivate: "Деактивировать",
+    activate: "Активировать",
+    deleteRecipe: "Удалить рецептуру",
+    exportAudit: "Экспорт CSV",
+    saveDraft: "Сохранить черновик",
+    deleteAudit: "Удалить ревизию",
+    recipeReady: "Готово",
+    recipeMissing: "Нет рецептуры",
+    recipeAttention: "Нужно проверить",
+  };
 
   const loadItemsViaAdminFetch = React.useCallback(async () => {
     const response = await adminFetch(`${API_BASE_URL}/api/inventory/items`);
@@ -6638,7 +6929,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   ).length;
   const totalCustomerVisits = customersForPeriod.reduce((total, customer) => total + customer.periodCount, 0);
 
-  const a = adminText[adminLanguage];
+  const a = adminText[adminLanguage] || adminText.bg;
 
   const menuCategories = React.useMemo(() => {
     const grouped = new Map();
@@ -7136,7 +7427,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             }`}
           >
             <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
-              {["bg", "en"].map((lang) => (
+              {["bg", "en", "ru"].map((lang) => (
                 <button
                   key={lang}
                   type="button"

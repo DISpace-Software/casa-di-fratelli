@@ -1,6 +1,9 @@
 import React from "react";
 import ThemeToggleIcon from "./ThemeToggleIcon";
 
+const languages = ["bg", "en", "ru"];
+const languageLabels = { bg: "BG", en: "EN", ru: "RU" };
+
 function LocationIcon({ className = "h-4 w-4" }) {
   return (
     <svg
@@ -34,15 +37,16 @@ export default function Header({
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const locationUrl =
     "https://www.google.com/maps/search/?api=1&query=Casa%20di%20Fratelli%20Plovdiv";
-  const locationLabel = t.navLocation || (language === "bg" ? "Локация" : "Location");
-  const menuLabel = language === "bg" ? "Меню" : "Menu";
+  const fallbackText = (bg, en, ru) => (language === "ru" ? ru : language === "en" ? en : bg);
+  const locationLabel = t.navLocation || fallbackText("Локация", "Location", "Локация");
+  const menuLabel = t.navMenu || fallbackText("Меню", "Menu", "Меню");
   const sectionLinks = [
     ["#about", t.navAbout, "01"],
     ["#gallery", t.navGallery, "02"],
-    ["#awards", t.navAwards || (language === "bg" ? "Награди" : "Awards"), "03"],
-    ["#delivery", language === "bg" ? "Доставка" : "Delivery", "04"],
-    ["#reviews", t.navReviews || (language === "bg" ? "Отзиви" : "Reviews"), "05"],
-    ["#events", t.navEvents || (language === "bg" ? "Събития" : "Events"), "06"],
+    ["#awards", t.navAwards || fallbackText("Награди", "Awards", "Награды"), "03"],
+    ["#delivery", fallbackText("Доставка", "Delivery", "Доставка"), "04"],
+    ["#reviews", t.navReviews || fallbackText("Отзиви", "Reviews", "Отзывы"), "05"],
+    ["#events", t.navEvents || fallbackText("Събития", "Events", "События"), "06"],
   ];
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -108,28 +112,20 @@ export default function Header({
             </a>
 
             <div className="flex rounded-full border border-white/10 bg-white/[0.06] p-1 shadow-inner">
-              <button
-                type="button"
-                onClick={() => changeLanguage("bg")}
-                className={`rounded-full px-4 py-2 text-xs font-medium transition ${
-                  language === "bg"
-                    ? "bg-[#c9a56a] text-stone-950 shadow-lg shadow-[#c9a56a]/20"
-                    : "text-stone-300 hover:text-white"
-                }`}
-              >
-                BG
-              </button>
-              <button
-                type="button"
-                onClick={() => changeLanguage("en")}
-                className={`rounded-full px-4 py-2 text-xs font-medium transition ${
-                  language === "en"
-                    ? "bg-[#c9a56a] text-stone-950 shadow-lg shadow-[#c9a56a]/20"
-                    : "text-stone-300 hover:text-white"
-                }`}
-              >
-                EN
-              </button>
+              {languages.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => changeLanguage(code)}
+                  className={`rounded-full px-4 py-2 text-xs font-medium transition ${
+                    language === code
+                      ? "bg-[#c9a56a] text-stone-950 shadow-lg shadow-[#c9a56a]/20"
+                      : "text-stone-300 hover:text-white"
+                  }`}
+                >
+                  {languageLabels[code]}
+                </button>
+              ))}
             </div>
 
             {onToggleTheme ? (
@@ -157,7 +153,7 @@ export default function Header({
             </a>
 
             <div className="flex rounded-full border border-white/10 bg-white/[0.06] p-1 shadow-inner">
-              {["bg", "en"].map((code) => (
+              {languages.map((code) => (
                 <button
                   key={code}
                   type="button"
@@ -168,7 +164,7 @@ export default function Header({
                       : "text-stone-300"
                   }`}
                 >
-                  {code.toUpperCase()}
+                  {languageLabels[code]}
                 </button>
               ))}
             </div>
@@ -226,7 +222,7 @@ export default function Header({
             onClick={openReservationPage}
             className="luxury-button rounded-full px-4 py-2.5 text-sm font-semibold"
           >
-            {language === "bg" ? "Резервирай" : "Reserve"}
+            {fallbackText("Резервирай", "Reserve", "Забронировать")}
           </button>
         </div>
 

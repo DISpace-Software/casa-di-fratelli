@@ -6,15 +6,21 @@ function normalizeEvent(item, language) {
   const images = getValue(item, "imageUrls") || [];
   return {
     id: getValue(item, "id"),
-    title: language === "bg"
-      ? getValue(item, "titleBg") || getValue(item, "titleEn")
-      : getValue(item, "titleEn") || getValue(item, "titleBg"),
-    text: language === "bg"
-      ? getValue(item, "textBg") || getValue(item, "textEn")
-      : getValue(item, "textEn") || getValue(item, "textBg"),
+    title: language === "en"
+      ? getValue(item, "titleEn") || getValue(item, "titleBg")
+      : getValue(item, "titleBg") || getValue(item, "titleEn"),
+    text: language === "en"
+      ? getValue(item, "textEn") || getValue(item, "textBg")
+      : getValue(item, "textBg") || getValue(item, "textEn"),
     badge: getValue(item, "badge") || "",
     images: Array.isArray(images) ? images : [],
   };
+}
+
+function localText(language, bg, en, ru = bg) {
+  if (language === "en") return en;
+  if (language === "ru") return ru;
+  return bg;
 }
 
 export default function EventsSection({ language, events = [] }) {
@@ -29,7 +35,7 @@ export default function EventsSection({ language, events = [] }) {
         <div className="absolute right-10 top-14 h-56 w-56 rounded-full bg-[#c9a56a]/10 blur-3xl" />
         <div className="relative grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
           <div className="luxury-panel rounded-[30px] p-7 md:p-9">
-            <p className="section-kicker">{language === "bg" ? "Събития" : "Events"}</p>
+            <p className="section-kicker">{localText(language, "Събития", "Events", "События")}</p>
             <h2 className="mt-3 text-3xl font-semibold leading-tight text-[#fff4df] md:text-5xl">
               {featured.title}
             </h2>
@@ -70,7 +76,7 @@ export default function EventsSection({ language, events = [] }) {
               </div>
             ) : (
               <div className="flex min-h-[360px] items-center justify-center rounded-[24px] border border-white/10 bg-black/25 px-8 text-center text-white/55">
-                {language === "bg" ? "Добавете снимки към събитието от админ панела." : "Add event photos from the admin panel."}
+                {localText(language, "Добавете снимки към събитието от админ панела.", "Add event photos from the admin panel.", "Добавьте фотографии события из админ-панели.")}
               </div>
             )}
           </div>
@@ -99,14 +105,17 @@ export default function EventsSection({ language, events = [] }) {
       <div className="absolute right-10 top-14 h-56 w-56 rounded-full bg-[#c9a56a]/10 blur-3xl" />
       <div className="relative grid items-stretch gap-6 lg:grid-cols-[0.95fr_1.05fr]">
         <div className="luxury-panel rounded-[30px] p-7 md:p-9">
-          <p className="section-kicker">{language === "bg" ? "Събития" : "Events"}</p>
+          <p className="section-kicker">{localText(language, "Събития", "Events", "События")}</p>
           <h2 className="mt-3 text-3xl font-semibold leading-tight text-[#fff4df] md:text-5xl">
-            {language === "bg" ? "Празници, които остават като история." : "Celebrations that become stories."}
+            {localText(language, "Празници, които остават като история.", "Celebrations that become stories.", "Праздники, которые становятся историей.")}
           </h2>
           <p className="mt-5 leading-8 text-white/68">
-            {language === "bg"
-              ? "За 14 февруари направихме специален giveaway за нашите гости: романтична награда за двама с три дни в SPA хотел. Такива моменти са част от духа на Casa di Fratelli."
-              : "For February 14, we created a special giveaway for our guests: a romantic prize for two with three days in a SPA hotel. Moments like this are part of the Casa di Fratelli spirit."}
+            {localText(
+              language,
+              "За 14 февруари направихме специален giveaway за нашите гости: романтична награда за двама с три дни в SPA хотел. Такива моменти са част от духа на Casa di Fratelli.",
+              "For February 14, we created a special giveaway for our guests: a romantic prize for two with three days in a SPA hotel. Moments like this are part of the Casa di Fratelli spirit.",
+              "К 14 февраля мы подготовили специальный giveaway для наших гостей: романтический приз для двоих с тремя днями в SPA-отеле. Такие моменты — часть духа Casa di Fratelli."
+            )}
           </p>
         </div>
 
@@ -116,9 +125,9 @@ export default function EventsSection({ language, events = [] }) {
           </div>
           <div className="grid gap-3 sm:grid-cols-3 lg:gap-4">
             {[
-              language === "bg" ? "Пътешествие за двама" : "Trip for two",
-              language === "bg" ? "3 дни SPA хотел" : "3 days SPA hotel",
-              language === "bg" ? "Романтичен подарък" : "Romantic prize",
+              localText(language, "Пътешествие за двама", "Trip for two", "Путешествие для двоих"),
+              localText(language, "3 дни SPA хотел", "3 days SPA hotel", "3 дня в SPA-отеле"),
+              localText(language, "Романтичен подарък", "Romantic prize", "Романтический подарок"),
             ].map((item) => (
               <div key={item} className="events-giveaway-option min-w-0 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm font-semibold leading-5 text-white/82 md:min-h-[92px]">
                 {item}
@@ -126,9 +135,12 @@ export default function EventsSection({ language, events = [] }) {
             ))}
           </div>
           <p className="events-giveaway-text mt-8 text-sm leading-7 text-white/58">
-            {language === "bg"
-              ? "Специалните поводи при нас получават свой собствен жест, своя атмосфера и истинско усещане за празник."
-              : "Special occasions with us receive their own gesture, atmosphere, and a true sense of celebration."}
+            {localText(
+              language,
+              "Специалните поводи при нас получават свой собствен жест, своя атмосфера и истинско усещане за празник.",
+              "Special occasions with us receive their own gesture, atmosphere, and a true sense of celebration.",
+              "Особые поводы у нас получают свой жест, свою атмосферу и настоящее ощущение праздника."
+            )}
           </p>
         </div>
       </div>

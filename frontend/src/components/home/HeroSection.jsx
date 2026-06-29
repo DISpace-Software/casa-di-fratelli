@@ -1,5 +1,11 @@
 import React from "react";
 
+function localText(language, bg, en, ru = bg) {
+  if (language === "en") return en;
+  if (language === "ru") return ru;
+  return bg;
+}
+
 export default function HeroSection({ t, onOpenReservation, onOpenMenu, language }) {
   const [deliveryOpen, setDeliveryOpen] = React.useState(false);
   const directPhone = "0888218318";
@@ -45,7 +51,7 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
               onClick={() => setDeliveryOpen(true)}
               className="luxury-button rounded-full px-7 py-3 font-semibold"
             >
-              {language === "bg" ? "Casa di Fratelli у дома" : "Casa di Fratelli at home"}
+              {localText(language, "Casa di Fratelli у дома", "Casa di Fratelli at home", "Casa di Fratelli дома")}
             </button>
           </div>
 
@@ -77,14 +83,17 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
           <div className="luxury-panel w-full max-w-lg rounded-[32px] p-6 shadow-[0_28px_90px_rgba(0,0,0,0.65)]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="section-kicker">{language === "bg" ? "Поръчка за вкъщи" : "Order at home"}</p>
+                <p className="section-kicker">{localText(language, "Поръчка за вкъщи", "Order at home", "Заказ домой")}</p>
                 <h2 className="mt-3 text-3xl font-semibold text-[#fff4df]">
-                  {language === "bg" ? "Casa di Fratelli у дома" : "Casa di Fratelli at home"}
+                  {localText(language, "Casa di Fratelli у дома", "Casa di Fratelli at home", "Casa di Fratelli дома")}
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-white/62">
-                  {language === "bg"
-                    ? "Изберете най-удобния начин за поръчка. При директна поръчка и взимане от ресторанта получавате 10% отстъпка."
-                    : "Choose the easiest way to order. Direct pickup from the restaurant includes 10% discount."}
+                  {localText(
+                    language,
+                    "Изберете най-удобния начин за поръчка. При директна поръчка и взимане от ресторанта получавате 10% отстъпка.",
+                    "Choose the easiest way to order. Direct pickup from the restaurant includes 10% discount.",
+                    "Выберите удобный способ заказа. При прямом заказе и самовывозе из ресторана действует скидка 10%."
+                  )}
                 </p>
               </div>
               <button type="button" onClick={() => setDeliveryOpen(false)} className="ghost-button rounded-full px-3 py-2 text-lg" aria-label="Close">
@@ -99,7 +108,7 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
                 Glovo
               </a>
               <a href={`tel:${directPhone}`} className="rounded-[22px] border border-emerald-300/25 bg-emerald-400/12 p-4 font-semibold text-emerald-100 transition hover:border-emerald-200/45">
-                {language === "bg" ? "Поръчай директно и вземи от ресторанта · 10% отстъпка" : "Order direct and pick up · 10% discount"}
+                {localText(language, "Поръчай директно и вземи от ресторанта · 10% отстъпка", "Order direct and pick up · 10% discount", "Заказать напрямую и забрать из ресторана · скидка 10%")}
                 <span className="mt-1 block text-sm font-normal text-emerald-100/65">088 821 8318</span>
               </a>
             </div>

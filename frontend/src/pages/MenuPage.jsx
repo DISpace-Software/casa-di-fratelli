@@ -29,6 +29,28 @@ function formatOrderPrice(value) {
   }).format(Number(value || 0));
 }
 
+function localText(language, bg, en, ru = bg) {
+  if (language === "en") return en;
+  if (language === "ru") return ru;
+  return bg;
+}
+
+function getMenuPageCopy(language) {
+  if (language !== "ru") return menuPageData[language] || menuPageData.bg;
+
+  return {
+    ...menuPageData.bg,
+    heroBadge: "Премиальное меню",
+    heroTitle: "Меню Casa di Fratelli",
+    heroText:
+      "Итальянская кухня, авторские блюда и удобная подача меню с понятными категориями, фотографиями и ценами.",
+    chefBadge: "Выбор шефа",
+    chefTitle: "Авторские акценты",
+    chefText:
+      "Блюда от Chef Yurukov, созданные с вниманием к продукту, технике и ресторанной подаче.",
+  };
+}
+
 function MenuExperienceStrip({ data, language, onCategoryClick }) {
   const pizzaCategory = data.categories.find((category) => category.id === "pizza");
   const pizzaItems = pizzaCategory?.items
@@ -49,15 +71,18 @@ function MenuExperienceStrip({ data, language, onCategoryClick }) {
     <section className="menu-experience mx-auto hidden max-w-7xl gap-5 px-6 pt-10 md:grid md:grid-cols-[0.86fr_1.14fr]">
       <div className="menu-feature-panel menu-spark rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(201,165,106,0.16),rgba(255,255,255,0.045)),radial-gradient(circle_at_88%_10%,rgba(46,139,99,0.16),transparent_18rem)] p-6 shadow-2xl shadow-black/20">
         <div className="section-kicker">
-          {language === "bg" ? "Меню навигация" : "Menu navigation"}
+          {localText(language, "Меню навигация", "Menu navigation", "Навигация меню")}
         </div>
         <h2 className="mt-3 text-4xl font-semibold leading-tight text-[#fff4df]">
-          {language === "bg" ? "Избери секция, виж всичко ясно." : "Choose a section, see everything clearly."}
+          {localText(language, "Избери секция, виж всичко ясно.", "Choose a section, see everything clearly.", "Выберите раздел, и всё будет перед глазами.")}
         </h2>
         <p className="mt-4 max-w-xl text-sm leading-7 text-white/64">
-          {language === "bg"
-            ? "Компактно меню с пълни снимки, ясни цени и бързо движение между категориите."
-            : "A compact menu with complete photos, clear prices, and fast category movement."}
+          {localText(
+            language,
+            "Компактно меню с пълни снимки, ясни цени и бързо движение между категориите.",
+            "A compact menu with complete photos, clear prices, and fast category movement.",
+            "Компактное меню с фотографиями, понятными ценами и быстрым переходом по категориям."
+          )}
         </p>
 
         <div className="mt-6 grid grid-cols-2 gap-2">
@@ -70,7 +95,7 @@ function MenuExperienceStrip({ data, language, onCategoryClick }) {
             >
               <div className="truncate text-sm font-semibold text-[#fff4df]">{category.title}</div>
               <div className="mt-1 text-xs text-white/45">
-                {category.items.length} {language === "bg" ? "позиции" : "items"}
+                {category.items.length} {language === "en" ? "items" : "позиции"}
               </div>
             </button>
           ))}
@@ -111,8 +136,8 @@ function buildDisplayDepartments(data, language) {
         ...department,
         title:
           department.id === "Bar"
-            ? language === "bg" ? "Напитки" : "Drinks"
-            : language === "bg" ? "Ястия" : "Dishes",
+            ? language === "en" ? "Drinks" : "Напитки"
+            : language === "ru" ? "Блюда" : language === "en" ? "Dishes" : "Ястия",
       }))
       .filter((department) => department.categories?.length);
   }
@@ -127,20 +152,24 @@ function buildDisplayDepartments(data, language) {
   return [
     {
       id: "Kitchen",
-      title: language === "bg" ? "Ястия" : "Dishes",
+      title: language === "ru" ? "Блюда" : language === "en" ? "Dishes" : "Ястия",
       description:
-        language === "bg"
-          ? "Пица, паста, салати, основни и десерти."
-          : "Pizza, pasta, salads, mains, and desserts.",
+        language === "en"
+          ? "Pizza, pasta, salads, mains, and desserts."
+          : language === "ru"
+            ? "Пицца, паста, салаты, основные блюда и десерты."
+            : "Пица, паста, салати, основни и десерти.",
       categories: dishCategories,
     },
     {
       id: "Bar",
-      title: language === "bg" ? "Напитки" : "Drinks",
+      title: language === "en" ? "Drinks" : "Напитки",
       description:
-        language === "bg"
-          ? "Бар, кафе, вина и освежаващи напитки."
-          : "Bar, coffee, wines, and refreshments.",
+        language === "en"
+          ? "Bar, coffee, wines, and refreshments."
+          : language === "ru"
+            ? "Бар, кофе, вина и освежающие напитки."
+            : "Бар, кафе, вина и освежаващи напитки.",
       categories: drinkCategories,
     },
   ].filter((department) => department.categories.length > 0);
@@ -159,7 +188,7 @@ export default function MenuPage({
   onToggleTheme,
 }) {
   const data = React.useMemo(
-    () => buildMenuDataFromCms(cmsMenuItems, language, menuPageData[language]),
+    () => buildMenuDataFromCms(cmsMenuItems, language, getMenuPageCopy(language)),
     [cmsMenuItems, language]
   );
   const menuDepartments = React.useMemo(() => buildDisplayDepartments(data, language), [data, language]);
@@ -303,12 +332,12 @@ export default function MenuPage({
         const payload = await response.json().catch(() => null);
 
         if (!response.ok) {
-          throw new Error(payload?.message || (language === "bg" ? "Линкът за поръчка не е активен." : "The order link is not active."));
+          throw new Error(payload?.message || localText(language, "Линкът за поръчка не е активен.", "The order link is not active.", "Ссылка для заказа не активна."));
         }
 
         if (!cancelled) setOrderSession(payload);
       } catch (error) {
-        if (!cancelled) setOrderError(error?.message || (language === "bg" ? "Не успяхме да заредим поръчката." : "Could not load the order session."));
+        if (!cancelled) setOrderError(error?.message || localText(language, "Не успяхме да заредим поръчката.", "Could not load the order session.", "Не удалось загрузить заказ."));
       }
     }
 
@@ -383,15 +412,15 @@ export default function MenuPage({
       const payload = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(payload?.message || (language === "bg" ? "Поръчката не беше изпратена." : "The order was not sent."));
+        throw new Error(payload?.message || localText(language, "Поръчката не беше изпратена.", "The order was not sent.", "Заказ не был отправлен."));
       }
 
       setOrderItems([]);
       setOrderNotes("");
       setShowOrderReview(false);
-      setOrderNotice(language === "bg" ? "Поръчката е изпратена към екипа." : "Your order was sent to the team.");
+      setOrderNotice(localText(language, "Поръчката е изпратена към екипа.", "Your order was sent to the team.", "Заказ отправлен команде ресторана."));
     } catch (error) {
-      setOrderError(error?.message || (language === "bg" ? "Поръчката не беше изпратена." : "The order was not sent."));
+      setOrderError(error?.message || localText(language, "Поръчката не беше изпратена.", "The order was not sent.", "Заказ не был отправлен."));
     } finally {
       setIsSubmittingOrder(false);
     }
@@ -417,16 +446,16 @@ export default function MenuPage({
       const payload = await response.json().catch(() => null);
 
       if (!response.ok) {
-        throw new Error(payload?.message || (language === "bg" ? "Заявката не беше изпратена." : "The request was not sent."));
+        throw new Error(payload?.message || localText(language, "Заявката не беше изпратена.", "The request was not sent.", "Запрос не был отправлен."));
       }
 
       setOrderNotice(
         type === "bill"
-          ? language === "bg" ? "Сервитьорът получи заявка за сметка." : "Your waiter received the bill request."
-          : language === "bg" ? "Сервитьорът е повикан към масата." : "Your waiter was called to the table."
+          ? localText(language, "Сервитьорът получи заявка за сметка.", "Your waiter received the bill request.", "Официант получил запрос на счёт.")
+          : localText(language, "Сервитьорът е повикан към масата.", "Your waiter was called to the table.", "Официант приглашён к столу.")
       );
     } catch (error) {
-      setOrderError(error?.message || (language === "bg" ? "Заявката не беше изпратена." : "The request was not sent."));
+      setOrderError(error?.message || localText(language, "Заявката не беше изпратена.", "The request was not sent.", "Запрос не был отправлен."));
     } finally {
       setIsSendingGuestRequest("");
     }
@@ -465,11 +494,11 @@ export default function MenuPage({
                 Casa di Fratelli
               </div>
               <h1 className="mt-1 text-xl font-semibold text-[#fff4df]">
-                {language === "bg" ? "Дигитално меню" : "Digital menu"}
+                {localText(language, "Дигитално меню", "Digital menu", "Дигитальное меню")}
               </h1>
               <div className="mt-1 text-sm text-white/70">
                 {orderSession
-                  ? `${language === "bg" ? "Маса" : "Table"} ${orderSession.tableIds?.join(", ")} · ${orderSession.guestName}`
+                  ? `${localText(language, "Маса", "Table", "Стол")} ${orderSession.tableIds?.join(", ")} · ${orderSession.guestName}`
                   : orderError}
               </div>
             </div>
@@ -482,7 +511,7 @@ export default function MenuPage({
                   disabled={orderItems.length === 0 || isSubmittingOrder}
                   className="luxury-button rounded-full px-4 py-2 text-xs font-semibold disabled:opacity-50"
                 >
-                  {language === "bg" ? "Изпрати поръчка" : "Send order"}
+                  {localText(language, "Изпрати поръчка", "Send order", "Отправить заказ")}
                 </button>
                 <button
                   type="button"
@@ -491,8 +520,8 @@ export default function MenuPage({
                   className="ghost-button rounded-full px-4 py-2 text-xs font-semibold disabled:opacity-50"
                 >
                   {isSendingGuestRequest === "call-waiter"
-                    ? language === "bg" ? "Изпращане..." : "Sending..."
-                    : language === "bg" ? "Повикай сервитьор" : "Call waiter"}
+                    ? localText(language, "Изпращане...", "Sending...", "Отправляем...")
+                    : localText(language, "Повикай сервитьор", "Call waiter", "Позвать официанта")}
                 </button>
                 <button
                   type="button"
@@ -501,8 +530,8 @@ export default function MenuPage({
                   className="ghost-button rounded-full px-4 py-2 text-xs font-semibold disabled:opacity-50"
                 >
                   {isSendingGuestRequest === "bill"
-                    ? language === "bg" ? "Изпращане..." : "Sending..."
-                    : language === "bg" ? "Поискай сметка" : "Request bill"}
+                    ? localText(language, "Изпращане...", "Sending...", "Отправляем...")
+                    : localText(language, "Поискай сметка", "Request bill", "Попросить счёт")}
                 </button>
               </div>
             )}
@@ -530,7 +559,7 @@ export default function MenuPage({
                 >
                   <span className="block text-base font-semibold">{department.title}</span>
                   <span className={`mt-1 block text-xs ${isActive ? "text-black/60" : "text-white/45"}`}>
-                    {department.categories.length} {language === "bg" ? "секции" : "sections"}
+                    {department.categories.length} {localText(language, "секции", "sections", "раздела")}
                   </span>
                 </button>
               );
@@ -540,7 +569,7 @@ export default function MenuPage({
           <div className="mb-2 flex items-center justify-between gap-3 md:hidden">
             <div className="min-w-0">
               <div className="text-[10px] uppercase tracking-[0.22em] text-[#d8b377]">
-                {language === "bg" ? "Секция" : "Section"}
+                {localText(language, "Секция", "Section", "Раздел")}
               </div>
               <div className="truncate text-sm font-semibold text-[#fff4df]">
                 {activeCategoryData?.title}
@@ -551,7 +580,7 @@ export default function MenuPage({
               onClick={onBackHome}
               className={`ghost-button shrink-0 rounded-full px-3 py-2 text-xs font-medium ${isOrderLink ? "hidden" : ""}`}
             >
-              {language === "bg" ? "Начало" : "Home"}
+              {localText(language, "Начало", "Home", "Главная")}
             </button>
           </div>
 
@@ -585,7 +614,7 @@ export default function MenuPage({
                     <span className={`mt-1 block text-xs md:hidden ${
                       isActive ? "text-black/60" : "text-white/45"
                     }`}>
-                      {category.items.length} {language === "bg" ? "позиции" : "items"}
+                      {category.items.length} {localText(language, "позиции", "items", "позиций")}
                     </span>
                   </button>
                 );
@@ -597,7 +626,7 @@ export default function MenuPage({
                   onClick={onBackHome}
                   className="ghost-button hidden whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium md:block"
                 >
-                  {language === "bg" ? "Начало" : "Home"}
+                  {localText(language, "Начало", "Home", "Главная")}
                 </button>
               )}
             </div>
@@ -620,7 +649,7 @@ export default function MenuPage({
               {department.title && (
                 <div className="menu-spark rounded-[28px] border border-[#c9a56a]/18 bg-[linear-gradient(135deg,rgba(201,165,106,0.16),rgba(255,255,255,0.035))] px-5 py-5 md:px-7">
                   <div className="section-kicker">
-                    {language === "bg" ? "Основен раздел" : "Main section"}
+                    {localText(language, "Основен раздел", "Main section", "Основной раздел")}
                   </div>
                   <h2 className="mt-2 text-3xl font-semibold text-[#fff4df] md:text-4xl">
                     {department.title}
@@ -652,10 +681,10 @@ export default function MenuPage({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="text-xs uppercase tracking-[0.22em] text-[#d8b377]">
-                    {language === "bg" ? "Вашата поръчка" : "Your order"}
+                    {localText(language, "Вашата поръчка", "Your order", "Ваш заказ")}
                   </div>
                   <div className="mt-1 text-sm text-white/60">
-                    {orderItems.length} {language === "bg" ? "позиции" : "items"} · {formatOrderPrice(orderTotal)}
+                    {orderItems.length} {localText(language, "позиции", "items", "позиций")} · {formatOrderPrice(orderTotal)}
                   </div>
                 </div>
                 <button
@@ -664,7 +693,7 @@ export default function MenuPage({
                   disabled={orderItems.length === 0 || isSubmittingOrder}
                   className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold disabled:opacity-50"
                 >
-                  {language === "bg" ? "Прегледай" : "Review"}
+                  {localText(language, "Прегледай", "Review", "Проверить")}
                 </button>
               </div>
               {orderError && <div className="mt-2 text-sm text-red-200">{orderError}</div>}
@@ -678,16 +707,16 @@ export default function MenuPage({
           <div className="max-h-[92vh] w-full overflow-y-auto rounded-t-[28px] border border-white/10 bg-[#120e0b] p-4 shadow-2xl md:mx-auto md:max-w-2xl md:rounded-[28px] md:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="section-kicker">{language === "bg" ? "Преглед" : "Review"}</div>
+                <div className="section-kicker">{localText(language, "Преглед", "Review", "Проверка")}</div>
                 <h2 className="mt-2 text-2xl font-semibold text-[#fff4df]">
-                  {language === "bg" ? "Вашата поръчка" : "Your order"}
+                  {localText(language, "Вашата поръчка", "Your order", "Ваш заказ")}
                 </h2>
                 <p className="mt-1 text-sm text-white/55">
-                  {language === "bg" ? "Маса" : "Table"} {orderSession?.tableIds?.join(", ")}
+                  {localText(language, "Маса", "Table", "Стол")} {orderSession?.tableIds?.join(", ")}
                 </p>
               </div>
-              <button type="button" onClick={() => setShowOrderReview(false)} className="ghost-button rounded-full px-4 py-2 text-sm" aria-label={language === "bg" ? "Затвори прегледа на поръчката" : "Close order review"}>
-                {language === "bg" ? "Затвори" : "Close"}
+              <button type="button" onClick={() => setShowOrderReview(false)} className="ghost-button rounded-full px-4 py-2 text-sm" aria-label={localText(language, "Затвори прегледа на поръчката", "Close order review", "Закрыть проверку заказа")}>
+                {localText(language, "Затвори", "Close", "Закрыть")}
               </button>
             </div>
 
@@ -700,9 +729,9 @@ export default function MenuPage({
                       <div className="mt-1 text-sm text-white/45">{formatOrderPrice(item.priceValue)} · {formatOrderPrice(item.priceValue * item.quantity)}</div>
                     </div>
                     <div className="flex items-center overflow-hidden rounded-full border border-white/10">
-                      <button type="button" onClick={() => updateOrderQuantity(item.key, item.quantity - 1)} className="px-4 py-2 text-lg text-[#f2d39a]" aria-label={language === "bg" ? `Намали ${item.name}` : `Decrease ${item.name}`}>-</button>
+                      <button type="button" onClick={() => updateOrderQuantity(item.key, item.quantity - 1)} className="px-4 py-2 text-lg text-[#f2d39a]" aria-label={localText(language, `Намали ${item.name}`, `Decrease ${item.name}`, `Уменьшить ${item.name}`)}>-</button>
                       <span className="min-w-10 text-center text-base font-semibold">{item.quantity}</span>
-                      <button type="button" onClick={() => updateOrderQuantity(item.key, item.quantity + 1)} className="px-4 py-2 text-lg text-[#f2d39a]" aria-label={language === "bg" ? `Увеличи ${item.name}` : `Increase ${item.name}`}>+</button>
+                      <button type="button" onClick={() => updateOrderQuantity(item.key, item.quantity + 1)} className="px-4 py-2 text-lg text-[#f2d39a]" aria-label={localText(language, `Увеличи ${item.name}`, `Increase ${item.name}`, `Увеличить ${item.name}`)}>+</button>
                     </div>
                   </div>
                 </div>
@@ -712,13 +741,13 @@ export default function MenuPage({
             <input
               value={orderNotes}
               onChange={(event) => setOrderNotes(event.target.value)}
-              placeholder={language === "bg" ? "Бележка към поръчката..." : "Order note..."}
+              placeholder={localText(language, "Бележка към поръчката...", "Order note...", "Комментарий к заказу...")}
               className="mt-4 w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-4 text-base outline-none placeholder:text-white/35 focus:border-[#f2d39a]/60"
             />
 
             <div className="mt-5 flex items-center justify-between gap-4 border-t border-white/10 pt-4">
               <div>
-                <div className="text-xs uppercase tracking-[0.22em] text-[#d8b377]">{language === "bg" ? "Общо" : "Total"}</div>
+                <div className="text-xs uppercase tracking-[0.22em] text-[#d8b377]">{localText(language, "Общо", "Total", "Итого")}</div>
                 <div className="mt-1 text-2xl font-semibold text-[#fff4df]">{formatOrderPrice(orderTotal)}</div>
               </div>
               <button
@@ -728,8 +757,8 @@ export default function MenuPage({
                 className="luxury-button rounded-2xl px-6 py-4 text-sm font-semibold disabled:opacity-50"
               >
                 {isSubmittingOrder
-                  ? language === "bg" ? "Изпращане..." : "Sending..."
-                  : language === "bg" ? "Изпрати поръчката" : "Send order"}
+                  ? localText(language, "Изпращане...", "Sending...", "Отправляем...")
+                  : localText(language, "Изпрати поръчката", "Send order", "Отправить заказ")}
               </button>
             </div>
           </div>

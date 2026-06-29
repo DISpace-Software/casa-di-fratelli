@@ -22,21 +22,30 @@ function ExternalIcon() {
   );
 }
 
+function localText(language, bg, en, ru = bg) {
+  if (language === "en") return en;
+  if (language === "ru") return ru;
+  return bg;
+}
+
 export default function DeliverySection({ language }) {
   return (
     <section id="delivery" className="delivery-section border-y border-white/8 px-6 py-20">
       <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1fr_0.85fr] md:items-center">
         <div>
           <p className="section-kicker">
-            {language === "bg" ? "Доставка до вас" : "Delivery to you"}
+            {localText(language, "Доставка до вас", "Delivery to you", "Доставка для вас")}
           </p>
           <h2 className="mt-4 max-w-2xl text-3xl font-semibold leading-tight text-[#fff4df] md:text-5xl">
-            {language === "bg" ? "Casa di Fratelli у дома." : "Casa di Fratelli at home."}
+            {localText(language, "Casa di Fratelli у дома.", "Casa di Fratelli at home.", "Casa di Fratelli у вас дома.")}
           </h2>
           <p className="mt-6 max-w-xl text-base leading-8 text-stone-400">
-            {language === "bg"
-              ? "Поръчайте през Takeaway или Glovo - за обяд, вечеря или спокойна вечер с любимия вкус."
-              : "Order through Takeaway or Glovo for lunch, dinner, or an easy evening with your favorite flavors."}
+            {localText(
+              language,
+              "Поръчайте през Takeaway или Glovo - за обяд, вечеря или спокойна вечер с любимия вкус.",
+              "Order through Takeaway or Glovo for lunch, dinner, or an easy evening with your favorite flavors.",
+              "Закажите через Takeaway или Glovo - для обеда, ужина или спокойного вечера с любимым вкусом."
+            )}
           </p>
         </div>
 
@@ -56,7 +65,7 @@ export default function DeliverySection({ language }) {
                 <span className="min-w-0">
                   <span className="block text-base font-semibold text-[#fff4df]">{link.name}</span>
                   <span className="mt-1 block text-sm text-stone-400">
-                    {language === "bg" ? "Поръчайте онлайн" : "Order online"}
+                    {localText(language, "Поръчайте онлайн", "Order online", "Заказать онлайн")}
                   </span>
                 </span>
               </span>

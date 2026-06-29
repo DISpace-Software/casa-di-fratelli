@@ -1,8 +1,14 @@
 import menuPageData from "../../data/menuPageData";
 import { buildMenuDataFromCms } from "../../utils/menuUtils";
 
+function localText(language, bg, en, ru = bg) {
+  if (language === "en") return en;
+  if (language === "ru") return ru;
+  return bg;
+}
+
 export default function MenuSection({ t, language, onOpenMenu, cmsMenuItems }) {
-  const data = buildMenuDataFromCms(cmsMenuItems, language, menuPageData[language]);
+  const data = buildMenuDataFromCms(cmsMenuItems, language, menuPageData[language] || menuPageData.bg);
 
   const previewCategories = data.categories.slice(0, 3);
 
@@ -27,7 +33,7 @@ export default function MenuSection({ t, language, onOpenMenu, cmsMenuItems }) {
             onClick={onOpenMenu}
             className="ghost-button rounded-full px-5 py-3 text-sm font-semibold"
           >
-            {language === "bg" ? "Отвори цялото меню" : "Open full menu"}
+            {localText(language, "Отвори цялото меню", "Open full menu", "Открыть всё меню")}
           </button>
         </div>
       </div>
@@ -81,7 +87,7 @@ export default function MenuSection({ t, language, onOpenMenu, cmsMenuItems }) {
           onClick={onOpenMenu}
           className="luxury-button rounded-full px-8 py-4 text-sm font-semibold"
         >
-          {language === "bg" ? "Виж всички категории" : "View all categories"}
+          {localText(language, "Виж всички категории", "View all categories", "Смотреть все категории")}
         </button>
       </div>
     </section>

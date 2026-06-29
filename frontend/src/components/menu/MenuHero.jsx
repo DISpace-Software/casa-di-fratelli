@@ -1,5 +1,11 @@
 import { chefImage } from "../../data/restaurantData";
 
+function localText(language, bg, en, ru = bg) {
+  if (language === "en") return en;
+  if (language === "ru") return ru;
+  return bg;
+}
+
 export default function MenuHero({ data, onOpenReservation, language }) {
   return (
     <section className="relative overflow-hidden border-b border-white/10">
@@ -30,7 +36,7 @@ export default function MenuHero({ data, onOpenReservation, language }) {
               onClick={onOpenReservation}
               className="luxury-button rounded-full px-7 py-3 font-semibold"
             >
-              {language === "bg" ? "Резервирай маса" : "Reserve table"}
+              {localText(language, "Резервирай маса", "Reserve table", "Забронировать стол")}
             </button>
           </div>
         </div>
@@ -46,13 +52,16 @@ export default function MenuHero({ data, onOpenReservation, language }) {
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent" />
             <div className="absolute bottom-6 left-6 right-6">
               <div className="mb-2 text-xs uppercase tracking-[0.3em] text-[#d8b377]">
-                {language === "bg" ? "Шеф готвач" : "Chef portrait"}
+                {localText(language, "Шеф готвач", "Chef portrait", "Шеф-повар")}
               </div>
               <div className="text-3xl font-serif text-white">Chef Yurukov</div>
               <div className="mt-2 text-sm text-white/70">
-                {language === "bg"
-                  ? "Авторски ястия, премиални продукти и стилно поднасяне."
-                  : "Signature dishes, premium ingredients, and refined presentation."}
+                {localText(
+                  language,
+                  "Авторски ястия, премиални продукти и стилно поднасяне.",
+                  "Signature dishes, premium ingredients, and refined presentation.",
+                  "Авторские блюда, премиальные продукты и изящная подача."
+                )}
               </div>
             </div>
           </div>
