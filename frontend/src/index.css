@@ -867,6 +867,24 @@ html[data-theme="light"] .site-hero .ghost-button {
   filter: drop-shadow(0 34px 60px rgba(0, 0, 0, 0.52));
 }
 
+@media (min-width: 768px) {
+  .site-hero .hero-chef-overlay {
+    right: -4vw;
+    width: 48vw;
+    max-width: 880px;
+    height: 90vh;
+    max-height: 860px;
+    opacity: 0.98;
+  }
+}
+
+@media (min-width: 1280px) {
+  .site-hero .hero-chef-overlay {
+    right: -2vw;
+    width: 42vw;
+  }
+}
+
 html[data-theme="light"] .site-footer {
   background:
     linear-gradient(180deg, rgba(11, 8, 6, 0.78), rgba(7, 5, 4, 0.92)),

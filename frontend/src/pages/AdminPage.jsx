@@ -591,6 +591,14 @@ const emptyAdminReservation = {
   internalNote: "",
 };
 
+const emptyManualCustomer = {
+  guestName: "",
+  phone: "",
+  email: "",
+  birthDate: "",
+  marketingConsent: false,
+};
+
 const emptyHallBlock = {
   area: "indoor",
   reservedDate: "",
@@ -965,6 +973,14 @@ function formatLocalDate(date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function getNextAdminReservationTime(now = new Date()) {
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+  return adminReservationTimes.find((time) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + minutes >= minutesNow + 15;
+  }) || adminReservationTimes[0] || "10:00";
 }
 
 function isInteractiveSwipeTarget(target) {
@@ -1379,6 +1395,7 @@ function ReservationOperationsMap({
   onOpenReservation,
   onOpenOrder,
   onSeatWalkIn,
+  onCreateReservation,
   onClaimReservation,
   onRelease,
   requireTableClaim = false,
@@ -1393,6 +1410,7 @@ function ReservationOperationsMap({
   const [consumptionSearch, setConsumptionSearch] = React.useState("");
   const [consumptionCategory, setConsumptionCategory] = React.useState("all");
   const [walkInDraft, setWalkInDraft] = React.useState(null);
+  const [tableReservationDraft, setTableReservationDraft] = React.useState(null);
   const [shouldScrollMovePanel, setShouldScrollMovePanel] = React.useState(false);
   const movePanelRef = React.useRef(null);
   const consumptionPanelRef = React.useRef(null);
@@ -1724,6 +1742,21 @@ function ReservationOperationsMap({
     });
   }
 
+  function openTableReservationForm(table) {
+    const nextTime = getNextAdminReservationTime(new Date());
+    setTableReservationDraft({
+      guestName: "",
+      phone: "",
+      email: "",
+      reservedDate: formatLocalDate(new Date()),
+      reservedTime: nextTime,
+      guestCount: Math.min(Number(table.seats || 2), 4),
+      area: selectedArea,
+      tableId: table.id,
+      internalNote: "",
+    });
+  }
+
   function closeWalkInModal() {
     setWalkInDraft(null);
   }
@@ -1739,6 +1772,28 @@ function ReservationOperationsMap({
     setSelectedTableId(null);
   }
 
+  async function submitTableReservation(event) {
+    event.preventDefault();
+    if (!tableReservationDraft) return;
+
+    const created = await onCreateReservation?.({
+      guestName: tableReservationDraft.guestName,
+      phone: tableReservationDraft.phone,
+      email: tableReservationDraft.email,
+      reservedDate: tableReservationDraft.reservedDate,
+      reservedTime: tableReservationDraft.reservedTime,
+      guestCount: Number(tableReservationDraft.guestCount || 1),
+      area: tableReservationDraft.area,
+      tableIds: [tableReservationDraft.tableId],
+      internalNote: tableReservationDraft.internalNote,
+      notes: "",
+    });
+    if (created === false) return;
+
+    setTableReservationDraft(null);
+    setSelectedTableId(null);
+  }
+
   React.useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60000);
     return () => window.clearInterval(timer);
@@ -1750,6 +1805,7 @@ function ReservationOperationsMap({
     setSelectedTableId(null);
     setShowConsumption(false);
     setWalkInDraft(null);
+    setTableReservationDraft(null);
   }, [moveReservationId, selectedArea]);
 
   React.useEffect(() => {
@@ -1775,6 +1831,95 @@ function ReservationOperationsMap({
       document.body.style.overflow = originalOverflow;
     };
   }, [showConsumption]);
+
+  function renderTableReservationControls(table) {
+    if (!onCreateReservation) return null;
+
+    const isOpen = tableReservationDraft?.tableId === table.id && tableReservationDraft?.area === selectedArea;
+
+    if (!isOpen) {
+      return (
+        <button
+          type="button"
+          onClick={() => openTableReservationForm(table)}
+          className="w-full rounded-xl border border-[#f2d39a]/30 bg-[#c9a56a]/15 px-3 py-2 text-xs font-semibold text-[#f2d39a] transition hover:border-[#f2d39a]/55 hover:bg-[#c9a56a]/22"
+        >
+          {language === "bg" ? "Създай резервация" : "Create reservation"}
+        </button>
+      );
+    }
+
+    return (
+      <form onSubmit={submitTableReservation} className="space-y-2 rounded-2xl border border-[#f2d39a]/18 bg-[#c9a56a]/10 p-2.5">
+        <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#f2d39a]">
+          {language === "bg" ? "Нова резервация" : "New reservation"}
+        </div>
+        <input
+          value={tableReservationDraft.guestName}
+          onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestName: event.target.value }))}
+          required
+          placeholder={language === "bg" ? "Име" : "Name"}
+          className="w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
+        />
+        <input
+          value={tableReservationDraft.phone}
+          onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, phone: event.target.value }))}
+          required
+          placeholder={language === "bg" ? "Телефон" : "Phone"}
+          className="w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="date"
+            value={tableReservationDraft.reservedDate}
+            min={formatLocalDate(new Date())}
+            onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedDate: event.target.value }))}
+            required
+            className="w-full rounded-xl border border-white/10 bg-black/25 px-2 py-2 text-xs text-white outline-none focus:border-[#f2d39a]/55"
+          />
+          <select
+            value={tableReservationDraft.reservedTime}
+            onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedTime: event.target.value }))}
+            required
+            className="w-full rounded-xl border border-white/10 bg-black/25 px-2 py-2 text-xs text-white outline-none focus:border-[#f2d39a]/55"
+          >
+            {getAvailableReservationTimesForDate(adminReservationTimes, tableReservationDraft.reservedDate).map((time) => (
+              <option key={time} value={time}>{time}</option>
+            ))}
+          </select>
+        </div>
+        <div className="grid grid-cols-[0.75fr_1fr] gap-2">
+          <input
+            type="number"
+            min="1"
+            max="40"
+            value={tableReservationDraft.guestCount}
+            onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestCount: event.target.value }))}
+            required
+            className="w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs text-white outline-none focus:border-[#f2d39a]/55"
+          />
+          <input
+            value={tableReservationDraft.email}
+            onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, email: event.target.value }))}
+            placeholder="Email"
+            className="w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <button type="submit" className="luxury-button rounded-xl px-3 py-2 text-xs font-semibold">
+            {language === "bg" ? "Запази" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTableReservationDraft(null)}
+            className="ghost-button rounded-xl px-3 py-2 text-xs font-semibold"
+          >
+            {language === "bg" ? "Откажи" : "Cancel"}
+          </button>
+        </div>
+      </form>
+    );
+  }
 
   return (
     <Panel title={text.title} subtitle={text.subtitle}>
@@ -2030,7 +2175,7 @@ function ReservationOperationsMap({
 
                 {isSelectedTable && (
                   <div
-                    className={`absolute z-[80] w-[210px] rounded-2xl border border-[#f2d39a]/18 bg-[#15110e]/95 p-3 text-left shadow-[0_22px_70px_rgba(0,0,0,0.7)] backdrop-blur sm:w-[240px] ${
+                    className={`absolute z-[80] w-[230px] rounded-2xl border border-[#f2d39a]/18 bg-[#15110e]/95 p-3 text-left shadow-[0_22px_70px_rgba(0,0,0,0.7)] backdrop-blur sm:w-[280px] ${
                       table.y > 72 ? "bottom-10 sm:bottom-12 lg:bottom-16" : "top-10 sm:top-12 lg:top-16"
                     } ${
                       table.x < 28
@@ -2094,6 +2239,7 @@ function ReservationOperationsMap({
                               : `Reservation ${formatReservationLeadTime(nextSoonReservationForSelectedTable.minutes, language)}.`}
                           </div>
                         )}
+                        {renderTableReservationControls(table)}
                         {canSeatWalkInForSelectedTable && (
                           <button
                             type="button"
@@ -2132,6 +2278,7 @@ function ReservationOperationsMap({
                               : `Reservation ${formatReservationLeadTime(nextSoonReservationForSelectedTable.minutes, language)}.`}
                           </div>
                         )}
+                        {renderTableReservationControls(table)}
                         {canSeatWalkInForSelectedTable && (
                           <button
                             type="button"
@@ -4379,6 +4526,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [menuItems, setMenuItems] = React.useState([]);
   const [eventItems, setEventItems] = React.useState([]);
   const [blacklist, setBlacklist] = React.useState([]);
+  const [customerProfiles, setCustomerProfiles] = React.useState([]);
   const [adminUsers, setAdminUsers] = React.useState([]);
   const [auditLogs, setAuditLogs] = React.useState([]);
   const [feedbackEntries, setFeedbackEntries] = React.useState([]);
@@ -4404,6 +4552,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [customersMode, setCustomersMode] = React.useState("customers");
   const [customerPeriod, setCustomerPeriod] = React.useState("all");
   const [customerSort, setCustomerSort] = React.useState("visits");
+  const [showManualCustomerForm, setShowManualCustomerForm] = React.useState(false);
   const [showCreateReservation, setShowCreateReservation] = React.useState(false);
   const [menuForm, setMenuForm] = React.useState(emptyMenuItem);
   const [editingMenuId, setEditingMenuId] = React.useState(null);
@@ -4434,6 +4583,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     reason: "No-show",
     notes: "",
   });
+  const [manualCustomerForm, setManualCustomerForm] = React.useState(emptyManualCustomer);
   const [adminUserForm, setAdminUserForm] = React.useState({
     name: "",
     email: "",
@@ -4631,6 +4781,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
   }, [withAdminToken]);
 
+  const loadCustomerProfiles = React.useCallback(async () => {
+    try {
+      const data = await fetchJsonOrEmpty(`${API_BASE_URL}/api/customers`, [], withAdminToken());
+      setCustomerProfiles(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to load customer profiles", error);
+      setAdminError(error?.message || "Failed to load customer profiles.");
+    }
+  }, [withAdminToken]);
+
   const loadTableLayout = React.useCallback(async () => {
     try {
       const layoutData = await fetchJsonOrEmpty(`${API_BASE_URL}/api/table-layouts`, [], withAdminToken());
@@ -4687,6 +4847,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
       loadReservations();
       loadBlacklist();
+      loadCustomerProfiles();
       if (isProVersion) {
         loadDiningOrders();
       }
@@ -4702,7 +4863,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return () => {
       cancelled = true;
     };
-  }, [canViewFeedback, isProductionRole, isProVersion, isWaiterRole, loadBlacklist, loadDiningOrders, loadEvents, loadFeedbackEntries, loadMenuItems, loadProductTier, loadReservations, loadTableLayout]);
+  }, [canViewFeedback, isProductionRole, isProVersion, isWaiterRole, loadBlacklist, loadCustomerProfiles, loadDiningOrders, loadEvents, loadFeedbackEntries, loadMenuItems, loadProductTier, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     setAdminError("");
@@ -4726,6 +4887,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     if ((activeTab === "customers" || activeTab === "reports") && !isWaiterRole && !isProductionRole) {
       loadReservations({ silent: true });
+      loadCustomerProfiles();
       if (isProVersion) {
         loadDiningOrders();
       }
@@ -4752,7 +4914,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       loadAdminUsers();
       loadAuditLogs();
     }
-  }, [activeTab, canManageAdmins, canViewFeedback, isProductionRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadDiningOrders, loadEvents, loadFeedbackEntries, loadMenuItems, loadReservations, loadTableLayout]);
+  }, [activeTab, canManageAdmins, canViewFeedback, isProductionRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadCustomerProfiles, loadDiningOrders, loadEvents, loadFeedbackEntries, loadMenuItems, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     const pages = isProductionRole
@@ -5672,17 +5834,17 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }));
   }
 
-  async function createAdminReservation(event) {
-    event.preventDefault();
-
+  async function saveAdminReservationPayload(source) {
     const payload = {
-      ...adminReservation,
-      email: adminReservation.email || "",
-      guestCount: Number(adminReservation.guestCount || 0),
-      tableIds: adminReservation.tableIds
-        .split(",")
-        .map((x) => x.trim())
-        .filter(Boolean),
+      ...source,
+      email: source.email || "",
+      guestCount: Number(source.guestCount || 0),
+      tableIds: Array.isArray(source.tableIds)
+        ? source.tableIds
+        : String(source.tableIds || "")
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean),
       createdByAdmin: true,
     };
 
@@ -5713,12 +5875,21 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     if (!response.ok) {
       setAdminError(await readErrorMessage(response, "Failed to create reservation."));
-      return;
+      return false;
     }
 
-    setAdminReservation(emptyAdminReservation);
     setAdminNotice("Reservation created.");
     await loadReservations();
+    return true;
+  }
+
+  async function createAdminReservation(event) {
+    event.preventDefault();
+
+    const created = await saveAdminReservationPayload(adminReservation);
+    if (!created) return;
+
+    setAdminReservation(emptyAdminReservation);
     setActiveTab("reservations");
     setShowCreateReservation(false);
   }
@@ -5791,6 +5962,34 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       notes: "",
     });
     setBlacklistMode("list");
+  }
+
+  async function saveManualCustomer(event) {
+    event.preventDefault();
+    setAdminNotice("");
+    setAdminError("");
+
+    const payload = {
+      ...manualCustomerForm,
+      birthDate: manualCustomerForm.birthDate || null,
+      marketingConsent: Boolean(manualCustomerForm.marketingConsent),
+    };
+
+    const response = await adminFetch(`${API_BASE_URL}/api/customers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to save customer."));
+      return;
+    }
+
+    setManualCustomerForm(emptyManualCustomer);
+    setShowManualCustomerForm(false);
+    await loadCustomerProfiles();
+    setAdminNotice(adminLanguage === "bg" ? "Клиентът е запазен." : "Customer saved.");
   }
 
   async function deleteBlacklistEntry(id) {
@@ -6273,6 +6472,36 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     ]).filter(Boolean)
   );
 
+  const customerProfileAccumulator = customerProfiles.reduce((acc, profile) => {
+    const phone = profile.phone ?? profile.Phone ?? "";
+    const email = profile.email ?? profile.Email ?? "";
+    const key = email || phone || `profile-${profile.id ?? profile.Id}`;
+    if (!key || key === "—") return acc;
+
+    const firstReservationAt = profile.firstReservationAtUtc ?? profile.FirstReservationAtUtc ?? "";
+    const lastReservationAt = profile.lastReservationAtUtc ?? profile.LastReservationAtUtc ?? firstReservationAt;
+    const reservationCount = Number(profile.reservationCount ?? profile.ReservationCount ?? 0);
+
+    acc[key] = {
+      key,
+      guestName: profile.guestName ?? profile.GuestName ?? "—",
+      phone,
+      email,
+      count: reservationCount,
+      firstReservation: String(firstReservationAt || formatLocalDate(new Date())).slice(0, 10),
+      lastReservation: String(lastReservationAt || firstReservationAt || formatLocalDate(new Date())).slice(0, 10),
+      reservations: [],
+      isRegularCustomer: Boolean(profile.isRegularCustomer ?? profile.IsRegularCustomer),
+      marketingConsent: Boolean(profile.marketingConsent ?? profile.MarketingConsent),
+      isManualProfile: reservationCount === 0,
+      isBlacklisted:
+        blacklistKeys.has(String(phone || "").trim().toLowerCase()) ||
+        blacklistKeys.has(String(email || "").trim().toLowerCase()),
+    };
+
+    return acc;
+  }, {});
+
   const customers = Object.values(
     reservations.reduce((acc, r) => {
       if (r.createdByAdmin && (r.phone === "admin" || r.guestName === "Admin block")) {
@@ -6298,6 +6527,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           reservations: [],
           isRegularCustomer: false,
           marketingConsent: r.marketingConsent,
+          isManualProfile: false,
           isBlacklisted:
             r.isBlacklisted ||
             blacklistKeys.has(String(r.phone || "").trim().toLowerCase()) ||
@@ -6306,7 +6536,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       }
 
       acc[key].count += 1;
+      acc[key].isManualProfile = false;
       acc[key].reservations.push(r);
+      acc[key].guestName = acc[key].guestName === "—" ? r.guestName : acc[key].guestName;
+      acc[key].phone = acc[key].phone || r.phone;
+      acc[key].email = acc[key].email || r.email;
       if (r.reservedDate < acc[key].firstReservation) {
         acc[key].firstReservation = r.reservedDate;
       }
@@ -6322,7 +6556,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         blacklistKeys.has(String(r.email || "").trim().toLowerCase());
 
       return acc;
-    }, {})
+    }, customerProfileAccumulator)
   ).sort((a, b) => b.count - a.count);
 
   const ordersByReservationId = React.useMemo(() => {
@@ -6371,7 +6605,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
       return {
         ...customer,
-        periodCount: customerPeriod === "all" ? customer.count : periodReservations.length,
+        periodCount: customer.isManualProfile
+          ? customerPeriod === "all" || isInCustomerPeriod(customer.firstReservation)
+            ? 1
+            : 0
+          : customerPeriod === "all"
+            ? customer.count
+            : periodReservations.length,
         periodReservations: customerPeriod === "all" ? customer.reservations : periodReservations,
       };
     })
@@ -7338,6 +7578,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   setActiveTab("orders");
                 }}
                 onSeatWalkIn={seatWalkInFromMap}
+                onCreateReservation={isWaiterRole ? null : saveAdminReservationPayload}
                 onClaimReservation={isWaiterRole ? claimReservationForConsumption : null}
                 onRelease={releaseReservationTable}
                 requireTableClaim={isWaiterRole}
@@ -9851,22 +10092,35 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     : "Visit ranking, expandable details, and blacklist in one section."
                 }
                 right={
-                  <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
-                    {[
-                      ["customers", adminLanguage === "bg" ? "Клиенти" : "Customers"],
-                      ["blacklist", "Blacklist"],
-                    ].map(([key, label]) => (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    {customersMode === "customers" && (
                       <button
-                        key={key}
                         type="button"
-                        onClick={() => setCustomersMode(key)}
-                        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                          customersMode === key ? "luxury-button" : "text-white/70 hover:text-white"
-                        }`}
+                        onClick={() => setShowManualCustomerForm((value) => !value)}
+                        className="luxury-button rounded-full px-4 py-2 text-sm font-semibold"
                       >
-                        {label}
+                        {showManualCustomerForm
+                          ? adminLanguage === "bg" ? "Скрий формата" : "Hide form"
+                          : adminLanguage === "bg" ? "Добави клиент" : "Add customer"}
                       </button>
-                    ))}
+                    )}
+                    <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
+                      {[
+                        ["customers", adminLanguage === "bg" ? "Клиенти" : "Customers"],
+                        ["blacklist", "Blacklist"],
+                      ].map(([key, label]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setCustomersMode(key)}
+                          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                            customersMode === key ? "luxury-button" : "text-white/70 hover:text-white"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 }
               >
@@ -9980,6 +10234,82 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {showManualCustomerForm && (
+                      <form onSubmit={saveManualCustomer} className="rounded-[28px] border border-[#c9a56a]/18 bg-[#c9a56a]/10 p-4 md:p-5">
+                        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                          <div>
+                            <div className="section-kicker">
+                              {adminLanguage === "bg" ? "Ръчен клиент" : "Manual customer"}
+                            </div>
+                            <p className="mt-2 text-sm text-white/50">
+                              {adminLanguage === "bg"
+                                ? "Добави контакт без резервация. Ако телефонът или имейлът вече съществува, профилът ще се обнови."
+                                : "Add a contact without a reservation. Existing phone or email will update the profile."}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setManualCustomerForm(emptyManualCustomer);
+                              setShowManualCustomerForm(false);
+                            }}
+                            className="ghost-button rounded-full px-4 py-2 text-sm font-semibold"
+                          >
+                            {adminLanguage === "bg" ? "Откажи" : "Cancel"}
+                          </button>
+                        </div>
+
+                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                          <label className="block text-sm text-white/60 xl:col-span-2">
+                            {adminLanguage === "bg" ? "Име" : "Name"}
+                            <input
+                              value={manualCustomerForm.guestName}
+                              onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, guestName: event.target.value }))}
+                              required
+                              className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
+                            />
+                          </label>
+                          <label className="block text-sm text-white/60">
+                            {adminLanguage === "bg" ? "Телефон" : "Phone"}
+                            <input
+                              value={manualCustomerForm.phone}
+                              onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, phone: event.target.value }))}
+                              className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
+                            />
+                          </label>
+                          <label className="block text-sm text-white/60">
+                            Email
+                            <input
+                              type="email"
+                              value={manualCustomerForm.email}
+                              onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, email: event.target.value }))}
+                              className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
+                            />
+                          </label>
+                          <label className="block text-sm text-white/60">
+                            {adminLanguage === "bg" ? "Рожден ден" : "Birthday"}
+                            <input
+                              type="date"
+                              value={manualCustomerForm.birthDate}
+                              onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, birthDate: event.target.value }))}
+                              className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
+                            />
+                          </label>
+                          <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70 xl:col-span-2">
+                            <input
+                              type="checkbox"
+                              checked={manualCustomerForm.marketingConsent}
+                              onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, marketingConsent: event.target.checked }))}
+                            />
+                            {adminLanguage === "bg" ? "Съгласие за маркетинг имейли" : "Marketing email consent"}
+                          </label>
+                          <button type="submit" className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold xl:col-span-1">
+                            {adminLanguage === "bg" ? "Запази клиент" : "Save customer"}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+
                     <div className="grid gap-3 md:grid-cols-3">
                       <div className="rounded-3xl border border-[#c9a56a]/18 bg-[#c9a56a]/10 p-5">
                         <div className="text-xs uppercase tracking-[0.22em] text-[#f2d39a]/70">
@@ -10077,7 +10407,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               <div className="min-w-0">
                                 <div className="truncate text-lg font-semibold text-[#fff4df]">{c.guestName}</div>
                                 <div className="mt-1 text-sm text-stone-400">
-                                  {c.periodCount} {visitsLabel}
+                                  {c.count === 0
+                                    ? adminLanguage === "bg" ? "ръчен контакт" : "manual contact"
+                                    : `${c.periodCount} ${visitsLabel}`}
                                   {customerPeriod !== "all" ? ` · ${c.count} ${adminLanguage === "bg" ? "общо" : "total"}` : ""}
                                 </div>
                               </div>

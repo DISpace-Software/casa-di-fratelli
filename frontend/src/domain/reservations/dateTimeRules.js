@@ -65,7 +65,7 @@ export function isPastTimeForDate(dateValue, timeValue, now = new Date(), minimu
     selected.setDate(selected.getDate() + 1);
   }
 
-  return selected.getTime() - now.getTime() < minimumLeadMinutes * 60 * 1000;
+  return selected.getTime() - now.getTime() <= minimumLeadMinutes * 60 * 1000;
 }
 
 export function getAvailableReservationTimesForDate(times, dateValue, now = new Date(), minimumLeadMinutes = 0) {

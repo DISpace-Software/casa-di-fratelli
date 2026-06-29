@@ -21,7 +21,7 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
         src="/hero-chef-plating-cutout.png"
         alt=""
         aria-hidden="true"
-        className="hero-chef-overlay pointer-events-none absolute bottom-0 right-0 z-[2] h-[48vh] max-h-[620px] w-[58vw] max-w-[720px] object-contain object-right-bottom opacity-95 md:h-[82vh] md:w-[54vw]"
+        className="hero-chef-overlay pointer-events-none absolute bottom-0 right-0 z-[2] h-[52vh] max-h-[760px] w-[66vw] max-w-[860px] object-contain object-right-bottom opacity-95 md:h-[88vh] md:w-[48vw]"
       />
 
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-92px)] max-w-7xl items-center px-6 py-16 md:py-20">
@@ -50,7 +50,7 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
           </div>
 
           <div className="mt-12 grid max-w-xl grid-cols-3 gap-3 text-center sm:gap-4">
-            <div className="hero-days-stat luxury-panel rounded-2xl p-4">
+            <div className="luxury-panel rounded-2xl p-4">
               <div className="text-2xl font-semibold text-[#fff4df]">4,8</div>
               <div className="mt-1 text-[0.68rem] font-semibold tracking-[0.18em] text-[#f2c76f]" aria-label="5 stars">
                 ★★★★★
@@ -63,7 +63,7 @@ export default function HeroSection({ t, onOpenReservation, onOpenMenu, language
               <div className="mt-1 text-xs text-stone-400">{t.reviewsCount}</div>
             </div>
 
-            <div className="luxury-panel rounded-2xl p-4">
+            <div className="hero-days-stat luxury-panel rounded-2xl p-4">
               <div className="text-2xl font-semibold text-[#fff4df]">7/7</div>
               <div className="mt-1 text-xs text-stone-400">{t.openDays}</div>
             </div>
