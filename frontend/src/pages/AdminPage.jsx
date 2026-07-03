@@ -1245,6 +1245,28 @@ function buildLiveReservationsByTable(reservations, now = new Date()) {
   return byTable;
 }
 
+function buildReservationsByTableForDate(reservations, selectedDate) {
+  const byTable = new Map();
+
+  reservations
+    .filter((reservation) => {
+      if (!["Pending", "Approved"].includes(reservation.status) || reservation.isNoShow) return false;
+      if (reservation.reservedDate !== selectedDate) return false;
+      if (["Cancelled", "Released"].includes(reservation.status)) return false;
+      return true;
+    })
+    .sort((first, second) => String(first.reservedTime).localeCompare(String(second.reservedTime)))
+    .forEach((reservation) => {
+      reservation.tableIds.forEach((tableId) => {
+        if (!byTable.has(tableId)) {
+          byTable.set(tableId, reservation);
+        }
+      });
+    });
+
+  return byTable;
+}
+
 function formatReservationLeadTime(minutes, language = "bg") {
   const value = Math.max(0, Math.round(Number(minutes || 0)));
   const hours = Math.floor(value / 60);
@@ -1605,6 +1627,8 @@ function ReservationOperationsMap({
   menuItems,
   selectedArea,
   onAreaChange,
+  selectedDate,
+  onDateChange,
   onArrived,
   onAddConsumptionItem,
   onUpdateConsumptionItem,
@@ -1633,6 +1657,9 @@ function ReservationOperationsMap({
   const movePanelRef = React.useRef(null);
   const consumptionPanelRef = React.useRef(null);
   const [now, setNow] = React.useState(() => new Date());
+  const todayDate = formatLocalDate(now);
+  const mapDate = selectedDate || todayDate;
+  const isMapToday = mapDate === todayDate;
   const areas = [
     ["indoor", text.indoor],
     ["garden", text.garden],
@@ -1661,7 +1688,12 @@ function ReservationOperationsMap({
   const areaTables = (hasAreaLayout ? layout : fallbackLayout)
     .filter((item) => item.area === selectedArea && item.isActive)
     .sort((first, second) => first.id.localeCompare(second.id, undefined, { numeric: true }));
-  const liveByTable = React.useMemo(() => buildLiveReservationsByTable(reservations, now), [reservations, now]);
+  const liveByTable = React.useMemo(
+    () => isMapToday
+      ? buildLiveReservationsByTable(reservations, now)
+      : buildReservationsByTableForDate(reservations, mapDate),
+    [isMapToday, mapDate, now, reservations]
+  );
   const getReservationTables = React.useCallback(
     (reservation) => areaTables.filter((table) => reservation.tableIds.includes(table.id)),
     [areaTables]
@@ -1705,12 +1737,13 @@ function ReservationOperationsMap({
     });
 
     return Array.from(unique.values()).sort((first, second) => {
-      const firstMinutes = getReservationMinutesFromNow(first, now) ?? 9999;
-      const secondMinutes = getReservationMinutesFromNow(second, now) ?? 9999;
+      const firstMinutes = isMapToday ? getReservationMinutesFromNow(first, now) ?? 9999 : 9999;
+      const secondMinutes = isMapToday ? getReservationMinutesFromNow(second, now) ?? 9999 : 9999;
 
-      return firstMinutes - secondMinutes;
+      if (firstMinutes !== secondMinutes) return firstMinutes - secondMinutes;
+      return String(first.reservedTime).localeCompare(String(second.reservedTime));
     });
-  }, [areaTables, liveByTable, now]);
+  }, [areaTables, isMapToday, liveByTable, now]);
   const selectedReservation =
     liveReservations.find((reservation) => reservation.id === selectedReservationId) ||
     reservations.find((reservation) => reservation.id === selectedReservationId);
@@ -1758,25 +1791,22 @@ function ReservationOperationsMap({
     if (ordersOnly) return [];
     if (!selectedTableId) return [];
 
-    const today = formatLocalDate(now);
-
     return reservations
       .filter((reservation) => {
         if (reservation.area !== selectedArea) return false;
-        if (reservation.reservedDate !== today) return false;
+        if (reservation.reservedDate !== mapDate) return false;
         if (!reservation.tableIds.includes(selectedTableId)) return false;
         if (reservation.isNoShow || ["Cancelled", "Released"].includes(reservation.status)) return false;
-        if (reservation.isArrived) return false;
+        if (isMapToday && reservation.isArrived) return false;
 
+        if (!isMapToday) return true;
         const minutes = getReservationMinutesFromNow(reservation, now);
         return minutes !== null && minutes >= 0;
       })
       .sort((first, second) => String(first.reservedTime).localeCompare(String(second.reservedTime)));
-  }, [now, ordersOnly, reservations, selectedArea, selectedTableId]);
+  }, [isMapToday, mapDate, now, ordersOnly, reservations, selectedArea, selectedTableId]);
   const nextSoonReservationForSelectedTable = React.useMemo(() => {
-    if (ordersOnly || !selectedTableId) return null;
-
-    const today = formatLocalDate(now);
+    if (ordersOnly || !selectedTableId || !isMapToday) return null;
 
     return reservations
       .map((reservation) => ({
@@ -1785,27 +1815,26 @@ function ReservationOperationsMap({
       }))
       .filter(({ reservation, minutes }) => {
         if (reservation.area !== selectedArea) return false;
-        if (reservation.reservedDate !== today) return false;
+        if (reservation.reservedDate !== todayDate) return false;
         if (!reservation.tableIds.includes(selectedTableId)) return false;
         if (reservation.isNoShow || reservation.isArrived || ["Cancelled", "Released"].includes(reservation.status)) return false;
         return minutes !== null && minutes > 0 && minutes < 180;
       })
       .sort((first, second) => first.minutes - second.minutes)[0] || null;
-  }, [now, ordersOnly, reservations, selectedArea, selectedTableId]);
+  }, [isMapToday, now, ordersOnly, reservations, selectedArea, selectedTableId, todayDate]);
   const selectedTableHasArrivedReservation = React.useMemo(() => {
-    if (ordersOnly || !selectedTableId) return false;
-
-    const today = formatLocalDate(now);
+    if (ordersOnly || !selectedTableId || !isMapToday) return false;
 
     return reservations.some((reservation) => {
       if (reservation.area !== selectedArea) return false;
-      if (reservation.reservedDate !== today) return false;
+      if (reservation.reservedDate !== todayDate) return false;
       if (!reservation.tableIds.includes(selectedTableId)) return false;
       if (reservation.isNoShow || ["Cancelled", "Released"].includes(reservation.status)) return false;
       return Boolean(reservation.isArrived);
     });
-  }, [now, ordersOnly, reservations, selectedArea, selectedTableId]);
+  }, [isMapToday, ordersOnly, reservations, selectedArea, selectedTableId, todayDate]);
   const canSeatWalkInForSelectedTable =
+    isMapToday &&
     Boolean(onSeatWalkIn) &&
     !selectedTableHasArrivedReservation &&
     !(nextSoonReservationForSelectedTable && nextSoonReservationForSelectedTable.minutes <= 90);
@@ -1966,7 +1995,7 @@ function ReservationOperationsMap({
       guestName: "",
       phone: "",
       email: "",
-      reservedDate: formatLocalDate(new Date()),
+      reservedDate: mapDate < todayDate ? todayDate : mapDate,
       reservedTime: nextTime,
       guestCount: Math.min(Number(table.seats || 2), 4),
       area: selectedArea,
@@ -2024,7 +2053,7 @@ function ReservationOperationsMap({
     setShowConsumption(false);
     setWalkInDraft(null);
     setTableReservationDraft(null);
-  }, [moveReservationId, selectedArea]);
+  }, [mapDate, moveReservationId, selectedArea]);
 
   React.useEffect(() => {
     if (!shouldScrollMovePanel || !moveReservationId) return;
@@ -2141,6 +2170,40 @@ function ReservationOperationsMap({
 
   return (
     <Panel title={text.title} subtitle={text.subtitle}>
+      {!ordersOnly && (
+        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#c9a56a]/18 bg-black/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="section-kicker text-[10px]">
+              {adminLocalText(language, "Дата на картата", "Map date", "Дата карты")}
+            </div>
+            <div className="mt-1 text-sm text-white/55">
+              {isMapToday
+                ? adminLocalText(language, "Оперативен изглед за днес.", "Live operational view for today.", "Операционная карта на сегодня.")
+                : adminLocalText(language, "Планиране на заетостта за избрания ден.", "Occupancy planning for the selected day.", "Просмотр загрузки на выбранный день.")}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="date"
+              value={mapDate}
+              onChange={(event) => onDateChange?.(event.target.value)}
+              className="min-h-[44px] rounded-2xl border border-white/10 bg-black/25 px-3 py-2 text-sm font-semibold text-[#fff4df] outline-none focus:border-[#f2d39a]/60"
+              aria-label={adminLocalText(language, "Дата на картата", "Map date", "Дата карты")}
+            />
+            <button
+              type="button"
+              onClick={() => onDateChange?.(todayDate)}
+              className={`min-h-[44px] rounded-2xl border px-4 py-2 text-sm font-semibold transition ${
+                isMapToday
+                  ? "border-[#f2d39a]/55 bg-[#c9a56a]/22 text-[#fff4df]"
+                  : "border-white/10 bg-white/[0.04] text-white/65 hover:border-[#c9a56a]/35 hover:text-white"
+              }`}
+            >
+              {adminLocalText(language, "Днес", "Today", "Сегодня")}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="mb-5 grid gap-2 sm:grid-cols-3">
         {areas.map(([area, label]) => (
           <button
@@ -2178,14 +2241,15 @@ function ReservationOperationsMap({
             const bounds = getReservationBounds(reservation);
             if (!bounds) return null;
 
-            const minutes = getReservationMinutesFromNow(reservation, now);
-            const isLate = !reservation.isArrived && minutes !== null && minutes <= -10;
+            const minutes = isMapToday ? getReservationMinutesFromNow(reservation, now) : null;
+            const isLate = isMapToday && !reservation.isArrived && minutes !== null && minutes <= -10;
 	            const isSelected = reservation.id === selectedReservationId;
 	            const hasNewOrderItems = newOrderReservationIds.has(Number(reservation.id));
-	            const canNoShow = !reservation.isArrived && minutes !== null && minutes <= -10;
-            const canMarkArrived = !reservation.isArrived;
+	            const canNoShow = isMapToday && !reservation.isArrived && minutes !== null && minutes <= -10;
+            const canMarkArrived = isMapToday && !reservation.isArrived;
             const reservationOrders = activeOrdersByReservationId.get(Number(reservation.id)) || [];
             const needsTableClaim =
+              isMapToday &&
               diningEnabled &&
               requireTableClaim &&
               reservation.isArrived &&
@@ -2239,7 +2303,7 @@ function ReservationOperationsMap({
                   >
                     <span className="block truncate">{reservation.guestName}</span>
                     <span className="block text-[7px] font-medium uppercase tracking-[0.12em] opacity-70 sm:text-[8px] lg:text-[9px]">
-                      {getReservationTimingLabel(reservation, text, now)}
+                      {isMapToday ? getReservationTimingLabel(reservation, text, now) : reservation.reservedTime}
                     </span>
                   </button>
 
@@ -2567,7 +2631,7 @@ function ReservationOperationsMap({
                         <span className="text-xs text-white/50">{reservation.reservedTime}</span>
                       </div>
                       <div className="mt-1 text-xs text-white/45">
-                        {getReservationTimingLabel(reservation, text, now)} · {reservation.guestCount} {text.guests} · {reservation.tableIds.join(", ")}
+                        {isMapToday ? getReservationTimingLabel(reservation, text, now) : reservation.reservedDate} · {reservation.guestCount} {text.guests} · {reservation.tableIds.join(", ")}
                       </div>
                     </button>
                   );
@@ -2584,12 +2648,12 @@ function ReservationOperationsMap({
                 {selectedReservation.guestCount} {text.guests} · {selectedReservation.tableIds.join(", ")}
               </div>
               <div className="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
-                {!selectedReservation.isArrived && (
+                {isMapToday && !selectedReservation.isArrived && (
                   <button type="button" onClick={() => onArrived(selectedReservation)} className="luxury-button rounded-xl py-3 pl-3 pr-4 text-left text-sm">
                     {text.arrived}
                   </button>
                 )}
-                {!selectedReservation.isArrived && (getReservationMinutesFromNow(selectedReservation, now) ?? 9999) <= -10 && (
+                {isMapToday && !selectedReservation.isArrived && (getReservationMinutesFromNow(selectedReservation, now) ?? 9999) <= -10 && (
                   <button type="button" onClick={() => onNoShow(selectedReservation)} className="rounded-xl border border-red-300/25 bg-red-500/15 px-4 py-3 text-sm font-semibold text-red-100">
                     {text.noShow}
                   </button>
@@ -4875,6 +4939,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [tableLayout, setTableLayout] = React.useState([]);
   const [layoutArea, setLayoutArea] = React.useState("indoor");
   const [reservationMapArea, setReservationMapArea] = React.useState("indoor");
+  const [reservationMapDate, setReservationMapDate] = React.useState(() => formatLocalDate(new Date()));
   const [noteEdits, setNoteEdits] = React.useState({});
   const [orderMenuSearches, setOrderMenuSearches] = React.useState({});
   const [hallBlock, setHallBlock] = React.useState(emptyHallBlock);
@@ -6953,6 +7018,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     .filter((customer) => customer.periodCount > 0);
 
   const sortedCustomers = [...customersForPeriod].sort((first, second) => {
+    if (customerSort === "site") {
+      const firstFromSite = Boolean(String(first.email || "").trim()) && !first.isManualProfile;
+      const secondFromSite = Boolean(String(second.email || "").trim()) && !second.isManualProfile;
+      if (firstFromSite !== secondFromSite) return firstFromSite ? -1 : 1;
+      if (firstFromSite && secondFromSite) {
+        return new Date(second.lastReservation) - new Date(first.lastReservation) || second.count - first.count;
+      }
+      return second.periodCount - first.periodCount || second.count - first.count;
+    }
+
     if (customerSort === "new") {
       return new Date(second.firstReservation) - new Date(first.firstReservation);
     }
@@ -7905,6 +7980,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 menuItems={menuItems}
                 selectedArea={reservationMapArea}
                 onAreaChange={setReservationMapArea}
+                selectedDate={reservationMapDate}
+                onDateChange={setReservationMapDate}
                 onArrived={markReservationArrived}
                 onAddConsumptionItem={addConsumptionItem}
                 onUpdateConsumptionItem={updateConsumptionItem}
@@ -10718,6 +10795,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <div className="flex flex-wrap gap-2">
                           {[
                             ["visits", adminLocalText(adminLanguage, "Най-чести", "Top visits", "Чаще всего")],
+                            ["site", adminLocalText(adminLanguage, "От сайта", "From website", "С сайта")],
                             ["new", adminLocalText(adminLanguage, "Най-нови", "Newest", "Новые")],
                             ["recent", adminLocalText(adminLanguage, "Последно дошли", "Recent", "Недавние")],
                             ["name", adminLocalText(adminLanguage, "Име", "Name", "Имя")],
