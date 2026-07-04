@@ -2097,74 +2097,107 @@ function ReservationOperationsMap({
     }
 
     return (
-      <form onSubmit={submitTableReservation} className="space-y-2 rounded-2xl border border-[#f2d39a]/18 bg-[#c9a56a]/10 p-2.5">
-        <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-[#f2d39a]">
-          {language === "bg" ? "Нова резервация" : "New reservation"}
-        </div>
-        <input
-          value={tableReservationDraft.guestName}
-          onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestName: event.target.value }))}
-          required
-          placeholder={language === "bg" ? "Име" : "Name"}
-          className="w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
-        />
-        <input
-          value={tableReservationDraft.phone}
-          onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, phone: event.target.value }))}
-          required
-          placeholder={language === "bg" ? "Телефон" : "Phone"}
-          className="w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
-        />
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="date"
-            value={tableReservationDraft.reservedDate}
-            min={formatLocalDate(new Date())}
-            onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedDate: event.target.value }))}
-            required
-            className="w-full rounded-xl border border-white/10 bg-black/25 px-2 py-2 text-xs text-white outline-none focus:border-[#f2d39a]/55"
-          />
-          <select
-            value={tableReservationDraft.reservedTime}
-            onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedTime: event.target.value }))}
-            required
-            className="w-full rounded-xl border border-white/10 bg-black/25 px-2 py-2 text-xs text-white outline-none focus:border-[#f2d39a]/55"
-          >
-            {getAvailableReservationTimesForDate(adminReservationTimes, tableReservationDraft.reservedDate).map((time) => (
-              <option key={time} value={time}>{time}</option>
-            ))}
-          </select>
-        </div>
-        <div className="grid grid-cols-[0.75fr_1fr] gap-2">
-          <input
-            type="number"
-            min="1"
-            max="40"
-            value={tableReservationDraft.guestCount}
-            onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestCount: event.target.value }))}
-            required
-            className="w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs text-white outline-none focus:border-[#f2d39a]/55"
-          />
-          <input
-            value={tableReservationDraft.email}
-            onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, email: event.target.value }))}
-            placeholder="Email"
-            className="w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <button type="submit" className="luxury-button rounded-xl px-3 py-2 text-xs font-semibold">
-            {language === "bg" ? "Запази" : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setTableReservationDraft(null)}
-            className="ghost-button rounded-xl px-3 py-2 text-xs font-semibold"
-          >
-            {language === "bg" ? "Откажи" : "Cancel"}
-          </button>
-        </div>
-      </form>
+      <div className="rounded-2xl border border-[#f2d39a]/18 bg-[#c9a56a]/10 px-3 py-2 text-xs leading-5 text-[#f2d39a]">
+        {language === "bg" ? "Формата е отворена върху картата." : "The form is open over the map."}
+      </div>
+    );
+  }
+
+  function renderFloatingTableReservationForm() {
+    if (!tableReservationDraft || tableReservationDraft.area !== selectedArea) return null;
+
+    return (
+      <div className="absolute inset-3 z-[95] flex items-center justify-center bg-black/35 p-2 backdrop-blur-[2px] sm:inset-5 sm:p-4">
+        <form
+          onSubmit={submitTableReservation}
+          className="max-h-full w-full max-w-[440px] overflow-y-auto rounded-[24px] border border-[#f2d39a]/22 bg-[#15110e]/96 p-4 text-left shadow-[0_28px_90px_rgba(0,0,0,0.72)] sm:p-5"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="section-kicker text-[10px]">
+                {language === "bg" ? "Нова резервация" : "New reservation"}
+              </div>
+              <div className="mt-1 text-lg font-semibold text-[#fff4df]">
+                {text.table} {tableReservationDraft.tableId}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setTableReservationDraft(null)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/55 transition hover:text-white"
+              aria-label="Close reservation form"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="mt-4 grid gap-3">
+            <input
+              value={tableReservationDraft.guestName}
+              onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestName: event.target.value }))}
+              required
+              placeholder={language === "bg" ? "Име" : "Name"}
+              className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
+            />
+            <input
+              value={tableReservationDraft.phone}
+              onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, phone: event.target.value }))}
+              required
+              placeholder={language === "bg" ? "Телефон" : "Phone"}
+              className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="date"
+                value={tableReservationDraft.reservedDate}
+                min={formatLocalDate(new Date())}
+                onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedDate: event.target.value }))}
+                required
+                className="w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
+              />
+              <select
+                value={tableReservationDraft.reservedTime}
+                onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedTime: event.target.value }))}
+                required
+                className="w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
+              >
+                {getAvailableReservationTimesForDate(adminReservationTimes, tableReservationDraft.reservedDate).map((time) => (
+                  <option key={time} value={time}>{time}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-[0.75fr_1fr] gap-2">
+              <input
+                type="number"
+                min="1"
+                max="40"
+                value={tableReservationDraft.guestCount}
+                onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestCount: event.target.value }))}
+                required
+                className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
+              />
+              <input
+                value={tableReservationDraft.email}
+                onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, email: event.target.value }))}
+                placeholder="Email"
+                className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              <button type="submit" className="luxury-button rounded-2xl px-4 py-3 text-sm font-semibold">
+                {language === "bg" ? "Запази" : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setTableReservationDraft(null)}
+                className="ghost-button rounded-2xl px-4 py-3 text-sm font-semibold"
+              >
+                {language === "bg" ? "Откажи" : "Cancel"}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     );
   }
 
@@ -2332,6 +2365,15 @@ function ReservationOperationsMap({
                             {text.noShow}
                           </button>
                         )}
+                        {!ordersOnly && onMove && (
+                          <button
+                            type="button"
+                            onClick={() => openMovePanel(reservation)}
+                            className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-3 py-2 text-xs font-semibold text-[#f2d39a]"
+                          >
+                            {text.move}
+                          </button>
+                        )}
                         {reservation.isArrived && needsTableClaim && (
                           <button
                             type="button"
@@ -2356,13 +2398,6 @@ function ReservationOperationsMap({
                               {text.consumption}
                             </button>
 	                          )}
-                            <button
-                              type="button"
-                              onClick={() => openMovePanel(reservation)}
-                              className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-3 py-2 text-xs font-semibold text-[#f2d39a]"
-                            >
-                              {text.move}
-                            </button>
                             <button
                               type="button"
                               onClick={() => onRelease(reservation)}
@@ -2404,6 +2439,9 @@ function ReservationOperationsMap({
             const isMoveAllowed =
               isMoveMode &&
               !isMoveUnavailable;
+            const hasOpenTableReservationForm =
+              tableReservationDraft?.tableId === table.id && tableReservationDraft?.area === selectedArea;
+            const placeTablePopoverAbove = hasOpenTableReservationForm ? table.y > 48 : table.y > 72;
 
             return (
               <div
@@ -2457,8 +2495,8 @@ function ReservationOperationsMap({
 
                 {isSelectedTable && (
                   <div
-                    className={`absolute z-[80] w-[230px] rounded-2xl border border-[#f2d39a]/18 bg-[#15110e]/95 p-3 text-left shadow-[0_22px_70px_rgba(0,0,0,0.7)] backdrop-blur sm:w-[280px] ${
-                      table.y > 72 ? "bottom-10 sm:bottom-12 lg:bottom-16" : "top-10 sm:top-12 lg:top-16"
+                    className={`absolute z-[80] max-h-[min(520px,calc(100vh-180px))] w-[230px] overflow-y-auto rounded-2xl border border-[#f2d39a]/18 bg-[#15110e]/95 p-3 text-left shadow-[0_22px_70px_rgba(0,0,0,0.7)] backdrop-blur sm:w-[280px] ${
+                      placeTablePopoverAbove ? "bottom-10 sm:bottom-12 lg:bottom-16" : "top-10 sm:top-12 lg:top-16"
                     } ${
                       table.x < 28
                         ? "left-0"
@@ -2577,6 +2615,8 @@ function ReservationOperationsMap({
               </div>
             );
           })}
+
+          {renderFloatingTableReservationForm()}
         </div>
 
         <div className="min-w-0 space-y-3">
@@ -2648,6 +2688,11 @@ function ReservationOperationsMap({
                 {selectedReservation.guestCount} {text.guests} · {selectedReservation.tableIds.join(", ")}
               </div>
               <div className="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
+                {!ordersOnly && onMove && (
+                  <button type="button" onClick={() => openMovePanel(selectedReservation)} className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-4 py-3 text-sm font-semibold text-[#f2d39a]">
+                    {text.move}
+                  </button>
+                )}
                 {isMapToday && !selectedReservation.isArrived && (
                   <button type="button" onClick={() => onArrived(selectedReservation)} className="luxury-button rounded-xl py-3 pl-3 pr-4 text-left text-sm">
                     {text.arrived}
@@ -2666,9 +2711,6 @@ function ReservationOperationsMap({
                       </button>
                     ) : (
                       <>
-                        <button type="button" onClick={() => openMovePanel(selectedReservation)} className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-4 py-3 text-sm font-semibold text-[#f2d39a]">
-                          {text.move}
-                        </button>
                         {diningEnabled && (
                           <button type="button" onClick={openConsumptionPanel} className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-4 py-3 text-sm font-semibold text-emerald-100">
                             {text.consumption}
