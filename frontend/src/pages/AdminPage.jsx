@@ -771,6 +771,26 @@ function getReservationCustomerKey(reservation) {
   return email || phone;
 }
 
+function normalizeCustomerHistoryReservation(reservation) {
+  const tableIds = reservation.tableIds ?? reservation.TableIds ?? [];
+
+  return {
+    id: reservation.id ?? reservation.Id,
+    guestName: reservation.guestName ?? reservation.GuestName ?? "",
+    phone: reservation.phone ?? reservation.Phone ?? "",
+    email: reservation.email ?? reservation.Email ?? "",
+    guestCount: Number(reservation.guestCount ?? reservation.GuestCount ?? 0),
+    area: reservation.area ?? reservation.Area ?? "",
+    reservedDate: String(reservation.reservedDate ?? reservation.ReservedDate ?? "").slice(0, 10),
+    reservedTime: reservation.reservedTime ?? reservation.ReservedTime ?? "",
+    status: reservation.status ?? reservation.Status ?? "",
+    createdByAdmin: Boolean(reservation.createdByAdmin ?? reservation.CreatedByAdmin),
+    marketingConsent: Boolean(reservation.marketingConsent ?? reservation.MarketingConsent),
+    isRegularCustomer: Boolean(reservation.isRegularCustomer ?? reservation.IsRegularCustomer),
+    tableIds: Array.isArray(tableIds) ? tableIds.map(String) : [],
+  };
+}
+
 function getAdminUserId(user) {
   return user?.id ?? user?.Id;
 }
@@ -6938,6 +6958,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     const firstReservationAt = profile.firstReservationAtUtc ?? profile.FirstReservationAtUtc ?? "";
     const lastReservationAt = profile.lastReservationAtUtc ?? profile.LastReservationAtUtc ?? firstReservationAt;
     const reservationCount = Number(profile.reservationCount ?? profile.ReservationCount ?? 0);
+    const profileReservations = (profile.reservations ?? profile.Reservations ?? [])
+      .map(normalizeCustomerHistoryReservation)
+      .filter((reservation) => reservation.id)
+      .sort((first, second) => {
+        const firstValue = `${first.reservedDate} ${first.reservedTime}`;
+        const secondValue = `${second.reservedDate} ${second.reservedTime}`;
+        return secondValue.localeCompare(firstValue);
+      });
 
     acc[key] = {
       key,
@@ -6945,13 +6973,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       guestName: profile.guestName ?? profile.GuestName ?? "—",
       phone,
       email,
-      count: reservationCount,
+      count: Math.max(reservationCount, profileReservations.length),
       firstReservation: String(firstReservationAt || formatLocalDate(new Date())).slice(0, 10),
       lastReservation: String(lastReservationAt || firstReservationAt || formatLocalDate(new Date())).slice(0, 10),
-      reservations: [],
+      reservations: profileReservations,
+      reservationIds: new Set(profileReservations.map((reservation) => Number(reservation.id))),
       isRegularCustomer: Boolean(profile.isRegularCustomer ?? profile.IsRegularCustomer),
       marketingConsent: Boolean(profile.marketingConsent ?? profile.MarketingConsent),
-      isManualProfile: reservationCount === 0,
+      isManualProfile: reservationCount === 0 && profileReservations.length === 0,
       isBlacklisted:
         blacklistKeys.has(String(phone || "").trim().toLowerCase()) ||
         blacklistKeys.has(String(email || "").trim().toLowerCase()),
@@ -6977,9 +7006,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         return acc;
       }
 
-      acc[key].count += 1;
+      const reservationId = Number(r.id);
+      const hasReservation = Number.isFinite(reservationId) && acc[key].reservationIds?.has(reservationId);
       acc[key].isManualProfile = false;
-      acc[key].reservations.push(r);
+      if (!hasReservation) {
+        acc[key].reservations.push(r);
+        if (Number.isFinite(reservationId)) acc[key].reservationIds?.add(reservationId);
+      }
+      acc[key].count = Math.max(acc[key].count, acc[key].reservations.length);
       acc[key].guestName = acc[key].guestName === "—" ? r.guestName : acc[key].guestName;
       acc[key].phone = acc[key].phone || r.phone;
       acc[key].email = acc[key].email || r.email;
@@ -7059,17 +7093,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     })
     .filter((customer) => customer.periodCount > 0);
 
-  const sortedCustomers = [...customersForPeriod].sort((first, second) => {
-    if (customerSort === "site") {
-      const firstFromSite = Boolean(String(first.email || "").trim()) && !first.isManualProfile;
-      const secondFromSite = Boolean(String(second.email || "").trim()) && !second.isManualProfile;
-      if (firstFromSite !== secondFromSite) return firstFromSite ? -1 : 1;
-      if (firstFromSite && secondFromSite) {
-        return new Date(second.lastReservation) - new Date(first.lastReservation) || second.count - first.count;
-      }
-      return second.periodCount - first.periodCount || second.count - first.count;
-    }
+  const visibleCustomersForPeriod = customersMode === "website"
+    ? customersForPeriod.filter((customer) => Boolean(String(customer.email || "").trim()) && !customer.isManualProfile)
+    : customersForPeriod;
 
+  const sortedCustomers = [...visibleCustomersForPeriod].sort((first, second) => {
     if (customerSort === "new") {
       return new Date(second.firstReservation) - new Date(first.firstReservation);
     }
@@ -7088,10 +7116,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return second.periodCount - first.periodCount || second.count - first.count;
   });
 
-  const newCustomersCount = customers.filter((customer) =>
+  const visibleNewCustomersCount = visibleCustomersForPeriod.filter((customer) =>
     isInCustomerPeriod(customer.firstReservation)
   ).length;
-  const totalCustomerVisits = customersForPeriod.reduce((total, customer) => total + customer.periodCount, 0);
+  const totalCustomerVisits = visibleCustomersForPeriod.reduce((total, customer) => total + customer.periodCount, 0);
 
   const a = adminText[adminLanguage] || adminText.bg;
 
@@ -10577,6 +10605,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
                       {[
                         ["customers", adminLocalText(adminLanguage, "Клиенти", "Customers", "Клиенты")],
+                        ["website", adminLocalText(adminLanguage, "От сайта", "From website", "С сайта")],
                         ["blacklist", "Blacklist"],
                       ].map(([key, label]) => (
                         <button
@@ -10788,13 +10817,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <div className="text-xs uppercase tracking-[0.22em] text-[#f2d39a]/70">
                           {adminLocalText(adminLanguage, "Клиенти", "Customers", "Клиенты")}
                         </div>
-                        <div className="mt-2 text-3xl font-semibold text-[#fff4df]">{customersForPeriod.length}</div>
+                        <div className="mt-2 text-3xl font-semibold text-[#fff4df]">{visibleCustomersForPeriod.length}</div>
                       </div>
                       <div className="rounded-3xl border border-emerald-300/18 bg-emerald-400/10 p-5">
                         <div className="text-xs uppercase tracking-[0.22em] text-emerald-100/70">
                           {adminLocalText(adminLanguage, "Нови клиенти", "New customers", "Новые клиенты")}
                         </div>
-                        <div className="mt-2 text-3xl font-semibold text-emerald-100">{newCustomersCount}</div>
+                        <div className="mt-2 text-3xl font-semibold text-emerald-100">{visibleNewCustomersCount}</div>
                       </div>
                       <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-5">
                         <div className="text-xs uppercase tracking-[0.22em] text-stone-500">
@@ -10837,7 +10866,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <div className="flex flex-wrap gap-2">
                           {[
                             ["visits", adminLocalText(adminLanguage, "Най-чести", "Top visits", "Чаще всего")],
-                            ["site", adminLocalText(adminLanguage, "От сайта", "From website", "С сайта")],
                             ["new", adminLocalText(adminLanguage, "Най-нови", "Newest", "Новые")],
                             ["recent", adminLocalText(adminLanguage, "Последно дошли", "Recent", "Недавние")],
                             ["name", adminLocalText(adminLanguage, "Име", "Name", "Имя")],
@@ -10866,6 +10894,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     {sortedCustomers.map((c, index) => {
                       const expanded = expandedCustomerKey === c.key;
                       const visitsLabel = adminLocalText(adminLanguage, "посещения", "visits", "посещений");
+                      const customerReservationsToShow = c.periodReservations?.length ? c.periodReservations : c.reservations;
 
                       return (
                         <div key={c.key} className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 md:p-5">
@@ -10946,10 +10975,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
                               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                                 <div className="text-xs uppercase tracking-[0.2em] text-stone-500">
-                                  {adminLocalText(adminLanguage, "Последни резервации", "Recent reservations", "Последние резервации")}
+                                  {adminLocalText(adminLanguage, "Посещения", "Visits", "Посещения")}
                                 </div>
                                 <div className="mt-3 space-y-2">
-                                  {c.reservations.slice(0, 6).map((reservation) => {
+                                  {customerReservationsToShow.map((reservation) => {
                                     const reservationOrders = ordersByReservationId.get(Number(reservation.id)) || [];
                                     const firstOrder = reservationOrders[0];
 
@@ -10974,6 +11003,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                       </div>
                                     );
                                   })}
+                                  {customerReservationsToShow.length === 0 && (
+                                    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-stone-400">
+                                      {adminLocalText(adminLanguage, "Няма заредени посещения.", "No loaded visits.", "Нет загруженных посещений.")}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>

@@ -27,22 +27,72 @@ public class CustomersController : ControllerBase
         var customers = await _db.CustomerProfiles
             .OrderByDescending(x => x.LastReservationAtUtc)
             .ThenBy(x => x.GuestName)
-            .Select(x => new
-            {
-                x.Id,
-                x.GuestName,
-                x.Phone,
-                x.Email,
-                x.ReservationCount,
-                x.IsRegularCustomer,
-                x.BirthDate,
-                x.MarketingConsent,
-                x.FirstReservationAtUtc,
-                x.LastReservationAtUtc
-            })
             .ToListAsync();
 
-        return Ok(customers);
+        var reservations = await _db.Reservations
+            .AsNoTracking()
+            .Include(x => x.Tables)
+            .Where(x =>
+                !x.IsDeleted &&
+                !x.IsWalkIn &&
+                !x.IsNoShow &&
+                x.Status != "Cancelled" &&
+                !(x.CreatedByAdmin && (x.Phone == "admin" || x.GuestName == "Admin block")))
+            .OrderByDescending(x => x.ReservedDate)
+            .ThenByDescending(x => x.ReservedTime)
+            .ToListAsync();
+
+        var result = customers.Select(customer =>
+        {
+            var email = (customer.Email ?? string.Empty).Trim().ToLowerInvariant();
+            var phone = (customer.Phone ?? string.Empty).Trim().ToLowerInvariant();
+            var history = reservations
+                .Where(reservation =>
+                {
+                    var reservationEmail = (reservation.Email ?? string.Empty).Trim().ToLowerInvariant();
+                    var reservationPhone = (reservation.Phone ?? string.Empty).Trim().ToLowerInvariant();
+
+                    return (!string.IsNullOrWhiteSpace(email) && reservationEmail == email) ||
+                           (!string.IsNullOrWhiteSpace(phone) && reservationPhone == phone);
+                })
+                .Select(reservation => new
+                {
+                    reservation.Id,
+                    reservation.GuestName,
+                    reservation.Phone,
+                    reservation.Email,
+                    reservation.GuestCount,
+                    reservation.Area,
+                    reservation.ReservedDate,
+                    reservation.ReservedTime,
+                    reservation.Status,
+                    reservation.CreatedByAdmin,
+                    reservation.MarketingConsent,
+                    reservation.IsRegularCustomer,
+                    TableIds = reservation.Tables
+                        .Select(table => table.TableCode)
+                        .OrderBy(table => table)
+                        .ToList()
+                })
+                .ToList();
+
+            return new
+            {
+                customer.Id,
+                customer.GuestName,
+                customer.Phone,
+                customer.Email,
+                ReservationCount = Math.Max(customer.ReservationCount, history.Count),
+                customer.IsRegularCustomer,
+                customer.BirthDate,
+                customer.MarketingConsent,
+                customer.FirstReservationAtUtc,
+                customer.LastReservationAtUtc,
+                Reservations = history
+            };
+        });
+
+        return Ok(result);
     }
 
     [HttpPost]
