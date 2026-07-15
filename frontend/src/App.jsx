@@ -10,6 +10,32 @@ import PrivacyPage from "./pages/PrivacyPage";
 import { API_BASE_URL } from "./config/api";
 import BackToTopButton from "./components/layout/BackToTopButton";
 
+const COOKIE_CONSENT_COOKIE = "casa_cookie_consent";
+const RESERVATION_GUEST_COOKIE = "casa_reservation_guest";
+
+function getCookieValue(name) {
+  if (typeof document === "undefined") return "";
+
+  return document.cookie
+    .split("; ")
+    .find((item) => item.startsWith(`${name}=`))
+    ?.split("=")
+    .slice(1)
+    .join("=") || "";
+}
+
+function setCookieValue(name, value, maxAgeDays) {
+  if (typeof document === "undefined") return;
+
+  document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${maxAgeDays * 24 * 60 * 60}; path=/; SameSite=Lax`;
+}
+
+function deleteCookieValue(name) {
+  if (typeof document === "undefined") return;
+
+  document.cookie = `${name}=; max-age=0; path=/; SameSite=Lax`;
+}
+
 const safeReadStoredLanguage = () => {
   if (typeof window === "undefined") return "bg";
   const stored = window.localStorage.getItem("restaurant-lang");
@@ -68,6 +94,63 @@ runSanityChecks();
 
 function isInteractiveSwipeTarget(target) {
   return Boolean(target?.closest?.("input, textarea, select, button, a, [role='button']"));
+}
+
+function CookieConsentBanner({ language, onOpenPrivacy }) {
+  const [choice, setChoice] = React.useState(() => getCookieValue(COOKIE_CONSENT_COOKIE));
+
+  if (choice) return null;
+
+  const acceptCookies = () => {
+    setCookieValue(COOKIE_CONSENT_COOKIE, "accepted", 180);
+    setChoice("accepted");
+  };
+
+  const rejectCookies = () => {
+    setCookieValue(COOKIE_CONSENT_COOKIE, "rejected", 180);
+    deleteCookieValue(RESERVATION_GUEST_COOKIE);
+    setChoice("rejected");
+  };
+
+  return (
+    <div className="fixed inset-x-3 bottom-3 z-[85] mx-auto max-w-5xl rounded-[24px] border border-white/12 bg-stone-950/95 p-4 text-white shadow-2xl shadow-black/40 backdrop-blur md:bottom-5 md:p-5">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <p className="section-kicker">Casa di Fratelli</p>
+          <p className="mt-2 text-sm leading-6 text-stone-300">
+            {language === "en"
+              ? "We use cookies to remember your reservation details on this device, so the next booking form can be filled automatically."
+              : language === "ru"
+              ? "Мы используем cookies, чтобы запомнить данные резервации на этом устройстве и автоматически заполнить форму в следующий раз."
+              : "Използваме бисквитки, за да запомним данните за резервация на това устройство и следващия път формата да се попълни автоматично."}
+          </p>
+          <button
+            type="button"
+            onClick={onOpenPrivacy}
+            className="mt-2 text-sm font-semibold text-[#f2d39a] underline underline-offset-4 transition hover:text-white"
+          >
+            {language === "en" ? "Privacy Policy" : language === "ru" ? "Политика конфиденциальности" : "Политика за поверителност"}
+          </button>
+        </div>
+        <div className="grid shrink-0 gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={rejectCookies}
+            className="ghost-button rounded-2xl px-5 py-3 text-sm font-semibold"
+          >
+            {language === "en" ? "Decline" : language === "ru" ? "Отказаться" : "Отказвам"}
+          </button>
+          <button
+            type="button"
+            onClick={acceptCookies}
+            className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold"
+          >
+            {language === "en" ? "Accept" : language === "ru" ? "Принять" : "Приемам"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function AdminLogin({ onLogin }) {
@@ -1063,6 +1146,10 @@ export default function App() {
     };
   }, [currentPage]);
 
+  const cookieConsentBanner = currentPage !== "admin" ? (
+    <CookieConsentBanner language={language} onOpenPrivacy={() => setCurrentPage("privacy")} />
+  ) : null;
+
   if (currentPage === "admin") {
     if (!adminToken) {
       return (
@@ -1110,6 +1197,7 @@ export default function App() {
           onToggleTheme={toggleTheme}
         />
         <BackToTopButton />
+        {cookieConsentBanner}
       </>
     );
   }
@@ -1130,6 +1218,7 @@ export default function App() {
           onToggleTheme={toggleTheme}
         />
         <BackToTopButton />
+        {cookieConsentBanner}
       </>
     );
   }
@@ -1149,6 +1238,7 @@ export default function App() {
           onToggleTheme={toggleTheme}
         />
         <BackToTopButton />
+        {cookieConsentBanner}
       </>
     );
   }
@@ -1158,6 +1248,7 @@ export default function App() {
       <>
         <ReservationConfirmPage onBackHome={() => setCurrentPage("home")} />
         <BackToTopButton />
+        {cookieConsentBanner}
       </>
     );
   }
@@ -1167,6 +1258,7 @@ export default function App() {
       <>
         <FeedbackPage onBackHome={() => setCurrentPage("home")} />
         <BackToTopButton />
+        {cookieConsentBanner}
       </>
     );
   }
@@ -1187,6 +1279,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
       />
       <BackToTopButton />
+      {cookieConsentBanner}
     </>
   );
 }

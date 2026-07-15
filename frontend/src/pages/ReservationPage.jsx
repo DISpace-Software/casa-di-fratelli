@@ -68,6 +68,60 @@ function localText(language, bg, en, ru = bg) {
   return bg;
 }
 
+const COOKIE_CONSENT_COOKIE = "casa_cookie_consent";
+const RESERVATION_GUEST_COOKIE = "casa_reservation_guest";
+
+function getCookieValue(name) {
+  if (typeof document === "undefined") return "";
+
+  return document.cookie
+    .split("; ")
+    .find((item) => item.startsWith(`${name}=`))
+    ?.split("=")
+    .slice(1)
+    .join("=") || "";
+}
+
+function setCookieValue(name, value, maxAgeDays) {
+  if (typeof document === "undefined") return;
+
+  document.cookie = `${name}=${encodeURIComponent(value)}; max-age=${maxAgeDays * 24 * 60 * 60}; path=/; SameSite=Lax`;
+}
+
+function hasAcceptedReservationCookies() {
+  return getCookieValue(COOKIE_CONSENT_COOKIE) === "accepted";
+}
+
+function readStoredReservationGuest() {
+  if (!hasAcceptedReservationCookies()) return null;
+
+  try {
+    const rawValue = getCookieValue(RESERVATION_GUEST_COOKIE);
+    if (!rawValue) return null;
+
+    const parsed = JSON.parse(decodeURIComponent(rawValue));
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveReservationGuestCookie(data) {
+  if (!hasAcceptedReservationCookies()) return;
+
+  const payload = {
+    guestName: String(data.guestName || "").trim(),
+    phone: String(data.phone || "").trim(),
+    email: String(data.email || "").trim(),
+    birthDay: String(data.birthDay || "").trim(),
+    birthMonth: String(data.birthMonth || "").trim(),
+    marketingConsent: Boolean(data.marketingConsent),
+  };
+
+  if (!payload.guestName && !payload.phone && !payload.email) return;
+  setCookieValue(RESERVATION_GUEST_COOKIE, JSON.stringify(payload), 180);
+}
+
 function buildBirthdayDate(day, month) {
   if (!day || !month) return null;
   const daysInMonth = new Date(2000, Number(month), 0).getDate();
@@ -413,7 +467,7 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
   );
 }
 
-function OpenTerraceMap({ tables, allTables, selectedIds, onSelect, labels }) {
+function OpenTerraceMap({ tables, selectedIds, onSelect, labels }) {
   return (
     <div className="reservation-map-surface open-terrace-map relative min-h-[440px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))] shadow-inner md:min-h-[520px]">
       <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
@@ -432,7 +486,7 @@ function OpenTerraceMap({ tables, allTables, selectedIds, onSelect, labels }) {
   );
 }
 
-function GardenMap({ tables, allTables, selectedIds, onSelect, labels }) {
+function GardenMap({ tables, selectedIds, onSelect, labels }) {
   return (
     <div className="reservation-map-surface garden-map relative min-h-[560px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] shadow-inner md:min-h-[800px]">
       <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
@@ -528,7 +582,7 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
   );
 }
 
-function IndoorMap({ tables, allTables, selectedIds, onSelect, labels }) {
+function IndoorMap({ tables, selectedIds, onSelect, labels }) {
   return (
     <div className="reservation-map-surface indoor-map relative min-h-[760px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[830px]">
       <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
@@ -554,7 +608,6 @@ function IndoorMap({ tables, allTables, selectedIds, onSelect, labels }) {
 function BookingModal({
   t,
   language,
-  selectedTables,
   selectedArea,
   selectedTime,
   reservationDate,
@@ -567,9 +620,10 @@ function BookingModal({
   onOpenPrivacy,
 }) {
   const formRef = React.useRef(null);
+  const storedGuest = React.useMemo(() => readStoredReservationGuest(), []);
   const [isFormReady, setIsFormReady] = React.useState(false);
-  const [birthDay, setBirthDay] = React.useState("");
-  const [birthMonth, setBirthMonth] = React.useState("");
+  const [birthDay, setBirthDay] = React.useState(() => storedGuest?.birthDay || "");
+  const [birthMonth, setBirthMonth] = React.useState(() => storedGuest?.birthMonth || "");
   const availableBirthdayMonths = React.useMemo(
     () => getBirthdayMonthOptions(birthDay, language),
     [birthDay, language]
@@ -615,6 +669,10 @@ function BookingModal({
         formData.get("privacyConsent") === "on"
     );
   }, []);
+  React.useEffect(() => {
+    updateFormReady();
+  }, [updateFormReady]);
+
   const handleBirthDayChange = (event) => {
     const nextDay = event.target.value;
     setBirthDay(nextDay);
@@ -671,6 +729,7 @@ function BookingModal({
                 autoComplete="name"
                 enterKeyHint="next"
                 onKeyDown={focusNextField}
+                defaultValue={storedGuest?.guestName || ""}
                 className="quiet-input w-full rounded-2xl px-4 py-3"
                 placeholder={t.placeholderName}
               />
@@ -686,6 +745,7 @@ function BookingModal({
                 autoComplete="tel"
                 enterKeyHint="next"
                 onKeyDown={focusNextField}
+                defaultValue={storedGuest?.phone || ""}
                 className="quiet-input w-full rounded-2xl px-4 py-3"
                 placeholder={t.placeholderPhone}
               />
@@ -701,10 +761,22 @@ function BookingModal({
                 autoComplete="email"
                 enterKeyHint="next"
                 onKeyDown={focusNextField}
+                defaultValue={storedGuest?.email || ""}
                 className="quiet-input w-full rounded-2xl px-4 py-3"
                 placeholder={t.placeholderEmail}
               />
             </div>
+
+            {storedGuest && (
+              <div className="sm:col-span-2 rounded-2xl border border-[#c9a56a]/25 bg-[#c9a56a]/10 px-4 py-3 text-sm leading-6 text-[#f2d39a]">
+                {localText(
+                  language,
+                  "Попълнихме данните Ви от това устройство. Можете да ги промените преди изпращане.",
+                  "We filled your details from this device. You can change them before sending.",
+                  "Мы заполнили ваши данные с этого устройства. Их можно изменить перед отправкой."
+                )}
+              </div>
+            )}
 
             <div className="birthday-panel min-w-0 sm:col-span-2 rounded-[1.5rem] border border-amber-400/25 bg-amber-500/10 p-4 sm:p-5">
               <label className="mb-2 block text-sm text-amber-100">
@@ -765,7 +837,12 @@ function BookingModal({
 
             <div className="reservation-consent-card marketing-consent-card sm:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4">
               <label className="flex items-start gap-3 text-sm text-stone-300">
-                <input name="marketingConsent" type="checkbox" className="mt-1" />
+                <input
+                  name="marketingConsent"
+                  type="checkbox"
+                  defaultChecked={Boolean(storedGuest?.marketingConsent)}
+                  className="mt-1"
+                />
                 <span>
                   {localText(
                     language,
@@ -1159,6 +1236,15 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
       const requiresEmailConfirmation = Boolean(result?.requiresEmailConfirmation || result?.RequiresEmailConfirmation);
       const isReturningCustomer = Boolean(result?.isReturningCustomer || result?.IsReturningCustomer);
       const guestName = result?.guestName || result?.GuestName || payload.guestName;
+
+      saveReservationGuestCookie({
+        guestName: payload.guestName,
+        phone: payload.phone,
+        email: payload.email,
+        birthDay,
+        birthMonth,
+        marketingConsent: payload.marketingConsent,
+      });
 
       setSubmitError("");
       setSubmitSuccess(
@@ -1602,11 +1688,11 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
               <div ref={mapSectionRef}>
                 <ZoneCard title={zoneTitle} subtitle={zoneSubtitle} accent={zoneAccent}>
                   {selectedArea === "garden" ? (
-                    <GardenMap tables={visibleGardenTables} allTables={gardenTables} selectedIds={selectedIds} onSelect={handleSelect} labels={labels} />
+                    <GardenMap tables={visibleGardenTables} selectedIds={selectedIds} onSelect={handleSelect} labels={labels} />
                   ) : selectedArea === "openTerrace" ? (
-                    <OpenTerraceMap tables={visibleOpenTerraceTables} allTables={openTerraceTables} selectedIds={selectedIds} onSelect={handleSelect} labels={labels} />
+                    <OpenTerraceMap tables={visibleOpenTerraceTables} selectedIds={selectedIds} onSelect={handleSelect} labels={labels} />
                   ) : (
-                    <IndoorMap tables={visibleIndoorTables} allTables={indoorTables} selectedIds={selectedIds} onSelect={handleSelect} labels={labels} />
+                    <IndoorMap tables={visibleIndoorTables} selectedIds={selectedIds} onSelect={handleSelect} labels={labels} />
                   )}
                 </ZoneCard>
               </div>
@@ -1712,7 +1798,6 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
         <BookingModal
           t={t}
           language={language}
-          selectedTables={selectedTables}
           selectedArea={selectedArea}
           selectedTime={selectedTime}
           reservationDate={reservationDate}

@@ -77,7 +77,11 @@ const privacyPolicy = {
       },
       {
         title: "9. Бисквитки",
-        paragraphs: ["Сайтът може да използва бисквитки за подобряване на потребителското изживяване и анализ на трафика."],
+        paragraphs: [
+          "Сайтът може да използва бисквитки за подобряване на потребителското изживяване.",
+          "След Вашето съгласие можем да запомним на това устройство данните, които въвеждате във формата за резервация (име, телефон, имейл, ден и месец на рожден ден и маркетингово съгласие), за да бъдат попълнени автоматично при следваща резервация.",
+          "Можете да откажете бисквитките от банера или да ги изтриете от настройките на браузъра си.",
+        ],
       },
       {
         title: "10. Трети страни",
@@ -178,8 +182,9 @@ const privacyPolicy = {
       {
         title: "9. Cookies",
         paragraphs: [
-          "Our website may use cookies to enhance user experience and analyze traffic.",
-          "You can control cookies through your browser settings.",
+          "Our website may use cookies to enhance user experience.",
+          "After your consent, we may remember on this device the details you enter in the reservation form (name, phone, email, birthday day and month, and marketing consent), so they can be filled automatically for a future booking.",
+          "You can decline cookies from the banner or delete them through your browser settings.",
         ],
       },
       {

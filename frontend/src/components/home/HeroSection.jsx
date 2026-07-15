@@ -6,7 +6,7 @@ function localText(language, bg, en, ru = bg) {
   return bg;
 }
 
-export default function HeroSection({ t, onOpenReservation, onOpenMenu, language }) {
+export default function HeroSection({ t, language }) {
   const [deliveryOpen, setDeliveryOpen] = React.useState(false);
   const directPhone = "0888218318";
   const takeawayUrl = "https://www.takeaway.com/bg/menu/jorjio-grill-pizzadzordzio-gril-pica?serviceType=delivery&utm_source=google&utm_medium=organic&utm_campaign=foodorder";
