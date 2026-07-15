@@ -28,7 +28,9 @@ builder.Services.AddScoped<PushNotificationService>();
 builder.Services.AddScoped<InventoryConsumptionService>();
 builder.Services.AddScoped<InventoryRecipeSeedService>();
 builder.Services.AddScoped<MarketingCampaignService>();
+builder.Services.AddScoped<BackupExportService>();
 builder.Services.AddHostedService<MarketingCampaignHostedService>();
+builder.Services.AddHostedService<BackupHostedService>();
 
 var databaseConnectionString = ResolveDatabaseConnectionString(builder.Configuration);
 builder.Services.AddDbContext<AppDbContext>(options =>

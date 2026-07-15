@@ -14,11 +14,13 @@ public class MaintenanceController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly AuditService _audit;
+    private readonly BackupExportService _backups;
 
-    public MaintenanceController(AppDbContext db, AuditService audit)
+    public MaintenanceController(AppDbContext db, AuditService audit, BackupExportService backups)
     {
         _db = db;
         _audit = audit;
+        _backups = backups;
     }
 
     [HttpPost("clear-reservations-and-orders")]
@@ -293,6 +295,63 @@ public class MaintenanceController : ControllerBase
             .ToListAsync();
 
         return Ok(orders);
+    }
+
+    [HttpGet("backups")]
+    public async Task<IActionResult> ListBackups()
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanManageBackups(admin?.Role))
+            return Forbid();
+
+        return Ok(await _backups.ListBackupsAsync());
+    }
+
+    [HttpGet("backups/settings")]
+    public async Task<IActionResult> GetBackupSettings()
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanManageBackups(admin?.Role))
+            return Forbid();
+
+        return Ok(await _backups.GetScheduleSettingsAsync());
+    }
+
+    [HttpPut("backups/settings")]
+    public async Task<IActionResult> SaveBackupSettings([FromBody] BackupScheduleSettings settings)
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanManageBackups(admin?.Role))
+            return Forbid();
+
+        var saved = await _backups.SaveScheduleSettingsAsync(settings);
+        await _audit.RecordAsync(HttpContext, "save-settings", "DataBackup", "schedule", after: saved);
+        return Ok(saved);
+    }
+
+    [HttpPost("backups")]
+    public async Task<IActionResult> CreateBackup()
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanManageBackups(admin?.Role))
+            return Forbid();
+
+        var backup = await _backups.CreateBackupFileAsync("manual");
+        await _audit.RecordAsync(HttpContext, "create", "DataBackup", backup.FileName, after: backup);
+        return Ok(backup);
+    }
+
+    [HttpGet("backups/{fileName}")]
+    public IActionResult DownloadBackup(string fileName)
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanManageBackups(admin?.Role))
+            return Forbid();
+
+        var path = _backups.GetBackupPath(fileName);
+        if (path == null) return NotFound();
+
+        return PhysicalFile(path, "application/json", Path.GetFileName(path));
     }
 
     private IQueryable<Reservation> ApplyReservationPeriod(IQueryable<Reservation> query, MaintenanceDeleteRequest request)

@@ -28,6 +28,7 @@ frontend/.cache/
 # ======================
 backend/**/bin/
 backend/**/obj/
+backend/**/DataBackups/
 
 # ======================
 # IDE / Editors

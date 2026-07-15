@@ -23,6 +23,14 @@ Optional:
 - tenant-specific connection strings for future restaurants;
 - VAPID keys for push notifications;
 - product tier settings.
+- `BACKUP_DIRECTORY` pointing to a persistent disk or external mount for weekly readable customer/reservation backup files.
+
+## Backups
+
+Keep database-provider PostgreSQL backups enabled as the primary recovery layer.
+The admin Maintenance page also creates readable JSON exports of customers and reservations.
+Manual exports are downloadable immediately, and the API can create automatic exports on the schedule configured in the admin Maintenance page.
+In production, set `BACKUP_DIRECTORY` to persistent storage; the default local `DataBackups` folder is only a fallback.
 
 ## Deploy Safety
 
@@ -40,4 +48,3 @@ After deployment:
 - create a test reservation;
 - check Render logs for migration errors;
 - confirm frontend CORS domain.
-

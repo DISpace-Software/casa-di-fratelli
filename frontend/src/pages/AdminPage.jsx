@@ -3588,6 +3588,15 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
   const [fromDate, setFromDate] = React.useState("");
   const [toDate, setToDate] = React.useState("");
   const [archiveRecords, setArchiveRecords] = React.useState([]);
+  const [backupFiles, setBackupFiles] = React.useState([]);
+  const [backupSettings, setBackupSettings] = React.useState({
+    enabled: true,
+    intervalDays: 7,
+    runAtLocalTime: "03:00",
+    timeZoneId: "Europe/Sofia",
+  });
+  const [backupBusy, setBackupBusy] = React.useState(false);
+  const [backupSettingsBusy, setBackupSettingsBusy] = React.useState(false);
   const [notice, setNotice] = React.useState("");
   const [error, setError] = React.useState("");
 
@@ -3619,6 +3628,21 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
       date: "Дата",
       order: "Поръчка",
       total: "Общо",
+      backups: "Резервни копия",
+      backupSubtitle: "Четим JSON файл с клиентска база и всички резервации. Автоматично се създава нов файл веднъж седмично.",
+      createBackup: "Създай копие",
+      refreshBackups: "Обнови списъка",
+      download: "Изтегли",
+      noBackups: "Още няма създадени резервни копия.",
+      backupCreated: "Резервното копие е създадено.",
+      backupAdvice: "За максимална сигурност пазете тези файлове извън сървъра и включете managed PostgreSQL backups при хостинг доставчика.",
+      automaticBackups: "Автоматични копия",
+      enabled: "Включени",
+      intervalDays: "Период в дни",
+      runAt: "Час на създаване",
+      saveSchedule: "Запази графика",
+      scheduleSaved: "Графикът за резервни копия е запазен.",
+      scheduleHint: "Системата проверява графика на всеки 15 минути. Часът е по Europe/Sofia.",
       warning: "Това действие ще скрие избраните записи. Те могат да бъдат възстановени само от Admin, Собственик или Програмист.",
     },
     en: {
@@ -3648,6 +3672,21 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
       date: "Date",
       order: "Order",
       total: "Total",
+      backups: "Backups",
+      backupSubtitle: "Readable JSON file with customer database and all reservations. A new file is created automatically once per week.",
+      createBackup: "Create backup",
+      refreshBackups: "Refresh list",
+      download: "Download",
+      noBackups: "No backups have been created yet.",
+      backupCreated: "Backup was created.",
+      backupAdvice: "For maximum safety, keep these files outside the server and enable managed PostgreSQL backups with the hosting provider.",
+      automaticBackups: "Automatic backups",
+      enabled: "Enabled",
+      intervalDays: "Period in days",
+      runAt: "Run time",
+      saveSchedule: "Save schedule",
+      scheduleSaved: "Backup schedule was saved.",
+      scheduleHint: "The system checks the schedule every 15 minutes. Time is Europe/Sofia.",
       warning: "This action will hide selected records. They can be restored only by Admin, Owner, or Developer.",
     },
   }[adminLanguage] || {
@@ -3677,6 +3716,21 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
     date: "Дата",
     order: "Заказ",
     total: "Итого",
+    backups: "Резервные копии",
+    backupSubtitle: "Читаемый JSON-файл с базой клиентов и всеми резервациями. Новый файл автоматически создаётся раз в неделю.",
+    createBackup: "Создать копию",
+    refreshBackups: "Обновить список",
+    download: "Скачать",
+    noBackups: "Резервные копии ещё не созданы.",
+    backupCreated: "Резервная копия создана.",
+    backupAdvice: "Для максимальной надёжности храните эти файлы вне сервера и включите managed PostgreSQL backups у хостинг-провайдера.",
+    automaticBackups: "Автоматические копии",
+    enabled: "Включены",
+    intervalDays: "Период в днях",
+    runAt: "Время создания",
+    saveSchedule: "Сохранить график",
+    scheduleSaved: "График резервных копий сохранён.",
+    scheduleHint: "Система проверяет график каждые 15 минут. Время Europe/Sofia.",
     warning: "Это действие скроет выбранные записи. Их смогут восстановить только Admin, Собственник или Разработчик.",
   };
 
@@ -3704,6 +3758,116 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
     setArchiveKind(safeMode === "reservations" ? "upcoming" : "active");
     setArchiveRecords([]);
   }, [safeMode]);
+
+  const loadBackups = React.useCallback(async () => {
+    setError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/maintenance/backups`);
+    if (!response.ok) {
+      setError(await readErrorMessage(response, "Failed to load backups."));
+      return;
+    }
+
+    const data = await response.json();
+    setBackupFiles(Array.isArray(data) ? data : []);
+  }, [adminFetch]);
+
+  const loadBackupSettings = React.useCallback(async () => {
+    setError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/maintenance/backups/settings`);
+    if (!response.ok) {
+      setError(await readErrorMessage(response, "Failed to load backup settings."));
+      return;
+    }
+
+    const data = await response.json();
+    setBackupSettings({
+      enabled: Boolean(data.enabled ?? data.Enabled ?? true),
+      intervalDays: Number(data.intervalDays ?? data.IntervalDays ?? 7),
+      runAtLocalTime: data.runAtLocalTime || data.RunAtLocalTime || "03:00",
+      timeZoneId: data.timeZoneId || data.TimeZoneId || "Europe/Sofia",
+    });
+  }, [adminFetch]);
+
+  React.useEffect(() => {
+    loadBackups();
+    loadBackupSettings();
+  }, [loadBackups, loadBackupSettings]);
+
+  async function downloadBackup(fileName) {
+    setError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/maintenance/backups/${encodeURIComponent(fileName)}`);
+    if (!response.ok) {
+      setError(await readErrorMessage(response, "Failed to download backup."));
+      return;
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
+  async function createBackup() {
+    setNotice("");
+    setError("");
+    setBackupBusy(true);
+
+    try {
+      const response = await adminFetch(`${API_BASE_URL}/api/maintenance/backups`, { method: "POST" });
+      if (!response.ok) {
+        setError(await readErrorMessage(response, "Failed to create backup."));
+        return;
+      }
+
+      const backup = await response.json();
+      setNotice(text.backupCreated);
+      await loadBackups();
+      if (backup?.fileName || backup?.FileName) {
+        await downloadBackup(backup.fileName || backup.FileName);
+      }
+    } finally {
+      setBackupBusy(false);
+    }
+  }
+
+  async function saveBackupSettings() {
+    setNotice("");
+    setError("");
+    setBackupSettingsBusy(true);
+
+    try {
+      const response = await adminFetch(`${API_BASE_URL}/api/maintenance/backups/settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...backupSettings,
+          intervalDays: Number(backupSettings.intervalDays || 7),
+          timeZoneId: backupSettings.timeZoneId || "Europe/Sofia",
+        }),
+      });
+
+      if (!response.ok) {
+        setError(await readErrorMessage(response, "Failed to save backup settings."));
+        return;
+      }
+
+      const data = await response.json();
+      setBackupSettings({
+        enabled: Boolean(data.enabled ?? data.Enabled ?? true),
+        intervalDays: Number(data.intervalDays ?? data.IntervalDays ?? 7),
+        runAtLocalTime: data.runAtLocalTime || data.RunAtLocalTime || "03:00",
+        timeZoneId: data.timeZoneId || data.TimeZoneId || "Europe/Sofia",
+      });
+      setNotice(text.scheduleSaved);
+    } finally {
+      setBackupSettingsBusy(false);
+    }
+  }
 
   async function loadArchive(kindOverride = archiveKind) {
     setError("");
@@ -3800,6 +3964,113 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
             {error || notice}
           </div>
         )}
+
+        <div className="rounded-[28px] border border-[#c9a56a]/20 bg-[#c9a56a]/10 p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="section-kicker">{text.backups}</div>
+              <h3 className="mt-2 text-2xl font-semibold text-[#fff4df]">{text.backups}</h3>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-white/58">{text.backupSubtitle}</p>
+              <p className="mt-2 max-w-3xl text-xs leading-5 text-[#f2d39a]/80">{text.backupAdvice}</p>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={createBackup}
+                disabled={backupBusy}
+                className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold disabled:opacity-50"
+              >
+                {backupBusy ? "..." : text.createBackup}
+              </button>
+              <button
+                type="button"
+                onClick={loadBackups}
+                className="ghost-button rounded-2xl px-5 py-3 text-sm font-semibold"
+              >
+                {text.refreshBackups}
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-semibold text-[#fff4df]">{text.automaticBackups}</div>
+                <div className="mt-1 text-xs text-white/45">{text.scheduleHint}</div>
+              </div>
+              <label className="flex items-center gap-3 text-sm text-white/70">
+                <input
+                  type="checkbox"
+                  checked={backupSettings.enabled}
+                  onChange={(event) => setBackupSettings((prev) => ({ ...prev, enabled: event.target.checked }))}
+                />
+                {text.enabled}
+              </label>
+            </div>
+            <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/40">{text.intervalDays}</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={backupSettings.intervalDays}
+                  onChange={(event) => setBackupSettings((prev) => ({ ...prev, intervalDays: event.target.value }))}
+                  className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                />
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/40">{text.runAt}</span>
+                <input
+                  type="time"
+                  value={backupSettings.runAtLocalTime}
+                  onChange={(event) => setBackupSettings((prev) => ({ ...prev, runAtLocalTime: event.target.value }))}
+                  className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={saveBackupSettings}
+                disabled={backupSettingsBusy}
+                className="luxury-button self-end rounded-2xl px-5 py-3 text-sm font-semibold disabled:opacity-50"
+              >
+                {backupSettingsBusy ? "..." : text.saveSchedule}
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-2">
+            {backupFiles.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/50">
+                {text.noBackups}
+              </div>
+            ) : (
+              backupFiles.slice(0, 6).map((backup) => {
+                const fileName = backup.fileName || backup.FileName;
+                const createdAt = backup.createdAtUtc || backup.CreatedAtUtc;
+                const sizeBytes = backup.sizeBytes ?? backup.SizeBytes ?? 0;
+
+                return (
+                  <div key={fileName} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-[#fff4df]">{fileName}</div>
+                      <div className="mt-1 text-xs text-white/45">
+                        {createdAt ? new Date(createdAt).toLocaleString() : "—"} · {(Number(sizeBytes) / 1024).toFixed(1)} KB
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => downloadBackup(fileName)}
+                      className="ghost-button rounded-xl px-4 py-2 text-xs font-semibold"
+                    >
+                      {text.download}
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
 
         <div className="flex flex-wrap gap-2 rounded-[26px] border border-white/10 bg-black/20 p-2">
           {[

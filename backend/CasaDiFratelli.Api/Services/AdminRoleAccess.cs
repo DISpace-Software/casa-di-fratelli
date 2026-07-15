@@ -78,4 +78,9 @@ public static class AdminRoleAccess
     {
         return Normalize(role) is Administrator or Owner or Developer;
     }
+
+    public static bool CanManageBackups(string? role)
+    {
+        return Normalize(role) is Administrator or Owner or Developer;
+    }
 }
