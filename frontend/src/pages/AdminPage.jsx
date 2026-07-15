@@ -832,7 +832,6 @@ const emptyHallBlock = {
 };
 
 const indoorTableIds = tableIdsByArea.indoor;
-const gardenTableIds = tableIdsByArea.garden;
 const areaTableIds = tableIdsByArea;
 const gardenSpecialIds = defaultGardenTables.filter((table) => table.special).map((table) => table.id);
 
@@ -941,35 +940,6 @@ function getMenuCategoryGroups(items, language = "bg") {
 
 function canUseAdminTableSelection(area, tableIds, options = {}) {
   return canUseAdminTableSelectionRule(area, tableIds, { gardenSpecialIds, ...options });
-}
-
-function getTableSelectionCapacity(area, tableIds) {
-  return getAreaTablesCapacity(area, tableIds, tablesByArea[area] || []);
-}
-
-function getTableSelectionError(area, tableIds, guestCount, language) {
-  const requestedGuests = Number(guestCount || 0);
-
-  if (requestedGuests <= 0 || tableIds.length === 0) return "";
-
-  const isValidShape = canUseAdminTableSelectionRule(area, tableIds, {
-    gardenSpecialIds,
-    requiredSeats: requestedGuests,
-    allowPartial: false,
-  });
-
-  if (isValidShape) return "";
-
-  const capacity = getTableSelectionCapacity(area, tableIds);
-  if (capacity < requestedGuests) {
-    return language === "bg"
-      ? `Избраните маси имат капацитет ${capacity}, а резервацията е за ${requestedGuests} гости.`
-      : `Selected tables fit ${capacity}, but the reservation is for ${requestedGuests} guests.`;
-  }
-
-  return language === "bg"
-    ? "Избраната комбинация от маси не е логична за тази зона."
-    : "Selected table combination is not valid for this area.";
 }
 
 function getContiguousSlices(group) {
@@ -1106,7 +1076,11 @@ function TableChipSelector({
   bestTableIds = new Set(),
   unrestrictedSelection = false,
 }) {
-  const tableIds = tableIdsOverride || areaTableIds[area] || indoorTableIds;
+  const tableIds = tableIdsOverride || areaTables?.map((table) => table.id) || areaTableIds[area] || indoorTableIds;
+  const selectionGardenSpecialIds =
+    area === "garden" && areaTables
+      ? areaTables.filter((table) => table.special).map((table) => table.id)
+      : null;
   const visibleTableIds = hideUnavailable
     ? tableIds.filter((tableId) => selectedTableIds.includes(tableId) || !unavailableTableIds.has(tableId))
     : tableIds;
@@ -1126,6 +1100,7 @@ function TableChipSelector({
               requiredSeats,
               allowPartial: true,
               ...(areaTables ? { areaTables } : {}),
+              ...(selectionGardenSpecialIds ? { gardenSpecialIds: selectionGardenSpecialIds } : {}),
             })));
 
         return (
@@ -5063,6 +5038,33 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     if (!isProVersion && ["Waiter", "Kitchen", "Bar"].includes(role.value)) return false;
     return currentAdminRole === "Developer" || role.value !== "Developer" || !hasDeveloperAdmin;
   });
+  const activeTablesByArea = React.useMemo(() => {
+    const areas = ["indoor", "garden", "openTerrace"];
+    const next = {};
+
+    areas.forEach((area) => {
+      const savedTables = tableLayout
+        .filter((item) => item.area === area && item.isActive)
+        .map(normalizeLayoutItem)
+        .sort((first, second) => first.id.localeCompare(second.id, undefined, { numeric: true }));
+
+      next[area] = savedTables.length
+        ? savedTables
+        : (tablesByArea[area] || []).map((table) => normalizeLayoutItem({ ...table, area, isActive: true }));
+    });
+
+    next.all = areas.flatMap((area) => next[area]);
+    return next;
+  }, [tableLayout]);
+  const activeTableIdsByArea = React.useMemo(
+    () => ({
+      indoor: activeTablesByArea.indoor.map((table) => table.id),
+      garden: activeTablesByArea.garden.map((table) => table.id),
+      openTerrace: activeTablesByArea.openTerrace.map((table) => table.id),
+      all: activeTablesByArea.all.map((table) => table.id),
+    }),
+    [activeTablesByArea]
+  );
 
   const withAdminToken = React.useCallback(
     (options = {}) => ({
@@ -6357,7 +6359,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         reservedDate: hallBlock.reservedDate,
         area: hallBlock.area,
         times,
-        tableIds: areaTableIds[hallBlock.area] || indoorTableIds,
+        tableIds: activeTableIdsByArea[hallBlock.area] || activeTableIdsByArea.indoor,
         note: hallBlock.note,
       }),
     });
@@ -6774,14 +6776,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   function isInStatsPeriod(dateValue) {
     if (!dateValue) return false;
 
+    const normalizedDate = String(dateValue).slice(0, 10);
+    const today = formatLocalDate(new Date());
+    if (statsPeriod === "today") {
+      return normalizedDate === today;
+    }
+
     const reservationDate = new Date(dateValue);
     const now = new Date();
 
     const start = new Date(now);
-
-    if (statsPeriod === "today") {
-      start.setHours(0, 0, 0, 0);
-    }
 
     if (statsPeriod === "week") {
       start.setDate(now.getDate() - 7);
@@ -6817,6 +6821,22 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return minutes !== null && minutes >= 0;
   }
 
+  function isUpcomingDashboardReservation(reservation) {
+    if (!["Pending", "Approved"].includes(reservation.status)) return false;
+    if (reservation.isNoShow || reservation.isArrived) return false;
+
+    const minutes = getReservationMinutesFromNow(reservation);
+    return minutes !== null && minutes >= 0;
+  }
+
+  function isPastDashboardReservation(reservation) {
+    const minutes = getReservationMinutesFromNow(reservation);
+    return reservation.isNoShow ||
+      reservation.isArrived ||
+      ["Cancelled", "Released"].includes(reservation.status) ||
+      (minutes !== null && minutes < 0);
+  }
+
   function isOrderInStatsPeriod(order) {
     const createdAt = order.createdAtUtc ? new Date(order.createdAtUtc) : null;
     if (!createdAt || Number.isNaN(createdAt.getTime())) return false;
@@ -6826,6 +6846,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const statsReservations = reservations.filter((r) =>
     isInStatsPeriod(r.reservedDate)
   );
+  const statsUpcomingReservations = statsReservations.filter(isUpcomingDashboardReservation);
+  const statsPastReservations = statsReservations.filter(isPastDashboardReservation);
 
   const reportsReservations = statsReservations.filter(isReportableVisit);
   const reportsOrders = diningOrders.filter((order) => order.status !== "Cancelled" && isOrderInStatsPeriod(order));
@@ -7232,19 +7254,19 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       value: "indoor",
       title: adminLanguage === "bg" ? "Зала / непушачи" : "Hall / non-smoking",
       subtitle: adminLanguage === "bg" ? "Тиха вътрешна зала" : "Quiet indoor hall",
-      meta: `${indoorTableIds.length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
+      meta: `${activeTableIdsByArea.indoor.length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
     },
     {
       value: "garden",
       title: adminLanguage === "bg" ? "Покрита тераса" : "Covered terrace",
       subtitle: adminLanguage === "bg" ? "Зона за пушачи" : "Smoking area",
-      meta: `${gardenTableIds.length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
+      meta: `${activeTableIdsByArea.garden.length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
     },
     {
       value: "openTerrace",
       title: adminLanguage === "bg" ? "Открита тераса" : "Open terrace",
       subtitle: adminLanguage === "bg" ? "Навън, компактна зона" : "Outdoor compact area",
-      meta: `4 ${adminLanguage === "bg" ? "маси" : "tables"}`,
+      meta: `${activeTableIdsByArea.openTerrace.length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
     },
   ];
   const hallBlockAreaOptions = [
@@ -7252,7 +7274,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       value: "all",
       title: adminLanguage === "bg" ? "Целият ресторант" : "Whole restaurant",
       subtitle: adminLanguage === "bg" ? "Всички зали и тераси" : "All halls and terraces",
-      meta: `${areaTableIds.all.length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
+      meta: `${activeTableIdsByArea.all.length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
     },
     ...reservationAreaOptions,
   ];
@@ -7553,20 +7575,52 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     activeTab === "profile"
       ? (adminLanguage === "bg" ? "Моят профил" : "My profile")
       : tabs.find(([key]) => key === activeTab)?.[1] || a.appTitle;
-  const upcomingDashboardReservations = reservations
-    .filter((reservation) => {
-      if (!["Pending", "Approved"].includes(reservation.status)) return false;
-      if (reservation.isNoShow || reservation.isArrived) return false;
-
-      const minutes = getReservationMinutesFromNow(reservation);
-      return minutes !== null && minutes >= 0;
-    })
+  const todayDashboardReservations = reservations
+    .filter((reservation) => reservation.reservedDate === formatLocalDate(new Date()))
+    .sort((first, second) => first.reservedTime.localeCompare(second.reservedTime, undefined, { numeric: true }));
+  const upcomingDashboardReservations = (statsPeriod === "today" ? todayDashboardReservations : reservations)
+    .filter(isUpcomingDashboardReservation)
     .sort((first, second) => {
       const firstMinutes = getReservationMinutesFromNow(first) ?? 999999;
       const secondMinutes = getReservationMinutesFromNow(second) ?? 999999;
       return firstMinutes - secondMinutes;
     })
     .slice(0, 5);
+  const pastDashboardReservations = todayDashboardReservations
+    .filter(isPastDashboardReservation)
+    .sort((first, second) => second.reservedTime.localeCompare(first.reservedTime, undefined, { numeric: true }))
+    .slice(0, 5);
+  const dashboardReservationSections = statsPeriod === "today"
+    ? [
+        {
+          key: "all-today",
+          title: adminLanguage === "bg" ? "Всички резервации днес" : "All reservations today",
+          empty: adminLanguage === "bg" ? "Няма резервации за днес." : "No reservations for today.",
+          items: todayDashboardReservations,
+        },
+        {
+          key: "upcoming-today",
+          title: adminLanguage === "bg" ? "Чакащи / предстоящи" : "Pending / upcoming",
+          empty: adminLanguage === "bg" ? "Няма предстоящи резервации за днес." : "No upcoming reservations for today.",
+          items: upcomingDashboardReservations,
+        },
+        {
+          key: "past-today",
+          title: adminLanguage === "bg" ? "Изминали" : "Past",
+          empty: adminLanguage === "bg" ? "Няма изминали резервации за днес." : "No past reservations for today.",
+          items: pastDashboardReservations,
+        },
+      ]
+    : [
+        {
+          key: "upcoming",
+          title: adminLanguage === "bg" ? "Следващите 5 резервации" : "Next 5 reservations",
+          empty: adminLanguage === "bg"
+            ? "Няма предстоящи резервации за показване."
+            : "No upcoming reservations to show.",
+          items: upcomingDashboardReservations,
+        },
+      ];
   const recentDashboardOrders = diningOrders
     .filter((order) => !["Done", "Cancelled"].includes(order.status))
     .slice(0, 5);
@@ -7679,10 +7733,21 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               ))}
             </div>
 
-            <div className={`mb-8 grid gap-4 ${isOperationalRole ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
+            <div className={`mb-8 grid gap-4 ${isOperationalRole ? "md:grid-cols-2" : isProVersion ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
               {!isOperationalRole && <StatCard label={a.stats.allReservations} value={statsReservations.length} />}
+              {!isOperationalRole && (
+                <StatCard
+                  label={statsPeriod === "today" ? (adminLanguage === "bg" ? "Чакащи" : "Upcoming") : a.stats.pending}
+                  value={statsPeriod === "today" ? statsUpcomingReservations.length : pendingCount}
+                />
+              )}
+              {!isOperationalRole && (
+                <StatCard
+                  label={adminLanguage === "bg" ? "Изминали" : "Past"}
+                  value={statsPastReservations.length}
+                />
+              )}
               {isProVersion && <StatCard label={a.stats.orders} value={diningOrders.length} />}
-              {!isOperationalRole && <StatCard label={a.stats.pending} value={pendingCount} />}
             </div>
 
             <div className="mb-8 grid gap-4 xl:grid-cols-2">
@@ -7747,7 +7812,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       {adminLanguage === "bg" ? "Резервации" : "Reservations"}
                     </div>
                     <h2 className="mt-2 text-2xl font-semibold text-[#fff4df]">
-                      {adminLanguage === "bg" ? "Следващите 5 резервации" : "Next 5 reservations"}
+                      {statsPeriod === "today"
+                        ? (adminLanguage === "bg" ? "Днешни резервации" : "Today's reservations")
+                        : (adminLanguage === "bg" ? "Следващите 5 резервации" : "Next 5 reservations")}
                     </h2>
                   </div>
                   <button
@@ -7759,44 +7826,58 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   </button>
                 </div>
 
-                {upcomingDashboardReservations.length === 0 ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/55">
-                    {adminLanguage === "bg"
-                      ? "Няма предстоящи резервации за показване."
-                      : "No upcoming reservations to show."}
-                  </div>
-                ) : (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {upcomingDashboardReservations.map((reservation) => (
-                      <button
-                        key={reservation.id}
-                        type="button"
-                        onClick={() => {
-                          setExpandedId(reservation.id);
-                          setSearch("");
-                          setStatusFilter("All");
-                          setActiveTab("reservations");
-                        }}
-                        className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <span className="min-w-0 truncate text-base font-semibold text-[#fff4df]">
-                            {reservation.guestName}
-                          </span>
-                          <span className="shrink-0 rounded-full border border-[#f2d39a]/20 bg-[#c9a56a]/12 px-2.5 py-1 text-xs font-semibold text-[#f2d39a]">
-                            {reservation.reservedTime}
+                <div className="grid gap-5">
+                  {dashboardReservationSections.map((section) => (
+                    <section key={section.key}>
+                      {statsPeriod === "today" && (
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-[#f2d39a]">
+                            {section.title}
+                          </h3>
+                          <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/55">
+                            {section.items.length}
                           </span>
                         </div>
-                        <div className="mt-3 text-xs leading-5 text-white/50">
-                          {reservation.reservedDate} · {reservation.guestCount} {a.liveMap.guests}
+                      )}
+                      {section.items.length === 0 ? (
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm text-white/55">
+                          {section.empty}
                         </div>
-                        <div className="mt-1 text-xs text-white/40">
-                          {a.liveMap.table} {reservation.tableIds.join(", ")}
+                      ) : (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {section.items.map((reservation) => (
+                            <button
+                              key={`${section.key}-${reservation.id}`}
+                              type="button"
+                              onClick={() => {
+                                setExpandedId(reservation.id);
+                                setSearch("");
+                                setStatusFilter("All");
+                                setActiveTab("reservations");
+                              }}
+                              className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <span className="min-w-0 truncate text-base font-semibold text-[#fff4df]">
+                                  {reservation.guestName}
+                                </span>
+                                <span className="shrink-0 rounded-full border border-[#f2d39a]/20 bg-[#c9a56a]/12 px-2.5 py-1 text-xs font-semibold text-[#f2d39a]">
+                                  {reservation.reservedTime}
+                                </span>
+                              </div>
+                              <div className="mt-3 text-xs leading-5 text-white/50">
+                                {reservation.reservedDate} · {reservation.guestCount} {a.liveMap.guests}
+                              </div>
+                              <div className="mt-1 text-xs text-white/40">
+                                {a.liveMap.table} {reservation.tableIds.join(", ")}
+                              </div>
+                            </button>
+                          ))}
                         </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                      )}
+                    </section>
+                  ))}
+                </div>
               </div>
               )}
 
@@ -8268,6 +8349,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             unavailableTableIds={adminReservationUnavailableTableIds}
                             requiredSeats={Number(adminReservation.guestCount || 0)}
                             unrestrictedSelection
+                            tableIdsOverride={activeTableIdsByArea[adminReservation.area]}
+                            areaTables={activeTablesByArea[adminReservation.area]}
                             hideUnavailable={Boolean(adminReservation.reservedDate && adminReservation.reservedTime)}
                             emptyMessage={
                               adminLanguage === "bg"
@@ -8498,6 +8581,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   onToggle={(tableId) => toggleTableEdit(r, tableId)}
                                   requiredSeats={Number(tableEdit.guestCount || r.guestCount || 0)}
                                   unrestrictedSelection
+                                  tableIdsOverride={activeTableIdsByArea[tableEdit.area]}
+                                  areaTables={activeTablesByArea[tableEdit.area]}
                                   unavailableTableIds={getUnavailableTableIdsForSlot(
                                     reservations,
                                     tableEdit.reservedDate,
@@ -8735,6 +8820,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                         onToggle={(tableId) => toggleTableEdit(r, tableId)}
                                         requiredSeats={Number(tableEdit.guestCount || r.guestCount || 0)}
                                         unrestrictedSelection
+                                        tableIdsOverride={activeTableIdsByArea[tableEdit.area]}
+                                        areaTables={activeTablesByArea[tableEdit.area]}
                                         unavailableTableIds={getUnavailableTableIdsForSlot(
                                           reservations,
                                           tableEdit.reservedDate,
@@ -9248,7 +9335,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                       <div className="text-stone-500">{adminLanguage === "bg" ? "Маси" : "Tables"}</div>
                       <div className="mt-1 text-lg font-semibold text-[#fff4df]">
-                        {(areaTableIds[hallBlock.area] || indoorTableIds).length}
+                        {(activeTableIdsByArea[hallBlock.area] || activeTableIdsByArea.indoor).length}
                       </div>
                     </div>
                     <div className="rounded-2xl border border-[#c9a56a]/20 bg-[#c9a56a]/10 p-4">
