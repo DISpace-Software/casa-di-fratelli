@@ -19,6 +19,9 @@ import {
   getUnavailableTableIdsForSlot,
 } from "../domain/reservations/availability";
 import { getAvailableReservationTimesForDate, isPastTimeForDate } from "../domain/reservations/dateTimeRules";
+import UnifiedMapViewport from "../components/admin/UnifiedMapViewport";
+import { ADMIN_MAP_ZONES } from "../domain/adminMap/mapConfig";
+import { localPercentToWorld } from "../domain/adminMap/mapCamera";
 
 const emptyMenuItem = {
   nameBg: "",
@@ -1685,13 +1688,12 @@ function ReservationOperationsMap({
     },
     [layout]
   );
-  const fallbackLayout = (tablesByArea[selectedArea] || []).map((table) =>
-    normalizeLayoutItem({ ...table, area: selectedArea, isActive: true })
+  const areaTables = React.useMemo(
+    () => ["indoor", "garden", "openTerrace"]
+      .flatMap((area) => getActiveTablesForArea(area))
+      .sort((first, second) => first.id.localeCompare(second.id, undefined, { numeric: true })),
+    [getActiveTablesForArea]
   );
-  const hasAreaLayout = layout.some((item) => item.area === selectedArea);
-  const areaTables = (hasAreaLayout ? layout : fallbackLayout)
-    .filter((item) => item.area === selectedArea && item.isActive)
-    .sort((first, second) => first.id.localeCompare(second.id, undefined, { numeric: true }));
   const liveByTable = React.useMemo(
     () => isMapToday
       ? buildLiveReservationsByTable(reservations, now)
@@ -1699,7 +1701,9 @@ function ReservationOperationsMap({
     [isMapToday, mapDate, now, reservations]
   );
   const getReservationTables = React.useCallback(
-    (reservation) => areaTables.filter((table) => reservation.tableIds.includes(table.id)),
+    (reservation) => areaTables.filter((table) =>
+      table.area === (reservation.area || "indoor") && reservation.tableIds.includes(table.id)
+    ),
     [areaTables]
   );
   const getReservationBounds = React.useCallback(
@@ -1717,6 +1721,7 @@ function ReservationOperationsMap({
       const height = Math.max(maxY - minY, tables.length > 1 ? 8 : 0);
 
       return {
+        area: tables[0].area,
         tables,
         minX,
         maxX,
@@ -1986,7 +1991,7 @@ function ReservationOperationsMap({
 
   function openWalkInModal(table) {
     setWalkInDraft({
-      area: selectedArea,
+      area: table.area,
       tableId: table.id,
       seats: table.seats,
       guestCount: Math.min(Number(table.seats || 2), 4),
@@ -2002,7 +2007,7 @@ function ReservationOperationsMap({
       reservedDate: mapDate < todayDate ? todayDate : mapDate,
       reservedTime: nextTime,
       guestCount: Math.min(Number(table.seats || 2), 4),
-      area: selectedArea,
+      area: table.area,
       tableId: table.id,
       internalNote: "",
     });
@@ -2057,7 +2062,7 @@ function ReservationOperationsMap({
     setShowConsumption(false);
     setWalkInDraft(null);
     setTableReservationDraft(null);
-  }, [mapDate, moveReservationId, selectedArea]);
+  }, [mapDate, moveReservationId]);
 
   React.useEffect(() => {
     if (!shouldScrollMovePanel || !moveReservationId) return;
@@ -2086,7 +2091,7 @@ function ReservationOperationsMap({
   function renderTableReservationControls(table) {
     if (!onCreateReservation) return null;
 
-    const isOpen = tableReservationDraft?.tableId === table.id && tableReservationDraft?.area === selectedArea;
+    const isOpen = tableReservationDraft?.tableId === table.id && tableReservationDraft?.area === table.area;
 
     if (!isOpen) {
       return (
@@ -2241,38 +2246,39 @@ function ReservationOperationsMap({
           </div>
         </div>
       )}
-      <div className="mb-5 grid gap-2 sm:grid-cols-3">
-        {areas.map(([area, label]) => (
-          <button
-            key={area}
-            type="button"
-            onClick={() => onAreaChange(area)}
-            className={`rounded-2xl border px-4 py-3 text-left transition ${
-              selectedArea === area
-                ? "border-[#f2d39a]/70 bg-[#c9a56a]/20 text-[#fff4df]"
-                : "border-white/10 bg-black/20 text-white/65 hover:border-[#c9a56a]/35 hover:text-white"
-            }`}
-          >
-            <span className="block text-sm font-semibold">{label}</span>
-            <span className="mt-1 block text-xs text-white/45">
-              {getAreaTableCount(area)} {text.tables}
-            </span>
-          </button>
-        ))}
-      </div>
-
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,0.75fr)]">
-        <div
-          className={`admin-reservation-map-surface relative min-w-0 min-h-[600px] overflow-hidden rounded-[26px] border border-white/10 ${
-            selectedArea === "garden"
-              ? "bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] md:min-h-[820px]"
-              : selectedArea === "openTerrace"
-              ? "bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))]"
-              : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[850px]"
-          }`}
+        <div className="relative min-w-0">
+        <UnifiedMapViewport
+          zones={areas.map(([id, name]) => ({ id, name: `${name} · ${getAreaTableCount(id)} ${text.tables}` }))}
+          activeZone={selectedArea}
+          onZoneChange={onAreaChange}
+          language={language}
         >
-          <div className="admin-reservation-map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
-          <AdminMapDecor area={selectedArea} />
+          {ADMIN_MAP_ZONES.map((zone) => {
+            const label = areas.find(([area]) => area === zone.id)?.[1] || zone.id;
+            return (
+              <section
+                key={zone.id}
+                className={`absolute overflow-hidden rounded-[34px] border ${
+                  selectedArea === zone.id ? "border-[#f2d39a]/55 shadow-[0_0_55px_rgba(201,165,106,0.18)]" : "border-white/12"
+                } ${
+                  zone.id === "garden"
+                    ? "bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.98),rgba(16,18,13,0.98))]"
+                    : zone.id === "openTerrace"
+                    ? "bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),linear-gradient(180deg,rgba(30,34,25,0.98),rgba(14,16,11,0.98))]"
+                    : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),linear-gradient(180deg,rgba(39,27,21,0.98),rgba(16,12,10,0.98))]"
+                }`}
+                style={{ left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
+                aria-label={label}
+              >
+                <div className="admin-reservation-map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
+                <div className="pointer-events-none absolute left-8 top-7 z-[6] rounded-full border border-[#f2d39a]/25 bg-black/55 px-5 py-2 text-sm font-bold uppercase tracking-[0.16em] text-[#fff4df] backdrop-blur">
+                  {label}
+                </div>
+                <AdminMapDecor area={zone.id} />
+              </section>
+            );
+          })}
 
           {liveReservations.map((reservation) => {
             const bounds = getReservationBounds(reservation);
@@ -2298,9 +2304,14 @@ function ReservationOperationsMap({
                 : bounds.centerX > 72
                 ? "right-0 translate-x-0"
                 : "left-1/2 -translate-x-1/2";
+            const zone = ADMIN_MAP_ZONES.find((item) => item.id === bounds.area) || ADMIN_MAP_ZONES[0];
 
             return (
-              <React.Fragment key={`reservation-${reservation.id}`}>
+              <div
+                key={`reservation-${reservation.id}`}
+                className="pointer-events-none absolute z-20"
+                style={{ left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
+              >
                 {bounds.tables.length > 1 && (
                   <div
                     className={`pointer-events-none absolute z-[8] rounded-[28px] border shadow-[0_0_38px_rgba(201,165,106,0.16)] ${
@@ -2322,7 +2333,7 @@ function ReservationOperationsMap({
                 )}
 
                 <div
-                  className="absolute z-40 -translate-x-1/2"
+                    className="pointer-events-auto absolute z-40 -translate-x-1/2"
                   style={{ left: `${bounds.centerX}%`, top: `${bounds.labelTop}%` }}
                 >
                   <button
@@ -2423,7 +2434,7 @@ function ReservationOperationsMap({
                     </div>
                   )}
                 </div>
-              </React.Fragment>
+              </div>
             );
           })}
 
@@ -2435,7 +2446,7 @@ function ReservationOperationsMap({
             const isLate = reservation && !reservation.isArrived && minutes !== null && minutes <= -10;
             const isGroupTable = reservation?.tableIds?.length > 1;
             const isSelectedTable = selectedTableId === table.id;
-            const isMoveMode = moveReservationId === selectedReservation?.id && moveDraft.area === selectedArea;
+            const isMoveMode = moveReservationId === selectedReservation?.id && moveDraft.area === table.area;
             const isMoveSelected = isMoveMode && moveDraft.tableIds.includes(table.id);
             const isMoveUnavailable = isMoveMode && !isMoveSelected && moveUnavailableTableIds.has(table.id);
             const isMoveSuggested = isMoveMode && moveSuggestedTableIds.has(table.id);
@@ -2444,14 +2455,19 @@ function ReservationOperationsMap({
               isMoveMode &&
               !isMoveUnavailable;
             const hasOpenTableReservationForm =
-              tableReservationDraft?.tableId === table.id && tableReservationDraft?.area === selectedArea;
+              tableReservationDraft?.tableId === table.id && tableReservationDraft?.area === table.area;
             const placeTablePopoverAbove = hasOpenTableReservationForm ? table.y > 48 : table.y > 72;
+            const zone = ADMIN_MAP_ZONES.find((item) => item.id === table.area) || ADMIN_MAP_ZONES[0];
+            const worldPosition = localPercentToWorld(zone, table);
 
             return (
               <div
-                key={table.id}
+                key={`${table.area}-${table.id}`}
                 className={`absolute -translate-x-1/2 -translate-y-1/2 ${isSelectedTable ? "z-[75]" : "z-10"}`}
-                style={{ left: `${table.x}%`, top: `${table.y}%` }}
+                style={{
+                  left: worldPosition.x,
+                  top: worldPosition.y,
+                }}
               >
                 <button
                   type="button"
@@ -2460,6 +2476,7 @@ function ReservationOperationsMap({
                   data-selected={isSelectedTable || isMoveSelected ? "true" : "false"}
                   data-orders={hasTableOrders ? "true" : "false"}
                   onClick={() => {
+                    if (selectedArea !== table.area) onAreaChange(table.area);
                     if (isMoveMode && isMoveAllowed) {
                       toggleMoveTable(table.id);
                       setSelectedTableId(null);
@@ -2620,7 +2637,8 @@ function ReservationOperationsMap({
             );
           })}
 
-          {renderFloatingTableReservationForm()}
+        </UnifiedMapViewport>
+        {renderFloatingTableReservationForm()}
         </div>
 
         <div className="min-w-0 space-y-3">
