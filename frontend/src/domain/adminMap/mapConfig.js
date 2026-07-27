@@ -15,16 +15,9 @@ export const ADMIN_MAP_WORLD = Object.freeze({
 
 export const ADMIN_MAP_ZONES = Object.freeze([
   { id: "indoor", x: 110, y: 70, width: 980, height: 780 },
-  { id: "garden", x: 1110, y: 70, width: 720, height: 780 },
-  { id: "openTerrace", x: 690, y: 900, width: 820, height: 440 },
+  { id: "garden", x: 1140, y: 70, width: 720, height: 780 },
+  { id: "openTerrace", x: 540, y: 900, width: 820, height: 440 },
 ]);
-
-export const ADMIN_MAP_TERRACE_CONNECTION = Object.freeze({
-  centerX: 1100,
-  top: 850,
-  height: 50,
-  width: 128,
-});
 
 export function getAdminMapZone(area) {
   return ADMIN_MAP_ZONES.find((zone) => zone.id === area) || ADMIN_MAP_ZONES[0];
