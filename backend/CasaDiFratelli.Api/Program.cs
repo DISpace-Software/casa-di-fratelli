@@ -1,9 +1,9 @@
 using CasaDiFratelli.Api.Data;
 using CasaDiFratelli.Api.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using CasaDiFratelli.Api.Services;
 using CasaDiFratelli.Api.Services.Tenancy;
-using Npgsql;
 using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,10 +12,15 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new FlexibleDateOnlyJsonConverter());
 });
-builder.Services.Configure<TenantResolutionOptions>(builder.Configuration.GetSection("Tenancy"));
+builder.Services
+    .AddOptions<TenantResolutionOptions>()
+    .Bind(builder.Configuration.GetSection("Tenancy"))
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<TenantResolutionOptions>, TenantOptionsValidator>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<CurrentTenant>();
 builder.Services.AddScoped<ICurrentTenant>(provider => provider.GetRequiredService<CurrentTenant>());
+builder.Services.AddScoped<TenantDatabaseConnectionResolver>();
 builder.Services.AddHttpClient<EmailService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(5);
@@ -33,26 +38,31 @@ builder.Services.AddScoped<RestaurantClosureService>();
 builder.Services.AddHostedService<MarketingCampaignHostedService>();
 builder.Services.AddHostedService<BackupHostedService>();
 
-var databaseConnectionString = ResolveDatabaseConnectionString(builder.Configuration);
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(databaseConnectionString));
+builder.Services.AddDbContext<AppDbContext>((provider, options) =>
+    options.UseNpgsql(provider.GetRequiredService<TenantDatabaseConnectionResolver>().Resolve()));
 
 builder.Services.AddCors(options =>
 {
+    var tenancy = builder.Configuration.GetSection("Tenancy").Get<TenantResolutionOptions>() ?? new();
+    var allowedOrigins = tenancy.Tenants
+        .Where(tenant => tenant.IsActive)
+        .SelectMany(tenant => tenant.FrontendOrigins
+            .Concat(string.IsNullOrWhiteSpace(tenant.Domain)
+                ? Array.Empty<string>()
+                : new[] { $"https://{tenant.Domain}" }))
+        .Select(origin => origin.Trim().TrimEnd('/'))
+        .Where(origin => !string.IsNullOrWhiteSpace(origin))
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    if (builder.Environment.IsDevelopment())
+    {
+        allowedOrigins.Add("http://localhost:5173");
+        allowedOrigins.Add("http://localhost:4173");
+    }
+
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy
-            .SetIsOriginAllowed(origin =>
-            {
-                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
-                {
-                    return false;
-                }
-
-                return uri.Host.Equals("casa-di-fratelli.vercel.app", StringComparison.OrdinalIgnoreCase) ||
-                    uri.Host.Equals("casadifratelli.bg", StringComparison.OrdinalIgnoreCase) ||
-                    uri.Host.Equals("www.casadifratelli.bg", StringComparison.OrdinalIgnoreCase);
-            })
+            .SetIsOriginAllowed(origin => allowedOrigins.Contains(origin.TrimEnd('/')))
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -95,59 +105,21 @@ app.Use(async (context, next) =>
     }
 });
 
-using (var scope = app.Services.CreateScope())
+var tenantOptions = app.Services.GetRequiredService<IOptions<TenantResolutionOptions>>().Value;
+foreach (var tenant in tenantOptions.Tenants.Where(item => item.IsActive))
 {
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<CurrentTenant>().Resolve(tenant);
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
     await AdminSchemaBootstrapper.EnsureAsync(db);
     await scope.ServiceProvider.GetRequiredService<AdminAuthService>().EnsureDefaultAdminAsync();
-    _ = await MenuSeedData.SeedAsync(db);
+    if (tenant.SeedDefaultMenu)
+        _ = await MenuSeedData.SeedAsync(db);
+    app.Logger.LogInformation("Tenant database initialized. TenantId={TenantId}", tenant.Id);
 }
 
 app.MapControllers();
 app.MapMethods("{*path}", new[] { "OPTIONS" }, () => Results.Ok()).RequireCors("AllowFrontend");
 
 app.Run();
-
-static string ResolveDatabaseConnectionString(IConfiguration configuration)
-{
-    var connectionString = configuration.GetConnectionString("DefaultConnection");
-    if (!string.IsNullOrWhiteSpace(connectionString))
-    {
-        return connectionString;
-    }
-
-    var databaseUrl =
-        configuration["DATABASE_URL"] ??
-        configuration["POSTGRES_URL"] ??
-        configuration["POSTGRESQL_URL"];
-
-    if (string.IsNullOrWhiteSpace(databaseUrl))
-    {
-        throw new InvalidOperationException(
-            "Database connection is not configured. Set ConnectionStrings__DefaultConnection or DATABASE_URL.");
-    }
-
-    return ConvertPostgresUrl(databaseUrl);
-}
-
-static string ConvertPostgresUrl(string databaseUrl)
-{
-    if (!Uri.TryCreate(databaseUrl, UriKind.Absolute, out var uri))
-    {
-        return databaseUrl;
-    }
-
-    var credentials = uri.UserInfo.Split(':', 2);
-
-    return new NpgsqlConnectionStringBuilder
-    {
-        Host = uri.Host,
-        Port = uri.IsDefaultPort ? 5432 : uri.Port,
-        Database = uri.AbsolutePath.TrimStart('/'),
-        Username = credentials.Length > 0 ? Uri.UnescapeDataString(credentials[0]) : string.Empty,
-        Password = credentials.Length > 1 ? Uri.UnescapeDataString(credentials[1]) : string.Empty,
-        SslMode = SslMode.Require,
-        TrustServerCertificate = true
-    }.ConnectionString;
-}

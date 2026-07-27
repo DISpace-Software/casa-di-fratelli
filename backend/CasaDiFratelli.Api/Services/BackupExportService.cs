@@ -1,6 +1,7 @@
 using System.Text.Json;
 using CasaDiFratelli.Api.Data;
 using CasaDiFratelli.Api.Models;
+using CasaDiFratelli.Api.Services.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
 namespace CasaDiFratelli.Api.Services;
@@ -27,15 +28,18 @@ public class BackupExportService
     private readonly AppDbContext _db;
     private readonly IConfiguration _configuration;
     private readonly IWebHostEnvironment _environment;
+    private readonly ICurrentTenant _tenant;
 
     public BackupExportService(
         AppDbContext db,
         IConfiguration configuration,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        ICurrentTenant tenant)
     {
         _db = db;
         _configuration = configuration;
         _environment = environment;
+        _tenant = tenant;
     }
 
     public async Task<BackupFileInfo> CreateBackupFileAsync(string source, CancellationToken cancellationToken = default)
@@ -260,6 +264,7 @@ public class BackupExportService
             Meta = new
             {
                 Source = source,
+                TenantId = _tenant.TenantId,
                 CreatedAtUtc = createdAtUtc,
                 Format = "CasaDiFratelli.ClientsAndReservations.v1",
                 ReservationCount = reservations.Count,
@@ -277,6 +282,7 @@ public class BackupExportService
         var directory = string.IsNullOrWhiteSpace(configuredDirectory)
             ? Path.Combine(_environment.ContentRootPath, "DataBackups")
             : configuredDirectory;
+        directory = Path.Combine(directory, NormalizeSource(_tenant.TenantId));
 
         Directory.CreateDirectory(directory);
         return directory;

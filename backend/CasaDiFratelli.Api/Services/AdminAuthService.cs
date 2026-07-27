@@ -3,6 +3,8 @@ using System.Text;
 using CasaDiFratelli.Api.Data;
 using CasaDiFratelli.Api.Models;
 using Microsoft.EntityFrameworkCore;
+using CasaDiFratelli.Api.Services.Tenancy;
+using Microsoft.Extensions.Options;
 
 namespace CasaDiFratelli.Api.Services;
 
@@ -14,11 +16,19 @@ public class AdminAuthService
     private const string FallbackPassword = "CasaFratelli2026!";
     private readonly AppDbContext _db;
     private readonly IConfiguration _configuration;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly TenantResolutionOptions _tenancy;
 
-    public AdminAuthService(AppDbContext db, IConfiguration configuration)
+    public AdminAuthService(
+        AppDbContext db,
+        IConfiguration configuration,
+        ICurrentTenant currentTenant,
+        IOptions<TenantResolutionOptions> tenancy)
     {
         _db = db;
         _configuration = configuration;
+        _currentTenant = currentTenant;
+        _tenancy = tenancy.Value;
     }
 
     public async Task EnsureDefaultAdminAsync()
@@ -26,15 +36,29 @@ public class AdminAuthService
         await AdminSchemaBootstrapper.EnsureAsync(_db);
         if (await _db.AdminUsers.AnyAsync()) return;
 
-        var (hash, salt) = HashPassword(
-            _configuration["ADMIN_PASSWORD"]
-            ?? _configuration["AdminPassword"]
-            ?? FallbackPassword);
+        var tenant = _tenancy.Tenants.FirstOrDefault(item =>
+            item.Id.Equals(_currentTenant.TenantId, StringComparison.OrdinalIgnoreCase))
+            ?? _tenancy.DefaultTenant;
+        var configuredPassword = _configuration[tenant.AdminPasswordConfigurationKey];
+        var configuredEmail = _configuration[tenant.AdminEmailConfigurationKey];
+        var isDefaultTenant = tenant.Id.Equals(_tenancy.DefaultTenant.Id, StringComparison.OrdinalIgnoreCase);
+        var password = configuredPassword ??
+            (isDefaultTenant ? _configuration["AdminPassword"] ?? FallbackPassword : null);
+
+        if (string.IsNullOrWhiteSpace(password) ||
+            (string.IsNullOrWhiteSpace(configuredEmail) && !isDefaultTenant))
+        {
+            throw new InvalidOperationException(
+                $"Initial admin credentials are not configured for tenant '{tenant.Id}'. " +
+                $"Set {tenant.AdminEmailConfigurationKey} and {tenant.AdminPasswordConfigurationKey}.");
+        }
+
+        var (hash, salt) = HashPassword(password);
 
         _db.AdminUsers.Add(new AdminUser
         {
             Name = "Owner",
-            Email = _configuration["ADMIN_EMAIL"] ?? "admin@casadifratelli.local",
+            Email = configuredEmail ?? "admin@casadifratelli.local",
             Role = AdminRoleAccess.Owner,
             PasswordHash = hash,
             PasswordSalt = salt,

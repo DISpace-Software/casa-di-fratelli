@@ -10,6 +10,8 @@ public sealed class CurrentTenant : ICurrentTenant
 
     public string? Domain { get; private set; }
 
+    public string? FrontendUrl { get; private set; }
+
     public string DatabaseMode { get; private set; } = "SingleDatabase";
 
     public string ConnectionStringKey { get; private set; } = "DefaultConnection";
@@ -22,6 +24,7 @@ public sealed class CurrentTenant : ICurrentTenant
         TenantSlug = tenant.Slug;
         TenantName = tenant.Name;
         Domain = tenant.Domain;
+        FrontendUrl = tenant.FrontendUrl;
         DatabaseMode = tenant.DatabaseMode;
         ConnectionStringKey = tenant.ConnectionStringKey;
         IsResolved = true;

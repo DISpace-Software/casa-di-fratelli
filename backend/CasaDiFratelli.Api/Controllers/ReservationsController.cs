@@ -9,6 +9,7 @@ using System.Data;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
+using CasaDiFratelli.Api.Services.Tenancy;
 
 namespace CasaDiFratelli.Api.Controllers;
 
@@ -34,6 +35,7 @@ public class ReservationsController : ControllerBase
     private readonly ProductTierService _tiers;
     private readonly PushNotificationService _pushNotifications;
     private readonly RestaurantClosureService _closures;
+    private readonly ICurrentTenant _currentTenant;
 
     private sealed record TableLayoutCapacityItem(string? Id, int Seats, bool IsActive);
 
@@ -46,7 +48,8 @@ public class ReservationsController : ControllerBase
         AuditService audit,
         ProductTierService tiers,
         PushNotificationService pushNotifications,
-        RestaurantClosureService closures)
+        RestaurantClosureService closures,
+        ICurrentTenant currentTenant)
     {
         _db = db;
         _emailService = emailService;
@@ -57,6 +60,7 @@ public class ReservationsController : ControllerBase
         _tiers = tiers;
         _pushNotifications = pushNotifications;
         _closures = closures;
+        _currentTenant = currentTenant;
     }
 
     private static DateTime GetRestaurantNow()
@@ -148,6 +152,9 @@ public class ReservationsController : ControllerBase
 
     private string GetFrontendUrl()
     {
+        if (!string.IsNullOrWhiteSpace(_currentTenant.FrontendUrl))
+            return _currentTenant.FrontendUrl.TrimEnd('/');
+
         var configuredFrontendUrl = _configuration["FRONTEND_URL"];
 
         return string.IsNullOrWhiteSpace(configuredFrontendUrl)

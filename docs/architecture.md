@@ -16,7 +16,7 @@ The main architectural gap is that the codebase is still shaped as a single-rest
 - Role logic exists in `AdminRoleAccess`.
 - Public frontend is reasonably modular.
 - Admin frontend is concentrated in `AdminPage.jsx`, which is now the largest UI risk.
-- Tenant abstraction did not exist before this pass.
+- Tenant resolution and dedicated database routing now exist in the API.
 
 ## Architectural Problems
 
@@ -32,9 +32,12 @@ The main architectural gap is that the codebase is still shaped as a single-rest
 
    `AdminPage.jsx` is over 10k lines. It should be split by bounded context: reservations, orders, inventory, marketing, users, maintenance, reports.
 
-4. Tenant isolation is not complete
+4. Tenant isolation uses dedicated databases
 
-   The platform needs tenant resolution, tenant-aware configuration, and a database-per-tenant connection strategy. This pass adds the first safe tenant resolution layer only.
+   HTTP requests now resolve a tenant before `AppDbContext` is constructed.
+   Each tenant maps to its own connection string, startup initialization and
+   background jobs iterate tenant-by-tenant, and backup files are separated by
+   tenant. Shared-database mode remains intentionally unsupported.
 
 5. Floor map model is still not fully domain-driven
 
@@ -63,10 +66,12 @@ The main architectural gap is that the codebase is still shaped as a single-rest
    - deduct inventory
    - run marketing campaigns
 
-3. Add tenant-aware data access:
+3. Extract tenant branding and operational settings:
 
-   - first: database-per-tenant resolver
-   - later: optional shared database with `TenantId` global filters
+   - restaurant name, phone and email identity
+   - opening hours and timezone
+   - email/push templates
+   - frontend theme and feature flags
 
 4. Split admin frontend into feature modules.
 
@@ -87,9 +92,9 @@ Readiness estimate:
 
 - Product depth: high
 - Single restaurant stability: medium-high
-- SaaS tenant isolation: low-medium
+- SaaS tenant data isolation: medium-high
 - Operational tooling: medium-high
 - Code modularity: medium
 
-Recommended next milestone: tenant-aware database connection resolution and map domain normalization.
-
+Recommended next milestone: tenant branding/settings extraction and gradual
+admin frontend feature decomposition.

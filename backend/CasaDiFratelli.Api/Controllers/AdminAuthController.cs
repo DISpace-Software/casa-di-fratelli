@@ -4,6 +4,7 @@ using CasaDiFratelli.Api.Models;
 using CasaDiFratelli.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using CasaDiFratelli.Api.Services.Tenancy;
 
 namespace CasaDiFratelli.Api.Controllers;
 
@@ -17,6 +18,7 @@ public class AdminAuthController : ControllerBase
     private readonly EmailService _emailService;
     private readonly IConfiguration _configuration;
     private readonly ProductTierService _tiers;
+    private readonly ICurrentTenant _currentTenant;
 
     public AdminAuthController(
         AppDbContext db,
@@ -24,7 +26,8 @@ public class AdminAuthController : ControllerBase
         AuditService audit,
         EmailService emailService,
         IConfiguration configuration,
-        ProductTierService tiers)
+        ProductTierService tiers,
+        ICurrentTenant currentTenant)
     {
         _db = db;
         _auth = auth;
@@ -32,6 +35,7 @@ public class AdminAuthController : ControllerBase
         _emailService = emailService;
         _configuration = configuration;
         _tiers = tiers;
+        _currentTenant = currentTenant;
     }
 
     public sealed record AdminLoginRequest(string Email, string Password);
@@ -45,6 +49,9 @@ public class AdminAuthController : ControllerBase
 
     private string GetAdminUrl()
     {
+        if (!string.IsNullOrWhiteSpace(_currentTenant.FrontendUrl))
+            return $"{_currentTenant.FrontendUrl.TrimEnd('/')}/admin";
+
         var configuredFrontendUrl = _configuration["FRONTEND_URL"];
         var configuredAdminUrl = _configuration["ADMIN_URL"];
 
