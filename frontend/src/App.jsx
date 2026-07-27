@@ -5,10 +5,11 @@ import { galleryImages } from "./data/restaurantData";
 import HomePage from "./pages/HomePage";
 import ReservationPage from "./pages/ReservationPage";
 import MenuPage from "./pages/MenuPage";
-import AdminPage from "./pages/AdminPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import { API_BASE_URL } from "./config/api";
 import BackToTopButton from "./components/layout/BackToTopButton";
+
+const AdminPage = React.lazy(() => import("./pages/AdminPage"));
 
 const COOKIE_CONSENT_COOKIE = "casa_cookie_consent";
 const RESERVATION_GUEST_COOKIE = "casa_reservation_guest";
@@ -1244,20 +1245,37 @@ export default function App() {
 
     return (
       <>
-        <AdminPage
-          adminToken={adminToken}
-          onAdminLogout={() => {
-            window.sessionStorage.removeItem("admin-token");
-            window.sessionStorage.removeItem("admin-user");
-            setAdminToken("");
-            setAdminUser(null);
-          }}
-          adminUser={adminUser}
-          onMenuChanged={loadMenuItems}
-          onEventsChanged={loadEvents}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-        />
+        <React.Suspense
+          fallback={(
+            <main
+              className="flex min-h-screen items-center justify-center bg-[#090705] px-6 text-center text-[#f7ead3]"
+              aria-live="polite"
+              aria-busy="true"
+            >
+              <div>
+                <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[#c9a56a]/30 border-t-[#c9a56a]" />
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#c9a56a]">
+                  Зареждане на администрацията
+                </p>
+              </div>
+            </main>
+          )}
+        >
+          <AdminPage
+            adminToken={adminToken}
+            onAdminLogout={() => {
+              window.sessionStorage.removeItem("admin-token");
+              window.sessionStorage.removeItem("admin-user");
+              setAdminToken("");
+              setAdminUser(null);
+            }}
+            adminUser={adminUser}
+            onMenuChanged={loadMenuItems}
+            onEventsChanged={loadEvents}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+          />
+        </React.Suspense>
         <BackToTopButton />
       </>
     );

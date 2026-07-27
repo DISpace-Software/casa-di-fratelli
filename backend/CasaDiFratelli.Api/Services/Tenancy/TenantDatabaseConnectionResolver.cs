@@ -73,8 +73,7 @@ public sealed class TenantDatabaseConnectionResolver
             Database = uri.AbsolutePath.TrimStart('/'),
             Username = credentials.Length > 0 ? Uri.UnescapeDataString(credentials[0]) : string.Empty,
             Password = credentials.Length > 1 ? Uri.UnescapeDataString(credentials[1]) : string.Empty,
-            SslMode = SslMode.Require,
-            TrustServerCertificate = true
+            SslMode = SslMode.Require
         }.ConnectionString;
     }
 }
