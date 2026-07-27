@@ -31,6 +31,7 @@ export default function UnifiedMapViewport({
   onZoneChange,
   focusTarget,
   onBackgroundClick,
+  overlay,
   language = "bg",
 }) {
   const shellRef = React.useRef(null);
@@ -396,6 +397,7 @@ export default function UnifiedMapViewport({
           {children}
         </div>
       </div>
+      {overlay}
     </div>
   );
 }

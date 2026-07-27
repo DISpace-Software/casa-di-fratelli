@@ -2284,6 +2284,7 @@ function ReservationOperationsMap({
             setSelectedTableId(null);
             setTableReservationDraft(null);
           }}
+          overlay={renderFloatingTableReservationForm()}
           language={language}
         >
           {ADMIN_MAP_ZONES.map((zone) => {
@@ -2671,7 +2672,6 @@ function ReservationOperationsMap({
           })}
 
         </UnifiedMapViewport>
-        {renderFloatingTableReservationForm()}
         </div>
 
         <div className="min-w-0 space-y-3">
