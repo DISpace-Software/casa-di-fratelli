@@ -45,10 +45,20 @@ export function fitBounds(bounds, viewport, padding, minScale, maxScale) {
 export function clampCamera(camera, viewport, world, overscan = 0) {
   const scaledWidth = world.width * camera.scale;
   const scaledHeight = world.height * camera.scale;
-  const minX = Math.min(overscan, viewport.width - scaledWidth - overscan);
-  const maxX = Math.max(-overscan, (viewport.width - scaledWidth) / 2);
-  const minY = Math.min(overscan, viewport.height - scaledHeight - overscan);
-  const maxY = Math.max(-overscan, (viewport.height - scaledHeight) / 2);
+  const centeredX = (viewport.width - scaledWidth) / 2;
+  const centeredY = (viewport.height - scaledHeight) / 2;
+  const minX = scaledWidth <= viewport.width
+    ? centeredX - overscan
+    : viewport.width / 2 - scaledWidth + overscan;
+  const maxX = scaledWidth <= viewport.width
+    ? centeredX + overscan
+    : viewport.width / 2 - overscan;
+  const minY = scaledHeight <= viewport.height
+    ? centeredY - overscan
+    : viewport.height / 2 - scaledHeight + overscan;
+  const maxY = scaledHeight <= viewport.height
+    ? centeredY + overscan
+    : viewport.height / 2 - overscan;
 
   return {
     ...camera,

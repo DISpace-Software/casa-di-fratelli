@@ -29,6 +29,8 @@ export default function UnifiedMapViewport({
   zones,
   activeZone,
   onZoneChange,
+  focusTarget,
+  onBackgroundClick,
   language = "bg",
 }) {
   const shellRef = React.useRef(null);
@@ -45,6 +47,10 @@ export default function UnifiedMapViewport({
   const initializedRef = React.useRef(false);
   const [scaleLabel, setScaleLabel] = React.useState(initialCamera.scale);
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const focusKey = focusTarget?.key;
+  const focusX = focusTarget?.x;
+  const focusY = focusTarget?.y;
+  const focusScale = focusTarget?.scale;
 
   const applyCamera = React.useCallback((nextCamera, { animate = false, persist = true } = {}) => {
     const camera = clampCamera(
@@ -91,6 +97,21 @@ export default function UnifiedMapViewport({
     onZoneChange?.(zone.id);
     fitToBounds(zone, true);
   }, [fitToBounds, onZoneChange]);
+
+  React.useEffect(() => {
+    if (!focusKey || !Number.isFinite(focusX) || !Number.isFinite(focusY)) return;
+    const viewport = viewportSizeRef.current;
+    const preferredScale = viewport.width < 700 ? 1.45 : 1.25;
+    const scale = Math.min(
+      ADMIN_MAP_CAMERA.maxScale,
+      Math.max(ADMIN_MAP_CAMERA.minScale, focusScale || preferredScale)
+    );
+    applyCamera({
+      x: viewport.width / 2 - focusX * scale,
+      y: viewport.height / 2 - focusY * scale,
+      scale,
+    }, { animate: true });
+  }, [applyCamera, focusKey, focusScale, focusX, focusY]);
 
   const zoomAtCenter = React.useCallback((direction) => {
     const viewport = viewportSizeRef.current;
@@ -357,6 +378,10 @@ export default function UnifiedMapViewport({
             event.stopPropagation();
             movedRef.current = false;
           }
+        }}
+        onClick={(event) => {
+          if (event.target.closest("button, a, input, select, textarea, [role='button'], [data-map-keep-open='true']")) return;
+          onBackgroundClick?.();
         }}
       >
         <div

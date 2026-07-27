@@ -1758,6 +1758,30 @@ function ReservationOperationsMap({
   const selectedReservation =
     liveReservations.find((reservation) => reservation.id === selectedReservationId) ||
     reservations.find((reservation) => reservation.id === selectedReservationId);
+  const selectedMapFocusTarget = React.useMemo(() => {
+    if (selectedTableId) {
+      const table = areaTables.find((item) => item.id === selectedTableId && item.area === selectedArea);
+      if (table) {
+        const zone = ADMIN_MAP_ZONES.find((item) => item.id === table.area) || ADMIN_MAP_ZONES[0];
+        const point = localPercentToWorld(zone, table);
+        return { ...point, key: `table-${table.area}-${table.id}` };
+      }
+    }
+
+    if (selectedReservation) {
+      const bounds = getReservationBounds(selectedReservation);
+      if (bounds) {
+        const zone = ADMIN_MAP_ZONES.find((item) => item.id === bounds.area) || ADMIN_MAP_ZONES[0];
+        return {
+          x: zone.x + (bounds.centerX / 100) * zone.width,
+          y: zone.y + (bounds.centerY / 100) * zone.height,
+          key: `reservation-${selectedReservation.id}`,
+        };
+      }
+    }
+
+    return null;
+  }, [areaTables, getReservationBounds, selectedArea, selectedReservation, selectedTableId]);
   const activeOrdersByReservationId = React.useMemo(() => {
     const grouped = new Map();
 
@@ -2254,6 +2278,12 @@ function ReservationOperationsMap({
           zones={areas.map(([id, name]) => ({ id, name: `${name} · ${getAreaTableCount(id)} ${text.tables}` }))}
           activeZone={selectedArea}
           onZoneChange={onAreaChange}
+          focusTarget={selectedMapFocusTarget}
+          onBackgroundClick={() => {
+            setSelectedReservationId(null);
+            setSelectedTableId(null);
+            setTableReservationDraft(null);
+          }}
           language={language}
         >
           {ADMIN_MAP_ZONES.map((zone) => {
@@ -2358,7 +2388,7 @@ function ReservationOperationsMap({
                   </button>
 
                   {isSelected && (
-                    <div className={`absolute ${mobilePopoverOffset} top-9 z-[70] w-[190px] rounded-2xl border border-white/12 bg-[#15110e]/95 p-2.5 text-left shadow-[0_22px_70px_rgba(0,0,0,0.68)] backdrop-blur sm:left-1/2 sm:right-auto ${popoverPosition} sm:w-[220px] sm:-translate-x-1/2 sm:p-3 lg:w-[230px]`}>
+                    <div data-map-keep-open="true" className={`absolute ${mobilePopoverOffset} top-9 z-[70] w-[190px] rounded-2xl border border-white/12 bg-[#15110e]/95 p-2.5 text-left shadow-[0_22px_70px_rgba(0,0,0,0.68)] backdrop-blur sm:left-1/2 sm:right-auto ${popoverPosition} sm:w-[220px] sm:-translate-x-1/2 sm:p-3 lg:w-[230px]`}>
                       <div className="text-sm font-semibold text-[#fff4df]">{reservation.guestName}</div>
                       <div className="mt-1 text-xs text-white/50">
                         {reservation.reservedTime} · {reservation.guestCount} {text.guests} · {reservation.tableIds.join(", ")}
@@ -2518,6 +2548,7 @@ function ReservationOperationsMap({
 
                 {isSelectedTable && (
                   <div
+                    data-map-keep-open="true"
                     className={`absolute z-[80] max-h-[min(520px,calc(100vh-180px))] w-[230px] overflow-y-auto rounded-2xl border border-[#f2d39a]/18 bg-[#15110e]/95 p-3 text-left shadow-[0_22px_70px_rgba(0,0,0,0.7)] backdrop-blur sm:w-[280px] ${
                       placeTablePopoverAbove ? "bottom-10 sm:bottom-12 lg:bottom-16" : "top-10 sm:top-12 lg:top-16"
                     } ${
