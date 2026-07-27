@@ -268,6 +268,7 @@ export default function UnifiedMapViewport({
       </div>
       <div
         ref={viewportRef}
+        data-admin-swipe-lock="true"
         className="admin-unified-map-viewport relative h-[clamp(560px,72vh,920px)] min-w-0 overflow-hidden rounded-[26px] border border-white/10 bg-[#0d0b09] shadow-inner shadow-black/60"
         style={{ touchAction: "none", overscrollBehavior: "contain", userSelect: "none" }}
         onPointerDown={handlePointerDown}

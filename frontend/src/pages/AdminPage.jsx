@@ -1209,7 +1209,9 @@ function getNextAdminReservationTime(now = new Date()) {
 }
 
 function isInteractiveSwipeTarget(target) {
-  return Boolean(target?.closest?.("input, textarea, select, button, a, [role='button']"));
+  return Boolean(target?.closest?.(
+    "input, textarea, select, button, a, [role='button'], [data-admin-swipe-lock='true']"
+  ));
 }
 
 function getLiveReservationCandidates(reservations, now = new Date()) {
@@ -5672,6 +5674,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   }, [activeTab, canManageAdmins, canViewFeedback, isProductionRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadCustomerProfiles, loadDiningOrders, loadEvents, loadFeedbackEntries, loadMenuItems, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
+    if (activeTab === "liveMap") {
+      adminSwipeStartRef.current = null;
+      return undefined;
+    }
+
     const pages = isProductionRole
       ? ["home", "orders"]
       : isWaiterRole
