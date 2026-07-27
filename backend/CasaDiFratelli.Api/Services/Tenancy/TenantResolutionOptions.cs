@@ -6,8 +6,5 @@ public sealed class TenantResolutionOptions
 
     public TenantDefinition DefaultTenant { get; set; } = new();
 
-    public List<TenantDefinition> Tenants { get; set; } = new()
-    {
-        new TenantDefinition()
-    };
+    public List<TenantDefinition> Tenants { get; set; } = new();
 }
