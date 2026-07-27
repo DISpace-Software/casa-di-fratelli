@@ -831,6 +831,15 @@ const emptyHallBlock = {
   note: "",
 };
 
+const defaultRestaurantClosure = {
+  enabled: true,
+  startDate: "2026-07-27",
+  endDate: "2026-08-02",
+  reopenDate: "2026-08-03",
+  message: "Уважаеми клиенти и приятели,\nОт 27.07.2026г. до 02.08.2026г.\nРесторантът ще бъде в\nГОДИШЕН ОТПУСК.\nОчакваме ви отново на\n03.08.2026г.\nБлагодарим ви за разбирането!",
+  isActive: true,
+};
+
 const indoorTableIds = tableIdsByArea.indoor;
 const areaTableIds = tableIdsByArea;
 const gardenSpecialIds = defaultGardenTables.filter((table) => table.special).map((table) => table.id);
@@ -5252,6 +5261,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [orderMenuSearches, setOrderMenuSearches] = React.useState({});
   const [hallBlock, setHallBlock] = React.useState(emptyHallBlock);
   const [hallBlockConflicts, setHallBlockConflicts] = React.useState([]);
+  const [restaurantClosure, setRestaurantClosure] = React.useState(defaultRestaurantClosure);
   const [adminNotice, setAdminNotice] = React.useState("");
   const [adminError, setAdminError] = React.useState("");
   const [pushPermission, setPushPermission] = React.useState(() => {
@@ -5352,6 +5362,18 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     (url, options = {}) => fetch(url, withAdminToken(options)),
     [withAdminToken]
   );
+
+  React.useEffect(() => {
+    async function loadRestaurantClosure() {
+      try {
+        const response = await adminFetch(`${API_BASE_URL}/api/restaurant-closure`);
+        if (response.ok) setRestaurantClosure(await response.json());
+      } catch (error) {
+        console.warn("Failed to load restaurant closure.", error);
+      }
+    }
+    loadRestaurantClosure();
+  }, [adminFetch]);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -6661,6 +6683,35 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     );
     await loadReservations();
     setActiveTab("reservations");
+  }
+
+  async function saveRestaurantClosure(event) {
+    event.preventDefault();
+    setAdminNotice("");
+    setAdminError("");
+
+    if (!restaurantClosure.startDate || !restaurantClosure.endDate || !restaurantClosure.message.trim()) {
+      setAdminError(adminLanguage === "bg" ? "Попълнете датите и текста на уведомлението." : "Complete the dates and notification text.");
+      return;
+    }
+
+    const response = await adminFetch(`${API_BASE_URL}/api/restaurant-closure`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(restaurantClosure),
+    });
+
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to save restaurant closure."));
+      return;
+    }
+
+    setRestaurantClosure(await response.json());
+    setAdminNotice(
+      adminLanguage === "bg"
+        ? "Периодът на затваряне и уведомлението са запазени."
+        : "Restaurant closure and notification saved."
+    );
   }
 
   async function saveBlacklistEntry(event) {
@@ -9456,6 +9507,95 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     : "Close one area or the whole restaurant for a day or a time range."
                 }
               >
+                <form
+                  onSubmit={saveRestaurantClosure}
+                  className="mb-8 rounded-[28px] border border-[#c9a56a]/30 bg-[#c9a56a]/[0.08] p-5 md:p-6"
+                >
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <div className="section-kicker">
+                        {adminLanguage === "bg" ? "Затвори ресторанта" : "Close restaurant"}
+                      </div>
+                      <h3 className="mt-2 text-2xl font-semibold text-[#fff4df]">
+                        {adminLanguage === "bg" ? "Отпуск или временно затваряне" : "Holiday or temporary closure"}
+                      </h3>
+                      <p className="mt-2 max-w-2xl text-sm leading-6 text-white/55">
+                        {adminLanguage === "bg"
+                          ? "Показва уведомление на сайта и автоматично спира онлайн резервациите за целия избран период."
+                          : "Shows a website notice and automatically stops online reservations throughout the selected period."}
+                      </p>
+                    </div>
+                    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={restaurantClosure.enabled}
+                        onChange={(event) => setRestaurantClosure((current) => ({ ...current, enabled: event.target.checked }))}
+                        className="h-5 w-5 accent-[#c9a56a]"
+                      />
+                      <span className="text-sm font-semibold text-[#fff4df]">
+                        {adminLanguage === "bg" ? "Функцията е активна" : "Closure enabled"}
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-2 block text-sm text-stone-400">
+                        {adminLanguage === "bg" ? "Затворено от" : "Closed from"}
+                      </span>
+                      <input
+                        type="date"
+                        value={restaurantClosure.startDate || ""}
+                        onChange={(event) => setRestaurantClosure((current) => ({ ...current, startDate: event.target.value }))}
+                        required
+                        className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-2 block text-sm text-stone-400">
+                        {adminLanguage === "bg" ? "Затворено до (включително)" : "Closed through (inclusive)"}
+                      </span>
+                      <input
+                        type="date"
+                        min={restaurantClosure.startDate || undefined}
+                        value={restaurantClosure.endDate || ""}
+                        onChange={(event) => setRestaurantClosure((current) => ({ ...current, endDate: event.target.value }))}
+                        required
+                        className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="mt-4 block">
+                    <span className="mb-2 block text-sm text-stone-400">
+                      {adminLanguage === "bg" ? "Текст на уведомлението" : "Notification text"}
+                    </span>
+                    <textarea
+                      value={restaurantClosure.message || ""}
+                      onChange={(event) => setRestaurantClosure((current) => ({ ...current, message: event.target.value }))}
+                      rows={8}
+                      required
+                      className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 leading-7 outline-none focus:border-amber-300"
+                    />
+                  </label>
+
+                  <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="text-sm text-white/55">
+                      {restaurantClosure.enabled
+                        ? adminLanguage === "bg" ? "Уведомлението ще се показва автоматично през зададения период." : "The notice will appear automatically during this period."
+                        : adminLanguage === "bg" ? "Функцията е изключена — сайтът приема резервации нормално." : "Disabled — the website accepts reservations normally."}
+                    </div>
+                    <button type="submit" className="luxury-button shrink-0 rounded-2xl px-6 py-3 font-semibold">
+                      {adminLanguage === "bg" ? "Запази затварянето" : "Save closure"}
+                    </button>
+                  </div>
+                </form>
+
+                <div className="mb-5 border-t border-white/10 pt-7">
+                  <div className="section-kicker">
+                    {adminLanguage === "bg" ? "Блокиране на зона или часове" : "Block area or hours"}
+                  </div>
+                </div>
                 <form onSubmit={createHallBlock} className="grid gap-4 md:grid-cols-4">
                   <div className="md:col-span-4">
                     <label className="mb-3 block text-sm text-stone-400">

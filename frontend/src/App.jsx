@@ -153,6 +153,58 @@ function CookieConsentBanner({ language, onOpenPrivacy }) {
   );
 }
 
+function RestaurantClosureModal({ closure, onReserve, onDismiss }) {
+  if (!closure?.isActive) return null;
+
+  const lines = String(closure.message || "").split("\n");
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/80 p-4 backdrop-blur-md">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="closure-title"
+        className="relative w-full max-w-xl overflow-hidden rounded-[32px] border border-[#e7c98d]/35 bg-[#17120f] p-6 text-center text-white shadow-[0_30px_100px_rgba(0,0,0,0.7)] md:p-10"
+      >
+        <div className="pointer-events-none absolute -left-20 -top-24 h-64 w-64 rounded-full bg-[#c9a56a]/12 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -right-20 h-64 w-64 rounded-full bg-[#8f5f2d]/15 blur-3xl" />
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Затвори уведомлението"
+          className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/25 text-xl text-white/65 transition hover:border-[#e7c98d]/50 hover:text-white"
+        >
+          ×
+        </button>
+
+        <div className="relative">
+          <img src="/casa-di-fratelli-logo.svg" alt="Casa di Fratelli" className="mx-auto h-16 w-52 object-contain" />
+          <div className="mx-auto my-6 h-px w-28 bg-gradient-to-r from-transparent via-[#e7c98d] to-transparent" />
+          <div id="closure-title" className="space-y-1.5 text-lg leading-7 text-[#fff7e9] md:text-xl md:leading-8">
+            {lines.map((line, index) => (
+              <p
+                key={`${line}-${index}`}
+                className={line.trim() === "ГОДИШЕН ОТПУСК."
+                  ? "py-2 text-2xl font-bold tracking-[0.12em] text-[#f2d39a] md:text-3xl"
+                  : ""}
+              >
+                {line || "\u00a0"}
+              </p>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={onReserve}
+            className="luxury-button mt-8 w-full rounded-2xl px-6 py-4 text-base font-bold uppercase tracking-[0.08em]"
+          >
+            Резервирай от {String(closure.reopenDate || "").split("-").reverse().slice(0, 2).join(".")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AdminLogin({ onLogin }) {
   const resetParams = React.useMemo(() => {
     if (typeof window === "undefined") return { email: "", token: "" };
@@ -905,6 +957,8 @@ export default function App() {
   const [currentPage, setCurrentPage] = React.useState(getInitialPage);
   const [cmsMenuItems, setCmsMenuItems] = React.useState([]);
   const [cmsEvents, setCmsEvents] = React.useState([]);
+  const [restaurantClosure, setRestaurantClosure] = React.useState(null);
+  const [closureDismissed, setClosureDismissed] = React.useState(false);
   const [adminToken, setAdminToken] = React.useState(safeReadAdminToken);
   const [adminUser, setAdminUser] = React.useState(() => {
     if (typeof window === "undefined") return null;
@@ -967,6 +1021,19 @@ export default function App() {
   React.useEffect(() => {
     loadEvents();
   }, [loadEvents]);
+
+  React.useEffect(() => {
+    async function loadRestaurantClosure() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/restaurant-closure`);
+        if (!response.ok) return;
+        setRestaurantClosure(await response.json());
+      } catch (error) {
+        if (import.meta.env.DEV) console.warn("Failed to load restaurant closure.", error);
+      }
+    }
+    loadRestaurantClosure();
+  }, []);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1149,6 +1216,19 @@ export default function App() {
   const cookieConsentBanner = currentPage !== "admin" ? (
     <CookieConsentBanner language={language} onOpenPrivacy={() => setCurrentPage("privacy")} />
   ) : null;
+  const closureModal = currentPage !== "admin" && !closureDismissed ? (
+    <RestaurantClosureModal
+      closure={restaurantClosure}
+      onDismiss={() => setClosureDismissed(true)}
+      onReserve={() => {
+        setClosureDismissed(true);
+        if (restaurantClosure?.reopenDate) {
+          window.history.replaceState({}, "", `/reservation?date=${restaurantClosure.reopenDate}`);
+        }
+        setCurrentPage("reservation-map");
+      }}
+    />
+  ) : null;
 
   if (currentPage === "admin") {
     if (!adminToken) {
@@ -1198,6 +1278,7 @@ export default function App() {
         />
         <BackToTopButton />
         {cookieConsentBanner}
+        {closureModal}
       </>
     );
   }
@@ -1219,6 +1300,7 @@ export default function App() {
         />
         <BackToTopButton />
         {cookieConsentBanner}
+        {closureModal}
       </>
     );
   }
@@ -1239,6 +1321,7 @@ export default function App() {
         />
         <BackToTopButton />
         {cookieConsentBanner}
+        {closureModal}
       </>
     );
   }
@@ -1249,6 +1332,7 @@ export default function App() {
         <ReservationConfirmPage onBackHome={() => setCurrentPage("home")} />
         <BackToTopButton />
         {cookieConsentBanner}
+        {closureModal}
       </>
     );
   }
@@ -1259,6 +1343,7 @@ export default function App() {
         <FeedbackPage onBackHome={() => setCurrentPage("home")} />
         <BackToTopButton />
         {cookieConsentBanner}
+        {closureModal}
       </>
     );
   }
@@ -1280,6 +1365,7 @@ export default function App() {
       />
       <BackToTopButton />
       {cookieConsentBanner}
+      {closureModal}
     </>
   );
 }

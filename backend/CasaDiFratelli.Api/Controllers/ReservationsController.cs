@@ -33,6 +33,7 @@ public class ReservationsController : ControllerBase
     private readonly AuditService _audit;
     private readonly ProductTierService _tiers;
     private readonly PushNotificationService _pushNotifications;
+    private readonly RestaurantClosureService _closures;
 
     private sealed record TableLayoutCapacityItem(string? Id, int Seats, bool IsActive);
 
@@ -44,7 +45,8 @@ public class ReservationsController : ControllerBase
         AdminAuthService adminAuth,
         AuditService audit,
         ProductTierService tiers,
-        PushNotificationService pushNotifications)
+        PushNotificationService pushNotifications,
+        RestaurantClosureService closures)
     {
         _db = db;
         _emailService = emailService;
@@ -54,6 +56,7 @@ public class ReservationsController : ControllerBase
         _audit = audit;
         _tiers = tiers;
         _pushNotifications = pushNotifications;
+        _closures = closures;
     }
 
     private static DateTime GetRestaurantNow()
@@ -496,6 +499,20 @@ public class ReservationsController : ControllerBase
 
         if (IsPastReservationTime(request.ReservedDate, request.ReservedTime))
             return BadRequest("Reservation date or time has already passed.");
+
+        if (!request.CreatedByAdmin)
+        {
+            var closure = await _closures.GetAsync();
+            if (RestaurantClosureService.Contains(closure, request.ReservedDate))
+            {
+                return Conflict(new
+                {
+                    message = $"Ресторантът е затворен до {closure.EndDate:dd.MM.yyyy}. Резервации се приемат от {closure.ReopenDate:dd.MM.yyyy}.",
+                    code = "RESTAURANT_CLOSED",
+                    closure.ReopenDate
+                });
+            }
+        }
 
         if (!IsReservationTimeAllowed(request.ReservedTime, request.CreatedByAdmin))
             return BadRequest(request.CreatedByAdmin

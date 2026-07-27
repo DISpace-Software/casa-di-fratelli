@@ -950,7 +950,12 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   const maxReservationDate = React.useMemo(() => getDateInputValueAfterDays(10), []);
   const adminPhone = "088 821 8318";
 
-  const [reservationDate, setReservationDate] = React.useState("");
+  const [reservationDate, setReservationDate] = React.useState(() => {
+    if (typeof window === "undefined") return "";
+    const requestedDate = new URLSearchParams(window.location.search).get("date") || "";
+    return /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) ? requestedDate : "";
+  });
+  const [restaurantClosure, setRestaurantClosure] = React.useState(null);
   const [guestCount, setGuestCount] = React.useState("");
   const [selectedTime, setSelectedTime] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -975,6 +980,18 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   const indoorTables = layoutTables.indoor;
   const gardenTables = layoutTables.garden;
   const openTerraceTables = layoutTables.openTerrace;
+
+  React.useEffect(() => {
+    async function loadRestaurantClosure() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/restaurant-closure`);
+        if (response.ok) setRestaurantClosure(await response.json());
+      } catch (error) {
+        console.warn("Failed to load restaurant closure.", error);
+      }
+    }
+    loadRestaurantClosure();
+  }, []);
 
   React.useEffect(() => {
     async function loadBlockedSlots() {
@@ -1020,7 +1037,15 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
     }
   }, [reservationDate, selectedTime]);
 
-  const availableReservationTimes = reservationDate
+  const isDateClosed = Boolean(
+    restaurantClosure?.enabled &&
+    reservationDate &&
+    reservationDate >= restaurantClosure.startDate &&
+    reservationDate <= restaurantClosure.endDate
+  );
+  const availableReservationTimes = isDateClosed
+    ? []
+    : reservationDate
     ? getAvailableReservationTimesForDate(reservationTimes, reservationDate, new Date(), 15)
     : reservationTimes;
   const todayReservationTimes = React.useMemo(
@@ -1470,6 +1495,24 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                     value={reservationDate}
                     onChange={(e) => {
                       const nextDate = e.target.value;
+                      if (
+                        restaurantClosure?.enabled &&
+                        nextDate >= restaurantClosure.startDate &&
+                        nextDate <= restaurantClosure.endDate
+                      ) {
+                        setSubmitError(
+                          localText(
+                            language,
+                            `Ресторантът е в годишен отпуск. Резервации се приемат от ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`,
+                            `The restaurant is closed for annual leave. Reservations reopen on ${restaurantClosure.reopenDate}.`,
+                            `Ресторан закрыт на ежегодный отпуск. Бронирование доступно с ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`
+                          )
+                        );
+                        setReservationDate(nextDate);
+                        setSelectedTime("");
+                        setSelectedTables([]);
+                        return;
+                      }
                       if (isDateBeyondReservationWindow(nextDate, 10)) {
                         setSubmitError(distantDateMessage);
                         setReservationDate("");
@@ -1486,6 +1529,16 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                     className="quiet-input w-full cursor-pointer rounded-2xl px-4 py-3 [color-scheme:dark]"
                   />
                   <p className="mt-2 text-xs leading-5 text-white/45">{distantDateMessage}</p>
+                  {isDateClosed && (
+                    <p className="mt-2 rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/10 px-3 py-2 text-sm leading-5 text-[#f2d39a]">
+                      {localText(
+                        language,
+                        `Ресторантът е затворен. Изберете дата от ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`,
+                        `The restaurant is closed. Please choose a date from ${restaurantClosure.reopenDate}.`,
+                        `Ресторан закрыт. Выберите дату начиная с ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`
+                      )}
+                    </p>
+                  )}
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     {[
                       [today, localText(language, "Днес", "Today", "Сегодня"), !isTodayBookable],
@@ -1529,6 +1582,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                     {localText(language, "Час", "Time", "Время")}
                   </label>
                   <select
+                    disabled={isDateClosed}
                     value={selectedTime}
                     onChange={(e) => {
                       setSelectedTime(e.target.value);
