@@ -132,6 +132,47 @@ export default function UnifiedMapViewport({
     animationRef.current = window.requestAnimationFrame(() => applyCamera(camera, { persist: false }));
   };
 
+  React.useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return undefined;
+
+    const handleNativeWheel = (event) => {
+      event.preventDefault();
+      const isTrackpadPan =
+        !event.ctrlKey &&
+        !event.metaKey &&
+        (Math.abs(event.deltaX) > 0 || (event.deltaMode === 0 && Math.abs(event.deltaY) < 50));
+
+      let camera;
+      if (isTrackpadPan) {
+        camera = {
+          ...cameraRef.current,
+          x: cameraRef.current.x - event.deltaX,
+          y: cameraRef.current.y - event.deltaY,
+        };
+      } else {
+        const rect = viewport.getBoundingClientRect();
+        const factor = Math.exp(-event.deltaY * 0.0015);
+        camera = zoomCameraAt(
+          cameraRef.current,
+          { x: event.clientX - rect.left, y: event.clientY - rect.top },
+          cameraRef.current.scale * factor,
+          ADMIN_MAP_CAMERA.minScale,
+          ADMIN_MAP_CAMERA.maxScale
+        );
+      }
+
+      cameraRef.current = camera;
+      window.cancelAnimationFrame(animationRef.current);
+      animationRef.current = window.requestAnimationFrame(() => applyCamera(camera, { persist: false }));
+      window.clearTimeout(wheelEndTimerRef.current);
+      wheelEndTimerRef.current = window.setTimeout(() => applyCamera(cameraRef.current), 120);
+    };
+
+    viewport.addEventListener("wheel", handleNativeWheel, { passive: false });
+    return () => viewport.removeEventListener("wheel", handleNativeWheel);
+  }, [applyCamera]);
+
   const handlePointerDown = (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     const viewport = viewportRef.current;
@@ -201,35 +242,6 @@ export default function UnifiedMapViewport({
     gestureRef.current = { type: "pan", point, camera: { ...cameraRef.current } };
   };
 
-  const handleWheel = (event) => {
-    event.preventDefault();
-    const isTrackpadPan =
-      !event.ctrlKey &&
-      !event.metaKey &&
-      (Math.abs(event.deltaX) > 0 || (event.deltaMode === 0 && Math.abs(event.deltaY) < 50));
-
-    if (isTrackpadPan) {
-      scheduleCamera({
-        ...cameraRef.current,
-        x: cameraRef.current.x - event.deltaX,
-        y: cameraRef.current.y - event.deltaY,
-      });
-    } else {
-    const rect = viewportRef.current.getBoundingClientRect();
-    const factor = Math.exp(-event.deltaY * 0.0015);
-      scheduleCamera(zoomCameraAt(
-      cameraRef.current,
-      { x: event.clientX - rect.left, y: event.clientY - rect.top },
-      cameraRef.current.scale * factor,
-      ADMIN_MAP_CAMERA.minScale,
-      ADMIN_MAP_CAMERA.maxScale
-      ));
-    }
-
-    window.clearTimeout(wheelEndTimerRef.current);
-    wheelEndTimerRef.current = window.setTimeout(() => applyCamera(cameraRef.current), 120);
-  };
-
   const labels = language === "bg"
     ? { in: "Увеличи", out: "Намали", fit: "Покажи цялата карта", reset: "Начален изглед", zone: "Премини към зона" }
     : { in: "Zoom in", out: "Zoom out", fit: "Fit to map", reset: "Reset view", zone: "Jump to zone" };
@@ -262,7 +274,6 @@ export default function UnifiedMapViewport({
         onPointerMove={handlePointerMove}
         onPointerUp={finishPointer}
         onPointerCancel={finishPointer}
-        onWheel={handleWheel}
         onDoubleClick={(event) => {
           const rect = viewportRef.current.getBoundingClientRect();
           applyCamera(zoomCameraAt(
