@@ -8,6 +8,10 @@ import {
   screenToWorld,
   zoomCameraAt,
 } from "../adminMap/mapCamera.js";
+import {
+  ADMIN_MAP_TERRACE_CONNECTION,
+  ADMIN_MAP_ZONES,
+} from "../adminMap/mapConfig.js";
 
 test("admin map converts zone-local percentages to world coordinates", () => {
   assert.deepEqual(
@@ -45,4 +49,21 @@ test("resize preserves the logical world center", () => {
   const resized = preserveWorldCenter(camera, { width: 800, height: 600 }, { width: 1200, height: 800 });
   const afterCenter = screenToWorld({ x: 600, y: 400 }, resized);
   assert.deepEqual(afterCenter, beforeCenter);
+});
+
+test("restaurant halls and open terrace share one aligned entrance axis", () => {
+  const indoor = ADMIN_MAP_ZONES.find((zone) => zone.id === "indoor");
+  const garden = ADMIN_MAP_ZONES.find((zone) => zone.id === "garden");
+  const openTerrace = ADMIN_MAP_ZONES.find((zone) => zone.id === "openTerrace");
+  const upperHallJunction = ((indoor.x + indoor.width) + garden.x) / 2;
+  const openTerraceEntrance = openTerrace.x + openTerrace.width / 2;
+
+  assert.equal(ADMIN_MAP_TERRACE_CONNECTION.centerX, upperHallJunction);
+  assert.equal(openTerraceEntrance, upperHallJunction);
+  assert.equal(ADMIN_MAP_TERRACE_CONNECTION.top, indoor.y + indoor.height);
+  assert.equal(ADMIN_MAP_TERRACE_CONNECTION.top, garden.y + garden.height);
+  assert.equal(
+    ADMIN_MAP_TERRACE_CONNECTION.top + ADMIN_MAP_TERRACE_CONNECTION.height,
+    openTerrace.y
+  );
 });

@@ -20,7 +20,10 @@ import {
 } from "../domain/reservations/availability";
 import { getAvailableReservationTimesForDate, isPastTimeForDate } from "../domain/reservations/dateTimeRules";
 import UnifiedMapViewport from "../components/admin/UnifiedMapViewport";
-import { ADMIN_MAP_ZONES } from "../domain/adminMap/mapConfig";
+import {
+  ADMIN_MAP_TERRACE_CONNECTION,
+  ADMIN_MAP_ZONES,
+} from "../domain/adminMap/mapConfig";
 import { localPercentToWorld } from "../domain/adminMap/mapCamera";
 
 const emptyMenuItem = {
@@ -1351,13 +1354,6 @@ function AdminMapDecor({ area }) {
             Телевизор
           </div>
         </div>
-        <div className="pointer-events-none absolute bottom-1 left-1/2 z-[3] w-[24%] -translate-x-1/2 text-center">
-          <div className="mx-auto h-6 w-16 rounded-t-full border-x border-t border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_100%,rgba(214,178,120,0.28),transparent_62%)]" />
-          <div className="mx-auto h-1 w-20 rounded-full bg-[#d6b278]/55" />
-          <div className="mx-auto mt-0.5 max-w-[96px] rounded-full border border-[#c9a56a]/28 bg-black/48 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.16em] text-[#f2d39a] backdrop-blur">
-            Вход към терасата
-          </div>
-        </div>
       </>
     );
   }
@@ -1390,13 +1386,6 @@ function AdminMapDecor({ area }) {
         <div className="h-14 w-5 rounded-r-full border-y border-r border-[#d6b278]/55 bg-[radial-gradient(circle_at_0%_50%,rgba(214,178,120,0.32),transparent_68%)]" />
         <div className="ml-1 rounded-full border border-[#c9a56a]/28 bg-black/48 px-2 py-1 text-[7px] font-bold uppercase tracking-[0.16em] text-[#f2d39a] backdrop-blur">
           Вход
-        </div>
-      </div>
-      <div className="pointer-events-none absolute bottom-1 left-[25%] z-[3] w-[28%] -translate-x-1/2 text-center">
-        <div className="mx-auto h-6 w-16 rounded-t-full border-x border-t border-emerald-200/45 bg-[radial-gradient(circle_at_50%_100%,rgba(110,231,183,0.2),transparent_64%)]" />
-        <div className="mx-auto h-1 w-20 rounded-full bg-emerald-200/45" />
-        <div className="mx-auto mt-0.5 max-w-[104px] rounded-full border border-emerald-200/20 bg-black/48 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.14em] text-emerald-100/90 backdrop-blur">
-          Вход към терасата
         </div>
       </div>
     </>
@@ -2287,6 +2276,25 @@ function ReservationOperationsMap({
           overlay={renderFloatingTableReservationForm()}
           language={language}
         >
+          <div
+            className="pointer-events-none absolute z-[2] -translate-x-1/2 overflow-hidden rounded-b-[28px] border-x border-b border-[#c9a56a]/22 bg-[linear-gradient(180deg,rgba(201,165,106,0.18),rgba(20,17,12,0.94))] shadow-[0_18px_36px_rgba(0,0,0,0.32)]"
+            style={{
+              left: ADMIN_MAP_TERRACE_CONNECTION.centerX,
+              top: ADMIN_MAP_TERRACE_CONNECTION.top,
+              width: ADMIN_MAP_TERRACE_CONNECTION.width,
+              height: ADMIN_MAP_TERRACE_CONNECTION.height,
+            }}
+            aria-hidden="true"
+          >
+            <div className="absolute left-1/2 top-0 flex -translate-x-1/2 -translate-y-[2px] items-end gap-1">
+              <div className="h-7 w-12 rounded-b-full border-x border-b border-[#d6b278]/60 bg-[radial-gradient(circle_at_50%_0%,rgba(214,178,120,0.3),transparent_66%)]" />
+              <div className="h-7 w-12 rounded-b-full border-x border-b border-emerald-200/45 bg-[radial-gradient(circle_at_50%_0%,rgba(110,231,183,0.22),transparent_66%)]" />
+            </div>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-[#c9a56a]/24 bg-black/50 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.13em] text-[#f2d39a]">
+              Към откритата тераса
+            </div>
+          </div>
+
           {ADMIN_MAP_ZONES.map((zone) => {
             const label = areas.find(([area]) => area === zone.id)?.[1] || zone.id;
             return (
