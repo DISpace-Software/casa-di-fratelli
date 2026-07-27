@@ -9,13 +9,13 @@ export const ADMIN_MAP_CAMERA = Object.freeze({
 });
 
 export const ADMIN_MAP_WORLD = Object.freeze({
-  width: 1900,
+  width: 1940,
   height: 1420,
 });
 
 export const ADMIN_MAP_ZONES = Object.freeze([
   { id: "indoor", x: 70, y: 70, width: 980, height: 780 },
-  { id: "garden", x: 1100, y: 70, width: 720, height: 780 },
+  { id: "garden", x: 1140, y: 70, width: 720, height: 780 },
   { id: "openTerrace", x: 500, y: 900, width: 820, height: 440 },
 ]);
 
