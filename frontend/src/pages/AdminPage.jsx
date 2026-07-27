@@ -5321,6 +5321,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   });
   const [pushEnabled, setPushEnabled] = React.useState(false);
   const [statsPeriod, setStatsPeriod] = React.useState("today");
+  const [reportsPeriod, setReportsPeriod] = React.useState("all");
   const adminSwipeStartRef = React.useRef(null);
   const [blacklistForm, setBlacklistForm] = React.useState({
     guestName: "",
@@ -7215,10 +7216,19 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       (minutes !== null && minutes < 0);
   }
 
-  function isOrderInStatsPeriod(order) {
-    const createdAt = order.createdAtUtc ? new Date(order.createdAtUtc) : null;
-    if (!createdAt || Number.isNaN(createdAt.getTime())) return false;
-    return isInStatsPeriod(createdAt.toISOString().slice(0, 10));
+  function getOrderReportDate(order) {
+    const relatedReservation = reservations.find(
+      (reservation) => Number(reservation.id) === Number(order.reservationId)
+    );
+    if (relatedReservation?.reservedDate) return relatedReservation.reservedDate;
+    if (!order.createdAtUtc) return "";
+    const createdAt = new Date(order.createdAtUtc);
+    return Number.isNaN(createdAt.getTime()) ? "" : formatLocalDate(createdAt);
+  }
+
+  function isInReportsPeriod(dateValue) {
+    if (reportsPeriod === "all") return true;
+    return String(dateValue || "").slice(0, 7) === reportsPeriod;
   }
 
   const statsReservations = reservations.filter((r) =>
@@ -7227,8 +7237,40 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const statsUpcomingReservations = statsReservations.filter(isUpcomingDashboardReservation);
   const statsPastReservations = statsReservations.filter(isPastDashboardReservation);
 
-  const reportsReservations = statsReservations.filter(isReportableVisit);
-  const reportsOrders = diningOrders.filter((order) => order.status !== "Cancelled" && isOrderInStatsPeriod(order));
+  const reportMonthLabels = {
+    bg: ["януари", "февруари", "март", "април", "май", "юни", "юли", "август", "септември", "октомври", "ноември", "декември"],
+    en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    ru: ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
+  };
+  const currentReportDate = new Date();
+  const currentReportYear = currentReportDate.getFullYear();
+  const reportMonthKeys = new Set();
+  for (let month = 0; month <= currentReportDate.getMonth(); month += 1) {
+    reportMonthKeys.add(`${currentReportYear}-${String(month + 1).padStart(2, "0")}`);
+  }
+  reservations.forEach((reservation) => {
+    if (/^\d{4}-\d{2}/.test(String(reservation.reservedDate || ""))) {
+      reportMonthKeys.add(String(reservation.reservedDate).slice(0, 7));
+    }
+  });
+  diningOrders.forEach((order) => {
+    const date = getOrderReportDate(order);
+    if (/^\d{4}-\d{2}/.test(date)) reportMonthKeys.add(date.slice(0, 7));
+  });
+  const reportMonthOptions = [...reportMonthKeys]
+    .sort((first, second) => second.localeCompare(first))
+    .map((key) => {
+      const [year, month] = key.split("-").map(Number);
+      const labels = reportMonthLabels[adminLanguage] || reportMonthLabels.en;
+      return { key, label: `${labels[month - 1]} ${year}` };
+    });
+
+  const reportsReservations = reservations
+    .filter((reservation) => isInReportsPeriod(reservation.reservedDate))
+    .filter(isReportableVisit);
+  const reportsOrders = diningOrders.filter(
+    (order) => order.status !== "Cancelled" && isInReportsPeriod(getOrderReportDate(order))
+  );
   const walkInReservations = reportsReservations.filter((reservation) => reservation.isWalkIn);
   const reservationReportReservations = reportsReservations.filter((reservation) => !reservation.isWalkIn);
   const siteReservations = reservationReportReservations.filter((reservation) => !reservation.createdByAdmin);
@@ -10830,23 +10872,24 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     : "Quick operating report for reservations, online orders, and guests."
                 }
                 right={
-                  <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
-                    {[
-                      ["today", adminLanguage === "bg" ? "Днес" : "Today"],
-                      ["week", adminLanguage === "bg" ? "Седмица" : "Week"],
-                      ["month", adminLanguage === "bg" ? "Месец" : "Month"],
-                    ].map(([key, label]) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setStatsPeriod(key)}
-                        className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                          statsPeriod === key ? "luxury-button" : "text-white/70 hover:text-white"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                  <div className="min-w-[220px]">
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/40">
+                      {adminLocalText(adminLanguage, "Период на отчета", "Report period", "Период отчёта")}
+                    </label>
+                    <select
+                      value={reportsPeriod}
+                      onChange={(event) => setReportsPeriod(event.target.value)}
+                      className="min-h-[46px] w-full rounded-2xl border border-[#c9a56a]/25 bg-black/25 px-4 py-3 text-sm font-semibold text-[#fff4df] outline-none focus:border-[#f2d39a]/60"
+                    >
+                      <option value="all">
+                        {adminLocalText(adminLanguage, "Общо за всички периоди", "All time", "За всё время")}
+                      </option>
+                      {reportMonthOptions.map((option) => (
+                        <option key={option.key} value={option.key}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 }
               >
