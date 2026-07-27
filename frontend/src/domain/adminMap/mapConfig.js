@@ -9,7 +9,7 @@ export const ADMIN_MAP_CAMERA = Object.freeze({
 });
 
 export const ADMIN_MAP_WORLD = Object.freeze({
-  width: 1940,
+  width: 1970,
   height: 1420,
 });
 
