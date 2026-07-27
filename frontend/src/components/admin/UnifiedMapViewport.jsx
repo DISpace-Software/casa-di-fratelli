@@ -31,6 +31,7 @@ export default function UnifiedMapViewport({
   onZoneChange,
   language = "bg",
 }) {
+  const shellRef = React.useRef(null);
   const viewportRef = React.useRef(null);
   const worldRef = React.useRef(null);
   const [initialCamera] = React.useState(() => readSavedCamera() || { x: 0, y: 0, scale: 1 });
@@ -43,6 +44,7 @@ export default function UnifiedMapViewport({
   const movedRef = React.useRef(false);
   const initializedRef = React.useRef(false);
   const [scaleLabel, setScaleLabel] = React.useState(initialCamera.scale);
+  const [isExpanded, setIsExpanded] = React.useState(false);
 
   const applyCamera = React.useCallback((nextCamera, { animate = false, persist = true } = {}) => {
     const camera = clampCamera(
@@ -125,6 +127,33 @@ export default function UnifiedMapViewport({
     window.cancelAnimationFrame(animationRef.current);
     window.clearTimeout(wheelEndTimerRef.current);
   }, []);
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isExpanded) setIsExpanded(false);
+    };
+    const handleKeyDown = (event) => {
+      if (event.key !== "Escape" || !isExpanded) return;
+      if (document.fullscreenElement) document.exitFullscreen?.();
+      setIsExpanded(false);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isExpanded]);
+
+  React.useEffect(() => {
+    if (!isExpanded) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isExpanded]);
 
   const scheduleCamera = (camera) => {
     cameraRef.current = camera;
@@ -243,11 +272,35 @@ export default function UnifiedMapViewport({
   };
 
   const labels = language === "bg"
-    ? { in: "Увеличи", out: "Намали", fit: "Покажи цялата карта", reset: "Начален изглед", zone: "Премини към зона" }
-    : { in: "Zoom in", out: "Zoom out", fit: "Fit to map", reset: "Reset view", zone: "Jump to zone" };
+    ? { in: "Увеличи", out: "Намали", fit: "Покажи цялата карта", reset: "Начален изглед", zone: "Премини към зона", fullscreen: "Отвори картата на цял екран", exitFullscreen: "Затвори цял екран" }
+    : { in: "Zoom in", out: "Zoom out", fit: "Fit to map", reset: "Reset view", zone: "Jump to zone", fullscreen: "Open map fullscreen", exitFullscreen: "Exit fullscreen" };
+
+  const toggleFullscreen = async () => {
+    if (isExpanded) {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen?.().catch(() => {});
+      }
+      setIsExpanded(false);
+      return;
+    }
+
+    setIsExpanded(true);
+    try {
+      await shellRef.current?.requestFullscreen?.({ navigationUI: "hide" });
+    } catch {
+      // iOS Safari and some PWA modes use the fixed-position fallback.
+    }
+  };
 
   return (
-    <div className="relative">
+    <div
+      ref={shellRef}
+      className={`relative ${
+        isExpanded
+          ? "fixed inset-0 z-[250] flex flex-col bg-[#090806] px-[max(10px,env(safe-area-inset-left))] pb-[max(10px,env(safe-area-inset-bottom))] pt-[max(10px,env(safe-area-inset-top))]"
+          : ""
+      }`}
+    >
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <select
           value={activeZone}
@@ -264,12 +317,25 @@ export default function UnifiedMapViewport({
           <button type="button" onClick={() => zoomAtCenter(1)} aria-label={labels.in} title={labels.in} className="ghost-button h-11 w-11 rounded-xl text-xl">+</button>
           <button type="button" onClick={() => fitToMap(true)} aria-label={labels.fit} title={labels.fit} className="ghost-button min-h-[44px] rounded-xl px-3 text-xs font-semibold">Fit</button>
           <button type="button" onClick={() => { window.localStorage.removeItem(CAMERA_STORAGE_KEY); fitToMap(true); }} aria-label={labels.reset} title={labels.reset} className="ghost-button hidden min-h-[44px] rounded-xl px-3 text-xs font-semibold sm:block">Reset</button>
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            aria-label={isExpanded ? labels.exitFullscreen : labels.fullscreen}
+            title={isExpanded ? labels.exitFullscreen : labels.fullscreen}
+            className="luxury-button min-h-[44px] rounded-xl px-3 text-xs font-semibold sm:px-4"
+          >
+            {isExpanded
+              ? language === "bg" ? "Затвори" : "Close"
+              : language === "bg" ? "Цял екран" : "Fullscreen"}
+          </button>
         </div>
       </div>
       <div
         ref={viewportRef}
         data-admin-swipe-lock="true"
-        className="admin-unified-map-viewport relative h-[clamp(560px,72vh,920px)] min-w-0 overflow-hidden rounded-[26px] border border-white/10 bg-[#0d0b09] shadow-inner shadow-black/60"
+        className={`admin-unified-map-viewport relative min-w-0 overflow-hidden rounded-[26px] border border-white/10 bg-[#0d0b09] shadow-inner shadow-black/60 ${
+          isExpanded ? "min-h-0 flex-1" : "h-[clamp(560px,72vh,920px)]"
+        }`}
         style={{ touchAction: "none", overscrollBehavior: "contain", userSelect: "none" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
