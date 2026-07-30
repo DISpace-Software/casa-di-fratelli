@@ -11,6 +11,7 @@ import {
 } from "../../domain/adminMap/mapCamera";
 
 const CAMERA_STORAGE_KEY = "casa-admin-unified-map-camera";
+const INTERACTIVE_MAP_SELECTOR = "button, a, input, select, textarea, [role='button'], [data-map-keep-open='true']";
 
 function readSavedCamera() {
   if (!ADMIN_MAP_CAMERA.persistCamera || typeof window === "undefined") return null;
@@ -226,6 +227,7 @@ export default function UnifiedMapViewport({
 
   const handlePointerDown = (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (event.target.closest(INTERACTIVE_MAP_SELECTOR)) return;
     const viewport = viewportRef.current;
     viewport.setPointerCapture?.(event.pointerId);
     pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -381,7 +383,7 @@ export default function UnifiedMapViewport({
           }
         }}
         onClick={(event) => {
-          if (event.target.closest("button, a, input, select, textarea, [role='button'], [data-map-keep-open='true']")) return;
+          if (event.target.closest(INTERACTIVE_MAP_SELECTOR)) return;
           onBackgroundClick?.();
         }}
       >
