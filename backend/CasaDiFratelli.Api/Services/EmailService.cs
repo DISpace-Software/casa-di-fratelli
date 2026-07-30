@@ -1,12 +1,15 @@
 using System.Net.Http.Headers;
+using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace CasaDiFratelli.Api.Services;
 
 public class EmailService
 {
-    private const string DefaultFromEmail = "Casa di Fratelli <noreply@mail.casadifratelli.bg>";
+    private const string DefaultFromEmail = "Casa di Fratelli <reservations@mail.casadifratelli.bg>";
+    private const string DefaultMarketingFromEmail = "Casa di Fratelli <offers@mail.casadifratelli.bg>";
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
@@ -23,14 +26,26 @@ public class EmailService
 
     public async Task SendAsync(string to, string subject, string html)
     {
+        await SendInternalAsync(to, subject, html, isMarketing: false);
+    }
+
+    public async Task SendMarketingAsync(string to, string subject, string html)
+    {
+        await SendInternalAsync(to, subject, html, isMarketing: true);
+    }
+
+    private async Task SendInternalAsync(string to, string subject, string html, bool isMarketing)
+    {
         try
         {
             var apiKey = _configuration["RESEND_API_KEY"];
-            var fromEmail = _configuration["FROM_EMAIL"];
+            var fromEmail = isMarketing
+                ? _configuration["MARKETING_FROM_EMAIL"]
+                : _configuration["FROM_EMAIL"];
 
             if (string.IsNullOrWhiteSpace(fromEmail))
             {
-                fromEmail = DefaultFromEmail;
+                fromEmail = isMarketing ? DefaultMarketingFromEmail : DefaultFromEmail;
             }
 
             if (string.IsNullOrWhiteSpace(apiKey))
@@ -45,13 +60,40 @@ public class EmailService
                 return;
             }
 
-            var payload = new
+            var replyTo = _configuration["REPLY_TO_EMAIL"];
+            var unsubscribeEmail = _configuration["UNSUBSCRIBE_EMAIL"];
+            if (string.IsNullOrWhiteSpace(unsubscribeEmail))
+                unsubscribeEmail = replyTo;
+
+            var finalHtml = html;
+            var headers = new Dictionary<string, string>();
+
+            if (isMarketing && !string.IsNullOrWhiteSpace(unsubscribeEmail))
             {
-                from = fromEmail,
-                to = new[] { to },
-                subject,
-                html
+                var encodedEmail = WebUtility.HtmlEncode(unsubscribeEmail);
+                finalHtml += $"""
+                    <div style="max-width:640px;margin:16px auto 0;color:#6b7280;font-family:Arial,sans-serif;font-size:12px;text-align:center">
+                      Получавате това писмо, защото сте дали съгласие за маркетингови съобщения.
+                      <a href="mailto:{encodedEmail}?subject=unsubscribe" style="color:#6b7280">Отписване</a>
+                    </div>
+                    """;
+                headers["List-Unsubscribe"] = $"<mailto:{unsubscribeEmail}?subject=unsubscribe>";
+            }
+
+            var payload = new Dictionary<string, object?>
+            {
+                ["from"] = fromEmail,
+                ["to"] = new[] { to },
+                ["subject"] = subject,
+                ["html"] = finalHtml,
+                ["text"] = ToPlainText(finalHtml)
             };
+
+            if (!string.IsNullOrWhiteSpace(replyTo))
+                payload["reply_to"] = replyTo;
+
+            if (headers.Count > 0)
+                payload["headers"] = headers;
 
             using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
@@ -76,5 +118,33 @@ public class EmailService
         {
             _logger.LogError(error, "Email sending failed before the request could complete.");
         }
+    }
+
+    private static string ToPlainText(string html)
+    {
+        var withVisibleLinks = Regex.Replace(
+            html ?? string.Empty,
+            """<a\b[^>]*\bhref\s*=\s*["'](?<url>[^"']+)["'][^>]*>(?<label>.*?)</a>""",
+            match =>
+            {
+                var label = Regex.Replace(match.Groups["label"].Value, "<[^>]+>", " ").Trim();
+                var url = WebUtility.HtmlDecode(match.Groups["url"].Value);
+                return $"{label} ({url})";
+            },
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        var withLineBreaks = Regex.Replace(
+            withVisibleLinks,
+            @"<(br\s*/?|/p|/div|/h[1-6]|/li)>",
+            "\n",
+            RegexOptions.IgnoreCase);
+        var withoutTags = Regex.Replace(withLineBreaks, "<[^>]+>", " ");
+        var decoded = WebUtility.HtmlDecode(withoutTags);
+        var normalizedLines = decoded
+            .Replace("\r\n", "\n")
+            .Split('\n')
+            .Select(line => Regex.Replace(line, @"\s+", " ").Trim())
+            .Where(line => line.Length > 0);
+
+        return string.Join("\n\n", normalizedLines);
     }
 }

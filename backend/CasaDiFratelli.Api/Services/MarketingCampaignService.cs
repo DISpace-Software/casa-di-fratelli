@@ -91,7 +91,7 @@ public class MarketingCampaignService
 
             if (dryRun) continue;
 
-            await _email.SendAsync(candidate.Email, candidate.Subject, candidate.Html);
+            await _email.SendMarketingAsync(candidate.Email, candidate.Subject, candidate.Html);
             _db.MarketingMessageLogs.Add(new MarketingMessageLog
             {
                 CampaignKey = candidate.CampaignKey,

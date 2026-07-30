@@ -15,8 +15,24 @@ Backend:
 - `ConnectionStrings__DefaultConnection` or `DATABASE_URL`
 - `RESEND_API_KEY`
 - `FROM_EMAIL`
+- `MARKETING_FROM_EMAIL`
+- `REPLY_TO_EMAIL`
+- `UNSUBSCRIBE_EMAIL`
 - `ADMIN_EMAIL`
 - `ADMIN_URL`
+
+Recommended production values:
+
+```text
+FROM_EMAIL=Casa di Fratelli <reservations@mail.casadifratelli.bg>
+MARKETING_FROM_EMAIL=Casa di Fratelli <offers@mail.casadifratelli.bg>
+REPLY_TO_EMAIL=<a monitored restaurant mailbox>
+UNSUBSCRIBE_EMAIL=<a monitored restaurant mailbox>
+```
+
+Keep transactional and marketing senders separate so complaints about offers do
+not directly damage the reputation of reservation confirmations. Do not use a
+`noreply` sender.
 
 Optional:
 
