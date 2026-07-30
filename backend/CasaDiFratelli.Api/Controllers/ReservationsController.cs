@@ -232,7 +232,7 @@ public class ReservationsController : ControllerBase
                 <p>Здравейте, {guestName},</p>
                 <p>Получихме заявката Ви за резервация. За да пазим масите коректно за всички гости, моля потвърдете резервацията от бутона по-долу.</p>
                 <div style="background:#fff3df;border:1px solid #ead8bd;border-radius:16px;padding:16px;margin:20px 0">
-                  <p style="margin:0"><strong>Дата:</strong> {reservation.ReservedDate}</p>
+                  <p style="margin:0"><strong>Дата:</strong> {reservation.ReservedDate:dd.MM.yyyy} г.</p>
                   <p style="margin:6px 0 0"><strong>Час:</strong> {reservation.ReservedTime}</p>
                   <p style="margin:6px 0 0"><strong>Гости:</strong> {reservation.GuestCount}</p>
                 </div>
@@ -382,14 +382,14 @@ public class ReservationsController : ControllerBase
 
         await _emailService.SendAsync(
             adminEmail,
-            $"Нова потвърдена резервация: {reservation.GuestName} · {reservation.ReservedDate} {reservation.ReservedTime}",
+            $"Нова потвърдена резервация: {reservation.GuestName} · {reservation.ReservedDate:dd.MM.yyyy} г. {reservation.ReservedTime}",
             $"""
             <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
               <h2>Нова потвърдена резервация в Casa di Fratelli</h2>
               <p><strong>Гост:</strong> {reservation.GuestName}</p>
               <p><strong>Телефон:</strong> {reservation.Phone}</p>
               <p><strong>Email:</strong> {reservation.Email}</p>
-              <p><strong>Дата:</strong> {reservation.ReservedDate}</p>
+              <p><strong>Дата:</strong> {reservation.ReservedDate:dd.MM.yyyy} г.</p>
               <p><strong>Час:</strong> {reservation.ReservedTime}</p>
               <p><strong>Маси:</strong> {string.Join(", ", reservation.Tables.Select(t => t.TableCode))}</p>
               <p><strong>Гости:</strong> {reservation.GuestCount}</p>
@@ -894,7 +894,7 @@ public class ReservationsController : ControllerBase
           <h2>Вашата резервация е потвърдена</h2>
           <p>Здравейте, {reservation.GuestName},</p>
           <p>С радост потвърждаваме Вашата резервация в <strong>Casa di Fratelli</strong>.</p>
-          <p><strong>Дата:</strong> {reservation.ReservedDate}</p>
+          <p><strong>Дата:</strong> {reservation.ReservedDate:dd.MM.yyyy} г.</p>
           <p><strong>Час:</strong> {reservation.ReservedTime}</p>
           <p><strong>Маси:</strong> {string.Join(", ", reservation.Tables.Select(t => t.TableCode))}</p>
           <p>Очакваме Ви!</p>
@@ -1262,7 +1262,7 @@ public class ReservationsController : ControllerBase
           <h2>Вашата резервация е отменена</h2>
           <p>Здравейте, {reservation.GuestName},</p>
           <p>Информираме Ви, че резервацията Ви в <strong>Casa di Fratelli</strong> беше отменена.</p>
-          <p><strong>Дата:</strong> {reservation.ReservedDate}</p>
+          <p><strong>Дата:</strong> {reservation.ReservedDate:dd.MM.yyyy} г.</p>
           <p><strong>Час:</strong> {reservation.ReservedTime}</p>
           <p>Ако желаете, можете да направите нова резервация през сайта.</p>
         </div>
