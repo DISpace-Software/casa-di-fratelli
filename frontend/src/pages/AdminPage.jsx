@@ -1655,6 +1655,7 @@ function ReservationOperationsMap({
 }) {
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState(null);
+  const [mapFocusRequestId, setMapFocusRequestId] = React.useState(0);
   const [moveReservationId, setMoveReservationId] = React.useState(null);
   const [moveDraft, setMoveDraft] = React.useState({ area: "indoor", tableIds: [], guestCount: 0 });
   const [showConsumption, setShowConsumption] = React.useState(false);
@@ -1764,7 +1765,7 @@ function ReservationOperationsMap({
       if (table) {
         const zone = ADMIN_MAP_ZONES.find((item) => item.id === table.area) || ADMIN_MAP_ZONES[0];
         const point = localPercentToWorld(zone, table);
-        return { ...point, key: `table-${table.area}-${table.id}` };
+        return { ...point, key: `table-${table.area}-${table.id}-${mapFocusRequestId}` };
       }
     }
 
@@ -1781,7 +1782,7 @@ function ReservationOperationsMap({
     }
 
     return null;
-  }, [areaTables, getReservationBounds, selectedArea, selectedReservation, selectedTableId]);
+  }, [areaTables, getReservationBounds, mapFocusRequestId, selectedArea, selectedReservation, selectedTableId]);
   const activeOrdersByReservationId = React.useMemo(() => {
     const grouped = new Map();
 
@@ -2516,6 +2517,7 @@ function ReservationOperationsMap({
                       return;
                     }
 
+                    setMapFocusRequestId((current) => current + 1);
                     setSelectedTableId((current) => (current === table.id ? null : table.id));
                   }}
                   className={`admin-map-table-node flex items-center justify-center rounded-2xl border font-semibold shadow-2xl transition hover:scale-[1.04] ${

@@ -102,7 +102,7 @@ export default function UnifiedMapViewport({
   React.useEffect(() => {
     if (!focusKey || !Number.isFinite(focusX) || !Number.isFinite(focusY)) return;
     const viewport = viewportSizeRef.current;
-    const preferredScale = viewport.width < 700 ? 1.45 : 1.25;
+    const preferredScale = viewport.width < 700 ? 1.45 : 1.65;
     const scale = Math.min(
       ADMIN_MAP_CAMERA.maxScale,
       Math.max(ADMIN_MAP_CAMERA.minScale, focusScale || preferredScale)
