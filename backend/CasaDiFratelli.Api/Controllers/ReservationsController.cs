@@ -194,7 +194,10 @@ public class ReservationsController : ControllerBase
                 if (layout?.Count > 0)
                 {
                     var capacityById = layout
-                        .Where(item => item.IsActive && !string.IsNullOrWhiteSpace(item.Id))
+                        .Where(item =>
+                            item.IsActive &&
+                            !string.IsNullOrWhiteSpace(item.Id) &&
+                            !TableCapacityService.IsRetired(item.Id))
                         .GroupBy(item => item.Id!.Trim(), StringComparer.OrdinalIgnoreCase)
                         .ToDictionary(group => group.Key, group => group.First().Seats, StringComparer.OrdinalIgnoreCase);
 

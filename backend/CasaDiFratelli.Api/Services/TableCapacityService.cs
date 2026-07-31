@@ -2,6 +2,11 @@ namespace CasaDiFratelli.Api.Services;
 
 public static class TableCapacityService
 {
+    private static readonly HashSet<string> RetiredTableIds = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "30A", "34A", "45A"
+    };
+
     private static readonly Dictionary<string, int> Capacities = new(StringComparer.OrdinalIgnoreCase)
     {
         ["1"] = 4, ["2"] = 4, ["3"] = 4, ["4"] = 4,
@@ -13,9 +18,13 @@ public static class TableCapacityService
         ["34"] = 4, ["35"] = 4, ["36"] = 4, ["37"] = 4,
         ["38"] = 4, ["39"] = 4, ["40"] = 4, ["41"] = 4,
         ["42"] = 4, ["43"] = 4, ["44"] = 4, ["45"] = 4,
-        ["30A"] = 2, ["34A"] = 2, ["45A"] = 2,
         ["46"] = 4, ["47"] = 4, ["48"] = 2, ["49"] = 2,
     };
+
+    public static bool IsRetired(string? tableId)
+    {
+        return !string.IsNullOrWhiteSpace(tableId) && RetiredTableIds.Contains(tableId.Trim());
+    }
 
     public static int GetCapacity(IEnumerable<string> tableIds)
     {

@@ -5,6 +5,7 @@ import {
   defaultGardenTables,
   defaultIndoorTables,
   defaultOpenTerraceTables,
+  isRetiredTableId,
   reservationTimes,
 } from "../domain/reservations/tableConfig";
 import {
@@ -940,7 +941,7 @@ function normalizeLayoutTables(items, area, fallback) {
       wide: Boolean(item.wide ?? item.Wide),
       isActive: item.isActive ?? item.IsActive ?? true,
     }))
-    .filter((item) => item.id && item.isActive);
+    .filter((item) => item.id && item.isActive && !isRetiredTableId(item.id));
 
   return normalized.length ? normalized : fallback;
 }

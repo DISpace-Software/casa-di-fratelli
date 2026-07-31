@@ -1,4 +1,9 @@
 export const RESERVATION_BUFFER_MINUTES = 180;
+export const retiredTableIds = new Set(["30A", "34A", "45A"]);
+
+export function isRetiredTableId(tableId) {
+  return retiredTableIds.has(String(tableId || "").trim().toUpperCase());
+}
 
 export const defaultGardenTables = [
   { id: "42", x: 17, y: 22, seats: 4 },
@@ -17,9 +22,6 @@ export const defaultGardenTables = [
   { id: "31", x: 78, y: 42, seats: 4 },
   { id: "32", x: 78, y: 62, seats: 4 },
   { id: "33", x: 78, y: 82, seats: 4 },
-  { id: "34A", x: 58, y: 10, seats: 2, special: true },
-  { id: "30A", x: 75, y: 10, seats: 2, special: true },
-  { id: "45A", x: 28, y: 93, seats: 2, special: true },
 ];
 
 export const defaultIndoorTables = [

@@ -52,10 +52,6 @@ public class TableLayoutsController : ControllerBase
         new("31", "garden", 78, 42, 4, false, false, true),
         new("32", "garden", 78, 62, 4, false, false, true),
         new("33", "garden", 78, 82, 4, false, false, true),
-        new("34A", "garden", 58, 10, 2, true, false, true),
-        new("30A", "garden", 75, 10, 2, true, false, true),
-        new("45A", "garden", 28, 93, 2, true, false, true),
-
         new("1", "indoor", 83, 12, 4, false, true, true),
         new("2", "indoor", 83, 22, 4, false, true, true),
         new("3", "indoor", 83, 32, 4, false, true, true),
@@ -126,7 +122,16 @@ public class TableLayoutsController : ControllerBase
                 PropertyNameCaseInsensitive = true
             });
 
-            return Ok(items?.Count > 0 ? items : DefaultLayout);
+            var activeLayout = items?
+                .Where(item => !TableCapacityService.IsRetired(item.Id))
+                .ToList();
+
+            if (items != null && activeLayout != null && activeLayout.Count != items.Count)
+            {
+                await PersistLayoutAsync(activeLayout);
+            }
+
+            return Ok(activeLayout?.Count > 0 ? activeLayout : DefaultLayout);
         }
         catch (Exception error)
         {
@@ -147,23 +152,7 @@ public class TableLayoutsController : ControllerBase
                 return BadRequest(new { message = validationError });
             }
 
-            await EnsureStorageAsync();
-            var json = JsonSerializer.Serialize(layout);
-
-            await using var command = _db.Database.GetDbConnection().CreateCommand();
-            command.CommandText = """
-                INSERT INTO "TableLayouts" ("Id", "LayoutJson", "UpdatedAtUtc")
-                VALUES (1, @json, now())
-                ON CONFLICT ("Id")
-                DO UPDATE SET "LayoutJson" = EXCLUDED."LayoutJson", "UpdatedAtUtc" = now();
-                """;
-
-            var parameter = command.CreateParameter();
-            parameter.ParameterName = "@json";
-            parameter.Value = json;
-            command.Parameters.Add(parameter);
-
-            await command.ExecuteNonQueryAsync();
+            await PersistLayoutAsync(layout);
             await _audit.RecordAsync(HttpContext, "save", "TableLayout", "1", after: layout);
 
             return Ok(layout);
@@ -187,6 +176,7 @@ public class TableLayoutsController : ControllerBase
         if (layout == null || layout.Count == 0) return "Layout cannot be empty.";
 
         var duplicate = layout
+            .Where(item => !string.IsNullOrWhiteSpace(item.Id))
             .GroupBy(item => item.Id.Trim(), StringComparer.OrdinalIgnoreCase)
             .FirstOrDefault(group => group.Count() > 1);
 
@@ -195,6 +185,7 @@ public class TableLayoutsController : ControllerBase
         foreach (var item in layout)
         {
             if (string.IsNullOrWhiteSpace(item.Id)) return "Every table needs a number.";
+            if (TableCapacityService.IsRetired(item.Id)) return $"Table {item.Id} is permanently retired.";
             if (string.IsNullOrWhiteSpace(item.Area)) return $"Table {item.Id} needs an area.";
             if (item.Seats <= 0) return $"Table {item.Id} needs at least one seat.";
             if (item.X < 5 || item.X > 95 || item.Y < 5 || item.Y > 95)
@@ -224,5 +215,26 @@ public class TableLayoutsController : ControllerBase
         }
 
         return null;
+    }
+
+    private async Task PersistLayoutAsync(List<TableLayoutItem> layout)
+    {
+        await EnsureStorageAsync();
+        var json = JsonSerializer.Serialize(layout);
+
+        await using var command = _db.Database.GetDbConnection().CreateCommand();
+        command.CommandText = """
+            INSERT INTO "TableLayouts" ("Id", "LayoutJson", "UpdatedAtUtc")
+            VALUES (1, @json, now())
+            ON CONFLICT ("Id")
+            DO UPDATE SET "LayoutJson" = EXCLUDED."LayoutJson", "UpdatedAtUtc" = now();
+            """;
+
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "@json";
+        parameter.Value = json;
+        command.Parameters.Add(parameter);
+
+        await command.ExecuteNonQueryAsync();
     }
 }

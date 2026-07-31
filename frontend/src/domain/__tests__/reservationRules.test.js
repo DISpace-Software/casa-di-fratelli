@@ -7,9 +7,9 @@ import {
   defaultOpenTerraceTables,
   adminReservationTimes,
   reservationTimes,
+  isRetiredTableId,
 } from "../reservations/tableConfig.js";
 import {
-  canCombineTables,
   canUseAdminTableSelection,
   getEligibleIndoorGroups,
   getEligibleOpenTerraceGroups,
@@ -93,7 +93,7 @@ test("open terrace allows only groups with enough seats", () => {
   assert.deepEqual(getEligibleOpenTerraceGroups(2, defaultOpenTerraceTables), [["46", "47"], ["48", "49"]]);
 });
 
-test("garden table combinations must be logical, continuous, and cannot start from special two-seat tables", () => {
+test("garden table combinations must be logical and continuous", () => {
   assert.equal(
     isLogicalTerraceSelection([byId(defaultGardenTables, "42"), byId(defaultGardenTables, "43")], byId(defaultGardenTables, "44")),
     true
@@ -102,10 +102,13 @@ test("garden table combinations must be logical, continuous, and cannot start fr
     isLogicalTerraceSelection([byId(defaultGardenTables, "42"), byId(defaultGardenTables, "44")], byId(defaultGardenTables, "45")),
     false
   );
-  assert.equal(
-    canCombineTables("garden", [byId(defaultGardenTables, "34A")], byId(defaultGardenTables, "34"), 2, defaultGardenTables),
-    false
-  );
+});
+
+test("retired tables never appear in the default layout", () => {
+  assert.equal(defaultGardenTables.some((table) => isRetiredTableId(table.id)), false);
+  assert.equal(isRetiredTableId("30a"), true);
+  assert.equal(isRetiredTableId("34A"), true);
+  assert.equal(isRetiredTableId("45A"), true);
 });
 
 test("admin table selection accepts only configured combinations per area", () => {
@@ -116,10 +119,7 @@ test("admin table selection accepts only configured combinations per area", () =
   assert.equal(canUseAdminTableSelection("indoor", ["20", "21", "22"], { requiredSeats: 16, allowPartial: false }), false);
   assert.equal(canUseAdminTableSelection("indoor", ["20", "21", "22", "23"], { requiredSeats: 16, allowPartial: false }), true);
   assert.equal(canUseAdminTableSelection("garden", ["42", "43", "44"]), true);
-  assert.equal(
-    canUseAdminTableSelection("garden", ["34A", "34"], { gardenSpecialIds: ["34A", "30A", "45A"] }),
-    false
-  );
+  assert.equal(canUseAdminTableSelection("garden", ["34", "38"]), false);
   assert.equal(canUseAdminTableSelection("openTerrace", ["46", "47"]), true);
   assert.equal(canUseAdminTableSelection("openTerrace", ["46", "49"]), false);
 });

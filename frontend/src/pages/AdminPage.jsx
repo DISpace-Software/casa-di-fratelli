@@ -7,6 +7,7 @@ import {
   indoorGroups,
   openTerraceGroups,
   adminReservationTimes,
+  isRetiredTableId,
   tableIdsByArea,
   tablesByArea,
 } from "../domain/reservations/tableConfig";
@@ -1683,7 +1684,7 @@ function ReservationOperationsMap({
   const getActiveTablesForArea = React.useCallback(
     (area) => {
       const savedTables = layout
-        .filter((item) => item.area === area && item.isActive)
+        .filter((item) => item.area === area && item.isActive && !isRetiredTableId(item.id))
         .map(normalizeLayoutItem);
 
       return savedTables.length
