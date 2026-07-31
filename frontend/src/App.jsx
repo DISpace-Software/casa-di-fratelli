@@ -3,16 +3,31 @@ import translations from "./i18n/translations";
 import { tables } from "./data/tablesData";
 import { galleryImages } from "./data/restaurantData";
 import HomePage from "./pages/HomePage";
-import ReservationPage from "./pages/ReservationPage";
-import MenuPage from "./pages/MenuPage";
-import PrivacyPage from "./pages/PrivacyPage";
 import { API_BASE_URL } from "./config/api";
 import BackToTopButton from "./components/layout/BackToTopButton";
 
 const AdminPage = React.lazy(() => import("./pages/AdminPage"));
+const ReservationPage = React.lazy(() => import("./pages/ReservationPage"));
+const MenuPage = React.lazy(() => import("./pages/MenuPage"));
+const PrivacyPage = React.lazy(() => import("./pages/PrivacyPage"));
 
 const COOKIE_CONSENT_COOKIE = "casa_cookie_consent";
 const RESERVATION_GUEST_COOKIE = "casa_reservation_guest";
+
+function PageLoader() {
+  return (
+    <main
+      className="flex min-h-screen items-center justify-center bg-[#090705] px-6 text-center text-[#f7ead3]"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div>
+        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[#c9a56a]/30 border-t-[#c9a56a]" />
+        <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#c9a56a]">Зареждане</p>
+      </div>
+    </main>
+  );
+}
 
 function getCookieValue(name) {
   if (typeof document === "undefined") return "";
@@ -1284,16 +1299,18 @@ export default function App() {
   if (currentPage === "reservation-map") {
     return (
       <>
-        <ReservationPage
-          t={t}
-          language={language}
-          setLanguage={setLanguage}
-          onBack={() => setCurrentPage("home")}
-          onOpenPrivacy={() => setCurrentPage("privacy")}
-          onReservationComplete={() => setCurrentPage("home")}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-        />
+        <React.Suspense fallback={<PageLoader />}>
+          <ReservationPage
+            t={t}
+            language={language}
+            setLanguage={setLanguage}
+            onBack={() => setCurrentPage("home")}
+            onOpenPrivacy={() => setCurrentPage("privacy")}
+            onReservationComplete={() => setCurrentPage("home")}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+          />
+        </React.Suspense>
         <BackToTopButton />
         {cookieConsentBanner}
         {closureModal}
@@ -1304,18 +1321,20 @@ export default function App() {
   if (currentPage === "menu") {
     return (
       <>
-        <MenuPage
-          t={t}
-          language={language}
-          setLanguage={setLanguage}
-          onOpenReservation={() => setCurrentPage("reservation-map")}
-          onBackHome={() => setCurrentPage("home")}
-          onOpenSection={openHomeSection}
-          onOpenPrivacy={() => setCurrentPage("privacy")}
-          cmsMenuItems={cmsMenuItems}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-        />
+        <React.Suspense fallback={<PageLoader />}>
+          <MenuPage
+            t={t}
+            language={language}
+            setLanguage={setLanguage}
+            onOpenReservation={() => setCurrentPage("reservation-map")}
+            onBackHome={() => setCurrentPage("home")}
+            onOpenSection={openHomeSection}
+            onOpenPrivacy={() => setCurrentPage("privacy")}
+            cmsMenuItems={cmsMenuItems}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+          />
+        </React.Suspense>
         <BackToTopButton />
         {cookieConsentBanner}
         {closureModal}
@@ -1326,17 +1345,19 @@ export default function App() {
   if (currentPage === "privacy") {
     return (
       <>
-        <PrivacyPage
-          t={t}
-          language={language}
-          setLanguage={setLanguage}
-          onOpenReservation={() => setCurrentPage("reservation-map")}
-          onOpenMenu={() => setCurrentPage("menu")}
-          onOpenSection={openHomeSection}
-          onBackHome={() => setCurrentPage("home")}
-          theme={theme}
-          onToggleTheme={toggleTheme}
-        />
+        <React.Suspense fallback={<PageLoader />}>
+          <PrivacyPage
+            t={t}
+            language={language}
+            setLanguage={setLanguage}
+            onOpenReservation={() => setCurrentPage("reservation-map")}
+            onOpenMenu={() => setCurrentPage("menu")}
+            onOpenSection={openHomeSection}
+            onBackHome={() => setCurrentPage("home")}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+          />
+        </React.Suspense>
         <BackToTopButton />
         {cookieConsentBanner}
         {closureModal}

@@ -6,9 +6,11 @@ import {
 } from "../../domain/adminMap/mapConfig";
 import {
   clampCamera,
+  focusCameraOnWorldPoint,
   preserveWorldCenter,
   zoomCameraAt,
 } from "../../domain/adminMap/mapCamera";
+import { shouldStartMapGesture } from "../../domain/adminMap/mapInteraction";
 
 const CAMERA_STORAGE_KEY = "casa-admin-unified-map-camera";
 const INTERACTIVE_MAP_SELECTOR = "button, a, input, select, textarea, [role='button'], [data-map-keep-open='true']";
@@ -108,11 +110,16 @@ export default function UnifiedMapViewport({
       ADMIN_MAP_CAMERA.maxScale,
       Math.max(ADMIN_MAP_CAMERA.minScale, focusScale || preferredScale)
     );
-    applyCamera({
-      x: viewport.width / 2 - focusX * scale,
-      y: viewport.height / 2 - focusY * scale,
-      scale,
-    }, { animate: true });
+    applyCamera(
+      focusCameraOnWorldPoint(
+        { x: focusX, y: focusY },
+        viewport,
+        scale,
+        ADMIN_MAP_CAMERA.minScale,
+        ADMIN_MAP_CAMERA.maxScale
+      ),
+      { animate: true }
+    );
   }, [applyCamera, focusKey, focusScale, focusX, focusY]);
 
   const zoomAtCenter = React.useCallback((direction) => {
@@ -226,8 +233,11 @@ export default function UnifiedMapViewport({
   }, [applyCamera]);
 
   const handlePointerDown = (event) => {
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    if (event.target.closest(INTERACTIVE_MAP_SELECTOR)) return;
+    if (!shouldStartMapGesture({
+      pointerType: event.pointerType,
+      button: event.button,
+      isInteractiveTarget: Boolean(event.target.closest(INTERACTIVE_MAP_SELECTOR)),
+    })) return;
     const viewport = viewportRef.current;
     viewport.setPointerCapture?.(event.pointerId);
     pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -285,6 +295,7 @@ export default function UnifiedMapViewport({
   };
 
   const finishPointer = (event) => {
+    if (!pointersRef.current.has(event.pointerId)) return;
     pointersRef.current.delete(event.pointerId);
     if (pointersRef.current.size === 0) {
       gestureRef.current = null;
@@ -360,7 +371,12 @@ export default function UnifiedMapViewport({
         className={`admin-unified-map-viewport relative min-w-0 overflow-hidden rounded-[26px] border border-white/10 bg-[#0d0b09] shadow-inner shadow-black/60 ${
           isExpanded ? "min-h-0 flex-1" : "h-[clamp(560px,72vh,920px)]"
         }`}
-        style={{ touchAction: "none", overscrollBehavior: "contain", userSelect: "none" }}
+        style={{
+          contain: "layout paint style",
+          touchAction: "none",
+          overscrollBehavior: "contain",
+          userSelect: "none",
+        }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={finishPointer}
@@ -391,6 +407,7 @@ export default function UnifiedMapViewport({
           ref={worldRef}
           className="absolute left-0 top-0 will-change-transform"
           style={{
+            contain: "layout style",
             width: ADMIN_MAP_WORLD.width,
             height: ADMIN_MAP_WORLD.height,
             transformOrigin: "0 0",

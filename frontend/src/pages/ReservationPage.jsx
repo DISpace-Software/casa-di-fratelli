@@ -994,20 +994,49 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   }, []);
 
   React.useEffect(() => {
+    let disposed = false;
+    let timeoutId;
+    let activeController;
+
     async function loadBlockedSlots() {
+      activeController?.abort();
+      activeController = new AbortController();
       try {
-        const response = await fetch(`${API_BASE_URL}/api/reservations/blocked-slots`);
+        const response = await fetch(`${API_BASE_URL}/api/reservations/blocked-slots`, {
+          signal: activeController.signal,
+        });
+        if (!response.ok) return;
         const data = await response.json();
-        setBlockedSlots(Array.isArray(data) ? data : []);
+        if (!disposed) setBlockedSlots(Array.isArray(data) ? data : []);
       } catch (error) {
+        if (error.name === "AbortError") return;
         console.error("Failed to load blocked slots", error);
       }
     }
 
-    loadBlockedSlots();
-    const intervalId = setInterval(loadBlockedSlots, 10000);
+    async function refreshAndSchedule() {
+      if (!document.hidden) await loadBlockedSlots();
+      if (!disposed) timeoutId = window.setTimeout(refreshAndSchedule, 15000);
+    }
 
-    return () => clearInterval(intervalId);
+    function handleVisibilityChange() {
+      if (document.hidden) {
+        activeController?.abort();
+        return;
+      }
+      window.clearTimeout(timeoutId);
+      refreshAndSchedule();
+    }
+
+    refreshAndSchedule();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      disposed = true;
+      activeController?.abort();
+      window.clearTimeout(timeoutId);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   React.useEffect(() => {

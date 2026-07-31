@@ -466,9 +466,14 @@ public class ReservationsController : ControllerBase
     [HttpGet("blocked-slots")]
     public async Task<IActionResult> GetBlockedSlots()
     {
+        var today = DateOnly.FromDateTime(GetRestaurantNow());
+        var lastPublicReservationDate = today.AddDays(PublicMaxReservationDaysAhead);
         var blocked = await _db.Reservations
-            .Include(x => x.Tables)
-            .Where(x => x.Status == ReservationStatusApproved)
+            .AsNoTracking()
+            .Where(x =>
+                x.Status == ReservationStatusApproved &&
+                x.ReservedDate >= today &&
+                x.ReservedDate <= lastPublicReservationDate)
             .Select(x => new
             {
                 x.ReservedDate,

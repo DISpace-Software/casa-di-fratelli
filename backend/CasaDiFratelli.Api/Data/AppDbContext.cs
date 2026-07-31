@@ -49,12 +49,14 @@ public class AppDbContext : DbContext
             entity.HasIndex(x => x.OrderAccessToken);
             entity.HasIndex(x => x.EmailConfirmationTokenHash);
             entity.HasIndex(x => x.IsDeleted);
+            entity.HasIndex(x => new { x.IsDeleted, x.Status, x.ReservedDate });
             entity.HasQueryFilter(x => !x.IsDeleted);
         });
 
         modelBuilder.Entity<ReservationTable>(entity =>
         {
             entity.Property(x => x.TableCode).IsRequired().HasMaxLength(20);
+            entity.HasIndex(x => x.TableCode);
         });
 
         modelBuilder.Entity<AdminUser>(entity =>

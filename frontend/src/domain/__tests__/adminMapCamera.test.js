@@ -2,7 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   clamp,
+  clampCamera,
   fitBounds,
+  focusCameraOnWorldPoint,
   localPercentToWorld,
   preserveWorldCenter,
   screenToWorld,
@@ -45,4 +47,32 @@ test("resize preserves the logical world center", () => {
   const resized = preserveWorldCenter(camera, { width: 800, height: 600 }, { width: 1200, height: 800 });
   const afterCenter = screenToWorld({ x: 600, y: 400 }, resized);
   assert.deepEqual(afterCenter, beforeCenter);
+});
+
+test("table focus centers a world point at the preferred scale", () => {
+  const viewport = { width: 1000, height: 700 };
+  const point = { x: 820, y: 360 };
+  const camera = focusCameraOnWorldPoint(point, viewport, 0.7, 0.35, 3);
+
+  assert.equal(camera.scale, 0.7);
+  assert.deepEqual(screenToWorld({ x: 500, y: 350 }, camera), point);
+});
+
+test("table focus clamps an invalid preferred scale", () => {
+  assert.equal(
+    focusCameraOnWorldPoint({ x: 0, y: 0 }, { width: 100, height: 100 }, 10, 0.35, 3).scale,
+    3
+  );
+});
+
+test("camera clamping keeps a large world reachable inside the viewport", () => {
+  assert.deepEqual(
+    clampCamera(
+      { x: 500, y: -2000, scale: 1 },
+      { width: 1000, height: 700 },
+      { width: 1970, height: 1420 },
+      120
+    ),
+    { x: 380, y: -950, scale: 1 }
+  );
 });
