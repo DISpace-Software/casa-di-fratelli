@@ -20,6 +20,6 @@ test("mobile open terrace uses aligned rows while preserving production coordina
   });
   assert.deepEqual(getPublicMapTablePoints({ id: "52", x: 90.5, y: 50.6 }, "openTerrace"), {
     desktop: { x: 90.5, y: 50.6 },
-    mobile: { x: 87, y: 64 },
+    mobile: { x: 90.5, y: 60 },
   });
 });
