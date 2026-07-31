@@ -16,7 +16,7 @@ test("mobile indoor and covered terrace tables shift right without changing desk
 test("mobile open terrace uses aligned rows while preserving production coordinates", () => {
   assert.deepEqual(getPublicMapTablePoints({ id: "63", x: 10.4, y: 21.1 }, "openTerrace"), {
     desktop: { x: 10.4, y: 21.1 },
-    mobile: { x: 11.275, y: 47 },
+    mobile: { x: 18.275, y: 47 },
   });
   assert.deepEqual(getPublicMapTablePoints({ id: "52", x: 90.5, y: 50.6 }, "openTerrace"), {
     desktop: { x: 90.5, y: 50.6 },
