@@ -16,7 +16,7 @@ export const ADMIN_MAP_WORLD = Object.freeze({
 export const ADMIN_MAP_ZONES = Object.freeze([
   { id: "indoor", x: 110, y: 70, width: 992, height: 650 },
   { id: "garden", x: 1140, y: 70, width: 992, height: 650 },
-  { id: "openTerrace", x: 540, y: 900, width: 820, height: 440 },
+  { id: "openTerrace", x: 295.2, y: 900, width: 820, height: 440 },
 ]);
 
 export function getAdminMapZone(area) {

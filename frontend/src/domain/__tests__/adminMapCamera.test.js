@@ -12,6 +12,7 @@ import {
   screenToWorld,
   zoomCameraAt,
 } from "../adminMap/mapCamera.js";
+import { ADMIN_MAP_ZONES } from "../adminMap/mapConfig.js";
 
 test("admin map converts zone-local percentages to world coordinates", () => {
   assert.deepEqual(
@@ -30,6 +31,16 @@ test("covered terrace points rotate clockwise and can be restored", () => {
 
   assert.deepEqual(rotated, { x: 78, y: 17 });
   assert.deepEqual(rotatePercentPointCounterClockwise(rotated), original);
+});
+
+test("open terrace entrance aligns with the indoor hall entrance", () => {
+  const indoor = ADMIN_MAP_ZONES.find((zone) => zone.id === "indoor");
+  const openTerrace = ADMIN_MAP_ZONES.find((zone) => zone.id === "openTerrace");
+
+  const indoorEntranceX = indoor.x + indoor.width * 0.6;
+  const openTerraceEntranceX = openTerrace.x + openTerrace.width * 0.5;
+
+  assert.ok(Math.abs(openTerraceEntranceX - indoorEntranceX) < 0.001);
 });
 
 test("admin map zoom keeps the world point under the cursor fixed", () => {
