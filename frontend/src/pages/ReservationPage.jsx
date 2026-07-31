@@ -248,7 +248,7 @@ function TerraceEntry({ label }) {
 
 function TopRestaurantEntry({ label }) {
   return (
-    <div className="pointer-events-none absolute left-1/2 top-2 z-10 w-[32%] -translate-x-1/2 text-center">
+    <div className="public-open-terrace-entry pointer-events-none absolute left-1/2 top-2 z-10 w-[32%] -translate-x-1/2 text-center">
       <div className="mx-auto h-6 w-16 rounded-b-full border-x border-b border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_0%,rgba(214,178,120,0.28),transparent_62%)] shadow-[0_0_18px_rgba(214,178,120,0.16)]" />
       <div className="mx-auto h-1 w-20 rounded-full bg-[#d6b278]/55" />
       <div className="mx-auto mt-0.5 max-w-[116px] rounded-full border border-[#c9a56a]/28 bg-black/48 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.14em] text-[#f2d39a] backdrop-blur">
@@ -478,7 +478,7 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
 
 function OpenTerraceMap({ tables, selectedIds, onSelect, labels }) {
   return (
-    <div className="reservation-map-surface open-terrace-map relative min-h-[440px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))] shadow-inner md:min-h-[520px]">
+    <div className="reservation-map-surface open-terrace-map relative h-[160px] min-h-0 overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))] shadow-inner md:h-auto md:min-h-[520px]">
       <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
       <TopRestaurantEntry label={labels.restaurantEntrance} />
       {tables.map((table) => (

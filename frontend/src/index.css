@@ -1174,6 +1174,19 @@ html[data-theme="light"] .reservation-page .reservation-map-table-node[data-sele
     left: var(--public-mobile-table-x);
     top: var(--public-mobile-table-y);
   }
+
+  .reservation-page .open-terrace-map .reservation-map-table-node {
+    transform: translate(-50%, -50%) scale(0.39) !important;
+  }
+
+  .reservation-page .open-terrace-map .reservation-map-table-node[data-selected="true"] {
+    transform: translate(-50%, -50%) scale(0.43) !important;
+  }
+
+  .reservation-page .public-open-terrace-entry {
+    transform: translateX(-50%) scale(0.5) !important;
+    transform-origin: top center;
+  }
 }
 
 html[data-theme="light"] .reservation-page .map-seat-label {
