@@ -11,19 +11,31 @@ const MOBILE_OPEN_TERRACE_POINTS = Object.freeze({
   "65": { x: 34, y: 91 },
 });
 
+const TABLET_OPEN_TERRACE_POINTS = Object.freeze({
+  "46": { x: 34, y: 34 },
+  "47": { x: 66, y: 34 },
+  "48": { x: 34, y: 72 },
+  "49": { x: 66, y: 72 },
+});
+
 export function getPublicMapTablePoints(table, area) {
   const desktop = { x: Number(table.x), y: Number(table.y) };
+  const tablet =
+    area === "openTerrace" && TABLET_OPEN_TERRACE_POINTS[table.id]
+      ? TABLET_OPEN_TERRACE_POINTS[table.id]
+      : desktop;
 
   if (area === "openTerrace" && MOBILE_OPEN_TERRACE_POINTS[table.id]) {
-    return { desktop, mobile: MOBILE_OPEN_TERRACE_POINTS[table.id] };
+    return { desktop, tablet, mobile: MOBILE_OPEN_TERRACE_POINTS[table.id] };
   }
 
   if (area === "indoor" || area === "garden") {
     return {
       desktop,
+      tablet,
       mobile: { x: Math.min(90, desktop.x + 7), y: desktop.y },
     };
   }
 
-  return { desktop, mobile: desktop };
+  return { desktop, tablet, mobile: desktop };
 }

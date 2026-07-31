@@ -388,6 +388,8 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
   const positionStyle = {
     "--public-table-x": `${points.desktop.x}%`,
     "--public-table-y": `${points.desktop.y}%`,
+    "--public-tablet-table-x": `${points.tablet.x}%`,
+    "--public-tablet-table-y": `${points.tablet.y}%`,
     "--public-mobile-table-x": `${points.mobile.x}%`,
     "--public-mobile-table-y": `${points.mobile.y}%`,
   };
@@ -569,6 +571,8 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
       style={{
         "--public-table-x": `${points.desktop.x}%`,
         "--public-table-y": `${points.desktop.y}%`,
+        "--public-tablet-table-x": `${points.tablet.x}%`,
+        "--public-tablet-table-y": `${points.tablet.y}%`,
         "--public-mobile-table-x": `${points.mobile.x}%`,
         "--public-mobile-table-y": `${points.mobile.y}%`,
       }}
