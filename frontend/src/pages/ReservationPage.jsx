@@ -10,6 +10,7 @@ import {
 } from "../domain/reservations/tableConfig";
 import {
   getAvailableReservationTimesForDate,
+  getBookableReservationDates,
   getDateInputValueAfterDays,
   getTodayInputValue,
   isDateBeyondReservationWindow,
@@ -990,7 +991,8 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
     garden: defaultGardenTables,
     openTerrace: defaultOpenTerraceTables,
   });
-  const timeSelectionRef = React.useRef(null);
+  const timeSelectRef = React.useRef(null);
+  const guestCountSelectRef = React.useRef(null);
   const mapSectionRef = React.useRef(null);
 
   const indoorTables = layoutTables.indoor;
@@ -1098,6 +1100,25 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
     [today]
   );
   const isTodayBookable = todayReservationTimes.length > 0;
+  const bookableReservationDates = React.useMemo(
+    () =>
+      getBookableReservationDates({
+        today,
+        maxDate: maxReservationDate,
+        closure: restaurantClosure,
+        includeToday: isTodayBookable,
+      }),
+    [isTodayBookable, maxReservationDate, restaurantClosure, today]
+  );
+  const dateFormatter = React.useMemo(
+    () =>
+      new Intl.DateTimeFormat(language === "bg" ? "bg-BG" : language === "ru" ? "ru-RU" : "en-GB", {
+        weekday: "short",
+        day: "2-digit",
+        month: "short",
+      }),
+    [language]
+  );
   const distantDateMessage =
     localText(
       language,
@@ -1151,6 +1172,37 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
 
   const requestedGuests = Number(guestCount || 0);
   const canShowSearchParams = Boolean(selectedArea && reservationDate && selectedTime && guestCount);
+
+  const openSelectionControl = (control) => {
+    if (!control) return;
+    queueMicrotask(() => {
+      control.scrollIntoView({ behavior: "smooth", block: "center" });
+      control.focus({ preventScroll: true });
+      try {
+        control.showPicker?.();
+      } catch {
+        // Safari still focuses and scrolls to the next field when showPicker is unavailable.
+      }
+    });
+  };
+
+  const handleDateSelect = (nextDate) => {
+    setSubmitError("");
+    setReservationDate(nextDate);
+    setSelectedTime("");
+    setGuestCount("");
+    setSelectedTables([]);
+    openSelectionControl(timeSelectRef.current);
+  };
+
+  React.useEffect(() => {
+    if (reservationDate && !bookableReservationDates.includes(reservationDate)) {
+      setReservationDate("");
+      setSelectedTime("");
+      setGuestCount("");
+      setSelectedTables([]);
+    }
+  }, [bookableReservationDates, reservationDate]);
 
   React.useEffect(() => {
     if (requestedGuests >= 9) {
@@ -1217,13 +1269,9 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
     if (blockedTableIds.has(table.id)) return;
 
     setSelectedArea(area);
-    setSelectedTables([table]);
-
-    if (window.innerWidth < 1024) {
-      setTimeout(() => {
-        timeSelectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 250);
-    }
+    setSelectedTables((current) =>
+      current.some((selected) => selected.id === table.id) ? [] : [table]
+    );
   };
 
   const noSingleTableAvailable =
@@ -1493,7 +1541,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[1.3fr_0.8fr]">
-            <div ref={timeSelectionRef} className="luxury-panel order-first rounded-[28px] p-5 md:p-6 lg:order-last">
+            <div className="luxury-panel order-first rounded-[28px] p-5 md:p-6 lg:order-last">
               <div className="section-kicker mb-2">
                 {labels.reservationPreview}
               </div>
@@ -1533,93 +1581,39 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                   <label className="mb-2 block text-sm text-white/60">
                     {localText(language, "Дата", "Date", "Дата")}
                   </label>
-                  <input
-                    type="date"
-                    min={today}
-                    max={maxReservationDate}
-                    value={reservationDate}
-                    onChange={(e) => {
-                      const nextDate = e.target.value;
-                      if (
-                        restaurantClosure?.enabled &&
-                        nextDate >= restaurantClosure.startDate &&
-                        nextDate <= restaurantClosure.endDate
-                      ) {
-                        setSubmitError(
-                          localText(
-                            language,
-                            `Ресторантът е в годишен отпуск. Резервации се приемат от ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`,
-                            `The restaurant is closed for annual leave. Reservations reopen on ${restaurantClosure.reopenDate}.`,
-                            `Ресторан закрыт на ежегодный отпуск. Бронирование доступно с ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`
-                          )
-                        );
-                        setReservationDate(nextDate);
-                        setSelectedTime("");
-                        setSelectedTables([]);
-                        return;
-                      }
-                      if (isDateBeyondReservationWindow(nextDate, 10)) {
-                        setSubmitError(distantDateMessage);
-                        setReservationDate("");
-                        setSelectedTime("");
-                        setSelectedTables([]);
-                        return;
-                      }
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {bookableReservationDates.map((value) => {
+                      const [year, month, day] = value.split("-").map(Number);
+                      const label = dateFormatter.format(new Date(year, month - 1, day));
 
-                      setSubmitError("");
-                      setReservationDate(nextDate);
-                      setSelectedTime("");
-                      setSelectedTables([]);
-                    }}
-                    className="quiet-input w-full cursor-pointer rounded-2xl px-4 py-3 [color-scheme:dark]"
-                  />
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-pressed={reservationDate === value}
+                          onClick={() => handleDateSelect(value)}
+                          className={`rounded-xl px-3 py-3 text-sm capitalize transition active:scale-[0.98] ${
+                            reservationDate === value
+                              ? "luxury-button"
+                              : "border border-white/10 bg-white/[0.04] text-white/75 hover:border-[#c9a56a]/40 hover:bg-[#c9a56a]/10"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
                   <p className="mt-2 text-xs leading-5 text-white/45">{distantDateMessage}</p>
-                  {isDateClosed && (
+                  {restaurantClosure?.enabled && restaurantClosure.reopenDate && (
                     <p className="mt-2 rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/10 px-3 py-2 text-sm leading-5 text-[#f2d39a]">
                       {localText(
                         language,
-                        `Ресторантът е затворен. Изберете дата от ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`,
-                        `The restaurant is closed. Please choose a date from ${restaurantClosure.reopenDate}.`,
-                        `Ресторан закрыт. Выберите дату начиная с ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`
+                        `Показани са само достъпните дати. След отпуска резервациите започват от ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`,
+                        `Only available dates are shown. Reservations reopen on ${restaurantClosure.reopenDate}.`,
+                        `Показаны только доступные даты. После отпуска бронирование начинается с ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`
                       )}
                     </p>
                   )}
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    {[
-                      [today, localText(language, "Днес", "Today", "Сегодня"), !isTodayBookable],
-                      [
-                        (() => {
-                          const tomorrow = new Date();
-                          tomorrow.setDate(tomorrow.getDate() + 1);
-                          return `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`;
-                        })(),
-                        localText(language, "Утре", "Tomorrow", "Завтра"),
-                        false,
-                      ],
-                    ].map(([value, label, disabled]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        disabled={disabled}
-                        onClick={() => {
-                          if (disabled) return;
-                          setSubmitError("");
-                          setReservationDate(value);
-                          setSelectedTime("");
-                          setSelectedTables([]);
-                        }}
-                        className={`rounded-xl px-3 py-2 text-sm transition ${
-                          reservationDate === value
-                            ? "luxury-button"
-                            : disabled
-                            ? "cursor-not-allowed border border-white/8 bg-white/[0.02] text-white/30"
-                            : "border border-white/10 bg-white/[0.04] text-white/70 hover:border-[#c9a56a]/40"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 <div>
@@ -1627,13 +1621,17 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                     {localText(language, "Час", "Time", "Время")}
                   </label>
                   <select
-                    disabled={isDateClosed}
+                    ref={timeSelectRef}
+                    disabled={!reservationDate || isDateClosed}
                     value={selectedTime}
                     onChange={(e) => {
-                      setSelectedTime(e.target.value);
+                      const nextTime = e.target.value;
+                      setSelectedTime(nextTime);
+                      setGuestCount("");
                       setSelectedTables([]);
+                      if (nextTime) openSelectionControl(guestCountSelectRef.current);
                     }}
-                    className="quiet-input w-full cursor-pointer rounded-2xl px-4 py-3 [color-scheme:dark]"
+                    className="quiet-input w-full cursor-pointer rounded-2xl px-4 py-3 disabled:cursor-not-allowed disabled:opacity-45 [color-scheme:dark]"
                   >
                     <option value="">{localText(language, "Избери час", "Select time", "Выберите время")}</option>
                     {availableReservationTimes.map((time) => (
@@ -1662,12 +1660,14 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                     {localText(language, "Брой гости", "Guests", "Гостей")}
                   </label>
                   <select
+                    ref={guestCountSelectRef}
+                    disabled={!selectedTime}
                     value={guestCount}
                     onChange={(e) => {
                       setGuestCount(e.target.value);
                       setSelectedTables([]);
                     }}
-                    className="quiet-input w-full cursor-pointer rounded-2xl px-4 py-3 [color-scheme:dark]"
+                    className="quiet-input w-full cursor-pointer rounded-2xl px-4 py-3 disabled:cursor-not-allowed disabled:opacity-45 [color-scheme:dark]"
                   >
                     <option value="">{localText(language, "Избери", "Select", "Выберите")}</option>
                     {Array.from({ length: 24 }, (_, i) => i + 1).map((count) => (
@@ -1784,7 +1784,14 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                 </div>
               </div>
             ) : canShowSearchParams ? (
-              <div ref={mapSectionRef}>
+              <div
+                ref={mapSectionRef}
+                className={`rounded-[30px] transition duration-500 ${
+                  selectedTables.length === 0
+                    ? "ring-2 ring-[#f2d39a]/70 shadow-[0_0_45px_rgba(201,165,106,0.28)]"
+                    : "ring-0 shadow-none"
+                }`}
+              >
                 <ZoneCard title={zoneTitle} subtitle={zoneSubtitle} accent={zoneAccent}>
                   {selectedArea === "garden" ? (
                     <GardenMap tables={visibleGardenTables} selectedIds={selectedIds} onSelect={handleSelect} labels={labels} />

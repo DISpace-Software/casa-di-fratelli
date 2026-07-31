@@ -18,6 +18,7 @@ import {
 } from "../reservations/tableRules.js";
 import {
   getAvailableReservationTimesForDate,
+  getBookableReservationDates,
   getTodayInputValue,
   isPastTimeForDate,
   isWithinReservationBuffer,
@@ -78,6 +79,31 @@ test("today availability keeps only remaining working-hour slots", () => {
   assert.deepEqual(
     getAvailableReservationTimesForDate(reservationTimes, "2026-05-15", now),
     reservationTimes
+  );
+});
+
+test("bookable date list hides past and closure dates", () => {
+  assert.deepEqual(
+    getBookableReservationDates({
+      today: "2026-07-31",
+      maxDate: "2026-08-05",
+      closure: {
+        enabled: true,
+        startDate: "2026-07-20",
+        endDate: "2026-08-02",
+        reopenDate: "2026-08-03",
+      },
+    }),
+    ["2026-08-03", "2026-08-04", "2026-08-05"]
+  );
+
+  assert.deepEqual(
+    getBookableReservationDates({
+      today: "2026-07-31",
+      maxDate: "2026-08-02",
+      includeToday: false,
+    }),
+    ["2026-08-01", "2026-08-02"]
   );
 });
 
