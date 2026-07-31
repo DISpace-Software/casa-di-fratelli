@@ -22,6 +22,7 @@ import { getAvailableReservationTimesForDate, isPastTimeForDate } from "../domai
 import UnifiedMapViewport from "../components/admin/UnifiedMapViewport";
 import { ADMIN_MAP_ZONES } from "../domain/adminMap/mapConfig";
 import { localPercentToWorld } from "../domain/adminMap/mapCamera";
+import { getMapModalPortalTarget } from "../domain/adminMap/mapInteraction";
 
 const emptyMenuItem = {
   nameBg: "",
@@ -3063,7 +3064,7 @@ function ReservationOperationsMap({
                     </div>
                   </div>
                 </div>
-              ), document.body)}
+              ), getMapModalPortalTarget(document))}
             </div>
           )}
           {walkInDraft && typeof document !== "undefined" && createPortal((
@@ -3135,7 +3136,7 @@ function ReservationOperationsMap({
                 </div>
               </form>
             </div>
-          ), document.body)}
+          ), getMapModalPortalTarget(document))}
         </div>
       </div>
     </Panel>
