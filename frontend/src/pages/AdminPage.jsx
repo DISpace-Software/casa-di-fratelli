@@ -1403,7 +1403,7 @@ function AdminMapDecor({ area }) {
           Вход
         </div>
       </div>
-      <div className="pointer-events-none absolute right-0 top-[75%] z-[3] w-[150px] translate-x-1/2 -translate-y-1/2 rotate-90 text-center">
+      <div className="pointer-events-none absolute right-0 top-[65%] z-[3] w-[150px] translate-x-1/2 -translate-y-1/2 rotate-90 text-center">
         <div className="mx-auto h-6 w-16 rounded-t-full border-x border-t border-emerald-200/45 bg-[radial-gradient(circle_at_50%_100%,rgba(110,231,183,0.2),transparent_64%)]" />
         <div className="mx-auto h-1 w-20 rounded-full bg-emerald-200/45" />
         <div className="mx-auto mt-0.5 max-w-[104px] rounded-full border border-emerald-200/20 bg-black/48 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.14em] text-emerald-100/90 backdrop-blur">
