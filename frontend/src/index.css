@@ -1176,15 +1176,15 @@ html[data-theme="light"] .reservation-page .reservation-map-table-node[data-sele
   }
 
   .reservation-page .open-terrace-map .reservation-map-table-node {
-    transform: translate(-50%, -50%) scale(0.39) !important;
+    transform: translate(-50%, -50%) scale(0.51) !important;
   }
 
   .reservation-page .open-terrace-map .reservation-map-table-node[data-selected="true"] {
-    transform: translate(-50%, -50%) scale(0.43) !important;
+    transform: translate(-50%, -50%) scale(0.56) !important;
   }
 
   .reservation-page .public-open-terrace-entry {
-    transform: translateX(-50%) scale(0.5) !important;
+    transform: translateX(-50%) scale(0.65) !important;
     transform-origin: top center;
   }
 }
