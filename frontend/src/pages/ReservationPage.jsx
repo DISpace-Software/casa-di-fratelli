@@ -603,7 +603,7 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
 
 function IndoorMap({ tables, selectedIds, onSelect, labels }) {
   return (
-    <div className="reservation-map-surface indoor-map relative min-h-[760px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[830px]">
+    <div className="reservation-map-surface indoor-map relative min-h-[560px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] sm:aspect-[1.6/1] sm:min-h-0">
       <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
       <MapWindow className="left-3 top-5 h-[50%] w-4" label={labels.windows} vertical />
       <MapWindow className="bottom-5 left-3 top-[70%] w-4" label={labels.windows} vertical />
