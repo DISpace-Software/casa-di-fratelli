@@ -507,7 +507,7 @@ function GardenMap({ tables, selectedIds, onSelect, labels }) {
         <div className="relative h-6 w-16 rounded-lg border border-white/18 bg-[#080706] shadow-[0_0_24px_rgba(0,0,0,0.42)]">
           <div className="absolute inset-1 rounded-lg bg-[linear-gradient(160deg,rgba(56,189,248,0.28),rgba(255,255,255,0.08)_42%,rgba(20,184,166,0.16))]" />
         </div>
-        <div className="absolute left-1/2 top-full mt-5 -translate-x-1/2 -rotate-90 whitespace-nowrap rounded-full border border-white/10 bg-black/30 px-2 py-1 text-[7px] font-bold uppercase tracking-[0.16em] text-white/60">{labels.tv}</div>
+        <div className="absolute left-1/2 top-full mt-1 origin-top-left -translate-x-1/2 rotate-90 whitespace-nowrap rounded-full border border-white/10 bg-black/30 px-2 py-1 text-[7px] font-bold uppercase tracking-[0.16em] text-white/60">{labels.tv}</div>
       </div>
       <div className="pointer-events-none absolute left-0 top-1/2 z-10 w-[150px] -translate-x-1/2 -translate-y-1/2 -rotate-90 text-center">
         <div className="mx-auto h-6 w-16 rounded-t-full border-x border-t border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_100%,rgba(214,178,120,0.28),transparent_62%)]" />
