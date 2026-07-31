@@ -41,6 +41,7 @@ test("open terrace entrance aligns with the indoor hall entrance", () => {
   const openTerraceEntranceX = openTerrace.x + openTerrace.width * 0.5;
 
   assert.ok(Math.abs(openTerraceEntranceX - indoorEntranceX) < 0.001);
+  assert.equal(openTerrace.y - (indoor.y + indoor.height), 40);
 });
 
 test("admin map zoom keeps the world point under the cursor fixed", () => {
