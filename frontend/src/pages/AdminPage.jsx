@@ -1363,7 +1363,7 @@ function AdminMapDecor({ area }) {
             Телевизор
           </div>
         </div>
-        <div className="pointer-events-none absolute left-0 top-1/2 z-[3] w-[150px] -translate-x-1/2 -translate-y-1/2 -rotate-90 text-center">
+        <div className="pointer-events-none absolute left-0 top-[60%] z-[3] w-[150px] -translate-x-1/2 -translate-y-1/2 -rotate-90 text-center">
           <div className="mx-auto h-6 w-16 rounded-t-full border-x border-t border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_100%,rgba(214,178,120,0.28),transparent_62%)]" />
           <div className="mx-auto h-1 w-20 rounded-full bg-[#d6b278]/55" />
           <div className="mx-auto mt-0.5 max-w-[96px] rounded-full border border-[#c9a56a]/28 bg-black/48 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.16em] text-[#f2d39a] backdrop-blur">
