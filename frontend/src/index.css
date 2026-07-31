@@ -1169,7 +1169,8 @@ html[data-theme="light"] .reservation-page .reservation-map-table-node[data-sele
   top: var(--public-table-y);
 }
 
-@media (min-width: 640px) and (max-width: 1180px) {
+@media (min-width: 640px) and (max-width: 1180px),
+  (min-width: 1181px) and (max-width: 1366px) and (pointer: coarse) {
   .reservation-page .open-terrace-map .public-responsive-table-position {
     left: var(--public-tablet-table-x);
     top: var(--public-tablet-table-y);

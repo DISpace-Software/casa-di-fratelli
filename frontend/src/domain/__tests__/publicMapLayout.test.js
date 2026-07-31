@@ -18,12 +18,12 @@ test("mobile indoor and covered terrace tables shift right without changing desk
 test("mobile open terrace uses aligned rows while preserving production coordinates", () => {
   assert.deepEqual(getPublicMapTablePoints({ id: "63", x: 10.4, y: 21.1 }, "openTerrace"), {
     desktop: { x: 10.4, y: 21.1 },
-    tablet: { x: 10.4, y: 21.1 },
+    tablet: { x: 10.4, y: 25 },
     mobile: { x: 18.275, y: 47 },
   });
   assert.deepEqual(getPublicMapTablePoints({ id: "52", x: 90.5, y: 50.6 }, "openTerrace"), {
     desktop: { x: 90.5, y: 50.6 },
-    tablet: { x: 90.5, y: 50.6 },
+    tablet: { x: 89.7, y: 75 },
     mobile: { x: 94, y: 80 },
   });
 
@@ -42,4 +42,16 @@ test("tablet open terrace keeps a 50 percent two-row gap", () => {
   assert.deepEqual(upper.tablet, { x: 34, y: 25 });
   assert.deepEqual(lower.tablet, { x: 34, y: 75 });
   assert.equal(lower.tablet.y - upper.tablet.y, 50);
+});
+
+test("production open terrace ids use the same 50 percent tablet row gap", () => {
+  const upperIds = ["50", "51", "60", "61", "62", "63"];
+  const lowerIds = ["52", "53", "64", "65"];
+
+  upperIds.forEach((id) => {
+    assert.equal(getPublicMapTablePoints({ id, x: 50, y: 50 }, "openTerrace").tablet.y, 25);
+  });
+  lowerIds.forEach((id) => {
+    assert.equal(getPublicMapTablePoints({ id, x: 50, y: 50 }, "openTerrace").tablet.y, 75);
+  });
 });

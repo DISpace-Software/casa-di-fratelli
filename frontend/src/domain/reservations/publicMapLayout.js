@@ -16,6 +16,16 @@ const TABLET_OPEN_TERRACE_POINTS = Object.freeze({
   "47": { x: 66, y: 25 },
   "48": { x: 34, y: 75 },
   "49": { x: 66, y: 75 },
+  "50": { x: 90.4, y: 25 },
+  "51": { x: 75.3, y: 25 },
+  "52": { x: 89.7, y: 75 },
+  "53": { x: 75.1, y: 75 },
+  "60": { x: 54.2, y: 25 },
+  "61": { x: 39.8, y: 25 },
+  "62": { x: 25.1, y: 25 },
+  "63": { x: 10.4, y: 25 },
+  "64": { x: 12.2, y: 75 },
+  "65": { x: 26.5, y: 75 },
 });
 
 export function getPublicMapTablePoints(table, area) {
