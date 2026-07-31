@@ -1505,7 +1505,7 @@ function TableLayoutEditor({
             ref={mapRef}
             className={`relative min-h-[560px] overflow-hidden rounded-[26px] border border-white/10 ${
               selectedArea === "garden"
-                ? "bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] sm:aspect-[2/1] sm:min-h-0"
+                ? "bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] sm:aspect-[1.6/1] sm:min-h-0"
                 : selectedArea === "openTerrace"
                 ? "bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))]"
                 : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[830px]"
@@ -2552,8 +2552,8 @@ function ReservationOperationsMap({
                   }}
                   className={`admin-map-table-node flex items-center justify-center rounded-2xl border font-semibold shadow-2xl transition hover:scale-[1.04] ${
                     isGroupTable
-                      ? "h-9 min-w-[50px] px-2 text-xs sm:h-10 sm:min-w-[58px] sm:px-3 md:h-12 md:min-w-[68px] lg:h-16 lg:min-w-[88px]"
-                      : "h-8 w-8 text-xs sm:h-9 sm:w-9 md:h-11 md:w-11 lg:h-14 lg:w-14 lg:text-sm"
+                      ? "h-9 min-w-[50px] px-2 text-xs sm:h-10 sm:min-w-[58px] sm:px-3 md:h-14 md:min-w-[80px] lg:h-16 lg:min-w-[88px]"
+                      : "h-8 w-8 text-xs sm:h-9 sm:w-9 md:h-14 md:w-14 md:text-sm"
                   } ${
                     isMoveSelected
                       ? "border-[#f2d39a]/80 bg-[linear-gradient(145deg,#f2d39a,#b8843f)] text-black ring-4 ring-[#f2d39a]/25"

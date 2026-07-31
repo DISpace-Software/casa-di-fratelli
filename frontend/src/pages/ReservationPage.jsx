@@ -498,7 +498,7 @@ function GardenMap({ tables, selectedIds, onSelect, labels }) {
   }));
 
   return (
-    <div className="reservation-map-surface garden-map relative min-h-[360px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] shadow-inner sm:aspect-[2/1] sm:min-h-0">
+    <div className="reservation-map-surface garden-map relative min-h-[360px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] shadow-inner sm:aspect-[1.6/1] sm:min-h-0">
       <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
       <MapWindow className="bottom-5 right-3 top-5 w-4" label={labels.windows} vertical />
       <MapWindow className="left-5 right-5 top-3 h-4" label="" />
