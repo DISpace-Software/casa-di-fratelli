@@ -35,11 +35,11 @@ test("mobile open terrace uses aligned rows while preserving production coordina
   });
 });
 
-test("tablet open terrace keeps at least a clear two-row gap", () => {
+test("tablet open terrace keeps a 50 percent two-row gap", () => {
   const upper = getPublicMapTablePoints({ id: "46", x: 34, y: 40 }, "openTerrace");
   const lower = getPublicMapTablePoints({ id: "48", x: 34, y: 68 }, "openTerrace");
 
-  assert.deepEqual(upper.tablet, { x: 34, y: 34 });
-  assert.deepEqual(lower.tablet, { x: 34, y: 72 });
-  assert.equal(lower.tablet.y - upper.tablet.y, 38);
+  assert.deepEqual(upper.tablet, { x: 34, y: 25 });
+  assert.deepEqual(lower.tablet, { x: 34, y: 75 });
+  assert.equal(lower.tablet.y - upper.tablet.y, 50);
 });
