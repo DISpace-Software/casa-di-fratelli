@@ -16,6 +16,20 @@ export function localPercentToWorld(zone, point) {
   };
 }
 
+export function rotatePercentPointClockwise(point) {
+  return {
+    x: 100 - point.y,
+    y: point.x,
+  };
+}
+
+export function rotatePercentPointCounterClockwise(point) {
+  return {
+    x: point.y,
+    y: 100 - point.x,
+  };
+}
+
 export function zoomCameraAt(camera, point, nextScale, minScale, maxScale) {
   const scale = clamp(nextScale, minScale, maxScale);
   const worldPoint = screenToWorld(point, camera);

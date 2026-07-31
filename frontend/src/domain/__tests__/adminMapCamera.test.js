@@ -7,6 +7,8 @@ import {
   focusCameraOnWorldPoint,
   localPercentToWorld,
   preserveWorldCenter,
+  rotatePercentPointClockwise,
+  rotatePercentPointCounterClockwise,
   screenToWorld,
   zoomCameraAt,
 } from "../adminMap/mapCamera.js";
@@ -20,6 +22,14 @@ test("admin map converts zone-local percentages to world coordinates", () => {
 
 test("admin map converts screen coordinates to world coordinates", () => {
   assert.deepEqual(screenToWorld({ x: 110, y: 70 }, { x: 10, y: 20, scale: 2 }), { x: 50, y: 25 });
+});
+
+test("covered terrace points rotate clockwise and can be restored", () => {
+  const original = { x: 17, y: 22 };
+  const rotated = rotatePercentPointClockwise(original);
+
+  assert.deepEqual(rotated, { x: 78, y: 17 });
+  assert.deepEqual(rotatePercentPointCounterClockwise(rotated), original);
 });
 
 test("admin map zoom keeps the world point under the cursor fixed", () => {

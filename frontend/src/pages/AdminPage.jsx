@@ -22,7 +22,11 @@ import {
 import { getAvailableReservationTimesForDate, isPastTimeForDate } from "../domain/reservations/dateTimeRules";
 import UnifiedMapViewport from "../components/admin/UnifiedMapViewport";
 import { ADMIN_MAP_ZONES } from "../domain/adminMap/mapConfig";
-import { localPercentToWorld } from "../domain/adminMap/mapCamera";
+import {
+  localPercentToWorld,
+  rotatePercentPointClockwise,
+  rotatePercentPointCounterClockwise,
+} from "../domain/adminMap/mapCamera";
 import { getMapModalPortalTarget } from "../domain/adminMap/mapInteraction";
 
 const emptyMenuItem = {
@@ -1164,6 +1168,12 @@ function normalizeLayoutItem(item) {
   };
 }
 
+function orientTableForMap(table) {
+  return table.area === "garden"
+    ? { ...table, ...rotatePercentPointClockwise(table) }
+    : table;
+}
+
 function getReservationMinutesFromNow(reservation, now = new Date()) {
   if (!reservation?.reservedDate || !reservation?.reservedTime) return null;
 
@@ -1342,10 +1352,10 @@ function AdminMapDecor({ area }) {
   if (area === "garden") {
     return (
       <>
-        <AdminMapWindow className="left-5 right-5 top-3 h-4" label="Прозорци" />
-        <AdminMapWindow className="bottom-5 left-3 top-5 w-4" label="Прозорци" vertical />
         <AdminMapWindow className="bottom-5 right-3 top-5 w-4" label="Прозорци" vertical />
-        <div className="pointer-events-none absolute left-[4%] top-[50%] z-[3]">
+        <AdminMapWindow className="left-5 right-5 top-3 h-4 [&>div>div:last-child]:rotate-90" label="Прозорци" />
+        <AdminMapWindow className="bottom-3 left-5 right-5 h-4 [&>div>div:last-child]:rotate-90" label="Прозорци" />
+        <div className="pointer-events-none absolute left-1/2 top-[4%] z-[3] -translate-x-1/2 rotate-90">
           <div className="relative h-16 w-6 rounded-lg border border-white/18 bg-[#080706] shadow-[0_0_24px_rgba(0,0,0,0.42)]">
             <div className="absolute inset-1 rounded-lg bg-[linear-gradient(160deg,rgba(56,189,248,0.28),rgba(255,255,255,0.08)_42%,rgba(20,184,166,0.16))]" />
           </div>
@@ -1353,7 +1363,7 @@ function AdminMapDecor({ area }) {
             Телевизор
           </div>
         </div>
-        <div className="pointer-events-none absolute bottom-1 left-1/2 z-[3] w-[24%] -translate-x-1/2 text-center">
+        <div className="pointer-events-none absolute left-1 top-1/2 z-[3] w-[28%] -translate-y-1/2 -rotate-90 text-center">
           <div className="mx-auto h-6 w-16 rounded-t-full border-x border-t border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_100%,rgba(214,178,120,0.28),transparent_62%)]" />
           <div className="mx-auto h-1 w-20 rounded-full bg-[#d6b278]/55" />
           <div className="mx-auto mt-0.5 max-w-[96px] rounded-full border border-[#c9a56a]/28 bg-black/48 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.16em] text-[#f2d39a] backdrop-blur">
@@ -1436,12 +1446,21 @@ function TableLayoutEditor({
     const box = mapRef.current?.getBoundingClientRect();
     if (!box) return;
 
-    const x = Math.min(94, Math.max(6, ((clientX - box.left) / box.width) * 100));
-    const y = Math.min(94, Math.max(6, ((clientY - box.top) / box.height) * 100));
+    const displayPoint = {
+      x: Math.min(94, Math.max(6, ((clientX - box.left) / box.width) * 100)),
+      y: Math.min(94, Math.max(6, ((clientY - box.top) / box.height) * 100)),
+    };
+    const storedPoint = selectedArea === "garden"
+      ? rotatePercentPointCounterClockwise(displayPoint)
+      : displayPoint;
     const current = layout.find((item) => item.id === tableId);
     if (!current) return;
 
-    const next = { ...current, x: Number(x.toFixed(1)), y: Number(y.toFixed(1)) };
+    const next = {
+      ...current,
+      x: Number(storedPoint.x.toFixed(1)),
+      y: Number(storedPoint.y.toFixed(1)),
+    };
     if (hasLayoutOverlap(layout, next)) return;
 
     onUpdate(tableId, next);
@@ -1501,8 +1520,13 @@ function TableLayoutEditor({
             <div className="absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
             <AdminMapDecor area={selectedArea} />
 
-            {activeAreaTables.map((table) => (
-              <button
+            {activeAreaTables.map((table) => {
+              const displayPoint = selectedArea === "garden"
+                ? rotatePercentPointClockwise(table)
+                : table;
+
+              return (
+                <button
                 key={table.id}
                 type="button"
                 onPointerDown={(event) => {
@@ -1511,15 +1535,18 @@ function TableLayoutEditor({
                   setDraggingId(table.id);
                 }}
                 className={`absolute z-10 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 touch-none items-center justify-center rounded-xl border text-xs font-semibold shadow-2xl transition hover:scale-105 md:h-14 md:w-14 md:rounded-2xl md:text-sm ${
+                  selectedArea === "garden" ? "rotate-90" : ""
+                } ${
                   selectedTable?.id === table.id
                     ? "border-[#f2d39a] bg-[linear-gradient(145deg,#f6d99e,#b88b4d)] text-black"
                     : "border-[#c9a56a]/40 bg-[linear-gradient(145deg,#5a4332,#2a1f18)] text-white"
                 }`}
-                style={{ left: `${table.x}%`, top: `${table.y}%` }}
+                style={{ left: `${displayPoint.x}%`, top: `${displayPoint.y}%` }}
               >
                 {table.id}
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -1685,11 +1712,14 @@ function ReservationOperationsMap({
     (area) => {
       const savedTables = layout
         .filter((item) => item.area === area && item.isActive && !isRetiredTableId(item.id))
-        .map(normalizeLayoutItem);
+        .map(normalizeLayoutItem)
+        .map(orientTableForMap);
 
       return savedTables.length
         ? savedTables
-        : (tablesByArea[area] || []).map((table) => normalizeLayoutItem({ ...table, area, isActive: true }));
+        : (tablesByArea[area] || [])
+            .map((table) => normalizeLayoutItem({ ...table, area, isActive: true }))
+            .map(orientTableForMap);
     },
     [layout]
   );
@@ -2308,7 +2338,9 @@ function ReservationOperationsMap({
                 aria-label={label}
               >
                 <div className="admin-reservation-map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
-                <div className="pointer-events-none absolute left-8 top-7 z-[6] rounded-full border border-[#f2d39a]/25 bg-black/55 px-5 py-2 text-sm font-bold uppercase tracking-[0.16em] text-[#fff4df] backdrop-blur">
+                <div className={`pointer-events-none absolute z-[6] rounded-full border border-[#f2d39a]/25 bg-black/55 px-5 py-2 text-sm font-bold uppercase tracking-[0.16em] text-[#fff4df] backdrop-blur ${
+                  zone.id === "garden" ? "right-7 top-8 origin-top-right rotate-90" : "left-8 top-7"
+                }`}>
                   {label}
                 </div>
                 <AdminMapDecor area={zone.id} />
@@ -2375,7 +2407,9 @@ function ReservationOperationsMap({
                   <button
                     type="button"
                     onClick={() => setSelectedReservationId(isSelected ? null : reservation.id)}
-	                    className={`relative z-40 min-w-[96px] rounded-full border px-2.5 py-1 text-[9px] font-semibold shadow-2xl backdrop-blur transition hover:scale-[1.03] sm:min-w-[112px] sm:px-3 sm:py-1.5 sm:text-[10px] lg:min-w-[128px] lg:text-[11px] ${
+                    className={`relative z-40 min-w-[96px] rounded-full border px-2.5 py-1 text-[9px] font-semibold shadow-2xl backdrop-blur transition hover:scale-[1.03] sm:min-w-[112px] sm:px-3 sm:py-1.5 sm:text-[10px] lg:min-w-[128px] lg:text-[11px] ${
+                      bounds.area === "garden" ? "rotate-90" : ""
+                    } ${
 	                      hasNewOrderItems
 	                        ? "admin-reservation-guest-marker waiter-new-alert border-amber-300/55 bg-amber-400/22 text-amber-50"
 	                      : reservation.isArrived
@@ -2523,6 +2557,8 @@ function ReservationOperationsMap({
                     setSelectedTableId((current) => (current === table.id ? null : table.id));
                   }}
                   className={`admin-map-table-node flex items-center justify-center rounded-2xl border font-semibold shadow-2xl transition hover:scale-[1.04] ${
+                    table.area === "garden" ? "rotate-90" : ""
+                  } ${
                     isGroupTable
                       ? "h-9 min-w-[50px] px-2 text-xs sm:h-10 sm:min-w-[58px] sm:px-3 md:h-12 md:min-w-[68px] lg:h-16 lg:min-w-[88px]"
                       : "h-8 w-8 text-xs sm:h-9 sm:w-9 md:h-11 md:w-11 lg:h-14 lg:w-14 lg:text-sm"
