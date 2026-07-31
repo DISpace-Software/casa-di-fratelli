@@ -16,6 +16,7 @@ import {
   isPastTimeForDate,
   isWithinReservationBuffer,
 } from "../domain/reservations/dateTimeRules";
+import { getPublicMapTablePoints } from "../domain/reservations/publicMapLayout";
 
 const birthdayDays = Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(2, "0"));
 const birthdayMonths = {
@@ -382,6 +383,13 @@ function MergedHorizontalTableRail({ tables, selectedIds, groups }) {
 }
 
 function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
+  const points = getPublicMapTablePoints(table, area);
+  const positionStyle = {
+    "--public-table-x": `${points.desktop.x}%`,
+    "--public-table-y": `${points.desktop.y}%`,
+    "--public-mobile-table-x": `${points.mobile.x}%`,
+    "--public-mobile-table-y": `${points.mobile.y}%`,
+  };
   const commonClass = `absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
     reserved
       ? "cursor-not-allowed scale-90 opacity-75 md:scale-100"
@@ -397,8 +405,8 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
         disabled={reserved}
         onClick={() => onSelect(table, area)}
         data-selected={selected ? "true" : "false"}
-        className={`reservation-map-table-node ${commonClass}`}
-        style={{ left: `${table.x}%`, top: `${table.y}%` }}
+        className={`public-responsive-table-position reservation-map-table-node ${commonClass}`}
+        style={positionStyle}
       >
         <div className="relative h-11 w-14">
           <div
@@ -433,8 +441,8 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
       disabled={reserved}
       onClick={() => onSelect(table, area)}
       data-selected={selected ? "true" : "false"}
-      className={`reservation-map-table-node ${commonClass}`}
-      style={{ left: `${table.x}%`, top: `${table.y}%` }}
+      className={`public-responsive-table-position reservation-map-table-node ${commonClass}`}
+      style={positionStyle}
     >
       <div className="relative h-[64px] w-[64px]">
         {[{ x: 26, y: -2 }, { x: 26, y: 54 }, { x: -2, y: 26 }, { x: 54, y: 26 }].map(
@@ -542,20 +550,27 @@ function FourSeatChairs({ reserved }) {
 }
 
 function IndoorTable({ table, selected, reserved, onSelect, labels }) {
+  const points = getPublicMapTablePoints(table, "indoor");
+
   return (
     <button
       type="button"
       disabled={reserved}
       onClick={() => onSelect(table, "indoor")}
       data-selected={selected ? "true" : "false"}
-      className={`reservation-map-table-node absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
+      className={`public-responsive-table-position reservation-map-table-node absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 ${
         reserved
           ? "cursor-not-allowed scale-[0.86] opacity-75 md:scale-100"
           : selected
           ? "scale-[0.92] md:scale-110"
           : "scale-[0.86] hover:scale-90 md:scale-100 md:hover:scale-105"
       }`}
-      style={{ left: `${table.x}%`, top: `${table.y}%` }}
+      style={{
+        "--public-table-x": `${points.desktop.x}%`,
+        "--public-table-y": `${points.desktop.y}%`,
+        "--public-mobile-table-x": `${points.mobile.x}%`,
+        "--public-mobile-table-y": `${points.mobile.y}%`,
+      }}
     >
       <div className="relative flex min-w-[70px] flex-col items-center">
         {table.seats === 6 && <SixSeatChairs reserved={reserved} />}

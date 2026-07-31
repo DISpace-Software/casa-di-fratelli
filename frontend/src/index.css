@@ -1164,6 +1164,18 @@ html[data-theme="light"] .reservation-page .reservation-map-table-node[data-sele
   background: linear-gradient(145deg, #b78a4e, #5d3c1f) !important;
 }
 
+.reservation-page .public-responsive-table-position {
+  left: var(--public-table-x);
+  top: var(--public-table-y);
+}
+
+@media (max-width: 639px) {
+  .reservation-page .public-responsive-table-position {
+    left: var(--public-mobile-table-x);
+    top: var(--public-mobile-table-y);
+  }
+}
+
 html[data-theme="light"] .reservation-page .map-seat-label {
   color: rgba(42, 28, 18, 0.62) !important;
 }
