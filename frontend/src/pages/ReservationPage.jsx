@@ -16,10 +16,7 @@ import {
   isPastTimeForDate,
   isWithinReservationBuffer,
 } from "../domain/reservations/dateTimeRules";
-import {
-  rotatePercentPointClockwise,
-  rotatePercentPointCounterClockwise,
-} from "../domain/adminMap/mapCamera";
+import { rotatePercentPointClockwise } from "../domain/adminMap/mapCamera";
 
 const birthdayDays = Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(2, "0"));
 const birthdayMonths = {
@@ -605,40 +602,21 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
 }
 
 function IndoorMap({ tables, selectedIds, onSelect, labels }) {
-  const rotatedTables = tables.map((table) => ({
-    source: table,
-    display: {
-      ...table,
-      ...rotatePercentPointCounterClockwise(table),
-    },
-  }));
-
   return (
-    <div className="reservation-map-surface indoor-map relative min-h-[680px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] sm:aspect-[0.8/1] sm:min-h-0">
+    <div className="reservation-map-surface indoor-map relative min-h-[760px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[830px]">
       <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
-      <MapWindow className="bottom-3 left-5 w-[50%] h-4" label={labels.windows} />
-      <MapWindow className="bottom-3 left-[70%] right-5 h-4" label={labels.windows} />
-      <div className="pointer-events-none absolute left-[60%] bottom-0 z-10 w-[120px] -translate-x-1/2 text-center">
-        <div className="mx-auto h-6 w-16 rounded-t-full border-x border-t border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_100%,rgba(214,178,120,0.32),transparent_68%)]" />
-        <div className="mx-auto h-1 w-20 rounded-full bg-[#d6b278]/55" />
-        <div className="mx-auto mt-0.5 w-fit rounded-full border border-[#c9a56a]/28 bg-black/48 px-2 py-1 text-[7px] font-bold uppercase tracking-[0.16em] text-[#f2d39a] backdrop-blur">{labels.entrance}</div>
-      </div>
-      <div className="pointer-events-none absolute left-[51%] top-5 z-10 h-[50%] w-4 -translate-x-1/2">
-        <div className="relative h-full w-full rounded-full border border-stone-200/14 bg-[linear-gradient(90deg,rgba(255,244,223,0.18),rgba(63,47,34,0.78),rgba(255,244,223,0.12))] shadow-[0_0_28px_rgba(0,0,0,0.34)]" />
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-90 whitespace-nowrap rounded-full border border-white/10 bg-black/35 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.18em] text-white/55 backdrop-blur">{labels.wall}</div>
-      </div>
-      <div className="pointer-events-none absolute right-0 top-[75%] z-10 w-[150px] translate-x-1/2 -translate-y-1/2 rotate-90 text-center">
-        <div className="mx-auto h-6 w-16 rounded-t-full border-x border-t border-emerald-200/45 bg-[radial-gradient(circle_at_50%_100%,rgba(110,231,183,0.2),transparent_64%)]" />
-        <div className="mx-auto h-1 w-20 rounded-full bg-emerald-200/45" />
-        <div className="mx-auto mt-0.5 max-w-[104px] rounded-full border border-emerald-200/20 bg-black/48 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.14em] text-emerald-100/90 backdrop-blur">{labels.terraceEntrance}</div>
-      </div>
-      {rotatedTables.map(({ source, display }) => (
+      <MapWindow className="left-3 top-5 h-[50%] w-4" label={labels.windows} vertical />
+      <MapWindow className="bottom-5 left-3 top-[70%] w-4" label={labels.windows} vertical />
+      <SideEntry label={labels.entrance} />
+      <IndoorPartitionWall label={labels.wall} />
+      <IndoorTerraceEntry label={labels.terraceEntrance} />
+      {tables.map((table) => (
         <IndoorTable
-          key={source.id}
-          table={display}
-          selected={selectedIds.includes(source.id)}
+          key={table.id}
+          table={table}
+          selected={selectedIds.includes(table.id)}
           reserved={false}
-          onSelect={() => onSelect(source, "indoor")}
+          onSelect={onSelect}
           labels={labels}
         />
       ))}
