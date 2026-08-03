@@ -36,6 +36,8 @@ export default function UnifiedMapViewport({
   onBackgroundClick,
   overlay,
   hud,
+  expandedControls,
+  autoExpand = false,
   language = "bg",
 }) {
   const shellRef = React.useRef(null);
@@ -51,7 +53,7 @@ export default function UnifiedMapViewport({
   const movedRef = React.useRef(false);
   const initializedRef = React.useRef(false);
   const [scaleLabel, setScaleLabel] = React.useState(initialCamera.scale);
-  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [isExpanded, setIsExpanded] = React.useState(() => Boolean(autoExpand));
   const focusKey = focusTarget?.key;
   const focusX = focusTarget?.x;
   const focusY = focusTarget?.y;
@@ -366,6 +368,11 @@ export default function UnifiedMapViewport({
           </button>
         </div>
       </div>
+      {isExpanded && expandedControls ? (
+        <div className="mb-3 shrink-0">
+          {expandedControls}
+        </div>
+      ) : null}
       <div
         ref={viewportRef}
         data-admin-swipe-lock="true"

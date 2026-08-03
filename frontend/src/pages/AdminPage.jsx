@@ -2331,34 +2331,69 @@ function ReservationOperationsMap({
             setTableReservationDraft(null);
           }}
           overlay={renderFloatingTableReservationForm()}
+          autoExpand={!ordersOnly}
+          expandedControls={!ordersOnly ? (
+            <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-black/25 p-2 backdrop-blur-xl">
+              <input
+                type="date"
+                value={mapDate}
+                onChange={(event) => onDateChange?.(event.target.value)}
+                onClick={(event) => {
+                  try {
+                    event.currentTarget.showPicker?.();
+                  } catch {
+                    event.currentTarget.focus();
+                  }
+                }}
+                className="min-h-[40px] min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm font-semibold text-[#fff4df] outline-none focus:border-[#f2d39a]/60 sm:max-w-[220px]"
+                aria-label={adminLocalText(language, "Дата на картата", "Map date", "Дата карты")}
+              />
+              <button
+                type="button"
+                onClick={() => onDateChange?.(todayDate)}
+                className={`min-h-[40px] rounded-xl border px-4 py-2 text-xs font-semibold transition ${
+                  isMapToday
+                    ? "border-[#f2d39a]/55 bg-[#c9a56a]/22 text-[#fff4df]"
+                    : "border-white/10 bg-white/[0.04] text-white/65 hover:border-[#c9a56a]/35 hover:text-white"
+                }`}
+              >
+                {adminLocalText(language, "Днес", "Today", "Сегодня")}
+              </button>
+              <span className="hidden text-xs text-white/45 sm:inline">
+                {isMapToday
+                  ? adminLocalText(language, "Оперативен изглед за днес", "Live view for today", "Оперативная карта на сегодня")
+                  : adminLocalText(language, "Планиране за избраната дата", "Planning for selected date", "Планирование на выбранную дату")}
+              </span>
+            </div>
+          ) : null}
           hud={(
             <div
               className="flex overflow-hidden rounded-2xl border border-[#f2d39a]/30 bg-[#100d09]/88 shadow-[0_16px_45px_rgba(0,0,0,0.45)] backdrop-blur-xl"
               aria-label={adminLocalText(language, "Текуща заетост", "Current occupancy", "Текущая занятость")}
             >
-              <div className="min-w-[104px] px-3 py-2.5 text-center sm:min-w-[128px] sm:px-4 sm:py-3">
-                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 sm:text-[11px]">
+              <div className="min-w-[64px] px-2 py-1.5 text-center sm:min-w-[76px] sm:px-2.5 sm:py-2">
+                <div className="text-[7px] font-bold uppercase tracking-[0.12em] text-white/55 sm:text-[8px]">
                   {adminLocalText(language, "Гости сега", "Guests now", "Гостей сейчас")}
                 </div>
-                <div className="mt-0.5 text-2xl font-black tabular-nums text-[#fff4df] sm:text-3xl">
+                <div className="text-base font-black tabular-nums text-[#fff4df] sm:text-lg">
                   {occupancy.currentVisitors}
                 </div>
               </div>
               <div className="w-px bg-white/10" />
-              <div className="min-w-[104px] px-3 py-2.5 text-center sm:min-w-[128px] sm:px-4 sm:py-3">
-                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 sm:text-[11px]">
+              <div className="min-w-[64px] px-2 py-1.5 text-center sm:min-w-[76px] sm:px-2.5 sm:py-2">
+                <div className="text-[7px] font-bold uppercase tracking-[0.12em] text-white/55 sm:text-[8px]">
                   {adminLocalText(language, "Закъсняват", "Running late", "Опаздывают")}
                 </div>
-                <div className="mt-0.5 text-2xl font-black tabular-nums text-amber-200 sm:text-3xl">
+                <div className="text-base font-black tabular-nums text-amber-200 sm:text-lg">
                   {occupancy.delayedVisitors}
                 </div>
               </div>
               <div className="w-px bg-white/10" />
-              <div className="min-w-[104px] px-3 py-2.5 text-center sm:min-w-[128px] sm:px-4 sm:py-3">
-                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200/70 sm:text-[11px]">
+              <div className="min-w-[64px] px-2 py-1.5 text-center sm:min-w-[76px] sm:px-2.5 sm:py-2">
+                <div className="text-[7px] font-bold uppercase tracking-[0.12em] text-emerald-200/70 sm:text-[8px]">
                   {adminLocalText(language, "Свободни места", "Free seats", "Свободных мест")}
                 </div>
-                <div className="mt-0.5 text-2xl font-black tabular-nums text-emerald-200 sm:text-3xl">
+                <div className="text-base font-black tabular-nums text-emerald-200 sm:text-lg">
                   {occupancy.freeSeats}
                 </div>
               </div>
