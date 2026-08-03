@@ -10,7 +10,6 @@ import {
 } from "../domain/reservations/tableConfig";
 import {
   getAvailableReservationTimesForDate,
-  getBookableReservationDates,
   getDateInputValueAfterDays,
   getTodayInputValue,
   isDateBeyondReservationWindow,
@@ -968,7 +967,7 @@ function normalizeLayoutTables(items, area, fallback) {
 
 export default function ReservationPage({ t, language, setLanguage, onBack, onOpenPrivacy, onReservationComplete, theme, onToggleTheme }) {
   const today = React.useMemo(() => getTodayInputValue(), []);
-  const maxReservationDate = React.useMemo(() => getDateInputValueAfterDays(10), []);
+  const tomorrow = React.useMemo(() => getDateInputValueAfterDays(1), []);
   const adminPhone = "088 821 8318";
 
   const [reservationDate, setReservationDate] = React.useState(() => {
@@ -981,6 +980,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   const [selectedTime, setSelectedTime] = React.useState("");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState("");
+  const [dateSelectionError, setDateSelectionError] = React.useState("");
   const [submitSuccess, setSubmitSuccess] = React.useState("");
   const [emailConfirmationNotice, setEmailConfirmationNotice] = React.useState(null);
   const [autoConfirmationNotice, setAutoConfirmationNotice] = React.useState(null);
@@ -1104,25 +1104,6 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
     [today]
   );
   const isTodayBookable = todayReservationTimes.length > 0;
-  const bookableReservationDates = React.useMemo(
-    () =>
-      getBookableReservationDates({
-        today,
-        maxDate: maxReservationDate,
-        closure: restaurantClosure,
-        includeToday: isTodayBookable,
-      }),
-    [isTodayBookable, maxReservationDate, restaurantClosure, today]
-  );
-  const dateFormatter = React.useMemo(
-    () =>
-      new Intl.DateTimeFormat(language === "bg" ? "bg-BG" : language === "ru" ? "ru-RU" : "en-GB", {
-        weekday: "short",
-        day: "2-digit",
-        month: "short",
-      }),
-    [language]
-  );
   const distantDateMessage =
     localText(
       language,
@@ -1191,6 +1172,49 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   };
 
   const handleDateSelect = (nextDate) => {
+    if (!nextDate) {
+      setDateSelectionError("");
+      setReservationDate("");
+      setSelectedTime("");
+      setGuestCount("");
+      setSelectedTables([]);
+      return;
+    }
+
+    if (nextDate < today) return;
+
+    if (isDateBeyondReservationWindow(nextDate, 10)) {
+      setDateSelectionError(distantDateMessage);
+      setReservationDate("");
+      setSelectedTime("");
+      setGuestCount("");
+      setSelectedTables([]);
+      return;
+    }
+
+    if (
+      restaurantClosure?.enabled &&
+      nextDate >= restaurantClosure.startDate &&
+      nextDate <= restaurantClosure.endDate
+    ) {
+      const reopenDate = restaurantClosure.reopenDate || restaurantClosure.endDate;
+      const localizedReopenDate = reopenDate.split("-").reverse().join(".");
+      setDateSelectionError(
+        localText(
+          language,
+          `Ресторантът е затворен. Резервации се приемат от ${localizedReopenDate}.`,
+          `The restaurant is closed. Reservations reopen on ${reopenDate}.`,
+          `Ресторан закрыт. Бронирование доступно с ${localizedReopenDate}.`
+        )
+      );
+      setReservationDate("");
+      setSelectedTime("");
+      setGuestCount("");
+      setSelectedTables([]);
+      return;
+    }
+
+    setDateSelectionError("");
     setSubmitError("");
     setReservationDate(nextDate);
     setSelectedTime("");
@@ -1198,15 +1222,6 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
     setSelectedTables([]);
     openSelectionControl(timeSelectRef.current);
   };
-
-  React.useEffect(() => {
-    if (reservationDate && !bookableReservationDates.includes(reservationDate)) {
-      setReservationDate("");
-      setSelectedTime("");
-      setGuestCount("");
-      setSelectedTables([]);
-    }
-  }, [bookableReservationDates, reservationDate]);
 
   React.useEffect(() => {
     if (requestedGuests >= 9) {
@@ -1585,37 +1600,39 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                   <label className="mb-2 block text-sm text-white/60">
                     {localText(language, "Дата", "Date", "Дата")}
                   </label>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {bookableReservationDates.map((value) => {
-                      const [year, month, day] = value.split("-").map(Number);
-                      const label = dateFormatter.format(new Date(year, month - 1, day));
-
-                      return (
-                        <button
-                          key={value}
-                          type="button"
-                          aria-pressed={reservationDate === value}
-                          onClick={() => handleDateSelect(value)}
-                          className={`rounded-xl px-3 py-3 text-sm capitalize transition active:scale-[0.98] ${
-                            reservationDate === value
-                              ? "luxury-button"
-                              : "border border-white/10 bg-white/[0.04] text-white/75 hover:border-[#c9a56a]/40 hover:bg-[#c9a56a]/10"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
+                  <input
+                    type="date"
+                    min={today}
+                    value={reservationDate}
+                    onChange={(event) => handleDateSelect(event.target.value)}
+                    className="quiet-input w-full cursor-pointer rounded-2xl px-4 py-3 [color-scheme:dark]"
+                  />
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {[
+                      [today, localText(language, "Днес", "Today", "Сегодня"), !isTodayBookable],
+                      [tomorrow, localText(language, "Утре", "Tomorrow", "Завтра"), false],
+                    ].map(([value, label, disabled]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => handleDateSelect(value)}
+                        className={`rounded-xl px-3 py-2 text-sm transition ${
+                          reservationDate === value
+                            ? "luxury-button"
+                            : disabled
+                            ? "cursor-not-allowed border border-white/8 bg-white/[0.02] text-white/30"
+                            : "border border-white/10 bg-white/[0.04] text-white/70 hover:border-[#c9a56a]/40"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
                   <p className="mt-2 text-xs leading-5 text-white/45">{distantDateMessage}</p>
-                  {restaurantClosure?.enabled && restaurantClosure.reopenDate && (
-                    <p className="mt-2 rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/10 px-3 py-2 text-sm leading-5 text-[#f2d39a]">
-                      {localText(
-                        language,
-                        `Показани са само достъпните дати. След отпуска резервациите започват от ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`,
-                        `Only available dates are shown. Reservations reopen on ${restaurantClosure.reopenDate}.`,
-                        `Показаны только доступные даты. После отпуска бронирование начинается с ${restaurantClosure.reopenDate.split("-").reverse().join(".")}.`
-                      )}
+                  {dateSelectionError && (
+                    <p role="alert" className="mt-2 rounded-xl border border-[#f2d39a]/35 bg-[#c9a56a]/12 px-3 py-2 text-sm leading-5 text-[#f2d39a]">
+                      {dateSelectionError}
                     </p>
                   )}
                 </div>

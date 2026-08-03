@@ -46,38 +46,6 @@ export function getDateInputValueAfterDays(days, now = new Date()) {
   return getTodayInputValue(date);
 }
 
-function parseLocalDate(dateValue) {
-  const [year, month, day] = String(dateValue || "").split("-").map(Number);
-  if (![year, month, day].every(Number.isFinite)) return null;
-  return new Date(year, month - 1, day);
-}
-
-export function getBookableReservationDates({ today, maxDate, closure, includeToday = true }) {
-  const firstDate = parseLocalDate(today);
-  const lastDate = parseLocalDate(maxDate);
-  if (!firstDate || !lastDate || firstDate > lastDate) return [];
-
-  const dates = [];
-  const cursor = new Date(firstDate);
-
-  while (cursor <= lastDate) {
-    const value = getTodayInputValue(cursor);
-    const isTodayUnavailable = value === today && !includeToday;
-    const isClosed = Boolean(
-      closure?.enabled &&
-      closure.startDate &&
-      closure.endDate &&
-      value >= closure.startDate &&
-      value <= closure.endDate
-    );
-
-    if (!isTodayUnavailable && !isClosed) dates.push(value);
-    cursor.setDate(cursor.getDate() + 1);
-  }
-
-  return dates;
-}
-
 export function isDateBeyondReservationWindow(dateValue, maxDays = 10, now = new Date()) {
   if (!dateValue) return false;
   return dateValue > getDateInputValueAfterDays(maxDays, now);
