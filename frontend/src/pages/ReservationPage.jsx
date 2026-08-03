@@ -997,6 +997,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
   });
   const timeSelectRef = React.useRef(null);
   const guestCountSelectRef = React.useRef(null);
+  const dateInputRef = React.useRef(null);
   const mapSectionRef = React.useRef(null);
 
   const indoorTables = layoutTables.indoor;
@@ -1601,10 +1602,18 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
                     {localText(language, "Дата", "Date", "Дата")}
                   </label>
                   <input
+                    ref={dateInputRef}
                     type="date"
                     min={today}
                     value={reservationDate}
                     onChange={(event) => handleDateSelect(event.target.value)}
+                    onClick={() => {
+                      try {
+                        dateInputRef.current?.showPicker?.();
+                      } catch {
+                        dateInputRef.current?.focus();
+                      }
+                    }}
                     className="quiet-input w-full cursor-pointer rounded-2xl px-4 py-3 [color-scheme:dark]"
                   />
                   <div className="mt-3 grid grid-cols-2 gap-2">
