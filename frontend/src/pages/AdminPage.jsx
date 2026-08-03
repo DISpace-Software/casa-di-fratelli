@@ -2284,7 +2284,7 @@ function ReservationOperationsMap({
   }
 
   return (
-    <Panel title={text.title} subtitle={text.subtitle}>
+    <Panel title={text.title} subtitle={text.subtitle} bare={!ordersOnly}>
       {!ordersOnly && (
         <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#c9a56a]/18 bg-black/20 p-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -5335,7 +5335,9 @@ function AdminNavIcon({ type, className = "h-6 w-6" }) {
   );
 }
 
-function Panel({ title, subtitle, children, right }) {
+function Panel({ title, subtitle, children, right, bare = false }) {
+  if (bare) return <>{children}</>;
+
   return (
     <div className="luxury-panel rounded-[26px] p-5 md:p-6">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
