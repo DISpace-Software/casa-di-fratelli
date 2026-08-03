@@ -1994,6 +1994,12 @@ function ReservationOperationsMap({
   );
   const canSaveMove = moveDraft.tableIds.length > 0;
 
+  function toggleReservationSelection(reservationId) {
+    setSelectedReservationId((current) => (current === reservationId ? null : reservationId));
+    setSelectedTableId(null);
+    setTableReservationDraft(null);
+  }
+
   function openMovePanel(reservation) {
     setSelectedReservationId(reservation.id);
     onAreaChange(["garden", "openTerrace"].includes(reservation.area) ? reservation.area : "indoor");
@@ -2076,6 +2082,8 @@ function ReservationOperationsMap({
   }
 
   function openWalkInModal(table) {
+    setSelectedReservationId(null);
+    setTableReservationDraft(null);
     setWalkInDraft({
       area: table.area,
       tableId: table.id,
@@ -2086,6 +2094,7 @@ function ReservationOperationsMap({
 
   function openTableReservationForm(table) {
     const nextTime = getNextAdminReservationTime(new Date());
+    setSelectedReservationId(null);
     setTableReservationDraft({
       guestName: "",
       phone: "",
@@ -2487,7 +2496,7 @@ function ReservationOperationsMap({
                 >
                   <button
                     type="button"
-                    onClick={() => setSelectedReservationId(isSelected ? null : reservation.id)}
+                    onClick={() => toggleReservationSelection(reservation.id)}
                     className={`relative z-40 min-w-[96px] rounded-full border px-2.5 py-1 text-[9px] font-semibold shadow-2xl backdrop-blur transition hover:scale-[1.03] sm:min-w-[112px] sm:px-3 sm:py-1.5 sm:text-[10px] lg:min-w-[128px] lg:text-[11px] ${
 	                      hasNewOrderItems
 	                        ? "admin-reservation-guest-marker waiter-new-alert border-amber-300/55 bg-amber-400/22 text-amber-50"
@@ -2711,6 +2720,8 @@ function ReservationOperationsMap({
                     }
 
                     setMapFocusRequestId((current) => current + 1);
+                    setSelectedReservationId(null);
+                    setTableReservationDraft(null);
                     setSelectedTableId((current) => (current === table.id ? null : table.id));
                   }}
                   className={`admin-map-table-node flex items-center justify-center rounded-2xl border font-semibold shadow-2xl transition hover:scale-[1.04] ${
@@ -2826,7 +2837,7 @@ function ReservationOperationsMap({
                           <button
                             key={reservation.id}
                             type="button"
-                            onClick={() => setSelectedReservationId(reservation.id)}
+                            onClick={() => toggleReservationSelection(reservation.id)}
                             className={`flex w-full items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition ${
                               selectedReservationId === reservation.id
                                 ? "border-[#f2d39a]/55 bg-[#c9a56a]/18"
@@ -2907,7 +2918,7 @@ function ReservationOperationsMap({
                     <button
                       key={reservation.id}
                       type="button"
-                      onClick={() => setSelectedReservationId(reservation.id)}
+                      onClick={() => toggleReservationSelection(reservation.id)}
                       className={`w-full rounded-2xl border p-3 text-left transition ${
                         selectedReservationId === reservation.id
                           ? "border-[#f2d39a]/55 bg-[#c9a56a]/16"
