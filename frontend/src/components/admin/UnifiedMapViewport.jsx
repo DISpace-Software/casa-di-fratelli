@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import {
   ADMIN_MAP_CAMERA,
   ADMIN_MAP_WORLD,
@@ -347,14 +348,9 @@ export default function UnifiedMapViewport({
 
     exitNotifiedRef.current = false;
     setIsExpanded(true);
-    try {
-      await shellRef.current?.requestFullscreen?.({ navigationUI: "hide" });
-    } catch {
-      // iOS Safari and some PWA modes use the fixed-position fallback.
-    }
   };
 
-  return (
+  const content = (
     <div
       ref={shellRef}
       className={`relative ${
@@ -456,4 +452,8 @@ export default function UnifiedMapViewport({
       {overlay}
     </div>
   );
+
+  return isExpanded && typeof document !== "undefined"
+    ? createPortal(content, document.body)
+    : content;
 }
