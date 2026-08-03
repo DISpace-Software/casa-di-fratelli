@@ -1,5 +1,5 @@
 import React from "react";
-import { createPortal } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { API_BASE_URL } from "../config/api";
 import {
   defaultGardenTables,
@@ -1683,6 +1683,7 @@ function ReservationOperationsMap({
   requireTableClaim = false,
   diningEnabled = true,
   ordersOnly = false,
+  onExitMap,
 }) {
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState(null);
@@ -2283,7 +2284,7 @@ function ReservationOperationsMap({
   }
 
   return (
-    <Panel title={text.title} subtitle={text.subtitle}>
+    <Panel title={text.title} subtitle={text.subtitle} bare={!ordersOnly}>
       {!ordersOnly && (
         <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#c9a56a]/18 bg-black/20 p-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -2332,6 +2333,7 @@ function ReservationOperationsMap({
           }}
           overlay={renderFloatingTableReservationForm()}
           autoExpand={!ordersOnly}
+          onExitExpanded={!ordersOnly ? onExitMap : undefined}
           expandedControls={!ordersOnly ? (
             <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-black/25 p-2 backdrop-blur-xl">
               <input
@@ -5333,7 +5335,9 @@ function AdminNavIcon({ type, className = "h-6 w-6" }) {
   );
 }
 
-function Panel({ title, subtitle, children, right }) {
+function Panel({ title, subtitle, children, right, bare = false }) {
+  if (bare) return <>{children}</>;
+
   return (
     <div className="luxury-panel rounded-[26px] p-5 md:p-6">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -8131,6 +8135,20 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     .filter((order) => !["Done", "Cancelled"].includes(order.status))
     .slice(0, 5);
 
+  const openAdminTab = (key) => {
+    if (key !== "liveMap") {
+      setActiveTab(key);
+      return;
+    }
+
+    flushSync(() => setActiveTab("liveMap"));
+    const mapShell = document.querySelector('[data-admin-reservation-map-shell="true"]');
+    if (!mapShell?.requestFullscreen || document.fullscreenElement) return;
+    void mapShell.requestFullscreen({ navigationUI: "hide" }).catch(() => {
+      // iPadOS and restricted browser modes keep the fixed-position fullscreen fallback.
+    });
+  };
+
   return (
     <div className="admin-page luxury-shell min-h-screen text-white">
       <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-8">
@@ -8280,7 +8298,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       <button
                         key={key}
                         type="button"
-	                        onClick={() => setActiveTab(key)}
+	                        onClick={() => openAdminTab(key)}
 	                        className={`group flex min-h-[82px] items-center gap-3 rounded-[20px] border border-white/10 bg-white/[0.035] p-3 text-left transition hover:border-[#c9a56a]/45 hover:bg-[#c9a56a]/10 ${
 	                          key === "liveMap" && newWaiterItemsCount > 0
 	                            ? "waiter-new-alert"
@@ -8656,6 +8674,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 requireTableClaim={isWaiterRole}
                 diningEnabled={isProVersion}
                 ordersOnly={false}
+                onExitMap={() => setActiveTab("home")}
               />
             )}
 
