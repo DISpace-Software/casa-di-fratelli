@@ -1991,9 +1991,7 @@ function ReservationOperationsMap({
       : null,
     [getReservationBounds, moveDraft.area, moveDraft.tableIds, moveReservationId]
   );
-  const canSaveMove =
-    moveDraft.tableIds.length > 0 &&
-    moveSelectedCapacity >= Number(moveDraft.guestCount || selectedReservation?.guestCount || 0);
+  const canSaveMove = moveDraft.tableIds.length > 0;
 
   function openMovePanel(reservation) {
     setSelectedReservationId(reservation.id);
@@ -2574,7 +2572,7 @@ function ReservationOperationsMap({
                     <div className="mt-1 text-sm font-semibold text-[#fff4df]">
                       {adminLocalText(language, "Маси", "Tables", "Столы")} {moveDraft.tableIds.join(", ")}
                     </div>
-                    <div className={`mt-1 text-[11px] ${moveSelectedCapacity >= requiredGuests ? "text-emerald-200/80" : "text-amber-200"}`}>
+                    <div className="mt-1 text-[11px] text-emerald-200/80">
                       {adminLocalText(language, "Капацитет", "Capacity", "Вместимость")}: {moveSelectedCapacity}
                     </div>
                   </div>
@@ -2614,16 +2612,6 @@ function ReservationOperationsMap({
                     +
                   </button>
                 </div>
-                {!canSaveMove && (
-                  <div className="mt-2 text-[11px] leading-4 text-amber-200">
-                    {adminLocalText(
-                      language,
-                      "Добавете още маса — местата не са достатъчни.",
-                      "Add another table — there are not enough seats.",
-                      "Добавьте ещё стол — мест недостаточно."
-                    )}
-                  </div>
-                )}
                 <button
                   type="button"
                   disabled={!canSaveMove}
