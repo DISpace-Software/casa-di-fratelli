@@ -38,6 +38,7 @@ export default function UnifiedMapViewport({
   hud,
   expandedControls,
   autoExpand = false,
+  onExitExpanded,
   language = "bg",
 }) {
   const shellRef = React.useRef(null);
@@ -52,12 +53,25 @@ export default function UnifiedMapViewport({
   const wheelEndTimerRef = React.useRef(0);
   const movedRef = React.useRef(false);
   const initializedRef = React.useRef(false);
+  const exitNotifiedRef = React.useRef(false);
+  const onExitExpandedRef = React.useRef(onExitExpanded);
   const [scaleLabel, setScaleLabel] = React.useState(initialCamera.scale);
   const [isExpanded, setIsExpanded] = React.useState(() => Boolean(autoExpand));
   const focusKey = focusTarget?.key;
   const focusX = focusTarget?.x;
   const focusY = focusTarget?.y;
   const focusScale = focusTarget?.scale;
+
+  React.useEffect(() => {
+    onExitExpandedRef.current = onExitExpanded;
+  }, [onExitExpanded]);
+
+  const closeExpanded = React.useCallback(() => {
+    setIsExpanded(false);
+    if (exitNotifiedRef.current) return;
+    exitNotifiedRef.current = true;
+    onExitExpandedRef.current?.();
+  }, []);
 
   const applyCamera = React.useCallback((nextCamera, { animate = false, persist = true } = {}) => {
     const camera = clampCamera(
@@ -163,12 +177,15 @@ export default function UnifiedMapViewport({
 
   React.useEffect(() => {
     const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && isExpanded) setIsExpanded(false);
+      if (!document.fullscreenElement && isExpanded) closeExpanded();
     };
     const handleKeyDown = (event) => {
       if (event.key !== "Escape" || !isExpanded) return;
-      if (document.fullscreenElement) document.exitFullscreen?.();
-      setIsExpanded(false);
+      if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(closeExpanded);
+        return;
+      }
+      closeExpanded();
     };
 
     document.addEventListener("fullscreenchange", handleFullscreenChange);
@@ -177,7 +194,7 @@ export default function UnifiedMapViewport({
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isExpanded]);
+  }, [closeExpanded, isExpanded]);
 
   React.useEffect(() => {
     if (!isExpanded) return undefined;
@@ -316,12 +333,19 @@ export default function UnifiedMapViewport({
   const toggleFullscreen = async () => {
     if (isExpanded) {
       if (document.fullscreenElement) {
-        await document.exitFullscreen?.().catch(() => {});
+        try {
+          await document.exitFullscreen?.();
+          closeExpanded();
+        } catch {
+          closeExpanded();
+        }
+      } else {
+        closeExpanded();
       }
-      setIsExpanded(false);
       return;
     }
 
+    exitNotifiedRef.current = false;
     setIsExpanded(true);
     try {
       await shellRef.current?.requestFullscreen?.({ navigationUI: "hide" });

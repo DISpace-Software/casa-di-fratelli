@@ -1683,6 +1683,7 @@ function ReservationOperationsMap({
   requireTableClaim = false,
   diningEnabled = true,
   ordersOnly = false,
+  onExitMap,
 }) {
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState(null);
@@ -2332,6 +2333,7 @@ function ReservationOperationsMap({
           }}
           overlay={renderFloatingTableReservationForm()}
           autoExpand={!ordersOnly}
+          onExitExpanded={!ordersOnly ? onExitMap : undefined}
           expandedControls={!ordersOnly ? (
             <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-black/25 p-2 backdrop-blur-xl">
               <input
@@ -8656,6 +8658,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 requireTableClaim={isWaiterRole}
                 diningEnabled={isProVersion}
                 ordersOnly={false}
+                onExitMap={() => setActiveTab("home")}
               />
             )}
 
