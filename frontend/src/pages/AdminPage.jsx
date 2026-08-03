@@ -2339,6 +2339,15 @@ function ReservationOperationsMap({
               </div>
               <div className="w-px bg-white/10" />
               <div className="min-w-[104px] px-3 py-2.5 text-center sm:min-w-[128px] sm:px-4 sm:py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 sm:text-[11px]">
+                  {adminLocalText(language, "Общо места", "Total seats", "Всего мест")}
+                </div>
+                <div className="mt-0.5 text-2xl font-black tabular-nums text-[#f2d39a] sm:text-3xl">
+                  {occupancy.totalSeats}
+                </div>
+              </div>
+              <div className="w-px bg-white/10" />
+              <div className="min-w-[104px] px-3 py-2.5 text-center sm:min-w-[128px] sm:px-4 sm:py-3">
                 <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200/70 sm:text-[11px]">
                   {adminLocalText(language, "Свободни места", "Free seats", "Свободных мест")}
                 </div>
