@@ -1694,8 +1694,6 @@ function ReservationOperationsMap({
   const [consumptionCategory, setConsumptionCategory] = React.useState("all");
   const [walkInDraft, setWalkInDraft] = React.useState(null);
   const [tableReservationDraft, setTableReservationDraft] = React.useState(null);
-  const [shouldScrollMovePanel, setShouldScrollMovePanel] = React.useState(false);
-  const movePanelRef = React.useRef(null);
   const consumptionPanelRef = React.useRef(null);
   const [now, setNow] = React.useState(() => new Date());
   const todayDate = formatLocalDate(now);
@@ -1983,6 +1981,19 @@ function ReservationOperationsMap({
     () => new Set(moveCandidateOptions[0]?.tableIds || []),
     [moveCandidateOptions]
   );
+  const moveSelectedCapacity = React.useMemo(
+    () => getAreaTablesCapacity(moveDraft.area, moveDraft.tableIds, moveAreaTables),
+    [moveAreaTables, moveDraft.area, moveDraft.tableIds]
+  );
+  const moveSelectionBounds = React.useMemo(
+    () => moveReservationId && moveDraft.tableIds.length > 0
+      ? getReservationBounds({ area: moveDraft.area, tableIds: moveDraft.tableIds })
+      : null,
+    [getReservationBounds, moveDraft.area, moveDraft.tableIds, moveReservationId]
+  );
+  const canSaveMove =
+    moveDraft.tableIds.length > 0 &&
+    moveSelectedCapacity >= Number(moveDraft.guestCount || selectedReservation?.guestCount || 0);
 
   function openMovePanel(reservation) {
     setSelectedReservationId(reservation.id);
@@ -1990,10 +2001,11 @@ function ReservationOperationsMap({
     setMoveReservationId(reservation.id);
     setMoveDraft({
       area: ["garden", "openTerrace"].includes(reservation.area) ? reservation.area : "indoor",
-      tableIds: reservation.tableIds,
+      tableIds: [],
       guestCount: Number(reservation.guestCount || 1),
     });
-    setShouldScrollMovePanel(true);
+    setSelectedTableId(null);
+    setTableReservationDraft(null);
   }
 
   function updateMoveGuestCount(value) {
@@ -2011,15 +2023,8 @@ function ReservationOperationsMap({
     if (!selectedReservation || moveUnavailableTableIds.has(tableId)) return;
 
     const exists = moveDraft.tableIds.includes(tableId);
-    const originalTableIds = selectedReservation.tableIds || [];
-    const isStillOnOriginalSelection =
-      moveDraft.tableIds.length === originalTableIds.length &&
-      moveDraft.tableIds.every((id) => originalTableIds.includes(id));
-
     const nextTableIds = exists
       ? moveDraft.tableIds.filter((id) => id !== tableId)
-      : isStillOnOriginalSelection
-        ? [tableId]
       : [...moveDraft.tableIds, tableId];
 
     setMoveDraft((prev) => ({ ...prev, tableIds: nextTableIds }));
@@ -2036,7 +2041,24 @@ function ReservationOperationsMap({
     );
     if (saved) {
       setMoveReservationId(null);
+      setSelectedReservationId(null);
+      setSelectedTableId(null);
     }
+  }
+
+  function cancelMove() {
+    setMoveReservationId(null);
+    setMoveDraft({ area: selectedArea, tableIds: [], guestCount: 0 });
+    setSelectedReservationId(null);
+    setSelectedTableId(null);
+  }
+
+  function handleMapZoneChange(area) {
+    onAreaChange(area);
+    if (!moveReservationId) return;
+    setMoveDraft((current) =>
+      current.area === area ? current : { ...current, area, tableIds: [] }
+    );
   }
 
   function openConsumptionPanel() {
@@ -2128,19 +2150,6 @@ function ReservationOperationsMap({
     setWalkInDraft(null);
     setTableReservationDraft(null);
   }, [mapDate, moveReservationId]);
-
-  React.useEffect(() => {
-    if (!shouldScrollMovePanel || !moveReservationId) return;
-
-    const frame = window.requestAnimationFrame(() => {
-      if (window.matchMedia("(max-width: 1279px), (pointer: coarse)").matches) {
-        movePanelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-      setShouldScrollMovePanel(false);
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [moveReservationId, shouldScrollMovePanel, selectedReservationId]);
 
   React.useEffect(() => {
     if (!showConsumption) return;
@@ -2316,7 +2325,7 @@ function ReservationOperationsMap({
         <UnifiedMapViewport
           zones={areas.map(([id, name]) => ({ id, name: `${name} · ${getAreaTableCount(id)} ${text.tables}` }))}
           activeZone={selectedArea}
-          onZoneChange={onAreaChange}
+          onZoneChange={handleMapZoneChange}
           focusTarget={selectedMapFocusTarget}
           onBackgroundClick={() => {
             setSelectedReservationId(null);
@@ -2391,7 +2400,7 @@ function ReservationOperationsMap({
 
             const minutes = isMapToday ? getReservationMinutesFromNow(reservation, now) : null;
             const isLate = isMapToday && !reservation.isArrived && minutes !== null && minutes <= -10;
-	            const isSelected = reservation.id === selectedReservationId;
+            const isSelected = reservation.id === selectedReservationId && moveReservationId !== reservation.id;
 	            const hasNewOrderItems = newOrderReservationIds.has(Number(reservation.id));
 	            const canNoShow = isMapToday && !reservation.isArrived && minutes !== null && minutes <= -10;
             const canMarkArrived = isMapToday && !reservation.isArrived;
@@ -2543,6 +2552,90 @@ function ReservationOperationsMap({
             );
           })}
 
+          {moveSelectionBounds && selectedReservation && (() => {
+            const zone = ADMIN_MAP_ZONES.find((item) => item.id === moveSelectionBounds.area) || ADMIN_MAP_ZONES[0];
+            const position = localPercentToWorld(zone, {
+              x: moveSelectionBounds.centerX,
+              y: Math.max(7, moveSelectionBounds.minY - 9),
+            });
+            const requiredGuests = Number(moveDraft.guestCount || selectedReservation.guestCount || 1);
+
+            return (
+              <div
+                data-map-keep-open="true"
+                className="absolute z-[120] w-[220px] -translate-x-1/2 -translate-y-full rounded-2xl border border-[#f2d39a]/40 bg-[#15110e]/96 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.72)] backdrop-blur-xl sm:w-[250px]"
+                style={{ left: position.x, top: position.y }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#c9a56a]">
+                      {adminLocalText(language, "Ново настаняване", "New seating", "Новое размещение")}
+                    </div>
+                    <div className="mt-1 text-sm font-semibold text-[#fff4df]">
+                      {adminLocalText(language, "Маси", "Tables", "Столы")} {moveDraft.tableIds.join(", ")}
+                    </div>
+                    <div className={`mt-1 text-[11px] ${moveSelectedCapacity >= requiredGuests ? "text-emerald-200/80" : "text-amber-200"}`}>
+                      {adminLocalText(language, "Капацитет", "Capacity", "Вместимость")}: {moveSelectedCapacity}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={cancelMove}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/60"
+                    aria-label={adminLocalText(language, "Откажи", "Cancel", "Отменить")}
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="mt-3 grid grid-cols-[36px_minmax(0,1fr)_36px] overflow-hidden rounded-xl border border-white/10 bg-black/30">
+                  <button
+                    type="button"
+                    onClick={() => updateMoveGuestCount(requiredGuests - 1)}
+                    className="border-r border-white/10 py-2 font-bold text-[#f2d39a]"
+                    aria-label="Decrease guests"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    max="40"
+                    value={requiredGuests}
+                    onChange={(event) => updateMoveGuestCount(event.target.value)}
+                    className="min-w-0 bg-transparent px-2 py-2 text-center text-sm font-bold text-[#fff4df] outline-none"
+                    aria-label={text.guests}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => updateMoveGuestCount(requiredGuests + 1)}
+                    className="border-l border-white/10 py-2 font-bold text-[#f2d39a]"
+                    aria-label="Increase guests"
+                  >
+                    +
+                  </button>
+                </div>
+                {!canSaveMove && (
+                  <div className="mt-2 text-[11px] leading-4 text-amber-200">
+                    {adminLocalText(
+                      language,
+                      "Добавете още маса — местата не са достатъчни.",
+                      "Add another table — there are not enough seats.",
+                      "Добавьте ещё стол — мест недостаточно."
+                    )}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  disabled={!canSaveMove}
+                  onClick={saveMove}
+                  className="luxury-button mt-3 w-full rounded-xl px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {adminLocalText(language, "Запази", "Save", "Сохранить")}
+                </button>
+              </div>
+            );
+          })()}
+
           {areaTables.map((table) => {
             const reservation = liveByTable.get(table.id);
             const tableOrders = activeOrdersByTable.get(table.id) || [];
@@ -2551,11 +2644,11 @@ function ReservationOperationsMap({
             const isLate = reservation && !reservation.isArrived && minutes !== null && minutes <= -10;
             const isGroupTable = reservation?.tableIds?.length > 1;
             const isSelectedTable = selectedTableId === table.id;
-            const isMoveMode = moveReservationId === selectedReservation?.id && moveDraft.area === table.area;
-            const isMoveSelected = isMoveMode && moveDraft.tableIds.includes(table.id);
+            const isMoveMode = Boolean(moveReservationId && selectedReservation);
+            const isMoveSelected = isMoveMode && moveDraft.area === table.area && moveDraft.tableIds.includes(table.id);
             const isMoveUnavailable = isMoveMode && !isMoveSelected && moveUnavailableTableIds.has(table.id);
-            const isMoveSuggested = isMoveMode && moveSuggestedTableIds.has(table.id);
-            const isMoveBest = isMoveMode && moveBestTableIds.has(table.id);
+            const isMoveSuggested = isMoveMode && moveDraft.area === table.area && moveSuggestedTableIds.has(table.id);
+            const isMoveBest = isMoveMode && moveDraft.area === table.area && moveBestTableIds.has(table.id);
             const isMoveAllowed =
               isMoveMode &&
               !isMoveUnavailable;
@@ -2583,7 +2676,11 @@ function ReservationOperationsMap({
                   onClick={() => {
                     if (selectedArea !== table.area) onAreaChange(table.area);
                     if (isMoveMode && isMoveAllowed) {
-                      toggleMoveTable(table.id);
+                      if (moveDraft.area === table.area) {
+                        toggleMoveTable(table.id);
+                      } else {
+                        setMoveDraft((current) => ({ ...current, area: table.area, tableIds: [table.id] }));
+                      }
                       setSelectedTableId(null);
                       return;
                     }
@@ -2861,113 +2958,6 @@ function ReservationOperationsMap({
                   </button>
                 )}
               </div>
-
-              {moveReservationId === selectedReservation.id && (
-                <div ref={movePanelRef} className="mt-4 scroll-mt-28 rounded-2xl border border-[#c9a56a]/18 bg-[#c9a56a]/10 p-4">
-                  <div className="section-kicker">{text.moveTitle}</div>
-                  <label className="mt-3 block text-xs font-semibold uppercase tracking-[0.18em] text-white/45">
-                    {text.guests}
-                  </label>
-                  <div className="mt-2 grid grid-cols-[44px_minmax(0,1fr)_44px] overflow-hidden rounded-2xl border border-white/10 bg-black/25">
-                    <button
-                      type="button"
-                      onClick={() => updateMoveGuestCount(Number(moveDraft.guestCount || 1) - 1)}
-                      className="border-r border-white/10 px-3 py-3 text-lg font-semibold text-[#f2d39a] transition hover:bg-white/5"
-                      aria-label="Decrease guests"
-                    >
-                      -
-                    </button>
-                    <input
-                      type="number"
-                      min="1"
-                      max="40"
-                      value={moveDraft.guestCount || 1}
-                      onChange={(event) => updateMoveGuestCount(event.target.value)}
-                      className="w-full bg-transparent px-3 py-3 text-center text-base font-semibold text-[#fff4df] outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => updateMoveGuestCount(Number(moveDraft.guestCount || 1) + 1)}
-                      className="border-l border-white/10 px-3 py-3 text-lg font-semibold text-[#f2d39a] transition hover:bg-white/5"
-                      aria-label="Increase guests"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
-                    {areas.map(([area, label]) => (
-                      <button
-                        key={area}
-                        type="button"
-                        onClick={() => {
-                          setMoveDraft((prev) => ({ ...prev, area, tableIds: [] }));
-                          onAreaChange(area);
-                        }}
-                        className={`rounded-xl border px-3 py-2 text-left text-xs font-semibold transition ${
-                          moveDraft.area === area
-                            ? "border-[#f2d39a]/50 bg-[#c9a56a]/20 text-[#f2d39a]"
-                            : "border-white/10 bg-black/20 text-white/65"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-3 rounded-2xl border border-white/10 bg-black/18 p-3">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#f2d39a]">
-                      {text.bestOptions}
-                    </div>
-                    {moveCandidateOptions.length === 0 ? (
-                      <p className="mt-2 text-xs leading-5 text-white/55">{text.noMoveOptions}</p>
-                    ) : (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {moveCandidateOptions.slice(0, 6).map((option, index) => (
-                          <button
-                            key={option.tableIds.join("-")}
-                            type="button"
-                            onClick={() => setMoveDraft((prev) => ({ ...prev, tableIds: option.tableIds }))}
-                            className={`rounded-xl border px-3 py-2 text-left text-xs font-semibold transition ${
-                              index === 0
-                                ? "move-table-suggestion border-[#f2d39a]/60 bg-[#c9a56a]/20 text-[#fff4df]"
-                                : "border-white/10 bg-white/[0.035] text-white/70 hover:border-[#c9a56a]/40 hover:text-white"
-                            }`}
-                          >
-                            <span className="block">{option.tableIds.join(", ")}</span>
-                            <span className="mt-0.5 block text-[10px] font-medium opacity-65">
-                              {option.capacity} {text.guests}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-3">
-                    <TableChipSelector
-                      area={moveDraft.area}
-                      selectedTableIds={moveDraft.tableIds}
-                      onToggle={toggleMoveTable}
-                      unavailableTableIds={moveUnavailableTableIds}
-                      hideUnavailable
-                      requiredSeats={Number(moveDraft.guestCount || selectedReservation.guestCount || 0)}
-                      unrestrictedSelection
-                      tableIdsOverride={moveAreaTables.map((table) => table.id)}
-                      areaTables={moveAreaTables}
-                      suggestedTableIds={moveSuggestedTableIds}
-                      bestTableIds={moveBestTableIds}
-                      emptyMessage={
-                        text.empty
-                      }
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={saveMove}
-                    className="luxury-button mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold"
-                  >
-                    {text.saveMove}
-                  </button>
-                </div>
-              )}
 
               {diningEnabled && showConsumption && selectedReservation.isArrived && typeof document !== "undefined" && createPortal((
                 <div
