@@ -1683,7 +1683,6 @@ function ReservationOperationsMap({
   requireTableClaim = false,
   diningEnabled = true,
   ordersOnly = false,
-  onExitMap,
 }) {
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState(null);
@@ -2284,7 +2283,7 @@ function ReservationOperationsMap({
   }
 
   return (
-    <Panel title={text.title} subtitle={text.subtitle} bare={!ordersOnly}>
+    <Panel title={text.title} subtitle={text.subtitle}>
       {!ordersOnly && (
         <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-[#c9a56a]/18 bg-black/20 p-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -2333,7 +2332,6 @@ function ReservationOperationsMap({
           }}
           overlay={renderFloatingTableReservationForm()}
           autoExpand={!ordersOnly}
-          onExitExpanded={!ordersOnly ? onExitMap : undefined}
           expandedControls={!ordersOnly ? (
             <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-black/25 p-2 backdrop-blur-xl">
               <input
@@ -5335,9 +5333,7 @@ function AdminNavIcon({ type, className = "h-6 w-6" }) {
   );
 }
 
-function Panel({ title, subtitle, children, right, bare = false }) {
-  if (bare) return <>{children}</>;
-
+function Panel({ title, subtitle, children, right }) {
   return (
     <div className="luxury-panel rounded-[26px] p-5 md:p-6">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -8135,41 +8131,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     .filter((order) => !["Done", "Cancelled"].includes(order.status))
     .slice(0, 5);
 
-  if (activeTab === "liveMap") {
-    return (
-      <ReservationOperationsMap
-        text={a.liveMap}
-        language={adminLanguage}
-        layout={tableLayout}
-        reservations={reservations}
-        diningOrders={diningOrders}
-        menuItems={menuItems}
-        selectedArea={reservationMapArea}
-        onAreaChange={setReservationMapArea}
-        selectedDate={reservationMapDate}
-        onDateChange={setReservationMapDate}
-        onArrived={markReservationArrived}
-        onAddConsumptionItem={addConsumptionItem}
-        onUpdateConsumptionItem={updateConsumptionItem}
-        onMove={moveReservationFromMap}
-        onNoShow={markReservationNoShow}
-        onOpenReservation={isWaiterRole ? null : openReservationFromMap}
-        onOpenOrder={(orderId) => {
-          setExpandedOrderId(orderId);
-          setActiveTab("orders");
-        }}
-        onSeatWalkIn={seatWalkInFromMap}
-        onCreateReservation={isWaiterRole ? null : saveAdminReservationPayload}
-        onClaimReservation={isWaiterRole ? claimReservationForConsumption : null}
-        onRelease={releaseReservationTable}
-        requireTableClaim={isWaiterRole}
-        diningEnabled={isProVersion}
-        ordersOnly={false}
-        onExitMap={() => setActiveTab("home")}
-      />
-    );
-  }
-
   return (
     <div className="admin-page luxury-shell min-h-screen text-white">
       <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-8">
@@ -8664,6 +8625,38 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   </div>
                 </div>
               </Panel>
+            )}
+
+            {activeTab === "liveMap" && (
+              <ReservationOperationsMap
+                text={a.liveMap}
+                language={adminLanguage}
+                layout={tableLayout}
+                reservations={reservations}
+                diningOrders={diningOrders}
+                menuItems={menuItems}
+                selectedArea={reservationMapArea}
+                onAreaChange={setReservationMapArea}
+                selectedDate={reservationMapDate}
+                onDateChange={setReservationMapDate}
+                onArrived={markReservationArrived}
+                onAddConsumptionItem={addConsumptionItem}
+                onUpdateConsumptionItem={updateConsumptionItem}
+                onMove={moveReservationFromMap}
+                onNoShow={markReservationNoShow}
+                onOpenReservation={isWaiterRole ? null : openReservationFromMap}
+                onOpenOrder={(orderId) => {
+                  setExpandedOrderId(orderId);
+                  setActiveTab("orders");
+                }}
+                onSeatWalkIn={seatWalkInFromMap}
+                onCreateReservation={isWaiterRole ? null : saveAdminReservationPayload}
+                onClaimReservation={isWaiterRole ? claimReservationForConsumption : null}
+                onRelease={releaseReservationTable}
+                requireTableClaim={isWaiterRole}
+                diningEnabled={isProVersion}
+                ordersOnly={false}
+              />
             )}
 
             {activeTab === "reservations" && (
