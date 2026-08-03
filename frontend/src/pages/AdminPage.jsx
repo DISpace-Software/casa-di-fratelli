@@ -28,6 +28,7 @@ import {
   rotatePercentPointCounterClockwise,
 } from "../domain/adminMap/mapCamera";
 import { getMapModalPortalTarget } from "../domain/adminMap/mapInteraction";
+import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
 
 const emptyMenuItem = {
   nameBg: "",
@@ -1730,6 +1731,10 @@ function ReservationOperationsMap({
       .sort((first, second) => first.id.localeCompare(second.id, undefined, { numeric: true })),
     [getActiveTablesForArea]
   );
+  const occupancy = React.useMemo(
+    () => getRestaurantOccupancy(areaTables, reservations),
+    [areaTables, reservations]
+  );
   const liveByTable = React.useMemo(
     () => isMapToday
       ? buildLiveReservationsByTable(reservations, now)
@@ -2319,6 +2324,30 @@ function ReservationOperationsMap({
             setTableReservationDraft(null);
           }}
           overlay={renderFloatingTableReservationForm()}
+          hud={(
+            <div
+              className="flex overflow-hidden rounded-2xl border border-[#f2d39a]/30 bg-[#100d09]/88 shadow-[0_16px_45px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+              aria-label={adminLocalText(language, "Текуща заетост", "Current occupancy", "Текущая занятость")}
+            >
+              <div className="min-w-[104px] px-3 py-2.5 text-center sm:min-w-[128px] sm:px-4 sm:py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 sm:text-[11px]">
+                  {adminLocalText(language, "Гости сега", "Guests now", "Гостей сейчас")}
+                </div>
+                <div className="mt-0.5 text-2xl font-black tabular-nums text-[#fff4df] sm:text-3xl">
+                  {occupancy.currentVisitors}
+                </div>
+              </div>
+              <div className="w-px bg-white/10" />
+              <div className="min-w-[104px] px-3 py-2.5 text-center sm:min-w-[128px] sm:px-4 sm:py-3">
+                <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-200/70 sm:text-[11px]">
+                  {adminLocalText(language, "Свободни места", "Free seats", "Свободных мест")}
+                </div>
+                <div className="mt-0.5 text-2xl font-black tabular-nums text-emerald-200 sm:text-3xl">
+                  {occupancy.freeSeats}
+                </div>
+              </div>
+            </div>
+          )}
           language={language}
         >
           {ADMIN_MAP_ZONES.map((zone) => {

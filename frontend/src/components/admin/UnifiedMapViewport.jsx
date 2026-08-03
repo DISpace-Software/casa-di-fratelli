@@ -35,6 +35,7 @@ export default function UnifiedMapViewport({
   focusTarget,
   onBackgroundClick,
   overlay,
+  hud,
   language = "bg",
 }) {
   const shellRef = React.useRef(null);
@@ -415,6 +416,11 @@ export default function UnifiedMapViewport({
         >
           {children}
         </div>
+        {hud ? (
+          <div className="pointer-events-none absolute right-3 top-3 z-[80] sm:right-4 sm:top-4">
+            {hud}
+          </div>
+        ) : null}
       </div>
       {overlay}
     </div>
