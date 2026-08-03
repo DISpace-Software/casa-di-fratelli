@@ -1732,8 +1732,8 @@ function ReservationOperationsMap({
     [getActiveTablesForArea]
   );
   const occupancy = React.useMemo(
-    () => getRestaurantOccupancy(areaTables, reservations),
-    [areaTables, reservations]
+    () => getRestaurantOccupancy(areaTables, reservations, now),
+    [areaTables, now, reservations]
   );
   const liveByTable = React.useMemo(
     () => isMapToday
@@ -2340,10 +2340,10 @@ function ReservationOperationsMap({
               <div className="w-px bg-white/10" />
               <div className="min-w-[104px] px-3 py-2.5 text-center sm:min-w-[128px] sm:px-4 sm:py-3">
                 <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/55 sm:text-[11px]">
-                  {adminLocalText(language, "Общо места", "Total seats", "Всего мест")}
+                  {adminLocalText(language, "Закъсняват", "Running late", "Опаздывают")}
                 </div>
-                <div className="mt-0.5 text-2xl font-black tabular-nums text-[#f2d39a] sm:text-3xl">
-                  {occupancy.totalSeats}
+                <div className="mt-0.5 text-2xl font-black tabular-nums text-amber-200 sm:text-3xl">
+                  {occupancy.delayedVisitors}
                 </div>
               </div>
               <div className="w-px bg-white/10" />
