@@ -1,5 +1,4 @@
 import React from "react";
-import { createPortal } from "react-dom";
 import {
   ADMIN_MAP_CAMERA,
   ADMIN_MAP_WORLD,
@@ -350,7 +349,7 @@ export default function UnifiedMapViewport({
     setIsExpanded(true);
   };
 
-  const content = (
+  return (
     <div
       ref={shellRef}
       className={`relative ${
@@ -452,8 +451,4 @@ export default function UnifiedMapViewport({
       {overlay}
     </div>
   );
-
-  return isExpanded && typeof document !== "undefined"
-    ? createPortal(content, document.body)
-    : content;
 }
