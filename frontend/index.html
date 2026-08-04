@@ -5,10 +5,19 @@
     <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
     <script>
-      if (window.location.pathname === "/admin") {
-        document.querySelector('link[rel="manifest"]')?.setAttribute("href", "/admin.webmanifest");
+      const isAdminEntry = window.location.pathname === "/admin" || window.location.pathname.startsWith("/admin/");
+      const manifestLink = document.createElement("link");
+      manifestLink.rel = "manifest";
+      manifestLink.href = isAdminEntry ? "/admin.webmanifest" : "/site.webmanifest";
+      document.head.appendChild(manifestLink);
+
+      if (isAdminEntry) {
+        const appTitleMeta = document.createElement("meta");
+        appTitleMeta.setAttribute("name", "apple-mobile-web-app-title");
+        appTitleMeta.setAttribute("content", "Fratelli Admin");
+        document.head.appendChild(appTitleMeta);
+
         const robotsMeta = document.querySelector('meta[name="robots"]') || document.createElement("meta");
         robotsMeta.setAttribute("name", "robots");
         robotsMeta.setAttribute("content", "noindex, nofollow, noarchive");
@@ -18,6 +27,8 @@
       }
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="theme-color" content="#15110e" />
     <meta name="color-scheme" content="dark light" />
     <meta

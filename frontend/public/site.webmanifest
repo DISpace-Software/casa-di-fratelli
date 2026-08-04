@@ -1,6 +1,7 @@
 {
   "name": "Casa di Fratelli",
   "short_name": "Casa di Fratelli",
+  "id": "/",
   "description": "Italian restaurant, pizza, pasta and grill in Plovdiv.",
   "start_url": "/",
   "scope": "/",

@@ -1,6 +1,7 @@
 {
   "name": "Casa di Fratelli Admin",
   "short_name": "Fratelli Admin",
+  "id": "/admin",
   "description": "Casa di Fratelli staff administration panel.",
   "start_url": "/admin",
   "scope": "/admin",
