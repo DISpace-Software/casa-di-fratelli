@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import {
   ADMIN_MAP_CAMERA,
   ADMIN_MAP_WORLD,
@@ -60,6 +61,8 @@ export default function UnifiedMapViewport({
   const onExitExpandedRef = React.useRef(onExitExpanded);
   const [scaleLabel, setScaleLabel] = React.useState(initialCamera.scale);
   const [isExpanded, setIsExpanded] = React.useState(() => Boolean(autoExpand));
+  const useNativeFullscreen = typeof window !== "undefined"
+    && shouldUseNativeMapFullscreen(window.navigator);
   const focusKey = focusTarget?.key;
   const focusX = focusTarget?.x;
   const focusY = focusTarget?.y;
@@ -347,7 +350,7 @@ export default function UnifiedMapViewport({
 
     exitNotifiedRef.current = false;
     setIsExpanded(true);
-    if (!shouldUseNativeMapFullscreen(window.navigator)) return;
+    if (!useNativeFullscreen) return;
     try {
       await shellRef.current?.requestFullscreen?.({ navigationUI: "hide" });
     } catch {
@@ -355,7 +358,7 @@ export default function UnifiedMapViewport({
     }
   };
 
-  return (
+  const mapShell = (
     <div
       ref={shellRef}
       data-admin-reservation-map-shell="true"
@@ -459,4 +462,8 @@ export default function UnifiedMapViewport({
       {overlay}
     </div>
   );
+
+  return isExpanded && !useNativeFullscreen && typeof document !== "undefined"
+    ? createPortal(mapShell, document.body)
+    : mapShell;
 }
