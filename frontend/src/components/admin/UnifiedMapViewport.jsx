@@ -1,5 +1,4 @@
 import React from "react";
-import { createPortal } from "react-dom";
 import {
   ADMIN_MAP_CAMERA,
   ADMIN_MAP_WORLD,
@@ -209,6 +208,25 @@ export default function UnifiedMapViewport({
     };
   }, [isExpanded]);
 
+  React.useLayoutEffect(() => {
+    if (!isExpanded || useNativeFullscreen) return undefined;
+    const dialog = shellRef.current;
+    if (!dialog) return undefined;
+
+    try {
+      if (!dialog.open && typeof dialog.showModal === "function") dialog.showModal();
+      else if (!dialog.open) dialog.setAttribute("open", "");
+    } catch {
+      // Older WebKit versions still display an open dialog, even when the
+      // modal top-layer API is unavailable.
+      dialog.setAttribute("open", "");
+    }
+
+    return () => {
+      if (dialog.open) dialog.close?.();
+    };
+  }, [isExpanded, useNativeFullscreen]);
+
   const scheduleCamera = (camera) => {
     cameraRef.current = camera;
     window.cancelAnimationFrame(animationRef.current);
@@ -358,13 +376,15 @@ export default function UnifiedMapViewport({
     }
   };
 
-  const mapShell = (
-    <div
+  const ShellElement = isExpanded && !useNativeFullscreen ? "dialog" : "div";
+
+  return (
+    <ShellElement
       ref={shellRef}
       data-admin-reservation-map-shell="true"
       className={`relative ${
         isExpanded
-          ? "fixed inset-0 z-[250] flex flex-col bg-[#090806] px-[max(10px,env(safe-area-inset-left))] pb-[max(10px,env(safe-area-inset-bottom))] pt-[max(10px,env(safe-area-inset-top))]"
+          ? "fixed inset-0 z-[250] m-0 flex h-[100dvh] max-h-none w-screen max-w-none flex-col border-0 bg-[#090806] px-[max(10px,env(safe-area-inset-left))] pb-[max(10px,env(safe-area-inset-bottom))] pt-[max(10px,env(safe-area-inset-top))] text-white"
           : ""
       }`}
       style={isExpanded ? { touchAction: "none", overscrollBehavior: "none" } : undefined}
@@ -460,10 +480,6 @@ export default function UnifiedMapViewport({
         ) : null}
       </div>
       {overlay}
-    </div>
+    </ShellElement>
   );
-
-  return isExpanded && !useNativeFullscreen && typeof document !== "undefined"
-    ? createPortal(mapShell, document.body)
-    : mapShell;
 }
