@@ -27,7 +27,10 @@ import {
   rotatePercentPointClockwise,
   rotatePercentPointCounterClockwise,
 } from "../domain/adminMap/mapCamera";
-import { getMapModalPortalTarget } from "../domain/adminMap/mapInteraction";
+import {
+  getMapModalPortalTarget,
+  shouldUseNativeMapFullscreen,
+} from "../domain/adminMap/mapInteraction";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
 
 const emptyMenuItem = {
@@ -8153,6 +8156,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
 
     flushSync(() => setActiveTab("liveMap"));
+    if (!shouldUseNativeMapFullscreen(window.navigator)) return;
     const mapShell = document.querySelector('[data-admin-reservation-map-shell="true"]');
     if (!mapShell?.requestFullscreen || document.fullscreenElement) return;
     void mapShell.requestFullscreen({ navigationUI: "hide" }).catch(() => {

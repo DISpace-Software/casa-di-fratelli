@@ -10,7 +10,10 @@ import {
   preserveWorldCenter,
   zoomCameraAt,
 } from "../../domain/adminMap/mapCamera";
-import { shouldStartMapGesture } from "../../domain/adminMap/mapInteraction";
+import {
+  shouldStartMapGesture,
+  shouldUseNativeMapFullscreen,
+} from "../../domain/adminMap/mapInteraction";
 
 const CAMERA_STORAGE_KEY = "casa-admin-unified-map-camera";
 const INTERACTIVE_MAP_SELECTOR = "button, a, input, select, textarea, [role='button'], [data-map-keep-open='true']";
@@ -344,6 +347,7 @@ export default function UnifiedMapViewport({
 
     exitNotifiedRef.current = false;
     setIsExpanded(true);
+    if (!shouldUseNativeMapFullscreen(window.navigator)) return;
     try {
       await shellRef.current?.requestFullscreen?.({ navigationUI: "hide" });
     } catch {
