@@ -176,22 +176,17 @@ export default function UnifiedMapViewport({
   }, []);
 
   React.useEffect(() => {
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement && isExpanded) closeExpanded();
-    };
     const handleKeyDown = (event) => {
       if (event.key !== "Escape" || !isExpanded) return;
       if (document.fullscreenElement) {
-        document.exitFullscreen?.().catch(closeExpanded);
+        document.exitFullscreen?.().finally(closeExpanded);
         return;
       }
       closeExpanded();
     };
 
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
     window.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [closeExpanded, isExpanded]);
@@ -199,9 +194,12 @@ export default function UnifiedMapViewport({
   React.useEffect(() => {
     if (!isExpanded) return undefined;
     const previousOverflow = document.body.style.overflow;
+    const previousOverscrollBehavior = document.body.style.overscrollBehavior;
     document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.body.style.overscrollBehavior = previousOverscrollBehavior;
     };
   }, [isExpanded]);
 
@@ -362,6 +360,7 @@ export default function UnifiedMapViewport({
           ? "fixed inset-0 z-[250] flex flex-col bg-[#090806] px-[max(10px,env(safe-area-inset-left))] pb-[max(10px,env(safe-area-inset-bottom))] pt-[max(10px,env(safe-area-inset-top))]"
           : ""
       }`}
+      style={isExpanded ? { touchAction: "none", overscrollBehavior: "none" } : undefined}
     >
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <select
