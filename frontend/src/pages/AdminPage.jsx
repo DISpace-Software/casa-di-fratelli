@@ -2471,7 +2471,7 @@ function ReservationOperationsMap({
             return (
               <div
                 key={`reservation-${reservation.id}`}
-                className="pointer-events-none absolute z-20"
+                className={`pointer-events-none absolute ${isSelected ? "z-[220]" : "z-20"}`}
                 style={{ left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
               >
                 {bounds.tables.length > 1 && (
@@ -2495,7 +2495,7 @@ function ReservationOperationsMap({
                 )}
 
                 <div
-                    className="pointer-events-auto absolute z-40 -translate-x-1/2"
+                    className={`pointer-events-auto absolute -translate-x-1/2 ${isSelected ? "z-[230]" : "z-40"}`}
                   style={{ left: `${bounds.centerX}%`, top: `${bounds.labelTop}%` }}
                 >
                   <button
@@ -2518,7 +2518,7 @@ function ReservationOperationsMap({
                   </button>
 
                   {isSelected && (
-                    <div data-map-keep-open="true" className={`absolute ${mobilePopoverOffset} top-9 z-[70] w-[190px] rounded-2xl border border-white/12 bg-[#15110e]/95 p-2.5 text-left shadow-[0_22px_70px_rgba(0,0,0,0.68)] backdrop-blur sm:left-1/2 sm:right-auto ${popoverPosition} sm:w-[220px] sm:-translate-x-1/2 sm:p-3 lg:w-[230px]`}>
+                    <div data-map-keep-open="true" className={`absolute ${mobilePopoverOffset} top-9 z-[240] w-[190px] rounded-2xl border border-white/12 bg-[#15110e]/95 p-2.5 text-left shadow-[0_22px_70px_rgba(0,0,0,0.68)] backdrop-blur sm:left-1/2 sm:right-auto ${popoverPosition} sm:w-[220px] sm:-translate-x-1/2 sm:p-3 lg:w-[230px]`}>
                       <div className="text-sm font-semibold text-[#fff4df]">{reservation.guestName}</div>
                       <div className="mt-1 text-xs text-white/50">
                         {reservation.reservedTime} · {reservation.guestCount} {text.guests} · {reservation.tableIds.join(", ")}
@@ -2708,7 +2708,7 @@ function ReservationOperationsMap({
             return (
               <div
                 key={`${table.area}-${table.id}`}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 ${isSelectedTable ? "z-[75]" : "z-10"}`}
+                className={`absolute -translate-x-1/2 -translate-y-1/2 ${isSelectedTable ? "z-[220]" : "z-10"}`}
                 style={{
                   left: worldPosition.x,
                   top: worldPosition.y,
@@ -2769,7 +2769,7 @@ function ReservationOperationsMap({
                 {isSelectedTable && (
                   <div
                     data-map-keep-open="true"
-                    className={`absolute z-[80] max-h-[min(520px,calc(100vh-180px))] w-[230px] overflow-y-auto rounded-2xl border border-[#f2d39a]/18 bg-[#15110e]/95 p-3 text-left shadow-[0_22px_70px_rgba(0,0,0,0.7)] backdrop-blur sm:w-[280px] ${
+                    className={`absolute z-[240] max-h-[min(520px,calc(100vh-180px))] w-[230px] overflow-y-auto rounded-2xl border border-[#f2d39a]/18 bg-[#15110e]/95 p-3 text-left shadow-[0_22px_70px_rgba(0,0,0,0.7)] backdrop-blur sm:w-[280px] ${
                       placeTablePopoverAbove ? "bottom-10 sm:bottom-12 lg:bottom-16" : "top-10 sm:top-12 lg:top-16"
                     } ${
                       table.x < 28
