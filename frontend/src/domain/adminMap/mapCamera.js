@@ -40,6 +40,17 @@ export function zoomCameraAt(camera, point, nextScale, minScale, maxScale) {
   };
 }
 
+export function pinchCamera(camera, startCenter, currentCenter, scaleRatio, minScale, maxScale) {
+  const scale = clamp(camera.scale * scaleRatio, minScale, maxScale);
+  const worldPoint = screenToWorld(startCenter, camera);
+
+  return {
+    x: currentCenter.x - worldPoint.x * scale,
+    y: currentCenter.y - worldPoint.y * scale,
+    scale,
+  };
+}
+
 export function focusCameraOnWorldPoint(point, viewport, preferredScale, minScale, maxScale) {
   const scale = clamp(preferredScale, minScale, maxScale);
 

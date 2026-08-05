@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   getMapModalPortalTarget,
+  isTabletMapViewport,
   shouldStartMapGesture,
   shouldUseNativeMapFullscreen,
 } from "../adminMap/mapInteraction.js";
@@ -21,6 +22,12 @@ test("table buttons keep their click instead of starting a map gesture", () => {
 
 test("touching the map background can start panning", () => {
   assert.equal(shouldStartMapGesture({ pointerType: "touch", button: 0, isInteractiveTarget: false }), true);
+});
+
+test("touch viewport detection distinguishes tablets from phones and desktop", () => {
+  assert.equal(isTabletMapViewport({ width: 1024, height: 768 }, { maxTouchPoints: 5 }), true);
+  assert.equal(isTabletMapViewport({ width: 430, height: 932 }, { maxTouchPoints: 5 }), false);
+  assert.equal(isTabletMapViewport({ width: 1024, height: 768 }, { maxTouchPoints: 0 }), false);
 });
 
 test("map modals render inside the native fullscreen element", () => {

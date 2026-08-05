@@ -7,10 +7,12 @@ import {
 import {
   clampCamera,
   focusCameraOnWorldPoint,
+  pinchCamera,
   preserveWorldCenter,
   zoomCameraAt,
 } from "../../domain/adminMap/mapCamera";
 import {
+  isTabletMapViewport,
   shouldStartMapGesture,
   shouldUseNativeMapFullscreen,
 } from "../../domain/adminMap/mapInteraction";
@@ -53,6 +55,7 @@ export default function UnifiedMapViewport({
   const pointersRef = React.useRef(new Map());
   const gestureRef = React.useRef(null);
   const animationRef = React.useRef(0);
+  const pendingCameraRef = React.useRef(null);
   const wheelEndTimerRef = React.useRef(0);
   const movedRef = React.useRef(false);
   const initializedRef = React.useRef(false);
@@ -127,7 +130,11 @@ export default function UnifiedMapViewport({
   React.useEffect(() => {
     if (!focusKey || !Number.isFinite(focusX) || !Number.isFinite(focusY)) return;
     const viewport = viewportSizeRef.current;
-    const preferredScale = viewport.width < 700 ? 0.65 : 0.7;
+    const isTablet = typeof window !== "undefined"
+      && isTabletMapViewport(viewport, window.navigator);
+    const preferredScale = isTablet
+      ? ADMIN_MAP_CAMERA.tabletFocusScale
+      : viewport.width < 700 ? 0.65 : 0.7;
     const scale = Math.min(
       ADMIN_MAP_CAMERA.maxScale,
       Math.max(ADMIN_MAP_CAMERA.minScale, focusScale || preferredScale)
@@ -227,11 +234,18 @@ export default function UnifiedMapViewport({
     };
   }, [isExpanded, useNativeFullscreen]);
 
-  const scheduleCamera = (camera) => {
+  const scheduleCamera = React.useCallback((camera) => {
     cameraRef.current = camera;
-    window.cancelAnimationFrame(animationRef.current);
-    animationRef.current = window.requestAnimationFrame(() => applyCamera(camera, { persist: false }));
-  };
+    pendingCameraRef.current = camera;
+    if (animationRef.current) return;
+
+    animationRef.current = window.requestAnimationFrame(() => {
+      animationRef.current = 0;
+      const pendingCamera = pendingCameraRef.current;
+      pendingCameraRef.current = null;
+      if (pendingCamera) applyCamera(pendingCamera, { persist: false });
+    });
+  }, [applyCamera]);
 
   React.useEffect(() => {
     const viewport = viewportRef.current;
@@ -263,19 +277,18 @@ export default function UnifiedMapViewport({
         );
       }
 
-      cameraRef.current = camera;
-      window.cancelAnimationFrame(animationRef.current);
-      animationRef.current = window.requestAnimationFrame(() => applyCamera(camera, { persist: false }));
+      scheduleCamera(camera);
       window.clearTimeout(wheelEndTimerRef.current);
       wheelEndTimerRef.current = window.setTimeout(() => applyCamera(cameraRef.current), 120);
     };
 
     viewport.addEventListener("wheel", handleNativeWheel, { passive: false });
     return () => viewport.removeEventListener("wheel", handleNativeWheel);
-  }, [applyCamera]);
+  }, [applyCamera, scheduleCamera]);
 
   const handlePointerDown = (event) => {
-    if (!shouldStartMapGesture({
+    const continuingTouchGesture = event.pointerType !== "mouse" && pointersRef.current.size > 0;
+    if (!continuingTouchGesture && !shouldStartMapGesture({
       pointerType: event.pointerType,
       button: event.button,
       isInteractiveTarget: Boolean(event.target.closest(INTERACTIVE_MAP_SELECTOR)),
@@ -326,10 +339,11 @@ export default function UnifiedMapViewport({
       };
       movedRef.current = true;
       const rect = viewportRef.current.getBoundingClientRect();
-      scheduleCamera(zoomCameraAt(
+      scheduleCamera(pinchCamera(
         base.camera,
+        { x: base.center.x - rect.left, y: base.center.y - rect.top },
         { x: center.x - rect.left, y: center.y - rect.top },
-        base.camera.scale * (distance / Math.max(1, base.distance)),
+        distance / Math.max(1, base.distance),
         ADMIN_MAP_CAMERA.minScale,
         ADMIN_MAP_CAMERA.maxScale
       ));

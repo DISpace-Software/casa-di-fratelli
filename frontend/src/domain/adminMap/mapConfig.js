@@ -5,6 +5,7 @@ export const ADMIN_MAP_CAMERA = Object.freeze({
   fitPadding: 42,
   panOverscan: 120,
   tapMoveThreshold: 8,
+  tabletFocusScale: 0.98,
   persistCamera: true,
 });
 

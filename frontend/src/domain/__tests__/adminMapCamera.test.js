@@ -6,6 +6,7 @@ import {
   fitBounds,
   focusCameraOnWorldPoint,
   localPercentToWorld,
+  pinchCamera,
   preserveWorldCenter,
   rotatePercentPointClockwise,
   rotatePercentPointCounterClockwise,
@@ -49,6 +50,16 @@ test("admin map zoom keeps the world point under the cursor fixed", () => {
   const before = { x: 20, y: 40, scale: 1 };
   const after = zoomCameraAt(before, point, 2, 0.35, 3);
   assert.deepEqual(screenToWorld(point, after), screenToWorld(point, before));
+});
+
+test("tablet pinch zoom follows the moving center between both fingers", () => {
+  const before = { x: -100, y: -50, scale: 1 };
+  const startCenter = { x: 300, y: 220 };
+  const currentCenter = { x: 350, y: 250 };
+  const after = pinchCamera(before, startCenter, currentCenter, 1.5, 0.35, 3);
+
+  assert.equal(after.scale, 1.5);
+  assert.deepEqual(screenToWorld(currentCenter, after), screenToWorld(startCenter, before));
 });
 
 test("admin map scale is clamped", () => {
