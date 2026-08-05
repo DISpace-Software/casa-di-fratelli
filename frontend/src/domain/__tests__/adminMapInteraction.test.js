@@ -37,6 +37,21 @@ test("map modals fall back to the document body outside fullscreen", () => {
   assert.equal(getMapModalPortalTarget(null), null);
 });
 
+test("map modals render inside the open fallback dialog on iPad", () => {
+  const body = { id: "body" };
+  const modalMapShell = { id: "modal-map" };
+  const documentLike = {
+    body,
+    fullscreenElement: null,
+    querySelector(selector) {
+      assert.equal(selector, "dialog[data-admin-reservation-map-shell='true'][open]");
+      return modalMapShell;
+    },
+  };
+
+  assert.equal(getMapModalPortalTarget(documentLike), modalMapShell);
+});
+
 test("iPad uses the fixed map overlay instead of native fullscreen", () => {
   assert.equal(shouldUseNativeMapFullscreen({
     userAgent: "Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X)",

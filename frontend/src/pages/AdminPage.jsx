@@ -1677,6 +1677,7 @@ function ReservationOperationsMap({
   onUpdateConsumptionItem,
   onMove,
   onNoShow,
+  onCancel,
   onOpenReservation,
   onOpenOrder,
   onSeatWalkIn,
@@ -2541,6 +2542,15 @@ function ReservationOperationsMap({
                             {text.noShow}
                           </button>
                         )}
+                        {!ordersOnly && onCancel && !reservation.isArrived && (
+                          <button
+                            type="button"
+                            onClick={() => onCancel(reservation)}
+                            className="rounded-xl border border-red-300/25 bg-red-500/15 px-3 py-2 text-xs font-semibold text-red-100"
+                          >
+                            {adminLocalText(language, "Откажи", "Cancel", "Отменить")}
+                          </button>
+                        )}
                         {!ordersOnly && onMove && (
                           <button
                             type="button"
@@ -2965,6 +2975,15 @@ function ReservationOperationsMap({
                 {isMapToday && !selectedReservation.isArrived && (getReservationMinutesFromNow(selectedReservation, now) ?? 9999) <= -10 && (
                   <button type="button" onClick={() => onNoShow(selectedReservation)} className="rounded-xl border border-red-300/25 bg-red-500/15 px-4 py-3 text-sm font-semibold text-red-100">
                     {text.noShow}
+                  </button>
+                )}
+                {!ordersOnly && onCancel && !selectedReservation.isArrived && (
+                  <button
+                    type="button"
+                    onClick={() => onCancel(selectedReservation)}
+                    className="rounded-xl border border-red-300/25 bg-red-500/15 px-4 py-3 text-sm font-semibold text-red-100"
+                  >
+                    {adminLocalText(language, "Откажи", "Cancel", "Отменить")}
                   </button>
                 )}
                 {selectedReservation.isArrived ? (
@@ -8677,6 +8696,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 onUpdateConsumptionItem={updateConsumptionItem}
                 onMove={moveReservationFromMap}
                 onNoShow={markReservationNoShow}
+                onCancel={(reservation) => updateStatus(reservation.id, "cancel")}
                 onOpenReservation={isWaiterRole ? null : openReservationFromMap}
                 onOpenOrder={(orderId) => {
                   setExpandedOrderId(orderId);
