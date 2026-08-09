@@ -710,10 +710,25 @@ public class ReservationsController : ControllerBase
 
         var reservedDate = DateOnly.FromDateTime(now);
         var reservedTime = $"{now.Hour:00}:{now.Minute:00}";
-        var conflict = await _reservationConflictService.FindTableConflictAsync(reservedDate, reservedTime, tableIds);
+        var occupiedReservation = await _db.Reservations
+            .Include(x => x.Tables)
+            .FirstOrDefaultAsync(x =>
+                x.ReservedDate == reservedDate &&
+                x.Status == ReservationStatusApproved &&
+                x.IsArrived &&
+                !x.IsNoShow &&
+                x.Tables.Any(t => tableIds.Contains(t.TableCode)));
 
-        if (conflict != null)
-            return Conflict(ReservationConflictService.ToConflictResponse(conflict));
+        if (occupiedReservation != null)
+        {
+            return Conflict(new
+            {
+                message = "One or more selected tables are currently occupied.",
+                occupiedReservation.Id,
+                occupiedReservation.ReservedTime,
+                TableIds = occupiedReservation.Tables.Select(t => t.TableCode).ToList()
+            });
+        }
 
         var nextReservation = await _db.Reservations
             .Include(x => x.Tables)
@@ -726,7 +741,7 @@ public class ReservationsController : ControllerBase
                 x.Tables.Any(t => tableIds.Contains(t.TableCode)))
             .ToListAsync();
 
-        var tooSoonReservation = nextReservation
+        var upcomingReservation = nextReservation
             .Select(x => new
             {
                 Reservation = x,
@@ -738,15 +753,18 @@ public class ReservationsController : ControllerBase
                 x.Reservation,
                 Minutes = (x.Reservation.ReservedDate.ToDateTime(x.Time!.Value) - now).TotalMinutes
             })
-            .Where(x => x.Minutes > 0 && x.Minutes <= 90)
+            .Where(x => x.Minutes > 0)
             .OrderBy(x => x.Minutes)
             .FirstOrDefault();
 
-        if (tooSoonReservation != null)
+        if (upcomingReservation is { Minutes: <= 60 })
         {
             return Conflict(new
             {
-                message = $"Walk-in seating is blocked because the next reservation starts in {Math.Ceiling(tooSoonReservation.Minutes)} minutes."
+                message = $"Walk-in seating closes one hour before the next reservation. The next reservation starts in {Math.Ceiling(upcomingReservation.Minutes)} minutes.",
+                upcomingReservation.Reservation.Id,
+                upcomingReservation.Reservation.ReservedTime,
+                TableIds = upcomingReservation.Reservation.Tables.Select(t => t.TableCode).ToList()
             });
         }
 
@@ -768,7 +786,9 @@ public class ReservationsController : ControllerBase
             IsArrived = true,
             PrivacyConsent = true,
             InternalNote = string.IsNullOrWhiteSpace(request.InternalNote)
-                ? "Walk-in guest seated without customer details."
+                ? upcomingReservation == null
+                    ? "Walk-in guest seated without customer details."
+                    : $"Walk-in guest seated until the next reservation at {upcomingReservation.Reservation.ReservedTime}."
                 : request.InternalNote.Trim(),
             OrderAccessToken = CreateOrderAccessToken(),
             EmailConfirmedAtUtc = DateTime.UtcNow,
@@ -797,6 +817,7 @@ public class ReservationsController : ControllerBase
             reservation.Status,
             reservation.IsWalkIn,
             reservation.IsArrived,
+            AutoReleaseAt = upcomingReservation?.Reservation.ReservedTime,
             TableIds = reservation.Tables.Select(t => t.TableCode).ToList()
         });
     }

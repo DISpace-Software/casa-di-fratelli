@@ -1244,6 +1244,10 @@ function getLiveReservationCandidates(reservations, now = new Date()) {
       return minutes !== null && minutes >= -90;
     })
     .sort((first, second) => {
+      if (first.isArrived !== second.isArrived) {
+        return first.isArrived ? -1 : 1;
+      }
+
       const firstMinutes = getReservationMinutesFromNow(first, now) ?? 9999;
       const secondMinutes = getReservationMinutesFromNow(second, now) ?? 9999;
 
@@ -2067,7 +2071,7 @@ function ReservationOperationsMap({
     isMapToday &&
     Boolean(onSeatWalkIn) &&
     !selectedTableHasArrivedReservation &&
-    !(nextSoonReservationForSelectedTable && nextSoonReservationForSelectedTable.minutes <= 90);
+    !(nextSoonReservationForSelectedTable && nextSoonReservationForSelectedTable.minutes <= 60);
   const activeOrdersByTable = React.useMemo(() => {
     const byTable = new Map();
 

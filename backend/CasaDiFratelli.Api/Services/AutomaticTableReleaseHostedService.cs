@@ -22,18 +22,17 @@ public class AutomaticTableReleaseHostedService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await ReleaseExpiredTablesForAllTenantsAsync(stoppingToken);
-
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(GetDelayUntilNextRestaurantMidnight(), stoppingToken);
             await ReleaseExpiredTablesForAllTenantsAsync(stoppingToken);
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
     }
 
     private async Task ReleaseExpiredTablesForAllTenantsAsync(CancellationToken cancellationToken)
     {
-        var today = GetRestaurantToday();
+        var restaurantNow = GetRestaurantNow();
+        var today = DateOnly.FromDateTime(restaurantNow);
 
         foreach (var tenant in _tenancy.Tenants.Where(item => item.IsActive))
         {
@@ -42,14 +41,16 @@ public class AutomaticTableReleaseHostedService : BackgroundService
                 using var scope = _services.CreateScope();
                 scope.ServiceProvider.GetRequiredService<CurrentTenant>().Resolve(tenant);
                 var releaseService = scope.ServiceProvider.GetRequiredService<AutomaticTableReleaseService>();
-                var released = await releaseService.ReleasePreviousDayTablesAsync(today, cancellationToken);
+                var releasedPreviousDays = await releaseService.ReleasePreviousDayTablesAsync(today, cancellationToken);
+                var releasedWalkIns = await releaseService.ReleaseWalkInsForUpcomingReservationsAsync(restaurantNow, cancellationToken);
 
-                if (released > 0)
+                if (releasedPreviousDays > 0 || releasedWalkIns > 0)
                 {
                     _logger.LogInformation(
-                        "Automatically released tables after midnight. TenantId={TenantId}, Reservations={Reservations}, RestaurantDate={RestaurantDate}",
+                        "Automatically released tables. TenantId={TenantId}, PreviousDays={PreviousDays}, WalkIns={WalkIns}, RestaurantDate={RestaurantDate}",
                         tenant.Id,
-                        released,
+                        releasedPreviousDays,
+                        releasedWalkIns,
                         today);
                 }
             }
@@ -64,22 +65,10 @@ public class AutomaticTableReleaseHostedService : BackgroundService
         }
     }
 
-    private static DateOnly GetRestaurantToday()
+    private static DateTime GetRestaurantNow()
     {
         var timeZone = GetRestaurantTimeZone();
-        var localNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone);
-        return DateOnly.FromDateTime(localNow);
-    }
-
-    private static TimeSpan GetDelayUntilNextRestaurantMidnight()
-    {
-        var timeZone = GetRestaurantTimeZone();
-        var nowUtc = DateTime.UtcNow;
-        var localNow = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, timeZone);
-        var nextLocalMidnight = DateTime.SpecifyKind(localNow.Date.AddDays(1), DateTimeKind.Unspecified);
-        var nextMidnightUtc = TimeZoneInfo.ConvertTimeToUtc(nextLocalMidnight, timeZone);
-        var delay = nextMidnightUtc - nowUtc + TimeSpan.FromSeconds(1);
-        return delay > TimeSpan.Zero ? delay : TimeSpan.FromMinutes(1);
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone);
     }
 
     private static TimeZoneInfo GetRestaurantTimeZone()
