@@ -1121,6 +1121,107 @@ html[data-theme="light"] .admin-page .admin-reservation-guest-marker * {
   text-shadow: 0 1px 4px rgba(20, 12, 8, 0.78) !important;
 }
 
+.reservation-page .public-table-chair {
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 13px;
+  border: 1px solid rgba(199, 139, 76, 0.42);
+  border-radius: 8px 8px 5px 5px;
+  background:
+    linear-gradient(180deg, rgba(255, 205, 132, 0.14), transparent 42%),
+    linear-gradient(145deg, #5a351f 0%, #2a1710 58%, #120c09 100%);
+  box-shadow:
+    inset 0 2px 2px rgba(255, 215, 160, 0.1),
+    inset 0 -3px 4px rgba(0, 0, 0, 0.42),
+    0 5px 8px rgba(0, 0, 0, 0.5);
+}
+
+.reservation-page .public-table-chair::after {
+  content: "";
+  position: absolute;
+  inset: 3px 2px 1px;
+  border-radius: inherit;
+  border-top: 1px solid rgba(242, 185, 111, 0.2);
+  background: rgba(16, 9, 6, 0.22);
+}
+
+.reservation-page .public-table-chair-side {
+  width: 13px;
+  height: 20px;
+  border-radius: 8px 5px 5px 8px;
+}
+
+.reservation-page .public-table-chair-reserved {
+  border-color: rgba(248, 113, 113, 0.25);
+  background: linear-gradient(145deg, #4a211b, #21100e);
+}
+
+.reservation-page .public-table-surface {
+  z-index: 3;
+  overflow: hidden;
+  border: 1px solid rgba(211, 157, 91, 0.52);
+  color: #fff8eb;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 181, 79, 0.15), transparent 38%),
+    repeating-linear-gradient(90deg, transparent 0 13px, rgba(255, 205, 139, 0.035) 13px 14px),
+    linear-gradient(145deg, #684229 0%, #3a2419 47%, #1f1510 100%);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 221, 172, 0.17),
+    inset 0 -5px 10px rgba(0, 0, 0, 0.38),
+    0 10px 16px rgba(0, 0, 0, 0.58),
+    0 0 18px rgba(160, 91, 38, 0.12);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.reservation-page .public-table-highlight {
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(255, 224, 176, 0.07);
+  border-radius: inherit;
+  box-shadow: inset 0 0 12px rgba(255, 177, 75, 0.05);
+}
+
+.reservation-page .public-table-number {
+  position: relative;
+  z-index: 2;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff7e9;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.7);
+}
+
+.reservation-page .public-table-surface-selected {
+  border-color: rgba(255, 214, 143, 0.92);
+  background:
+    radial-gradient(circle at 50% 44%, rgba(255, 225, 168, 0.3), transparent 42%),
+    linear-gradient(145deg, #a16d37, #5a351f 62%, #2a1a12);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 241, 209, 0.3),
+    0 0 0 4px rgba(217, 172, 101, 0.15),
+    0 12px 24px rgba(0, 0, 0, 0.62),
+    0 0 28px rgba(224, 165, 82, 0.3);
+}
+
+.reservation-page .public-table-surface-reserved {
+  border-color: rgba(248, 113, 113, 0.38);
+  background: linear-gradient(145deg, #57251f, #2b1512 65%, #190e0c);
+}
+
+html[data-theme="light"] .reservation-page .public-table-chair {
+  border-color: rgba(116, 70, 31, 0.4);
+  background: linear-gradient(145deg, #a86f39, #5c361e);
+}
+
+html[data-theme="light"] .reservation-page .public-table-surface {
+  border-color: rgba(104, 60, 27, 0.5);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 220, 166, 0.2), transparent 38%),
+    repeating-linear-gradient(90deg, transparent 0 13px, rgba(89, 48, 22, 0.05) 13px 14px),
+    linear-gradient(145deg, #9a6338, #5d371f 62%, #342014);
+}
+
 @media (max-width: 640px) {
   .reservation-page .reservation-map-table-node {
     transform: translate(-50%, -50%) scale(0.78) !important;

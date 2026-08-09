@@ -382,6 +382,88 @@ function MergedHorizontalTableRail({ tables, selectedIds, groups }) {
     .filter(Boolean);
 }
 
+function getTableChairPositions(seats) {
+  const count = Math.max(1, Math.min(10, Number(seats || 4)));
+  if (count === 1) return [{ side: "top", offset: 50 }];
+  if (count === 2) return [{ side: "top", offset: 50 }, { side: "bottom", offset: 50 }];
+  if (count === 3) return [
+    { side: "top", offset: 50 },
+    { side: "left", offset: 50 },
+    { side: "right", offset: 50 },
+  ];
+
+  const positions = [
+    { side: "left", offset: 50 },
+    { side: "right", offset: 50 },
+  ];
+  const remaining = count - positions.length;
+  const topCount = Math.ceil(remaining / 2);
+  const bottomCount = Math.floor(remaining / 2);
+  const addSide = (side, sideCount) => {
+    for (let index = 0; index < sideCount; index += 1) {
+      positions.push({ side, offset: ((index + 1) / (sideCount + 1)) * 100 });
+    }
+  };
+  addSide("top", topCount);
+  addSide("bottom", bottomCount);
+  return positions;
+}
+
+function RestaurantTableVisual({ table, selected, reserved }) {
+  const seats = Math.max(1, Number(table.seats || 4));
+  const isLong = seats >= 6 || table.wide;
+  const isTwoSeat = seats <= 2;
+  const width = isTwoSeat ? 50 : isLong ? 72 : 54;
+  const height = isTwoSeat ? 38 : isLong ? 48 : 54;
+  const chairs = getTableChairPositions(seats);
+
+  return (
+    <div className="relative" style={{ width: width + 30, height: height + 30 }}>
+      {chairs.map((chair, index) => {
+        const vertical = chair.side === "left" || chair.side === "right";
+        const style = vertical
+          ? {
+              top: `${chair.offset}%`,
+              [chair.side]: 0,
+              transform: `translate(${chair.side === "left" ? "-10%" : "10%"}, -50%)`,
+            }
+          : {
+              left: `${chair.offset}%`,
+              [chair.side]: 0,
+              transform: `translate(-50%, ${chair.side === "top" ? "-10%" : "10%"})`,
+            };
+
+        return (
+          <span
+            key={`${chair.side}-${index}`}
+            aria-hidden="true"
+            className={`public-table-chair ${vertical ? "public-table-chair-side" : ""} ${
+              reserved ? "public-table-chair-reserved" : ""
+            }`}
+            style={style}
+          />
+        );
+      })}
+
+      <span
+        className={`public-table-surface absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center ${
+          isTwoSeat ? "rounded-[16px]" : isLong ? "rounded-[13px]" : "rounded-[15px]"
+        } ${
+          selected
+            ? "public-table-surface-selected"
+            : reserved
+            ? "public-table-surface-reserved"
+            : ""
+        }`}
+        style={{ width, height }}
+      >
+        <span className="public-table-highlight" aria-hidden="true" />
+        <span className="public-table-number">{table.id}</span>
+      </span>
+    </div>
+  );
+}
+
 function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
   const points = getPublicMapTablePoints(table, area);
   const positionStyle = {
@@ -400,43 +482,6 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
       : "scale-90 hover:scale-95 md:scale-100 md:hover:scale-105"
   }`;
 
-  if (table.special) {
-    return (
-      <button
-        type="button"
-        disabled={reserved}
-        onClick={() => onSelect(table, area)}
-        data-selected={selected ? "true" : "false"}
-        className={`public-responsive-table-position reservation-map-table-node ${commonClass}`}
-        style={positionStyle}
-      >
-        <div className="relative h-11 w-14">
-          <div
-            className={`absolute left-1/2 top-0 h-3.5 w-5 -translate-x-1/2 rounded-[7px] border border-[#c9a56a]/20 ${
-              reserved ? "garden-special-chair bg-[#3b1d1d]" : "garden-special-chair bg-[#2f241c]"
-            }`}
-          />
-          <div
-            className={`absolute bottom-0 left-1/2 h-3.5 w-5 -translate-x-1/2 rounded-[7px] border border-[#c9a56a]/20 ${
-              reserved ? "garden-special-chair bg-[#3b1d1d]" : "garden-special-chair bg-[#2f241c]"
-            }`}
-          />
-          <div
-            className={`garden-table-surface absolute left-1/2 top-1/2 flex h-8 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl border text-[10px] font-semibold shadow-lg ${
-              selected
-                ? "border-[#d7b57f] bg-[linear-gradient(145deg,#f6d99e,#b88b4d)] text-black"
-                : reserved
-                ? "border-red-400/30 bg-red-500/10 text-red-200"
-                : "border-[#c9a56a]/35 bg-[linear-gradient(145deg,#4d3829,#251b15)] text-white/88"
-            }`}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" />
-          </div>
-        </div>
-      </button>
-    );
-  }
-
   return (
     <button
       type="button"
@@ -445,35 +490,9 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
       data-selected={selected ? "true" : "false"}
       className={`public-responsive-table-position reservation-map-table-node ${commonClass}`}
       style={positionStyle}
+      aria-label={`${table.id}, ${table.seats} seats`}
     >
-      <div className="relative h-[64px] w-[64px]">
-        {[{ x: 26, y: -2 }, { x: 26, y: 54 }, { x: -2, y: 26 }, { x: 54, y: 26 }].map(
-          (chair, index) => (
-            <div
-              key={index}
-              className={`garden-chair absolute h-3.5 w-3.5 rounded-[6px] border shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),0_4px_10px_rgba(0,0,0,0.22)] ${
-                reserved
-                  ? "border-red-400/20 bg-[#3b1d1d]"
-                  : "border-[#d8b377]/30 bg-[linear-gradient(145deg,#4a382b,#211914)]"
-              }`}
-              style={{ left: chair.x, top: chair.y }}
-            />
-          )
-        )}
-
-        <div
-          className={`garden-table-surface absolute left-1/2 top-1/2 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[15px] text-[11px] font-semibold transition-all duration-300 ${
-            selected
-              ? "bg-[linear-gradient(145deg,#f6d99e,#b88b4d)] text-black shadow-[0_14px_30px_rgba(201,165,106,0.3)] ring-4 ring-[#d7b57f]/15"
-              : reserved
-              ? "border border-red-400/30 bg-[#4a1f1f] text-red-100"
-              : "border border-[#c9a56a]/40 bg-[linear-gradient(145deg,#5a4332,#2a1f18)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_24px_rgba(0,0,0,0.28)]"
-          }`}
-        >
-          <span className="absolute inset-1 rounded-[11px] border border-white/8" />
-          <span className="relative h-1.5 w-1.5 rounded-full bg-current opacity-75" />
-        </div>
-      </div>
+      <RestaurantTableVisual table={table} selected={selected} reserved={reserved} />
     </button>
   );
 }
@@ -519,38 +538,6 @@ function GardenMap({ tables, selectedIds, onSelect, labels }) {
   );
 }
 
-function SixSeatChairs({ reserved }) {
-  return (
-    <>
-      {[0, 1, 2].map((i) => (
-        <div
-          key={`top-${i}`}
-          className={`indoor-chair absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`}
-          style={{ left: i * 18 + 10, top: -8 }}
-        />
-      ))}
-      {[0, 1, 2].map((i) => (
-        <div
-          key={`bottom-${i}`}
-          className={`indoor-chair absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`}
-          style={{ left: i * 18 + 10, top: 36 }}
-        />
-      ))}
-    </>
-  );
-}
-
-function FourSeatChairs({ reserved }) {
-  return (
-    <>
-      <div className={`indoor-chair absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ left: "50%", top: -8, transform: "translateX(-50%)" }} />
-      <div className={`indoor-chair absolute h-3 w-4 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ left: "50%", top: 36, transform: "translateX(-50%)" }} />
-      <div className={`indoor-chair absolute h-4 w-3 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ left: 0, top: 14 }} />
-      <div className={`indoor-chair absolute h-4 w-3 rounded-[6px] border border-[#c9a56a]/20 ${reserved ? "bg-[#3b1d1d]" : "bg-[#2f241c]"}`} style={{ right: 0, top: 14 }} />
-    </>
-  );
-}
-
 function IndoorTable({ table, selected, reserved, onSelect, labels }) {
   const points = getPublicMapTablePoints(table, "indoor");
 
@@ -575,28 +562,13 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
         "--public-mobile-table-x": `${points.mobile.x}%`,
         "--public-mobile-table-y": `${points.mobile.y}%`,
       }}
+      aria-label={`${table.id}, ${table.seats} ${labels.seats}`}
     >
-      <div className="relative flex min-w-[70px] flex-col items-center">
-        {table.seats === 6 && <SixSeatChairs reserved={reserved} />}
-        {table.seats === 4 && <FourSeatChairs reserved={reserved} />}
-
-        <div
-          className={`indoor-table-surface flex items-center justify-center rounded-xl font-semibold transition-all duration-300 ${
-            table.wide ? "h-[40px] w-[70px]" : "h-[40px] w-[50px]"
-          } ${
-            selected
-              ? "bg-[linear-gradient(145deg,#f6d99e,#b88b4d)] text-black shadow-lg ring-4 ring-[#d7b57f]/15"
-              : reserved
-              ? "border border-red-400/30 bg-[#4a1f1f] text-red-100"
-              : "border border-[#c9a56a]/35 bg-[linear-gradient(145deg,#5a4332,#2a1f18)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_10px_22px_rgba(0,0,0,0.26)]"
-          }`}
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-current opacity-75" />
-        </div>
-
+      <div className="relative flex min-w-[86px] flex-col items-center">
+        <RestaurantTableVisual table={table} selected={selected} reserved={reserved} />
         <div className="map-seat-label mt-2 text-center text-[10px] text-white/45">
-  {table.seats} {labels.seats}
-</div>
+          {table.seats} {labels.seats}
+        </div>
       </div>
     </button>
   );
