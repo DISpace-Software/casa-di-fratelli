@@ -1804,15 +1804,15 @@ function ReservationOperationsMap({
       const savedTables = layout
         .filter((item) => item.area === area && item.isActive && !isRetiredTableId(item.id))
         .map(normalizeLayoutItem)
-        .map((table) => mapViewMode === "section" ? table : orientTableForMap(table));
+        .map(orientTableForMap);
 
       return savedTables.length
         ? savedTables
         : (tablesByArea[area] || [])
             .map((table) => normalizeLayoutItem({ ...table, area, isActive: true }))
-            .map((table) => mapViewMode === "section" ? table : orientTableForMap(table));
+            .map(orientTableForMap);
     },
-    [layout, mapViewMode]
+    [layout]
   );
   const areaTables = React.useMemo(
     () => ["indoor", "garden", "openTerrace"]
