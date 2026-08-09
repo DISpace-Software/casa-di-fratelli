@@ -1,5 +1,8 @@
 import React from "react";
 import ThemeToggleIcon from "../components/layout/ThemeToggleIcon";
+import coveredTerraceMap from "../assets/reservation-maps/covered-terrace-premium.png";
+import indoorPremiumMap from "../assets/reservation-maps/indoor-premium.png";
+import openTerraceMap from "../assets/reservation-maps/open-terrace-premium.png";
 import { API_BASE_URL } from "../config/api";
 import {
   defaultGardenTables,
@@ -496,10 +499,23 @@ function GardenTable({ table, selected, reserved, onSelect, area = "garden" }) {
   );
 }
 
+function PremiumMapBackground({ src, position = "center" }) {
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      draggable="false"
+      className="premium-map-background pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
+      style={{ objectPosition: position }}
+    />
+  );
+}
+
 function OpenTerraceMap({ tables, selectedIds, onSelect, labels }) {
   return (
-    <div className="reservation-map-surface open-terrace-map relative h-[160px] min-h-0 overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))] shadow-inner md:h-auto md:min-h-[520px]">
-      <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
+    <div className="reservation-map-surface premium-floor-map open-terrace-map relative h-[160px] min-h-0 overflow-hidden rounded-[24px] border border-white/10 bg-[#090907] shadow-inner md:h-auto md:min-h-[520px]">
+      <PremiumMapBackground src={openTerraceMap} />
       <TopRestaurantEntry label={labels.restaurantEntrance} />
       {tables.map((table) => (
         <GardenTable
@@ -517,11 +533,8 @@ function OpenTerraceMap({ tables, selectedIds, onSelect, labels }) {
 
 function GardenMap({ tables, selectedIds, onSelect, labels }) {
   return (
-    <div className="reservation-map-surface garden-map relative min-h-[560px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] shadow-inner md:min-h-[800px]">
-      <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
-      <MapWindow className="left-5 right-5 top-3 h-4" label={labels.windows} />
-      <MapWindow className="bottom-5 left-3 top-5 w-4" label={labels.windows} vertical />
-      <MapWindow className="bottom-5 right-3 top-5 w-4" label={labels.windows} vertical />
+    <div className="reservation-map-surface premium-floor-map garden-map relative min-h-[560px] overflow-hidden rounded-[24px] border border-white/10 bg-[#090907] shadow-inner md:min-h-[800px]">
+      <PremiumMapBackground src={coveredTerraceMap} />
       <WallTv label={labels.tv} />
       <TerraceEntry label={labels.terraceEntrance} />
       {tables.map((table) => (
@@ -575,10 +588,8 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
 
 function IndoorMap({ tables, selectedIds, onSelect, labels }) {
   return (
-    <div className="reservation-map-surface indoor-map relative min-h-[760px] overflow-hidden rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[830px]">
-      <div className="map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
-      <MapWindow className="left-3 top-5 h-[50%] w-4" label={labels.windows} vertical />
-      <MapWindow className="bottom-5 left-3 top-[70%] w-4" label={labels.windows} vertical />
+    <div className="reservation-map-surface premium-floor-map indoor-map relative min-h-[760px] overflow-hidden rounded-[24px] border border-white/10 bg-[#090706] md:min-h-[830px]">
+      <PremiumMapBackground src={indoorPremiumMap} />
       <SideEntry label={labels.entrance} />
       <IndoorPartitionWall label={labels.wall} />
       <IndoorTerraceEntry label={labels.terraceEntrance} />
