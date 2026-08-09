@@ -2691,7 +2691,7 @@ function ReservationOperationsMap({
                           <button
                             type="button"
                             onClick={() => onArrived(reservation)}
-                            className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 py-2 pl-2 pr-3 text-left text-xs font-semibold text-emerald-100"
+                            className="col-span-full rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-center text-xs font-semibold text-emerald-100"
                           >
                             {text.arrived}
                           </button>
@@ -2703,15 +2703,6 @@ function ReservationOperationsMap({
                             className="rounded-xl border border-red-300/25 bg-red-500/15 px-3 py-2 text-xs font-semibold text-red-100"
                           >
                             {text.noShow}
-                          </button>
-                        )}
-                        {!ordersOnly && onCancel && !reservation.isArrived && (
-                          <button
-                            type="button"
-                            onClick={() => onCancel(reservation)}
-                            className="rounded-xl border border-red-300/25 bg-red-500/15 px-3 py-2 text-xs font-semibold text-red-100"
-                          >
-                            {adminLocalText(language, "Откажи", "Cancel", "Отменить")}
                           </button>
                         )}
                         {!ordersOnly && onMove && (
@@ -2764,6 +2755,15 @@ function ReservationOperationsMap({
                         >
                           {text.call}
                         </a>
+                      )}
+                      {!ordersOnly && onCancel && !reservation.isArrived && (
+                        <button
+                          type="button"
+                          onClick={() => onCancel(reservation)}
+                          className="mt-2 w-full rounded-xl border border-red-300/25 bg-red-500/15 px-3 py-2 text-center text-xs font-semibold text-red-100 transition hover:border-red-200/40 hover:bg-red-500/20"
+                        >
+                          {adminLocalText(language, "Откажи", "Cancel", "Отменить")}
+                        </button>
                       )}
                     </div>
                   )}
@@ -3139,22 +3139,13 @@ function ReservationOperationsMap({
                   </button>
                 )}
                 {isMapToday && !selectedReservation.isArrived && (
-                  <button type="button" onClick={() => onArrived(selectedReservation)} className="luxury-button rounded-xl py-3 pl-3 pr-4 text-left text-sm">
+                  <button type="button" onClick={() => onArrived(selectedReservation)} className="luxury-button rounded-xl px-4 py-3 text-center text-sm">
                     {text.arrived}
                   </button>
                 )}
                 {isMapToday && !selectedReservation.isArrived && (getReservationMinutesFromNow(selectedReservation, now) ?? 9999) <= -10 && (
                   <button type="button" onClick={() => onNoShow(selectedReservation)} className="rounded-xl border border-red-300/25 bg-red-500/15 px-4 py-3 text-sm font-semibold text-red-100">
                     {text.noShow}
-                  </button>
-                )}
-                {!ordersOnly && onCancel && !selectedReservation.isArrived && (
-                  <button
-                    type="button"
-                    onClick={() => onCancel(selectedReservation)}
-                    className="rounded-xl border border-red-300/25 bg-red-500/15 px-4 py-3 text-sm font-semibold text-red-100"
-                  >
-                    {adminLocalText(language, "Откажи", "Cancel", "Отменить")}
                   </button>
                 )}
                 {selectedReservation.isArrived ? (
@@ -3184,6 +3175,15 @@ function ReservationOperationsMap({
                 {onOpenReservation && (
                   <button type="button" onClick={() => onOpenReservation(selectedReservation)} className="ghost-button rounded-xl px-4 py-3 text-sm font-semibold">
                     {text.openReservation}
+                  </button>
+                )}
+                {!ordersOnly && onCancel && !selectedReservation.isArrived && (
+                  <button
+                    type="button"
+                    onClick={() => onCancel(selectedReservation)}
+                    className="rounded-xl border border-red-300/25 bg-red-500/15 px-4 py-3 text-center text-sm font-semibold text-red-100 transition hover:border-red-200/40 hover:bg-red-500/20"
+                  >
+                    {adminLocalText(language, "Откажи", "Cancel", "Отменить")}
                   </button>
                 )}
               </div>
