@@ -45,6 +45,7 @@ export default function UnifiedMapViewport({
   autoExpand = false,
   onExitExpanded,
   language = "bg",
+  viewMode = "scroll",
 }) {
   const shellRef = React.useRef(null);
   const viewportRef = React.useRef(null);
@@ -121,6 +122,14 @@ export default function UnifiedMapViewport({
     fitToBounds({ x: 0, y: 0, width: ADMIN_MAP_WORLD.width, height: ADMIN_MAP_WORLD.height }, animate);
   }, [fitToBounds]);
 
+  const fitToCurrentView = React.useCallback((animate = true) => {
+    if (viewMode === "section") {
+      fitToBounds(getAdminMapZone(activeZone), animate);
+      return;
+    }
+    fitToMap(animate);
+  }, [activeZone, fitToBounds, fitToMap, viewMode]);
+
   const focusZone = React.useCallback((zoneId) => {
     const zone = getAdminMapZone(zoneId);
     onZoneChange?.(zone.id);
@@ -173,14 +182,19 @@ export default function UnifiedMapViewport({
       if (!initializedRef.current) {
         initializedRef.current = true;
         if (readSavedCamera()) applyCamera(cameraRef.current, { persist: false });
-        else fitToMap(false);
+        else fitToCurrentView(false);
       } else {
         applyCamera(preserveWorldCenter(cameraRef.current, previous, next), { persist: false });
       }
     });
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [applyCamera, fitToMap]);
+  }, [applyCamera, fitToCurrentView]);
+
+  React.useEffect(() => {
+    if (!initializedRef.current || viewMode !== "section") return;
+    fitToBounds(getAdminMapZone(activeZone), true);
+  }, [activeZone, fitToBounds, viewMode]);
 
   React.useEffect(() => () => {
     window.cancelAnimationFrame(animationRef.current);
@@ -417,8 +431,8 @@ export default function UnifiedMapViewport({
           <button type="button" onClick={() => zoomAtCenter(-1)} aria-label={labels.out} title={labels.out} className="ghost-button h-11 w-11 rounded-xl text-xl">−</button>
           <span className="hidden min-w-[58px] text-center text-xs font-semibold text-white/50 sm:block">{Math.round(scaleLabel * 100)}%</span>
           <button type="button" onClick={() => zoomAtCenter(1)} aria-label={labels.in} title={labels.in} className="ghost-button h-11 w-11 rounded-xl text-xl">+</button>
-          <button type="button" onClick={() => fitToMap(true)} aria-label={labels.fit} title={labels.fit} className="ghost-button min-h-[44px] rounded-xl px-3 text-xs font-semibold">Fit</button>
-          <button type="button" onClick={() => { window.localStorage.removeItem(CAMERA_STORAGE_KEY); fitToMap(true); }} aria-label={labels.reset} title={labels.reset} className="ghost-button hidden min-h-[44px] rounded-xl px-3 text-xs font-semibold sm:block">Reset</button>
+          <button type="button" onClick={() => fitToCurrentView(true)} aria-label={labels.fit} title={labels.fit} className="ghost-button min-h-[44px] rounded-xl px-3 text-xs font-semibold">Fit</button>
+          <button type="button" onClick={() => { window.localStorage.removeItem(CAMERA_STORAGE_KEY); fitToCurrentView(true); }} aria-label={labels.reset} title={labels.reset} className="ghost-button hidden min-h-[44px] rounded-xl px-3 text-xs font-semibold sm:block">Reset</button>
           <button
             type="button"
             onClick={toggleFullscreen}

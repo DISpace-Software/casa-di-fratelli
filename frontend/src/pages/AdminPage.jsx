@@ -33,6 +33,8 @@ import {
 } from "../domain/adminMap/mapInteraction";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
 
+const ADMIN_MAP_VIEW_STORAGE_KEY = "casa-admin-map-view-mode";
+
 const emptyMenuItem = {
   nameBg: "",
   nameEn: "",
@@ -1422,6 +1424,8 @@ function TableLayoutEditor({
   text,
   layout,
   selectedArea,
+  mapViewMode,
+  onMapViewModeChange,
   onAreaChange,
   onUpdate,
   onAdd,
@@ -1489,6 +1493,30 @@ function TableLayoutEditor({
         </div>
       }
     >
+      <div className="mb-5 rounded-2xl border border-[#c9a56a]/18 bg-black/20 p-4">
+        <div className="section-kicker text-[10px]">Изглед на оперативната карта</div>
+        <p className="mt-1 text-sm text-white/55">
+          Изберете как да се отваря картата за резервации и преместване на гости.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Изглед на картата">
+          {[
+            ["section", "По секции"],
+            ["scroll", "Скрол карта"],
+          ].map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => onMapViewModeChange(mode)}
+              aria-pressed={mapViewMode === mode}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                mapViewMode === mode ? "luxury-button" : "ghost-button"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr]">
         <div>
           <div className="mb-4 flex flex-wrap gap-2">
@@ -1688,6 +1716,7 @@ function ReservationOperationsMap({
   diningEnabled = true,
   ordersOnly = false,
   onExitMap,
+  mapViewMode = "scroll",
 }) {
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState(null);
@@ -2415,8 +2444,9 @@ function ReservationOperationsMap({
             </div>
           )}
           language={language}
+          viewMode={mapViewMode}
         >
-          {ADMIN_MAP_ZONES.map((zone) => {
+          {ADMIN_MAP_ZONES.filter((zone) => mapViewMode === "scroll" || zone.id === selectedArea).map((zone) => {
             const label = areas.find(([area]) => area === zone.id)?.[1] || zone.id;
             return (
               <section
@@ -2442,7 +2472,7 @@ function ReservationOperationsMap({
             );
           })}
 
-          {liveReservations.map((reservation) => {
+          {liveReservations.filter((reservation) => mapViewMode === "scroll" || reservation.area === selectedArea).map((reservation) => {
             const bounds = getReservationBounds(reservation);
             if (!bounds) return null;
 
@@ -2609,7 +2639,7 @@ function ReservationOperationsMap({
             );
           })}
 
-          {moveSelectionBounds && selectedReservation && (() => {
+          {moveSelectionBounds && selectedReservation && (mapViewMode === "scroll" || moveSelectionBounds.area === selectedArea) && (() => {
             const zone = ADMIN_MAP_ZONES.find((item) => item.id === moveSelectionBounds.area) || ADMIN_MAP_ZONES[0];
             const position = localPercentToWorld(zone, {
               x: moveSelectionBounds.centerX,
@@ -2683,7 +2713,7 @@ function ReservationOperationsMap({
             );
           })()}
 
-          {areaTables.map((table) => {
+          {areaTables.filter((table) => mapViewMode === "scroll" || table.area === selectedArea).map((table) => {
             const reservation = liveByTable.get(table.id);
             const tableOrders = activeOrdersByTable.get(table.id) || [];
             const hasTableOrders = tableOrders.length > 0;
@@ -5430,6 +5460,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [tableLayout, setTableLayout] = React.useState([]);
   const [layoutArea, setLayoutArea] = React.useState("indoor");
   const [reservationMapArea, setReservationMapArea] = React.useState("indoor");
+  const [adminMapViewMode, setAdminMapViewMode] = React.useState(() => {
+    if (typeof window === "undefined") return "scroll";
+    return window.localStorage.getItem(ADMIN_MAP_VIEW_STORAGE_KEY) === "section" ? "section" : "scroll";
+  });
   const [reservationMapDate, setReservationMapDate] = React.useState(() => formatLocalDate(new Date()));
   const [noteEdits, setNoteEdits] = React.useState({});
   const [orderMenuSearches, setOrderMenuSearches] = React.useState({});
@@ -8710,6 +8744,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 diningEnabled={isProVersion}
                 ordersOnly={false}
                 onExitMap={() => setActiveTab("home")}
+                mapViewMode={adminMapViewMode}
               />
             )}
 
@@ -10877,6 +10912,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 text={a.layout}
                 layout={tableLayout}
                 selectedArea={layoutArea}
+                mapViewMode={adminMapViewMode}
+                onMapViewModeChange={(mode) => {
+                  setAdminMapViewMode(mode);
+                  window.localStorage.setItem(ADMIN_MAP_VIEW_STORAGE_KEY, mode);
+                }}
                 onAreaChange={setLayoutArea}
                 onUpdate={updateTableLayoutItem}
                 onAdd={addTableLayoutItem}
