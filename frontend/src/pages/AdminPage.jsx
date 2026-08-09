@@ -1689,6 +1689,63 @@ function TableLayoutEditor({
   );
 }
 
+function SectionMapViewport({
+  children,
+  zones,
+  activeZone,
+  onZoneChange,
+  onBackgroundClick,
+  overlay,
+  hud,
+  text,
+}) {
+  return (
+    <>
+      <div className="mb-5 grid gap-2 sm:grid-cols-3">
+        {zones.map((zone) => (
+          <button
+            key={zone.id}
+            type="button"
+            onClick={() => onZoneChange?.(zone.id)}
+            className={`rounded-2xl border px-4 py-3 text-left transition ${
+              activeZone === zone.id
+                ? "border-[#f2d39a]/70 bg-[#c9a56a]/20 text-[#fff4df]"
+                : "border-white/10 bg-black/20 text-white/65 hover:border-[#c9a56a]/35 hover:text-white"
+            }`}
+          >
+            <span className="block text-sm font-semibold">{zone.name.split(" · ")[0]}</span>
+            <span className="mt-1 block text-xs text-white/45">
+              {zone.name.split(" · ")[1] || text.tables}
+            </span>
+          </button>
+        ))}
+      </div>
+      <div
+        data-admin-swipe-lock="true"
+        className={`admin-reservation-map-surface relative min-w-0 min-h-[600px] overflow-hidden rounded-[26px] border border-white/10 ${
+          activeZone === "garden"
+            ? "bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] md:min-h-[820px]"
+            : activeZone === "openTerrace"
+            ? "bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))]"
+            : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[850px]"
+        }`}
+        onClick={(event) => {
+          if (event.target.closest("button, a, input, select, textarea, [role='button'], [data-map-keep-open='true']")) return;
+          onBackgroundClick?.();
+        }}
+      >
+        {children}
+        {hud ? (
+          <div className="pointer-events-none absolute right-3 top-3 z-[230] sm:right-4 sm:top-4">
+            {hud}
+          </div>
+        ) : null}
+      </div>
+      {overlay}
+    </>
+  );
+}
+
 function ReservationOperationsMap({
   text,
   language = "bg",
@@ -1747,15 +1804,15 @@ function ReservationOperationsMap({
       const savedTables = layout
         .filter((item) => item.area === area && item.isActive && !isRetiredTableId(item.id))
         .map(normalizeLayoutItem)
-        .map(orientTableForMap);
+        .map((table) => mapViewMode === "section" ? table : orientTableForMap(table));
 
       return savedTables.length
         ? savedTables
         : (tablesByArea[area] || [])
             .map((table) => normalizeLayoutItem({ ...table, area, isActive: true }))
-            .map(orientTableForMap);
+            .map((table) => mapViewMode === "section" ? table : orientTableForMap(table));
     },
-    [layout]
+    [layout, mapViewMode]
   );
   const areaTables = React.useMemo(
     () => ["indoor", "garden", "openTerrace"]
@@ -2325,6 +2382,8 @@ function ReservationOperationsMap({
     );
   }
 
+  const MapViewport = mapViewMode === "section" ? SectionMapViewport : UnifiedMapViewport;
+
   return (
     <Panel title={text.title} subtitle={text.subtitle} bare={!ordersOnly}>
       {!ordersOnly && (
@@ -2363,7 +2422,7 @@ function ReservationOperationsMap({
       )}
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,0.75fr)]">
         <div className="relative min-w-0">
-        <UnifiedMapViewport
+        <MapViewport
           zones={areas.map(([id, name]) => ({ id, name: `${name} · ${getAreaTableCount(id)} ${text.tables}` }))}
           activeZone={selectedArea}
           onZoneChange={handleMapZoneChange}
@@ -2445,13 +2504,14 @@ function ReservationOperationsMap({
           )}
           language={language}
           viewMode={mapViewMode}
+          text={text}
         >
           {ADMIN_MAP_ZONES.filter((zone) => mapViewMode === "scroll" || zone.id === selectedArea).map((zone) => {
             const label = areas.find(([area]) => area === zone.id)?.[1] || zone.id;
             return (
               <section
                 key={zone.id}
-                className={`absolute overflow-hidden rounded-[34px] border ${
+                className={mapViewMode === "section" ? "absolute inset-0 overflow-hidden" : `absolute overflow-hidden rounded-[34px] border ${
                   selectedArea === zone.id ? "border-[#f2d39a]/55 shadow-[0_0_55px_rgba(201,165,106,0.18)]" : "border-white/12"
                 } ${
                   zone.id === "garden"
@@ -2460,13 +2520,15 @@ function ReservationOperationsMap({
                     ? "bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),linear-gradient(180deg,rgba(30,34,25,0.98),rgba(14,16,11,0.98))]"
                     : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),linear-gradient(180deg,rgba(39,27,21,0.98),rgba(16,12,10,0.98))]"
                 }`}
-                style={{ left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
+                style={mapViewMode === "section" ? undefined : { left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
                 aria-label={label}
               >
                 <div className="admin-reservation-map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
-                <div className="pointer-events-none absolute left-8 top-7 z-[6] rounded-full border border-[#f2d39a]/25 bg-black/55 px-5 py-2 text-sm font-bold uppercase tracking-[0.16em] text-[#fff4df] backdrop-blur">
-                  {label}
-                </div>
+                {mapViewMode === "scroll" && (
+                  <div className="pointer-events-none absolute left-8 top-7 z-[6] rounded-full border border-[#f2d39a]/25 bg-black/55 px-5 py-2 text-sm font-bold uppercase tracking-[0.16em] text-[#fff4df] backdrop-blur">
+                    {label}
+                  </div>
+                )}
                 <AdminMapDecor area={zone.id} />
               </section>
             );
@@ -2502,7 +2564,9 @@ function ReservationOperationsMap({
               <div
                 key={`reservation-${reservation.id}`}
                 className={`pointer-events-none absolute ${isSelected ? "z-[220]" : "z-20"}`}
-                style={{ left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
+                style={mapViewMode === "section"
+                  ? { inset: 0 }
+                  : { left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
               >
                 {bounds.tables.length > 1 && (
                   <div
@@ -2641,17 +2705,21 @@ function ReservationOperationsMap({
 
           {moveSelectionBounds && selectedReservation && (mapViewMode === "scroll" || moveSelectionBounds.area === selectedArea) && (() => {
             const zone = ADMIN_MAP_ZONES.find((item) => item.id === moveSelectionBounds.area) || ADMIN_MAP_ZONES[0];
-            const position = localPercentToWorld(zone, {
+            const localPosition = {
               x: moveSelectionBounds.centerX,
               y: Math.max(7, moveSelectionBounds.minY - 9),
-            });
+            };
+            const position = mapViewMode === "section" ? localPosition : localPercentToWorld(zone, localPosition);
             const requiredGuests = Number(moveDraft.guestCount || selectedReservation.guestCount || 1);
 
             return (
               <div
                 data-map-keep-open="true"
                 className="absolute z-[120] w-[220px] -translate-x-1/2 -translate-y-full rounded-2xl border border-[#f2d39a]/40 bg-[#15110e]/96 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.72)] backdrop-blur-xl sm:w-[250px]"
-                style={{ left: position.x, top: position.y }}
+                style={{
+                  left: mapViewMode === "section" ? `${position.x}%` : position.x,
+                  top: mapViewMode === "section" ? `${position.y}%` : position.y,
+                }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -2740,8 +2808,8 @@ function ReservationOperationsMap({
                 key={`${table.area}-${table.id}`}
                 className={`absolute -translate-x-1/2 -translate-y-1/2 ${isSelectedTable ? "z-[220]" : "z-10"}`}
                 style={{
-                  left: worldPosition.x,
-                  top: worldPosition.y,
+                  left: mapViewMode === "section" ? `${table.x}%` : worldPosition.x,
+                  top: mapViewMode === "section" ? `${table.y}%` : worldPosition.y,
                 }}
               >
                 <button
@@ -2769,8 +2837,12 @@ function ReservationOperationsMap({
                   }}
                   className={`admin-map-table-node flex items-center justify-center rounded-2xl border font-semibold shadow-2xl transition hover:scale-[1.04] ${
                     isGroupTable
-                      ? "h-9 min-w-[50px] px-2 text-xs sm:h-10 sm:min-w-[58px] sm:px-3 md:h-14 md:min-w-[80px] lg:h-16 lg:min-w-[88px]"
-                      : "h-8 w-8 text-xs sm:h-9 sm:w-9 md:h-14 md:w-14 md:text-sm"
+                      ? mapViewMode === "section"
+                        ? "h-9 min-w-[50px] px-2 text-xs sm:h-10 sm:min-w-[58px] sm:px-3 md:h-12 md:min-w-[68px] lg:h-16 lg:min-w-[88px]"
+                        : "h-9 min-w-[50px] px-2 text-xs sm:h-10 sm:min-w-[58px] sm:px-3 md:h-14 md:min-w-[80px] lg:h-16 lg:min-w-[88px]"
+                      : mapViewMode === "section"
+                        ? "h-8 w-8 text-xs sm:h-9 sm:w-9 md:h-11 md:w-11 lg:h-14 lg:w-14 lg:text-sm"
+                        : "h-8 w-8 text-xs sm:h-9 sm:w-9 md:h-14 md:w-14 md:text-sm"
                   } ${
                     isMoveSelected
                       ? "border-[#f2d39a]/80 bg-[linear-gradient(145deg,#f2d39a,#b8843f)] text-black ring-4 ring-[#f2d39a]/25"
@@ -2920,7 +2992,7 @@ function ReservationOperationsMap({
             );
           })}
 
-        </UnifiedMapViewport>
+        </MapViewport>
         </div>
 
         <div className="min-w-0 space-y-3">
