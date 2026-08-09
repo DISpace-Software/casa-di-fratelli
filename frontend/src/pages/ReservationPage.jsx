@@ -413,12 +413,12 @@ function RestaurantTableVisual({ table, selected, reserved }) {
   const seats = Math.max(1, Number(table.seats || 4));
   const isLong = seats >= 6 || table.wide;
   const isTwoSeat = seats <= 2;
-  const width = isTwoSeat ? 50 : isLong ? 72 : 54;
-  const height = isTwoSeat ? 38 : isLong ? 48 : 54;
+  const width = isTwoSeat ? 40 : isLong ? 58 : 44;
+  const height = isTwoSeat ? 30 : isLong ? 39 : 44;
   const chairs = getTableChairPositions(seats);
 
   return (
-    <div className="relative" style={{ width: width + 30, height: height + 30 }}>
+    <div className="public-table-fixture relative" style={{ width: width + 24, height: height + 24 }}>
       {chairs.map((chair, index) => {
         const vertical = chair.side === "left" || chair.side === "right";
         const style = vertical
@@ -448,7 +448,7 @@ function RestaurantTableVisual({ table, selected, reserved }) {
       <span
         className={`public-table-surface absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center ${
           isTwoSeat ? "rounded-[16px]" : isLong ? "rounded-[13px]" : "rounded-[15px]"
-        } ${
+        } ${isLong ? "public-table-surface-long" : ""} ${
           selected
             ? "public-table-surface-selected"
             : reserved
@@ -564,7 +564,7 @@ function IndoorTable({ table, selected, reserved, onSelect, labels }) {
       }}
       aria-label={`${table.id}, ${table.seats} ${labels.seats}`}
     >
-      <div className="relative flex min-w-[86px] flex-col items-center">
+      <div className="relative flex min-w-[72px] flex-col items-center">
         <RestaurantTableVisual table={table} selected={selected} reserved={reserved} />
         <div className="map-seat-label mt-2 text-center text-[10px] text-white/45">
           {table.seats} {labels.seats}

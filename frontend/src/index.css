@@ -1124,8 +1124,8 @@ html[data-theme="light"] .admin-page .admin-reservation-guest-marker * {
 .reservation-page .public-table-chair {
   position: absolute;
   z-index: 1;
-  width: 20px;
-  height: 13px;
+  width: 16px;
+  height: 10px;
   border: 1px solid rgba(199, 139, 76, 0.42);
   border-radius: 8px 8px 5px 5px;
   background:
@@ -1147,8 +1147,8 @@ html[data-theme="light"] .admin-page .admin-reservation-guest-marker * {
 }
 
 .reservation-page .public-table-chair-side {
-  width: 13px;
-  height: 20px;
+  width: 10px;
+  height: 16px;
   border-radius: 8px 5px 5px 8px;
 }
 
@@ -1174,6 +1174,17 @@ html[data-theme="light"] .admin-page .admin-reservation-guest-marker * {
   transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
+.reservation-page .public-table-fixture::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  border: 1px solid rgba(188, 131, 72, 0.08);
+  border-radius: 14px;
+  background: radial-gradient(ellipse at center, rgba(120, 71, 35, 0.16), rgba(14, 10, 8, 0.1) 60%, transparent 74%);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28), inset 0 1px rgba(255, 218, 158, 0.025);
+}
+
 .reservation-page .public-table-highlight {
   position: absolute;
   inset: 4px;
@@ -1182,10 +1193,31 @@ html[data-theme="light"] .admin-page .admin-reservation-guest-marker * {
   box-shadow: inset 0 0 12px rgba(255, 177, 75, 0.05);
 }
 
+.reservation-page .public-table-surface-long .public-table-highlight::before,
+.reservation-page .public-table-surface-long .public-table-highlight::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #ffc66d;
+  box-shadow: 0 0 3px #fff1c7, 0 0 8px rgba(255, 155, 52, 0.86);
+}
+
+.reservation-page .public-table-surface-long .public-table-highlight::before {
+  top: 4px;
+}
+
+.reservation-page .public-table-surface-long .public-table-highlight::after {
+  bottom: 4px;
+}
+
 .reservation-page .public-table-number {
   position: relative;
   z-index: 2;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   line-height: 1;
   color: #fff7e9;
@@ -1220,6 +1252,36 @@ html[data-theme="light"] .reservation-page .public-table-surface {
     radial-gradient(circle at 50% 42%, rgba(255, 220, 166, 0.2), transparent 38%),
     repeating-linear-gradient(90deg, transparent 0 13px, rgba(89, 48, 22, 0.05) 13px 14px),
     linear-gradient(145deg, #9a6338, #5d371f 62%, #342014);
+}
+
+.reservation-page .reservation-map-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 104px, rgba(0, 0, 0, 0.23) 104px 106px),
+    repeating-linear-gradient(0deg, transparent 0 34px, rgba(0, 0, 0, 0.3) 34px 36px),
+    repeating-linear-gradient(90deg, rgba(255, 222, 172, 0.018) 0 1px, transparent 1px 17px),
+    linear-gradient(135deg, rgba(92, 53, 30, 0.2), transparent 34%, rgba(0, 0, 0, 0.22));
+  opacity: 0.82;
+}
+
+.reservation-page .reservation-map-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 70px rgba(0, 0, 0, 0.72),
+    inset 0 0 18px rgba(220, 158, 91, 0.045);
+}
+
+.reservation-page .reservation-map-surface .reservation-map-table-node {
+  z-index: 10;
 }
 
 @media (max-width: 640px) {
