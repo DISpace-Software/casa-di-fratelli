@@ -1214,16 +1214,6 @@ html[data-theme="light"] .admin-page .admin-reservation-guest-marker * {
   bottom: 4px;
 }
 
-.reservation-page .public-table-number {
-  position: relative;
-  z-index: 2;
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1;
-  color: #fff7e9;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 10px rgba(0, 0, 0, 0.7);
-}
-
 .reservation-page .public-table-surface-selected {
   border-color: rgba(255, 214, 143, 0.92);
   background:

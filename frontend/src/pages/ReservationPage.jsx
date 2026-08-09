@@ -458,7 +458,6 @@ function RestaurantTableVisual({ table, selected, reserved }) {
         style={{ width, height }}
       >
         <span className="public-table-highlight" aria-hidden="true" />
-        <span className="public-table-number">{table.id}</span>
       </span>
     </div>
   );
