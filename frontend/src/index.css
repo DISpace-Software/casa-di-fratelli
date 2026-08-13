@@ -1192,6 +1192,8 @@ html[data-theme="light"] .admin-page .admin-reservation-guest-marker * {
   border-radius: inherit;
   box-shadow: inset 0 0 12px rgba(255, 177, 75, 0.05);
 }
+.reservation-page .public-table-number { position:relative;z-index:2;font-size:12px;font-weight:800;line-height:1;letter-spacing:.02em;color:#fff8eb;text-shadow:0 1px 4px rgba(0,0,0,.8); }
+.reservation-page .reservation-map-table-node:hover .public-table-surface { border-color:rgba(229,188,114,.82);box-shadow:inset 0 2px 1px rgba(255,221,172,.2),0 12px 20px rgba(0,0,0,.62),0 0 20px rgba(214,165,82,.18); }
 
 .reservation-page .public-table-surface-long .public-table-highlight::before,
 .reservation-page .public-table-surface-long .public-table-highlight::after {
@@ -1257,6 +1259,46 @@ html[data-theme="light"] .reservation-page .public-table-surface {
     linear-gradient(135deg, rgba(92, 53, 30, 0.2), transparent 34%, rgba(0, 0, 0, 0.22));
   opacity: 0.82;
 }
+
+/* Shared, non-interactive architectural scene used by public and admin maps. */
+.restaurant-scene,
+.restaurant-scene * { pointer-events: none; }
+.restaurant-scene { position: absolute; inset: 0; z-index: 0; overflow: hidden; border-radius: inherit; }
+.restaurant-floor-layer { position: absolute; inset: 0; }
+.scene-wood .restaurant-floor-layer {
+  background:
+    radial-gradient(ellipse at 45% 30%, rgba(133,82,43,.13), transparent 52%),
+    repeating-linear-gradient(90deg, transparent 0 102px, rgba(5,3,2,.34) 102px 105px),
+    repeating-linear-gradient(0deg, rgba(255,222,172,.018) 0 1px, transparent 1px 32px, rgba(0,0,0,.22) 32px 34px),
+    linear-gradient(135deg,#3a291d,#2a1e17 48%,#211711);
+  box-shadow: inset 0 0 90px rgba(0,0,0,.68), inset 0 1px rgba(242,200,121,.08);
+}
+.scene-stone .restaurant-floor-layer {
+  background:
+    radial-gradient(circle at 25% 15%,rgba(116,112,94,.08),transparent 30%),
+    repeating-linear-gradient(90deg,transparent 0 82px,rgba(0,0,0,.3) 82px 84px),
+    repeating-linear-gradient(0deg,transparent 0 82px,rgba(0,0,0,.32) 82px 84px),
+    linear-gradient(145deg,#252522,#171717 62%,#111);
+  box-shadow: inset 0 0 80px rgba(0,0,0,.58), inset 0 1px rgba(255,255,255,.045);
+}
+.restaurant-architecture-layer,.restaurant-decoration-layer { position:absolute; inset:0; }
+.map-architectural-window { position:absolute; z-index:2; min-width:12px; min-height:12px; overflow:hidden; border:1px solid rgba(183,217,229,.34); border-radius:5px; background:linear-gradient(145deg,rgba(182,224,236,.2),rgba(30,52,60,.55) 50%,rgba(10,19,23,.8)); box-shadow:inset 0 1px rgba(234,250,255,.35),inset 0 -2px 4px rgba(0,0,0,.5),0 0 16px rgba(91,174,198,.12); }
+.map-architectural-window::after { content:"";position:absolute;inset:2px;background:repeating-linear-gradient(90deg,transparent 0 24%,rgba(179,207,214,.3) 24% 25%); }
+.map-architectural-window span,.map-architectural-wall span { position:absolute;left:50%;top:50%;z-index:1;transform:translate(-50%,-50%);white-space:nowrap;font-size:7px;font-weight:700;letter-spacing:.2em;color:rgba(222,239,243,.65); }
+.map-architectural-window span.is-vertical,.map-architectural-wall span.is-vertical { transform:translate(-50%,-50%) rotate(-90deg); }
+.map-architectural-wall { position:absolute;z-index:2;min-width:14px;min-height:14px;border:1px solid rgba(231,216,195,.12);border-radius:4px;background:linear-gradient(180deg,rgba(105,88,70,.82),#332a23 48%,#1c1713);box-shadow:inset 0 2px rgba(255,255,255,.1),0 7px 14px rgba(0,0,0,.48); }
+.map-architectural-wall span { color:rgba(244,239,231,.47); }
+.map-architectural-entry { position:absolute;z-index:3;width:110px;text-align:center;transform:translate(-50%,-50%); }
+.map-architectural-entry i { display:block;width:72px;height:20px;margin:auto;border:1px solid rgba(214,170,96,.6);background:radial-gradient(ellipse at center,rgba(240,182,93,.25),transparent 68%);box-shadow:0 0 22px rgba(240,182,93,.15); }
+.entry-bottom i { border-bottom:0;border-radius:40px 40px 0 0; }.entry-top i{border-top:0;border-radius:0 0 40px 40px}.entry-left i,.entry-right i{height:54px;width:18px}.entry-left i{margin-left:0;border-left:0;border-radius:0 30px 30px 0}.entry-right i{margin-right:0;border-right:0;border-radius:30px 0 0 30px}
+.map-architectural-entry span { display:inline-block;margin-top:2px;padding:3px 7px;border:1px solid rgba(201,154,77,.22);border-radius:999px;background:rgba(10,8,6,.74);font-size:7px;font-weight:800;letter-spacing:.13em;color:rgba(242,200,121,.84);white-space:nowrap; }
+.map-aquarium { position:absolute;z-index:2;min-height:28px;border:3px solid #3b2a1c;border-inline-color:#85623a;border-radius:7px;background:radial-gradient(circle at 24% 70%,#735f42 0 3px,transparent 4px),radial-gradient(circle at 73% 66%,#64705c 0 3px,transparent 4px),linear-gradient(165deg,rgba(180,242,255,.27),transparent 28%),linear-gradient(90deg,#073b4c,#09647a 55%,#063543);box-shadow:inset 0 0 10px rgba(28,217,237,.22),0 0 18px rgba(44,189,217,.2),0 6px 11px rgba(0,0,0,.4); }
+.map-aquarium i { position:absolute;width:7px;height:3px;border-radius:50%;background:rgba(205,238,228,.25); }.map-aquarium i:nth-child(1){left:24%;top:34%}.map-aquarium i:nth-child(2){left:55%;top:58%;transform:scale(.7)}.map-aquarium i:nth-child(3){right:15%;top:25%;transform:scale(.55)}
+.map-plant { position:absolute;z-index:2;width:28px;height:28px;transform:translate(-50%,-50%) rotate(var(--plant-turn));filter:drop-shadow(0 7px 5px rgba(0,0,0,.45)); }.map-plant.plant-sm{transform:translate(-50%,-50%) rotate(var(--plant-turn)) scale(.72)}.map-plant.plant-lg{transform:translate(-50%,-50%) rotate(var(--plant-turn)) scale(1.25)}
+.map-plant i { position:absolute;left:10px;top:1px;width:9px;height:18px;border-radius:80% 10% 80% 15%;transform-origin:50% 100%;background:linear-gradient(90deg,#173b27,#376044); }.map-plant i:nth-child(2){transform:rotate(72deg)}.map-plant i:nth-child(3){transform:rotate(145deg)}.map-plant i:nth-child(4){transform:rotate(225deg)}.map-plant b{position:absolute;left:8px;bottom:0;width:14px;height:9px;border-radius:50%;background:#34261c;border:1px solid #71563b}
+.map-ambient-light { position:absolute;width:5px;height:5px;border-radius:50%;background:#f2c879;box-shadow:0 0 5px #f2c879,0 0 18px 8px rgba(240,182,93,.13); }
+.restaurant-editor-grid { position:absolute;inset:18px;z-index:4;border:1px solid rgba(214,170,96,.12);border-radius:20px;background-image:linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px);background-size:42px 42px; }
+.restaurant-scene::after { content:"";position:absolute;inset:0;box-shadow:inset 0 0 72px rgba(0,0,0,.42);border-radius:inherit; }
 
 .reservation-page .reservation-map-surface::after {
   content: "";
@@ -1359,6 +1401,219 @@ html[data-theme="light"] .reservation-page .zone-preview-card,
 html[data-theme="light"] .reservation-page .zone-preview-card .text-white\/70,
 html[data-theme="light"] .reservation-page .zone-preview-card .font-serif {
   color: rgba(255, 244, 223, 0.96) !important;
+}
+
+/* Premium orthographic restaurant scene. The environment never owns input; tables stay above it. */
+.reservation-page .reservation-map-surface,
+.admin-page .admin-reservation-map-surface {
+  border-color: rgba(201, 154, 77, 0.2) !important;
+  background: #0d0c0a !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 239, 210, 0.025),
+    inset 0 0 80px rgba(0, 0, 0, 0.35),
+    0 24px 70px rgba(0, 0, 0, 0.25) !important;
+}
+
+.reservation-page .reservation-map-surface::before {
+  opacity: 0;
+}
+
+.restaurant-scene {
+  isolation: isolate;
+  background: #0d0c0a;
+}
+
+.restaurant-floor-layer {
+  transform: translateZ(0);
+}
+
+.scene-wood .restaurant-floor-layer {
+  background:
+    radial-gradient(ellipse at 40% 26%, rgba(165, 101, 51, 0.13), transparent 50%),
+    radial-gradient(ellipse at 76% 82%, rgba(10, 6, 4, 0.32), transparent 54%),
+    repeating-linear-gradient(90deg, transparent 0 76px, rgba(7, 4, 3, 0.34) 76px 79px),
+    repeating-linear-gradient(0deg, rgba(255, 228, 185, 0.018) 0 1px, transparent 1px 31px, rgba(0, 0, 0, 0.23) 31px 33px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 12px),
+    linear-gradient(132deg, #3b291d 0%, #2b1d16 48%, #211610 100%);
+  box-shadow:
+    inset 0 0 110px rgba(0, 0, 0, 0.68),
+    inset 0 1px rgba(242, 200, 121, 0.08);
+}
+
+.scene-stone .restaurant-floor-layer {
+  background:
+    radial-gradient(circle at 22% 18%, rgba(133, 128, 108, 0.075), transparent 34%),
+    radial-gradient(circle at 74% 67%, rgba(255, 255, 255, 0.022), transparent 30%),
+    repeating-linear-gradient(90deg, transparent 0 81px, rgba(0, 0, 0, 0.32) 81px 84px),
+    repeating-linear-gradient(0deg, transparent 0 81px, rgba(0, 0, 0, 0.34) 81px 84px),
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.009) 0 1px, transparent 1px 9px),
+    linear-gradient(145deg, #292927, #1b1b1a 58%, #121212);
+  box-shadow:
+    inset 0 0 96px rgba(0, 0, 0, 0.62),
+    inset 0 1px rgba(255, 255, 255, 0.045);
+}
+
+.restaurant-architecture-layer,
+.restaurant-decoration-layer,
+.restaurant-labels-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.map-architectural-window {
+  border-color: rgba(190, 220, 229, 0.3);
+  border-radius: 5px;
+  background: linear-gradient(145deg, rgba(176, 219, 232, 0.18), rgba(33, 54, 61, 0.62) 48%, rgba(8, 16, 20, 0.88));
+  box-shadow:
+    inset 0 1px rgba(238, 251, 255, 0.37),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.58),
+    0 5px 12px rgba(0, 0, 0, 0.35),
+    0 0 16px rgba(91, 174, 198, 0.1);
+}
+
+.map-window-glass {
+  position: absolute;
+  inset: 2px;
+  border-radius: 3px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 24%, rgba(184, 211, 218, 0.26) 24% 25%),
+    linear-gradient(125deg, rgba(238, 252, 255, 0.18), transparent 28% 72%, rgba(104, 171, 190, 0.12));
+}
+
+.map-architectural-window.is-vertical .map-window-glass {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 24%, rgba(184, 211, 218, 0.26) 24% 25%),
+    linear-gradient(145deg, rgba(238, 252, 255, 0.18), transparent 30% 72%, rgba(104, 171, 190, 0.12));
+}
+
+.map-architectural-window span,
+.map-architectural-wall span {
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.9);
+}
+
+.map-architectural-window.is-vertical span,
+.map-architectural-wall.is-vertical span {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.map-architectural-wall {
+  border-color: rgba(235, 218, 194, 0.13);
+  background:
+    linear-gradient(180deg, rgba(132, 108, 83, 0.72), rgba(55, 43, 34, 0.98) 42%, #1b1612 100%);
+  box-shadow:
+    inset 0 2px rgba(255, 248, 231, 0.1),
+    inset 0 -2px rgba(0, 0, 0, 0.48),
+    0 8px 15px rgba(0, 0, 0, 0.5);
+}
+
+.map-architectural-wall.is-vertical {
+  background: linear-gradient(90deg, rgba(132, 108, 83, 0.72), rgba(55, 43, 34, 0.98) 42%, #1b1612 100%);
+  box-shadow:
+    inset 2px 0 rgba(255, 248, 231, 0.1),
+    inset -2px 0 rgba(0, 0, 0, 0.48),
+    8px 0 15px rgba(0, 0, 0, 0.45);
+}
+
+.map-architectural-entry .map-entry-door {
+  position: relative;
+  background:
+    radial-gradient(ellipse at center, rgba(240, 182, 93, 0.25), transparent 68%),
+    linear-gradient(90deg, rgba(54, 38, 25, 0.9), rgba(13, 10, 8, 0.15), rgba(54, 38, 25, 0.9));
+}
+
+.map-architectural-entry .map-entry-door::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(242, 200, 121, 0.16);
+  border-radius: inherit;
+}
+
+.map-aquarium {
+  overflow: hidden;
+  border: 3px solid #332317;
+  border-inline-color: #86633b;
+  background: linear-gradient(180deg, #142f37, #063c4b 52%, #061f28);
+  box-shadow:
+    inset 0 0 0 1px rgba(232, 198, 139, 0.22),
+    inset 0 0 13px rgba(43, 213, 235, 0.22),
+    0 0 20px rgba(43, 190, 215, 0.17),
+    0 7px 12px rgba(0, 0, 0, 0.48);
+}
+
+.map-aquarium-water {
+  position: absolute;
+  inset: 2px;
+  background:
+    radial-gradient(circle at 18% 78%, #6a5b3d 0 4px, transparent 5px),
+    radial-gradient(circle at 67% 76%, #526350 0 4px, transparent 5px),
+    linear-gradient(160deg, rgba(196, 246, 255, 0.23), transparent 29%);
+}
+
+.map-aquarium b {
+  position: absolute;
+  bottom: 2px;
+  width: 4px;
+  height: 14px;
+  border-radius: 80% 10%;
+  background: linear-gradient(#376d55, #163c30);
+  transform-origin: bottom;
+}
+.map-aquarium b:nth-of-type(1) { left: 13%; transform: rotate(-22deg); }
+.map-aquarium b:nth-of-type(2) { left: 18%; height: 10px; transform: rotate(25deg); }
+.map-aquarium b:nth-of-type(3) { right: 17%; height: 12px; transform: rotate(17deg); }
+
+.map-plant i:nth-child(5) { transform: rotate(292deg) scale(0.88); }
+.map-plant i:nth-child(odd) { filter: brightness(0.86); }
+
+.scene-edit .restaurant-floor-layer {
+  filter: brightness(0.88) saturate(0.82);
+}
+
+.scene-edit .restaurant-editor-grid {
+  inset: 18px;
+  border-color: rgba(214, 170, 96, 0.17);
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.22);
+}
+
+.restaurant-scene::after {
+  z-index: 5;
+  box-shadow:
+    inset 0 0 90px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(229, 188, 114, 0.06);
+}
+
+.admin-page .admin-map-table-node {
+  position: relative;
+  isolation: isolate;
+  border-color: rgba(211, 157, 91, 0.45);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(255, 191, 106, 0.13), transparent 44%),
+    repeating-linear-gradient(90deg, transparent 0 12px, rgba(255, 218, 168, 0.025) 12px 13px),
+    linear-gradient(145deg, #624028, #352219 56%, #1e1410);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 224, 181, 0.14),
+    inset 0 -4px 8px rgba(0, 0, 0, 0.34),
+    0 10px 18px rgba(0, 0, 0, 0.5);
+}
+
+.admin-page .admin-map-table-node:hover {
+  border-color: rgba(229, 188, 114, 0.8);
+  box-shadow:
+    inset 0 2px 1px rgba(255, 224, 181, 0.18),
+    0 13px 22px rgba(0, 0, 0, 0.56),
+    0 0 20px rgba(214, 165, 82, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reservation-page .reservation-map-table-node,
+  .admin-page .admin-map-table-node {
+    transition-duration: 0.01ms !important;
+  }
 }
 
 html[data-theme="light"] .reservation-preview-panel h2,
