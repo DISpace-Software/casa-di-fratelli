@@ -21,7 +21,6 @@ import {
 } from "../domain/reservations/availability";
 import { getAvailableReservationTimesForDate, isPastTimeForDate } from "../domain/reservations/dateTimeRules";
 import UnifiedMapViewport from "../components/admin/UnifiedMapViewport";
-import RestaurantMapScene from "../components/map/RestaurantMapScene";
 import { ADMIN_MAP_ZONES } from "../domain/adminMap/mapConfig";
 import {
   localPercentToWorld,
@@ -1359,10 +1358,7 @@ function AdminMapWindow({ className = "", label, vertical = false }) {
   );
 }
 
-function AdminMapDecor({ area, mode = "operational" }) {
-  return <RestaurantMapScene area={area} orientation="unified" mode={mode} />;
-  /* Legacy markup retained below temporarily as layout documentation. */
-  /* eslint-disable no-unreachable */
+function AdminMapDecor({ area }) {
   if (area === "garden") {
     return (
       <>
@@ -1429,9 +1425,6 @@ function AdminMapDecor({ area, mode = "operational" }) {
 }
 
 function LegacyAdminMapDecor({ area }) {
-  return <RestaurantMapScene area={area} orientation="section" mode="operational" />;
-  /* Legacy markup retained below temporarily as layout documentation. */
-  /* eslint-disable no-unreachable */
   if (area === "garden") {
     return (
       <>
@@ -1629,7 +1622,7 @@ function TableLayoutEditor({
             onPointerCancel={() => setDraggingId(null)}
           >
             <div className="absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
-            <AdminMapDecor area={selectedArea} mode="edit" />
+            <AdminMapDecor area={selectedArea} />
 
             {activeAreaTables.map((table) => {
               const displayPoint = selectedArea === "garden"
