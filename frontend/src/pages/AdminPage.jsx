@@ -1838,6 +1838,7 @@ function ReservationOperationsMap({
   onOpenOrder,
   onSeatWalkIn,
   onCreateReservation,
+  onEditReservation,
   onClaimReservation,
   onRelease,
   publicTableHolds = [],
@@ -1859,6 +1860,8 @@ function ReservationOperationsMap({
   const [consumptionCategory, setConsumptionCategory] = React.useState("all");
   const [walkInDraft, setWalkInDraft] = React.useState(null);
   const [tableReservationDraft, setTableReservationDraft] = React.useState(null);
+  const [reservationFormBusy, setReservationFormBusy] = React.useState(false);
+  const [reservationFormError, setReservationFormError] = React.useState("");
   const consumptionPanelRef = React.useRef(null);
   const [now, setNow] = React.useState(() => new Date());
   const todayDate = formatLocalDate(now);
@@ -2253,6 +2256,7 @@ function ReservationOperationsMap({
   }
 
   function openTableReservationForm(table) {
+    setReservationFormError("");
     const nextTime = getNextAdminReservationTime(new Date());
     setSelectedReservationId(null);
     setTableReservationDraft({
@@ -2265,6 +2269,25 @@ function ReservationOperationsMap({
       area: table.area,
       tableId: table.id,
       internalNote: "",
+    });
+  }
+
+  function openEditReservationForm(reservation) {
+    onAreaChange(reservation.area);
+    setReservationFormError("");
+    setTableReservationDraft({
+      id: reservation.id,
+      guestName: reservation.guestName || "",
+      phone: reservation.phone || "",
+      email: reservation.email || "",
+      reservedDate: reservation.reservedDate,
+      reservedTime: reservation.reservedTime,
+      guestCount: reservation.guestCount,
+      area: reservation.area,
+      tableId: reservation.tableIds[0],
+      tableIds: [...reservation.tableIds],
+      notes: reservation.notes || "",
+      internalNote: reservation.internalNote || "",
     });
   }
 
@@ -2285,24 +2308,36 @@ function ReservationOperationsMap({
 
   async function submitTableReservation(event) {
     event.preventDefault();
-    if (!tableReservationDraft) return;
-
-    const created = await onCreateReservation?.({
-      guestName: tableReservationDraft.guestName,
-      phone: tableReservationDraft.phone,
-      email: tableReservationDraft.email,
-      reservedDate: tableReservationDraft.reservedDate,
-      reservedTime: tableReservationDraft.reservedTime,
-      guestCount: Number(tableReservationDraft.guestCount || 1),
-      area: tableReservationDraft.area,
-      tableIds: [tableReservationDraft.tableId],
-      internalNote: tableReservationDraft.internalNote,
-      notes: "",
-    });
-    if (created === false) return;
-
-    setTableReservationDraft(null);
-    setSelectedTableId(null);
+    if (!tableReservationDraft || reservationFormBusy) return;
+    setReservationFormBusy(true);
+    setReservationFormError("");
+    try {
+      const payload = {
+        guestName: tableReservationDraft.guestName,
+        phone: tableReservationDraft.phone,
+        email: tableReservationDraft.email,
+        reservedDate: tableReservationDraft.reservedDate,
+        reservedTime: tableReservationDraft.reservedTime,
+        guestCount: Number(tableReservationDraft.guestCount || 1),
+        area: tableReservationDraft.area,
+        tableIds: tableReservationDraft.tableIds || [tableReservationDraft.tableId],
+        internalNote: tableReservationDraft.internalNote,
+        notes: tableReservationDraft.notes || "",
+      };
+      const saved = tableReservationDraft.id
+        ? await onEditReservation?.(tableReservationDraft.id, payload)
+        : await onCreateReservation?.(payload);
+      if (saved !== true) {
+        setReservationFormError(adminLocalText(language, "Резервацията не е запазена. Проверете данните или заетостта и опитайте отново.", "Reservation was not saved. Check the details or availability and try again.", "Резервация не сохранена. Проверьте данные или доступность и повторите."));
+        return;
+      }
+      setTableReservationDraft(null);
+      setSelectedTableId(null);
+    } catch {
+      setReservationFormError(adminLocalText(language, "Няма връзка със сървъра. Опитайте отново.", "Could not reach the server. Try again.", "Нет связи с сервером. Повторите попытку."));
+    } finally {
+      setReservationFormBusy(false);
+    }
   }
 
   React.useEffect(() => {
@@ -2361,15 +2396,20 @@ function ReservationOperationsMap({
       <div className="absolute inset-3 z-[95] flex items-center justify-center bg-black/35 p-2 backdrop-blur-[2px] sm:inset-5 sm:p-4">
         <form
           onSubmit={submitTableReservation}
+          role="dialog"
+          aria-modal="true"
+          aria-label={adminLocalText(language, "Резервация", "Reservation", "Резервация")}
           className="max-h-full w-full max-w-[440px] overflow-y-auto rounded-[24px] border border-[#f2d39a]/22 bg-[#15110e]/96 p-4 text-left shadow-[0_28px_90px_rgba(0,0,0,0.72)] sm:p-5"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="section-kicker text-[10px]">
-                {language === "bg" ? "Нова резервация" : "New reservation"}
+                {tableReservationDraft.id
+                  ? adminLocalText(language, "Редактирай резервация", "Edit reservation", "Редактировать резервацию")
+                  : adminLocalText(language, "Нова резервация", "New reservation", "Новая резервация")}
               </div>
               <div className="mt-1 text-lg font-semibold text-[#fff4df]">
-                {text.table} {tableReservationDraft.tableId}
+                {text.table} {(tableReservationDraft.tableIds || [tableReservationDraft.tableId]).join(", ")}
               </div>
             </div>
             <button
@@ -2384,6 +2424,7 @@ function ReservationOperationsMap({
 
           <div className="mt-4 grid gap-3">
             <input
+              aria-label={adminLocalText(language, "Име", "Name", "Имя")}
               value={tableReservationDraft.guestName}
               onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestName: event.target.value }))}
               required
@@ -2391,6 +2432,7 @@ function ReservationOperationsMap({
               className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
             />
             <input
+              aria-label={adminLocalText(language, "Телефон", "Phone", "Телефон")}
               value={tableReservationDraft.phone}
               onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, phone: event.target.value }))}
               required
@@ -2400,19 +2442,24 @@ function ReservationOperationsMap({
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="date"
+                aria-label={adminLocalText(language, "Дата", "Date", "Дата")}
                 value={tableReservationDraft.reservedDate}
-                min={formatLocalDate(new Date())}
+                min={tableReservationDraft.id ? undefined : formatLocalDate(new Date())}
                 onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedDate: event.target.value }))}
                 required
                 className="w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
               />
               <select
+                aria-label={adminLocalText(language, "Час", "Time", "Время")}
                 value={tableReservationDraft.reservedTime}
                 onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedTime: event.target.value }))}
                 required
                 className="w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
               >
-                {getAvailableReservationTimesForDate(adminReservationTimes, tableReservationDraft.reservedDate).map((time) => (
+                {[...new Set([
+                  ...(tableReservationDraft.id ? [tableReservationDraft.reservedTime] : []),
+                  ...getAvailableReservationTimesForDate(adminReservationTimes, tableReservationDraft.reservedDate),
+                ])].sort().map((time) => (
                   <option key={time} value={time}>{time}</option>
                 ))}
               </select>
@@ -2422,20 +2469,35 @@ function ReservationOperationsMap({
                 type="number"
                 min="1"
                 max="40"
+                aria-label={adminLocalText(language, "Гости", "Guests", "Гости")}
                 value={tableReservationDraft.guestCount}
                 onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestCount: event.target.value }))}
                 required
                 className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
               />
               <input
+                aria-label={adminLocalText(language, "Имейл", "Email", "Email")}
                 value={tableReservationDraft.email}
                 onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, email: event.target.value }))}
                 placeholder="Email"
                 className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
               />
             </div>
+            {tableReservationDraft.id && (
+              <>
+                <label className="text-xs text-white/65">
+                  {adminLocalText(language, "Бележка на клиента", "Guest note", "Примечание гостя")}
+                  <textarea value={tableReservationDraft.notes} onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, notes: event.target.value }))} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white" />
+                </label>
+                <label className="text-xs text-white/65">
+                  {adminLocalText(language, "Вътрешна бележка", "Internal note", "Внутренняя заметка")}
+                  <textarea value={tableReservationDraft.internalNote} onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, internalNote: event.target.value }))} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white" />
+                </label>
+              </>
+            )}
+            {reservationFormError && <p role="alert" className="text-sm text-red-200">{reservationFormError}</p>}
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <button type="submit" className="luxury-button rounded-2xl px-4 py-3 text-sm font-semibold">
+              <button type="submit" disabled={reservationFormBusy} aria-busy={reservationFormBusy} className="luxury-button rounded-2xl px-4 py-3 text-sm font-semibold disabled:opacity-50">
                 {language === "bg" ? "Запази" : "Save"}
               </button>
               <button
@@ -2706,6 +2768,21 @@ function ReservationOperationsMap({
                             className="rounded-xl border border-red-300/25 bg-red-500/15 px-3 py-2 text-xs font-semibold text-red-100"
                           >
                             {text.noShow}
+                          </button>
+                        )}
+                        {!ordersOnly && onBlockPublicTables && !selectedPublicTableHold && (
+                          <button type="button" onClick={() => onBlockPublicTables(reservation)} className="rounded-xl border border-amber-300/30 bg-amber-400/15 px-3 py-2 text-xs font-semibold text-amber-100">
+                            {adminLocalText(language, "Блокирай маса за деня", "Block table for the day", "Заблокировать стол на день")}
+                          </button>
+                        )}
+                        {!ordersOnly && selectedPublicTableHold && onRemovePublicTableHold && (
+                          <button type="button" onClick={() => onRemovePublicTableHold(selectedPublicTableHold)} className="rounded-xl border border-amber-300/30 bg-amber-400/15 px-3 py-2 text-xs font-semibold text-amber-100">
+                            {adminLocalText(language, "Премахни блокирането", "Remove public block", "Снять блокировку")}
+                          </button>
+                        )}
+                        {!ordersOnly && onEditReservation && (
+                          <button type="button" onClick={() => openEditReservationForm(reservation)} className="rounded-xl border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-3 py-2 text-xs font-semibold text-[#f2d39a]">
+                            {adminLocalText(language, "Редактирай", "Edit", "Редактировать")}
                           </button>
                         )}
                         {!ordersOnly && onMove && (
@@ -3174,6 +3251,11 @@ function ReservationOperationsMap({
                   <a href={`tel:${selectedReservation.phone}`} className="ghost-button rounded-xl px-4 py-3 text-center text-sm font-semibold">
                     {text.call}
                   </a>
+                )}
+                {!ordersOnly && onEditReservation && (
+                  <button type="button" onClick={() => openEditReservationForm(selectedReservation)} className="ghost-button rounded-xl px-4 py-3 text-sm font-semibold">
+                    {adminLocalText(language, "Редактирай", "Edit", "Редактировать")}
+                  </button>
                 )}
                 {onOpenReservation && (
                   <button type="button" onClick={() => onOpenReservation(selectedReservation)} className="ghost-button rounded-xl px-4 py-3 text-sm font-semibold">
@@ -6989,6 +7071,23 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }));
   }
 
+  async function editAdminReservationPayload(id, payload) {
+    setAdminNotice("");
+    setAdminError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/reservations/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to update reservation."));
+      return false;
+    }
+    await loadReservations();
+    setAdminNotice(adminLocalText(adminLanguage, "Резервацията е запазена.", "Reservation saved.", "Резервация сохранена."));
+    return true;
+  }
+
   async function saveAdminReservationPayload(source) {
     const payload = {
       ...source,
@@ -8943,6 +9042,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 }}
                 onSeatWalkIn={seatWalkInFromMap}
                 onCreateReservation={isWaiterRole ? null : saveAdminReservationPayload}
+                onEditReservation={isWaiterRole ? null : editAdminReservationPayload}
                 onClaimReservation={isWaiterRole ? claimReservationForConsumption : null}
                 onRelease={releaseReservationTable}
                 publicTableHolds={publicTableHolds}

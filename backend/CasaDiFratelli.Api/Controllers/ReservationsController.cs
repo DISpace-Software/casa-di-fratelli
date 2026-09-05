@@ -216,6 +216,37 @@ public class ReservationsController : ControllerBase
         return TableCapacityService.GetCapacity(tableIds);
     }
 
+    private async Task<Dictionary<string, string>?> GetConfiguredActiveTableCodesAsync()
+    {
+        try
+        {
+            var connection = _db.Database.GetDbConnection();
+            if (connection.State != ConnectionState.Open)
+                await connection.OpenAsync();
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = """SELECT "LayoutJson" FROM "TableLayouts" WHERE "Id" = 1;""";
+            var rawJson = await command.ExecuteScalarAsync() as string;
+            if (string.IsNullOrWhiteSpace(rawJson)) return null;
+
+            var layout = JsonSerializer.Deserialize<List<TableLayoutCapacityItem>>(rawJson, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+            if (layout == null) return null;
+
+            return layout
+                .Where(item => item.IsActive && !string.IsNullOrWhiteSpace(item.Id) && !TableCapacityService.IsRetired(item.Id))
+                .Select(item => item.Id!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(code => code, code => code, StringComparer.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private async Task SendReservationConfirmationEmailAsync(Reservation reservation, string token)
     {
         if (string.IsNullOrWhiteSpace(reservation.Email))
@@ -1141,6 +1172,132 @@ public class ReservationsController : ControllerBase
             reservation.ReservedDate,
             reservation.ReservedTime,
             TableIds = reservation.Tables.Select(t => t.TableCode).ToList()
+        });
+    }
+
+    [HttpPatch("{id}")]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
+    public async Task<IActionResult> UpdateReservation(int id, [FromBody] UpdateReservationRequest request)
+    {
+        var reservation = await _db.Reservations
+            .Include(x => x.Tables)
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (reservation == null)
+            return NotFound();
+
+        if (reservation.Status == ReservationStatusCancelled)
+            return BadRequest("Cancelled reservations cannot be edited.");
+
+        var guestName = request.GuestName.Trim();
+        var phone = request.Phone.Trim();
+        var email = request.Email.Trim();
+        var area = request.Area.Trim();
+        var requestedTime = request.ReservedTime.Trim();
+        var tableIds = ReservationConflictService.NormalizeTableIds(request.TableIds)
+            .Select(tableId => tableId.ToUpperInvariant())
+            .ToList();
+
+        if (guestName.Length is < 2 or > 120)
+            return BadRequest("Guest name must be between 2 and 120 characters.");
+        if (phone.Length > 50 || email.Length > 120 || area.Length is < 1 or > 50)
+            return BadRequest("One or more reservation fields are too long.");
+        if (!string.IsNullOrWhiteSpace(email) && !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email))
+            return BadRequest("Invalid email address.");
+        if (request.GuestCount <= 0 || request.GuestCount > 100)
+            return BadRequest("Invalid guests.");
+        if (tableIds.Count == 0)
+            return BadRequest("At least one valid table must be selected.");
+        if (!TimeOnly.TryParse(requestedTime, out var parsedTime))
+            return BadRequest("Invalid reservation time.");
+        var reservedTime = parsedTime.ToString("HH:mm");
+        if (!IsReservationTimeAllowed(reservedTime, createdByAdmin: true))
+            return BadRequest("Admin reservations are available until 23:00.");
+        var configuredTables = await GetConfiguredActiveTableCodesAsync();
+        if (configuredTables != null)
+        {
+            if (tableIds.Any(tableId => !configuredTables.ContainsKey(tableId)))
+                return BadRequest("One or more selected tables are not active.");
+            tableIds = tableIds.Select(tableId => configuredTables[tableId]).ToList();
+        }
+        else if (tableIds.Any(TableCapacityService.IsRetired) || tableIds.Any(tableId => TableCapacityService.GetCapacity(new[] { tableId }) <= 0))
+        {
+            return BadRequest("One or more selected tables are not active.");
+        }
+        if (await GetTableCapacityAsync(tableIds) < request.GuestCount)
+            return BadRequest("The selected tables do not have enough seats.");
+        if ((request.Notes?.Length ?? 0) > 2000 || (request.InternalNote?.Length ?? 0) > 2000)
+            return BadRequest("Reservation notes are too long.");
+
+        var slotChanged = request.ReservedDate != reservation.ReservedDate ||
+            !string.Equals(reservedTime, reservation.ReservedTime, StringComparison.Ordinal) ||
+            !tableIds.OrderBy(x => x).SequenceEqual(reservation.Tables.Select(x => x.TableCode).OrderBy(x => x));
+        if (slotChanged && IsPastReservationTime(request.ReservedDate, reservedTime))
+            return BadRequest("Reservation date or time has already passed.");
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
+        var conflict = await _reservationConflictService.FindTableConflictAsync(
+            request.ReservedDate, reservedTime, tableIds, reservation.Id);
+        if (conflict != null)
+            return Conflict(ReservationConflictService.ToConflictResponse(conflict));
+
+        var before = new
+        {
+            reservation.GuestName, reservation.Phone, reservation.Email, reservation.GuestCount,
+            reservation.Area, reservation.ReservedDate, reservation.ReservedTime,
+            reservation.Notes, reservation.InternalNote,
+            TableIds = reservation.Tables.Select(x => x.TableCode).ToList()
+        };
+        var emailChanged = !string.Equals(reservation.Email?.Trim(), email, StringComparison.OrdinalIgnoreCase);
+
+        _db.ReservationTables.RemoveRange(reservation.Tables);
+        reservation.Tables = tableIds.Select(tableId => new ReservationTable
+        {
+            ReservationId = reservation.Id,
+            TableCode = tableId
+        }).ToList();
+        reservation.GuestName = guestName;
+        reservation.Phone = phone;
+        reservation.Email = string.IsNullOrWhiteSpace(email) ? null : email;
+        reservation.GuestCount = request.GuestCount;
+        reservation.Area = area;
+        reservation.ReservedDate = request.ReservedDate;
+        reservation.ReservedTime = reservedTime;
+        reservation.Notes = string.IsNullOrWhiteSpace(request.Notes) ? null : request.Notes.Trim();
+        reservation.InternalNote = string.IsNullOrWhiteSpace(request.InternalNote) ? null : request.InternalNote.Trim();
+        if (emailChanged)
+        {
+            reservation.EmailConfirmedAtUtc = null;
+            reservation.EmailConfirmationTokenHash = null;
+            reservation.EmailConfirmationExpiresAtUtc = null;
+            if (reservation.Status == ReservationStatusAwaitingEmailConfirmation)
+            {
+                reservation.Status = ReservationStatusApproved;
+                reservation.EmailConfirmedAtUtc = DateTime.UtcNow;
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        var tableLabel = string.Join(", ", tableIds);
+        await _db.DiningOrders
+            .Where(order => order.ReservationId == reservation.Id)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(order => order.TableLabel, tableLabel)
+                .SetProperty(order => order.GuestName, guestName));
+        await _audit.RecordAsync(HttpContext, "update", "Reservation", reservation.Id.ToString(), before, new
+        {
+            reservation.GuestName, reservation.Phone, reservation.Email, reservation.GuestCount,
+            reservation.Area, reservation.ReservedDate, reservation.ReservedTime,
+            reservation.Notes, reservation.InternalNote, TableIds = tableIds
+        });
+        await transaction.CommitAsync();
+
+        return Ok(new
+        {
+            reservation.Id, reservation.GuestName, reservation.Phone, reservation.Email,
+            reservation.GuestCount, reservation.Area, reservation.ReservedDate,
+            reservation.ReservedTime, reservation.Notes, reservation.InternalNote,
+            TableIds = tableIds
         });
     }
 
