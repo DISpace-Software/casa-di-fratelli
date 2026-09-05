@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using CasaDiFratelli.Api.Data;
 
 #nullable disable
 
 namespace CasaDiFratelli.Api.Migrations
 {
+    [DbContext(typeof(AppDbContext))]
     [Migration("20260905210000_AddPublicTableHolds")]
     public partial class AddPublicTableHolds : Migration
     {

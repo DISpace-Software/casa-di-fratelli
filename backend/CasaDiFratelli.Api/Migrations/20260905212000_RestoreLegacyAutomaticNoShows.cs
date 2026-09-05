@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using CasaDiFratelli.Api.Data;
 
 #nullable disable
 
 namespace CasaDiFratelli.Api.Migrations
 {
+    [DbContext(typeof(AppDbContext))]
     [Migration("20260905212000_RestoreLegacyAutomaticNoShows")]
     public partial class RestoreLegacyAutomaticNoShows : Migration
     {
@@ -13,29 +16,38 @@ namespace CasaDiFratelli.Api.Migrations
                 CREATE TEMP TABLE restored_legacy_no_shows ON COMMIT DROP AS
                 SELECT DISTINCT r."Id"
                 FROM "Reservations" r
-                JOIN "AuditLogs" no_show
-                  ON no_show."Entity" = 'Reservation'
-                 AND no_show."Action" = 'no-show'
-                 AND no_show."EntityId" = r."Id"::text
-                JOIN "AuditLogs" blacklist
-                  ON blacklist."Entity" = 'BlacklistEntry'
-                 AND blacklist."Action" = 'create'
-                 AND blacklist."CreatedAtUtc" BETWEEN no_show."CreatedAtUtc" - interval '5 minutes'
-                                                    AND no_show."CreatedAtUtc"
-                 AND blacklist."AdminUserId" IS NOT DISTINCT FROM no_show."AdminUserId"
                 WHERE NOT r."IsDeleted"
                   AND r."ReservedDate" <= CURRENT_DATE
                   AND NOT r."IsWalkIn"
                   AND NOT (r."CreatedByAdmin" AND (r."Phone" = 'admin' OR r."GuestName" = 'Admin block'))
                   AND r."IsNoShow"
                   AND r."Status" = 'Cancelled'
-                  AND lower(COALESCE(blacklist."AfterJson"::jsonb ->> 'Reason', '')) = 'no-show'
                   AND (
-                    (NULLIF(lower(trim(COALESCE(r."Email", ''))), '') IS NOT NULL
-                     AND lower(trim(COALESCE(blacklist."AfterJson"::jsonb ->> 'Email', ''))) = lower(trim(r."Email")))
-                    OR
-                    (NULLIF(lower(trim(COALESCE(r."Phone", ''))), '') IS NOT NULL
-                     AND lower(trim(COALESCE(blacklist."AfterJson"::jsonb ->> 'Phone', ''))) = lower(trim(r."Phone")))
+                    r."IsBlacklisted"
+                    OR EXISTS (
+                      SELECT 1
+                      FROM "AuditLogs" blacklist
+                      WHERE blacklist."Entity" = 'BlacklistEntry'
+                        AND blacklist."Action" = 'create'
+                        AND blacklist."CreatedAtUtc" < TIMESTAMPTZ '2026-09-05 19:36:03+00'
+                        AND lower(COALESCE(
+                          blacklist."AfterJson"::jsonb ->> 'Reason',
+                          blacklist."AfterJson"::jsonb ->> 'reason',
+                          '')) = 'no-show'
+                        AND (
+                          (NULLIF(lower(trim(COALESCE(r."Email", ''))), '') IS NOT NULL
+                           AND lower(trim(COALESCE(
+                             blacklist."AfterJson"::jsonb ->> 'Email',
+                             blacklist."AfterJson"::jsonb ->> 'email',
+                             ''))) = lower(trim(r."Email")))
+                          OR
+                          (NULLIF(regexp_replace(COALESCE(r."Phone", ''), '[^0-9]', '', 'g'), '') IS NOT NULL
+                           AND regexp_replace(COALESCE(
+                             blacklist."AfterJson"::jsonb ->> 'Phone',
+                             blacklist."AfterJson"::jsonb ->> 'phone',
+                             ''), '[^0-9]', '', 'g') = regexp_replace(r."Phone", '[^0-9]', '', 'g'))
+                        )
+                    )
                   );
 
                 UPDATE "Reservations" r

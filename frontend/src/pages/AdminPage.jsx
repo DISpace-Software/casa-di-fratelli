@@ -31,6 +31,7 @@ import {
   getMapModalPortalTarget,
   shouldUseNativeMapFullscreen,
 } from "../domain/adminMap/mapInteraction";
+import { daysUntilBirthday, getCustomerBirthDate, searchCustomers, sortCustomers } from "../domain/customers/customerDirectory";
 import { findPublicTableHold } from "../domain/reservations/publicTableHolds";
 import { getActiveLayoutTables } from "../domain/reservations/layoutTables";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
@@ -1869,6 +1870,8 @@ function ReservationOperationsMap({
   const [tableReservationDraft, setTableReservationDraft] = React.useState(null);
   const [reservationFormBusy, setReservationFormBusy] = React.useState(false);
   const [reservationFormError, setReservationFormError] = React.useState("");
+  const reservationFormRef = React.useRef(null);
+  const isReservationFormOpen = Boolean(tableReservationDraft);
   const consumptionPanelRef = React.useRef(null);
   const [now, setNow] = React.useState(() => new Date());
   const todayDate = formatLocalDate(now);
@@ -2261,6 +2264,10 @@ function ReservationOperationsMap({
     setReservationFormError("");
     const nextTime = getNextAdminReservationTime(new Date());
     setSelectedReservationId(null);
+    setSelectedTableId(null);
+    setShowConsumption(false);
+    setMoveReservationId(null);
+    setWalkInDraft(null);
     setTableReservationDraft({
       guestName: "",
       phone: "",
@@ -2276,6 +2283,11 @@ function ReservationOperationsMap({
 
   function openEditReservationForm(reservation) {
     onAreaChange(reservation.area);
+    setSelectedReservationId(null);
+    setSelectedTableId(null);
+    setShowConsumption(false);
+    setMoveReservationId(null);
+    setWalkInDraft(null);
     setReservationFormError("");
     setTableReservationDraft({
       id: reservation.id,
@@ -2341,6 +2353,21 @@ function ReservationOperationsMap({
       setReservationFormBusy(false);
     }
   }
+
+  React.useEffect(() => {
+    if (!isReservationFormOpen) return undefined;
+
+    const previouslyFocused = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    const ownsScrollLock = previousOverflow !== "hidden";
+    if (ownsScrollLock) document.body.style.overflow = "hidden";
+    reservationFormRef.current?.querySelector("input")?.focus({ preventScroll: true });
+
+    return () => {
+      if (ownsScrollLock) document.body.style.overflow = previousOverflow;
+      if (previouslyFocused?.isConnected) previouslyFocused.focus?.({ preventScroll: true });
+    };
+  }, [isReservationFormOpen]);
 
   React.useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60000);
@@ -2417,16 +2444,42 @@ function ReservationOperationsMap({
   }
 
   function renderFloatingTableReservationForm() {
-    if (!tableReservationDraft || tableReservationDraft.area !== selectedArea) return null;
+    if (!tableReservationDraft || typeof document === "undefined") return null;
 
-    return (
-      <div className="absolute inset-3 z-[95] flex items-center justify-center bg-black/35 p-2 backdrop-blur-[2px] sm:inset-5 sm:p-4">
+    return createPortal((
+      <div
+        data-map-keep-open="true"
+        className="fixed inset-0 z-[10000] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/65 p-3 backdrop-blur-[2px] sm:p-5"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!reservationFormBusy) setTableReservationDraft(null);
+          }
+          if (event.key !== "Tab") return;
+          const controls = Array.from(reservationFormRef.current?.querySelectorAll(
+            'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]'
+          ) || []);
+          const first = controls[0];
+          const last = controls[controls.length - 1];
+          if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last?.focus();
+          } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first?.focus();
+          }
+        }}
+      >
         <form
+          ref={reservationFormRef}
           onSubmit={submitTableReservation}
           role="dialog"
           aria-modal="true"
           aria-label={adminLocalText(language, "Резервация", "Reservation", "Резервация")}
-          className="max-h-full w-full max-w-[440px] overflow-y-auto rounded-[24px] border border-[#f2d39a]/22 bg-[#15110e]/96 p-4 text-left shadow-[0_28px_90px_rgba(0,0,0,0.72)] sm:p-5"
+          className="max-h-[calc(100dvh-2.5rem)] w-full max-w-[440px] overflow-y-auto overscroll-contain rounded-[24px] border border-[#f2d39a]/22 bg-[#15110e]/96 p-4 text-left shadow-[0_28px_90px_rgba(0,0,0,0.72)] sm:p-5"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -2538,7 +2591,7 @@ function ReservationOperationsMap({
           </div>
         </form>
       </div>
-    );
+    ), getMapModalPortalTarget(document));
   }
 
   const MapViewport = mapViewMode === "section" ? SectionMapViewport : UnifiedMapViewport;
@@ -5722,6 +5775,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [customersMode, setCustomersMode] = React.useState("customers");
   const [customerPeriod, setCustomerPeriod] = React.useState("all");
   const [customerSort, setCustomerSort] = React.useState("visits");
+  const [customerQuery, setCustomerQuery] = React.useState("");
   const [showManualCustomerForm, setShowManualCustomerForm] = React.useState(false);
   const [showCreateReservation, setShowCreateReservation] = React.useState(false);
   const [menuForm, setMenuForm] = React.useState(emptyMenuItem);
@@ -7900,6 +7954,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     acc[key] = {
       key,
       profileId: profile.id ?? profile.Id,
+      birthDate: getCustomerBirthDate(profile),
       guestName: profile.guestName ?? profile.GuestName ?? "—",
       phone,
       email,
@@ -8022,28 +8077,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     })
     .filter((customer) => customer.periodCount > 0);
 
-  const visibleCustomersForPeriod = customersMode === "website"
-    ? customersForPeriod.filter((customer) => Boolean(String(customer.email || "").trim()) && !customer.isManualProfile)
-    : customersForPeriod;
-
-  const sortedCustomers = [...visibleCustomersForPeriod].sort((first, second) => {
-    if (customerSort === "new") {
-      return new Date(second.firstReservation) - new Date(first.firstReservation);
-    }
-
-    if (customerSort === "recent") {
-      return new Date(second.lastReservation) - new Date(first.lastReservation);
-    }
-
-    if (customerSort === "name") {
-      return first.guestName.localeCompare(
-        second.guestName,
-        adminLanguage === "ru" ? "ru" : adminLanguage === "bg" ? "bg" : "en"
-      );
-    }
-
-    return second.periodCount - first.periodCount || second.count - first.count;
-  });
+  const birthdayCustomers = customers.filter((customer) => getCustomerBirthDate(customer));
+  const directoryCustomers = customersMode === "birthdays"
+    ? birthdayCustomers.map((customer) => ({ ...customer, periodCount: customer.count, periodReservations: customer.reservations }))
+    : customersMode === "website"
+      ? customersForPeriod.filter((customer) => Boolean(String(customer.email || "").trim()) && !customer.isManualProfile)
+      : customersForPeriod;
+  const visibleCustomersForPeriod = searchCustomers(directoryCustomers, customerQuery);
+  const customerToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Sofia", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const sortedCustomers = sortCustomers(visibleCustomersForPeriod, customerSort, adminLanguage, customerToday);
+  const searchedBlacklist = searchCustomers(blacklist, customerQuery);
 
   const visibleNewCustomersCount = visibleCustomersForPeriod.filter((customer) =>
     isInCustomerPeriod(customer.firstReservation)
@@ -11697,14 +11740,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 subtitle={
                   adminLocalText(
                     adminLanguage,
-                    "Рейтинг по посещения, детайли при отваряне и blacklist в една секция.",
-                    "Visit ranking, expandable details, and blacklist in one section.",
-                    "Рейтинг по посещениям, детали и blacklist в одном разделе."
+                    "Контакти, посещения и рождени дни — всичко за Вашите гости.",
+                    "Contacts, visits and birthdays — everything about your guests.",
+                    "Контакты, посещения и дни рождения ваших гостей."
                   )
                 }
                 right={
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    {customersMode === "customers" && (
+                    {customersMode !== "blacklist" && (
                       <button
                         type="button"
                         onClick={() => setShowManualCustomerForm((value) => !value)}
@@ -11715,16 +11758,22 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           : adminLocalText(adminLanguage, "Добави клиент", "Add customer", "Добавить клиента")}
                       </button>
                     )}
-                    <div className="flex rounded-full border border-white/10 bg-black/20 p-1">
+                    <div className="grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-black/20 p-1 sm:grid-cols-4" role="group" aria-label={adminLocalText(adminLanguage, "Групи клиенти", "Customer groups", "Группы клиентов")}>
                       {[
                         ["customers", adminLocalText(adminLanguage, "Клиенти", "Customers", "Клиенты")],
                         ["website", adminLocalText(adminLanguage, "От сайта", "From website", "С сайта")],
+                        ["birthdays", adminLocalText(adminLanguage, "Рождени дати", "Birthdays", "Дни рождения")],
                         ["blacklist", "Blacklist"],
                       ].map(([key, label]) => (
                         <button
                           key={key}
                           type="button"
-                          onClick={() => setCustomersMode(key)}
+                          aria-pressed={customersMode === key}
+                          onClick={() => {
+                            setCustomersMode(key);
+                            setCustomerSort(key === "birthdays" ? "birthday" : "visits");
+                            setExpandedCustomerKey(null);
+                          }}
                           className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                             customersMode === key ? "luxury-button" : "text-white/70 hover:text-white"
                           }`}
@@ -11736,6 +11785,20 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   </div>
                 }
               >
+                <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/20 p-4 sm:flex-row sm:items-center">
+                  <label className="min-w-0 flex-1 text-xs font-semibold text-white/60">
+                    {adminLocalText(adminLanguage, "Търсене на клиент", "Find a customer", "Найти клиента")}
+                    <input type="search" value={customerQuery} onChange={(event) => setCustomerQuery(event.target.value)} placeholder={adminLocalText(adminLanguage, "Име, телефон или имейл…", "Name, phone or email…", "Имя, телефон или email…")} className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/60" />
+                  </label>
+                  <p className="shrink-0 text-sm text-[#f2d39a]" role="status">
+                    {customersMode === "blacklist" ? searchedBlacklist.length : sortedCustomers.length} {adminLocalText(adminLanguage, "резултата", "results", "результатов")}
+                  </p>
+                </div>
+                {customersMode === "birthdays" && (
+                  <div className="mb-5 rounded-2xl border border-[#f2d39a]/25 bg-[#c9a56a]/10 p-4 text-sm leading-6 text-[#fff4df]">
+                    {adminLocalText(adminLanguage, "Само гости с попълнена рождена дата. Подредете по предстоящ празник или намерете конкретен контакт.", "Guests with a saved birthday. Sort by their next birthday or find a specific contact.", "Только гости с заполненной датой рождения. Сортируйте по ближайшему празднику или найдите нужный контакт.")}
+                  </div>
+                )}
                 {customersMode === "blacklist" ? (
                   <div className="space-y-5">
                     <div className="flex justify-end">
@@ -11814,14 +11877,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       </form>
                     ) : (
                       <div className="space-y-4">
-                        {blacklist.length === 0 && (
+                        {searchedBlacklist.length === 0 && (
                           <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-stone-400">
                             {adminLocalText(adminLanguage, "Blacklist е празен.", "Blacklist is empty.", "Blacklist пуст.")}
                           </div>
                         )}
 
                         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                          {blacklist.map((item) => (
+                          {searchedBlacklist.map((item) => (
                             <div key={item.id || item.Id} className="rounded-3xl border border-red-300/20 bg-red-500/10 p-5">
                               <div className="font-semibold text-[#fff4df]">{item.guestName || item.GuestName || "—"}</div>
                               <div className="mt-2 text-sm text-red-100/80">{item.phone || item.Phone}</div>
@@ -11947,7 +12010,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     </div>
 
                     <div className="grid gap-3 xl:grid-cols-2">
-                      <div className="rounded-3xl border border-white/10 bg-black/20 p-4">
+                      <div className={`rounded-3xl border border-white/10 bg-black/20 p-4 ${customersMode === "birthdays" ? "hidden" : ""}`}>
                         <div className="mb-3 text-xs uppercase tracking-[0.22em] text-stone-500">
                           {adminLocalText(adminLanguage, "Период", "Period", "Период")}
                         </div>
@@ -11978,6 +12041,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {[
+                            ...(customersMode === "birthdays" ? [["birthday", adminLocalText(adminLanguage, "Предстоящи", "Upcoming birthdays", "Ближайшие")]] : []),
                             ["visits", adminLocalText(adminLanguage, "Най-чести", "Top visits", "Чаще всего")],
                             ["new", adminLocalText(adminLanguage, "Най-нови", "Newest", "Новые")],
                             ["recent", adminLocalText(adminLanguage, "Последно дошли", "Recent", "Недавние")],
@@ -11986,6 +12050,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             <button
                               key={key}
                               type="button"
+                              aria-pressed={customerSort === key}
                               onClick={() => setCustomerSort(key)}
                               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                                 customerSort === key ? "border border-[#f2d39a]/35 bg-[#c9a56a]/18 text-[#f2d39a]" : "border border-white/10 bg-white/[0.03] text-white/65"
@@ -12000,7 +12065,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
                     {sortedCustomers.length === 0 && (
                       <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-stone-400">
-                        {adminLocalText(adminLanguage, "Няма клиенти за избрания период.", "No customers for the selected period.", "Нет клиентов за выбранный период.")}
+                        {adminLocalText(adminLanguage, "Няма клиенти с тези филтри. Променете търсенето или периода.", "No matching customers. Change your search or period.", "Нет подходящих клиентов. Измените поиск или период.")}
                       </div>
                     )}
 
@@ -12013,8 +12078,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <div key={c.key} className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 md:p-5">
                           <button
                             type="button"
+                            aria-expanded={expanded}
                             onClick={() => setExpandedCustomerKey(expanded ? null : c.key)}
-                            className="flex w-full items-center justify-between gap-4 text-left"
+                            className="flex w-full flex-wrap items-center justify-between gap-3 text-left"
                           >
                             <div className="flex min-w-0 items-center gap-3">
                               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[#c9a56a]/25 bg-[#c9a56a]/12 text-sm font-bold text-[#f2d39a]">
@@ -12049,6 +12115,20 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             </div>
                           </button>
 
+                          {getCustomerBirthDate(c) && (
+                            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                              <span className="rounded-full border border-[#f2d39a]/25 bg-[#c9a56a]/10 px-3 py-1.5 text-[#f2d39a]">
+                                {adminLocalText(adminLanguage, "Рожден ден", "Birthday", "День рождения")}: {formatBirthday(c.birthDate, adminLanguage)}
+                              </span>
+                              {customersMode === "birthdays" && Number.isFinite(daysUntilBirthday(c.birthDate, customerToday)) && (
+                                <span className="text-xs text-white/60">
+                                  {daysUntilBirthday(c.birthDate, customerToday) === 0
+                                    ? adminLocalText(adminLanguage, "Днес!", "Today!", "Сегодня!")
+                                    : `${daysUntilBirthday(c.birthDate, customerToday)} ${adminLocalText(adminLanguage, "дни до празника", "days to go", "дней до праздника")}`}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           {expanded && (
                             <div className="mt-5 grid gap-4 border-t border-white/10 pt-5 lg:grid-cols-[0.8fr_1.2fr]">
                               <div className="space-y-3 text-sm text-stone-300">
