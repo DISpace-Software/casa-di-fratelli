@@ -1804,7 +1804,7 @@ function SectionMapViewport({
           activeZone === "garden"
             ? "bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] md:min-h-[820px]"
             : activeZone === "openTerrace"
-            ? "bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))]"
+            ? "min-h-[720px] bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))] sm:min-h-[760px]"
             : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[850px]"
         }`}
         onClick={(event) => {
@@ -3047,7 +3047,7 @@ function ReservationOperationsMap({
                 {isSelectedTable && (
                   <div
                     data-map-keep-open="true"
-                    className={`absolute z-[240] max-h-[min(520px,calc(100vh-180px))] w-[230px] overflow-y-auto rounded-2xl border border-[#f2d39a]/18 bg-[#15110e]/95 p-3 text-left shadow-[0_22px_70px_rgba(0,0,0,0.7)] backdrop-blur sm:w-[280px] ${
+                    className={`absolute z-[240] max-h-[min(520px,calc(100svh-7rem))] w-[230px] overscroll-contain overflow-y-auto rounded-2xl border border-[#f2d39a]/18 bg-[#15110e]/95 p-3 text-left shadow-[0_22px_70px_rgba(0,0,0,0.7)] backdrop-blur sm:w-[280px] ${
                       placeTablePopoverAbove ? "bottom-10 sm:bottom-12 lg:bottom-16" : "top-10 sm:top-12 lg:top-16"
                     } ${
                       table.x < 28
