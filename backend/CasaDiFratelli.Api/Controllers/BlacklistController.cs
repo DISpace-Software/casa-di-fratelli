@@ -10,7 +10,7 @@ namespace CasaDiFratelli.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[AdminAuthorize]
+[AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
 public class BlacklistController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -145,6 +145,11 @@ public class BlacklistController : ControllerBase
             AddParameter(command, "@notes", entry.Notes);
 
             entry.Id = Convert.ToInt32(await command.ExecuteScalarAsync());
+            await _db.Reservations
+                .Where(reservation =>
+                    (!string.IsNullOrWhiteSpace(entry.Email) && reservation.Email == entry.Email) ||
+                    (!string.IsNullOrWhiteSpace(entry.Phone) && reservation.Phone == entry.Phone))
+                .ExecuteUpdateAsync(setters => setters.SetProperty(reservation => reservation.IsBlacklisted, true));
             await _audit.RecordAsync(HttpContext, "create", "BlacklistEntry", entry.Id.ToString(), after: entry);
 
             return Ok(new
@@ -170,6 +175,9 @@ public class BlacklistController : ControllerBase
         try
         {
             await EnsureBlacklistStorageAsync();
+            var entry = await _db.BlacklistEntries.AsNoTracking().FirstOrDefaultAsync(item => item.Id == id);
+            if (entry == null)
+                return NotFound();
 
             await using var command = _db.Database.GetDbConnection().CreateCommand();
             command.CommandText = """
@@ -179,10 +187,21 @@ public class BlacklistController : ControllerBase
             AddParameter(command, "@id", id);
 
             var affectedRows = await command.ExecuteNonQueryAsync();
-            if (affectedRows == 0)
-                return NotFound();
+            if (affectedRows == 0) return NotFound();
 
-            await _audit.RecordAsync(HttpContext, "delete", "BlacklistEntry", id.ToString());
+            var stillBlacklisted = await _db.BlacklistEntries.AnyAsync(item =>
+                (!string.IsNullOrWhiteSpace(entry.Email) && item.Email == entry.Email) ||
+                (!string.IsNullOrWhiteSpace(entry.Phone) && item.Phone == entry.Phone));
+            if (!stillBlacklisted)
+            {
+                await _db.Reservations
+                    .Where(reservation =>
+                        (!string.IsNullOrWhiteSpace(entry.Email) && reservation.Email == entry.Email) ||
+                        (!string.IsNullOrWhiteSpace(entry.Phone) && reservation.Phone == entry.Phone))
+                    .ExecuteUpdateAsync(setters => setters.SetProperty(reservation => reservation.IsBlacklisted, false));
+            }
+
+            await _audit.RecordAsync(HttpContext, "delete", "BlacklistEntry", id.ToString(), before: entry);
 
             return Ok();
         }

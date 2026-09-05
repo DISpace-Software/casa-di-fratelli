@@ -471,7 +471,7 @@ public class ReservationsController : ControllerBase
     {
         var today = DateOnly.FromDateTime(GetRestaurantNow());
         var lastPublicReservationDate = today.AddDays(PublicMaxReservationDaysAhead);
-        var blocked = await _db.Reservations
+        var reservations = await _db.Reservations
             .AsNoTracking()
             .Where(x =>
                 x.Status == ReservationStatusApproved &&
@@ -484,6 +484,19 @@ public class ReservationsController : ControllerBase
                 TableIds = x.Tables.Select(t => t.TableCode).ToList()
             })
             .ToListAsync();
+
+        var holds = await _db.PublicTableHolds
+            .AsNoTracking()
+            .Where(x => x.ReservedDate >= today && x.ReservedDate <= lastPublicReservationDate)
+            .ToListAsync();
+
+        var blocked = reservations.Cast<object>().Concat(holds.Select(hold => (object)new
+        {
+            hold.ReservedDate,
+            ReservedTime = "00:00 - 23:59",
+            TableIds = PublicTableHoldsController.DeserializeTableIds(hold.TableIdsJson),
+            IsPublicHold = true
+        }));
 
         return Ok(blocked);
     }
@@ -563,6 +576,20 @@ public class ReservationsController : ControllerBase
 
         if (!request.CreatedByAdmin)
         {
+            var holdsForDate = await _db.PublicTableHolds
+                .AsNoTracking()
+                .Where(x => x.ReservedDate == request.ReservedDate)
+                .Select(x => x.TableIdsJson)
+                .ToListAsync();
+            var heldTableIds = holdsForDate
+                .SelectMany(PublicTableHoldsController.DeserializeTableIds)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (tableIds.Any(heldTableIds.Contains))
+                return Conflict(new { message = "The selected table is reserved for restaurant use on this date. Please choose another table." });
+        }
+
+        if (!request.CreatedByAdmin)
+        {
             var sameDayContactReservations = await _db.Reservations
                 .Where(x => x.ReservedDate == request.ReservedDate)
                 .Select(x => new Reservation
@@ -624,7 +651,7 @@ public class ReservationsController : ControllerBase
             CreatedByAdmin = request.CreatedByAdmin,
             CreatedByAdminUserId = request.CreatedByAdmin ? AdminAuthService.Current(HttpContext)?.Id : null,
             CreatedByAdminName = request.CreatedByAdmin ? AdminAuthService.Current(HttpContext)?.Name : null,
-            InternalNote = request.InternalNote,
+            InternalNote = request.CreatedByAdmin ? request.InternalNote : null,
             EmailConfirmationTokenHash = confirmationToken == null ? null : HashToken(confirmationToken),
             EmailConfirmationExpiresAtUtc = confirmationToken == null ? null : DateTime.UtcNow.AddDays(2),
             EmailConfirmedAtUtc = requiresEmailConfirmation ? null : DateTime.UtcNow,

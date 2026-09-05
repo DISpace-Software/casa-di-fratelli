@@ -10,7 +10,7 @@ namespace CasaDiFratelli.Api.Controllers;
 
 [ApiController]
 [Route("api/inventory")]
-[AdminAuthorize]
+[AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
 [ProOnly]
 public class InventoryController : ControllerBase
 {
@@ -273,7 +273,7 @@ public class InventoryController : ControllerBase
 
 [ApiController]
 [Route("api/recipes")]
-[AdminAuthorize]
+[AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
 [ProOnly]
 public class RecipesController : ControllerBase
 {
@@ -447,7 +447,7 @@ public class RecipesController : ControllerBase
 
 [ApiController]
 [Route("api/inventory/audits")]
-[AdminAuthorize]
+[AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
 [ProOnly]
 public class InventoryAuditsController : ControllerBase
 {

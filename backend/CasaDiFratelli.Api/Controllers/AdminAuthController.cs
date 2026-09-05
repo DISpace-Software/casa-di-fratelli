@@ -229,7 +229,7 @@ public class AdminAuthController : ControllerBase
     }
 
     [HttpGet("users")]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Users()
     {
         var users = await _db.AdminUsers
@@ -394,7 +394,7 @@ public class AdminAuthController : ControllerBase
     }
 
     [HttpGet("audit")]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Audit()
     {
         var logs = await _db.AuditLogs

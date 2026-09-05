@@ -78,7 +78,7 @@ public class EventsController : ControllerBase
     }
 
     [HttpGet("admin")]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> GetAdmin()
     {
         var items = await _db.RestaurantEvents
@@ -90,7 +90,7 @@ public class EventsController : ControllerBase
     }
 
     [HttpPost]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Create([FromBody] RestaurantEventRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.TitleBg))
@@ -125,7 +125,7 @@ public class EventsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Update(int id, [FromBody] RestaurantEventRequest request)
     {
         var item = await _db.RestaurantEvents.FirstOrDefaultAsync(x => x.Id == id);
@@ -160,7 +160,7 @@ public class EventsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Delete(int id)
     {
         var item = await _db.RestaurantEvents.FirstOrDefaultAsync(x => x.Id == id);

@@ -9,7 +9,7 @@ namespace CasaDiFratelli.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[AdminAuthorize]
+[AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
 public class CustomersController : ControllerBase
 {
     private readonly AppDbContext _db;

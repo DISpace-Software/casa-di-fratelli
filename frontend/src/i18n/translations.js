@@ -2,7 +2,7 @@ const translations = {
   bg: {
     latePolicyTitle: "Важно",
     latePolicyText:
-    "При закъснение над 15 минути резервацията автоматично отпада и ресторантът не е длъжен да се свързва с Вас.",
+    "При закъснение над 15 минути ресторантът може да освободи масата ръчно и не е длъжен да се свързва с Вас.",
     groupBookingTitle: "Групова резервация",
     selectedTables: "Избрани маси",
     submitGroup: "Резервирай избраните маси",
@@ -110,7 +110,7 @@ const translations = {
   en: {
     latePolicyTitle: "Important",
     latePolicyText:
-    "If you are more than 15 minutes late, the reservation is automatically released and the restaurant is not obliged to contact you.",
+    "If you are more than 15 minutes late, the restaurant may release the table manually and is not obliged to contact you.",
     groupBookingTitle: "Group reservation",
     selectedTables: "Selected tables",
     submitGroup: "Reserve selected tables",
@@ -220,7 +220,7 @@ const translations = {
   ru: {
     latePolicyTitle: "Важно",
     latePolicyText:
-      "При опоздании более чем на 15 минут резервация автоматически снимается, и ресторан не обязан дополнительно связываться с Вами.",
+      "При опоздании более чем на 15 минут ресторан может вручную освободить стол и не обязан дополнительно связываться с Вами.",
     groupBookingTitle: "Групповая резервация",
     selectedTables: "Выбранные столы",
     submitGroup: "Забронировать выбранные столы",

@@ -23,7 +23,7 @@ public class RestaurantClosureController : ControllerBase
     }
 
     [HttpPut]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Save([FromBody] RestaurantClosureSettings request)
     {
         if (request.StartDate == default || request.EndDate == default)

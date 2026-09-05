@@ -33,7 +33,7 @@ public class FeedbackController : ControllerBase
     }
 
     [HttpGet]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> GetAll([FromQuery] string? search = null)
     {
         var query = _db.CustomerFeedbacks.AsQueryable();
@@ -152,7 +152,7 @@ public class FeedbackController : ControllerBase
     }
 
     [HttpPatch("{id:int}/discount-used")]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> MarkDiscountUsed(int id)
     {
         var feedback = await _db.CustomerFeedbacks.FirstOrDefaultAsync(x => x.Id == id);
@@ -169,7 +169,7 @@ public class FeedbackController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Delete(int id)
     {
         var feedback = await _db.CustomerFeedbacks.FirstOrDefaultAsync(x => x.Id == id);

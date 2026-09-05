@@ -27,6 +27,7 @@ import {
 import {
   getUnavailableSelectedTableIds,
   getUnavailableTableIdsForSlot,
+  isBlockedSlotForSelection,
 } from "../reservations/availability.js";
 
 const byId = (tables, id) => tables.find((table) => table.id === id);
@@ -147,4 +148,15 @@ test("availability excludes only confirmed reservations within the 3 hour buffer
   assert.equal(getUnavailableTableIdsForSlot(reservations, "2026-05-14", "19:30", 1).has("20"), false);
   assert.equal(getUnavailableTableIdsForSlot(reservations, "", "19:30").size, 0);
   assert.equal(getUnavailableTableIdsForSlot(reservations, "2026-05-14", "").size, 0);
+});
+
+test("public table holds block the whole selected date without affecting other dates", () => {
+  const hold = { reservedDate: "2026-09-06", reservedTime: "00:00 - 23:59", isPublicHold: true };
+  assert.equal(isBlockedSlotForSelection(hold, "2026-09-06", "10:00"), true);
+  assert.equal(isBlockedSlotForSelection(hold, "2026-09-06", "21:00"), true);
+  assert.equal(isBlockedSlotForSelection(hold, "2026-09-07", "10:00"), false);
+  assert.equal(
+    isBlockedSlotForSelection({ reservedDate: "2026-09-06", reservedTime: "18:00" }, "2026-09-06", "21:00"),
+    false
+  );
 });

@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<DiningOrder> DiningOrders => Set<DiningOrder>();
     public DbSet<DiningOrderItem> DiningOrderItems => Set<DiningOrderItem>();
     public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<PublicTableHold> PublicTableHolds => Set<PublicTableHold>();
     public DbSet<RestaurantEvent> RestaurantEvents => Set<RestaurantEvent>();
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
     public DbSet<MenuItemRecipeIngredient> MenuItemRecipeIngredients => Set<MenuItemRecipeIngredient>();
@@ -93,6 +94,14 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Key).IsRequired().HasMaxLength(80);
             entity.Property(x => x.Value).IsRequired();
             entity.HasIndex(x => x.Key).IsUnique();
+        });
+
+        modelBuilder.Entity<PublicTableHold>(entity =>
+        {
+            entity.Property(x => x.TableIdsJson).IsRequired();
+            entity.Property(x => x.Note).HasMaxLength(500);
+            entity.Property(x => x.CreatedByAdminName).HasMaxLength(120);
+            entity.HasIndex(x => x.ReservedDate);
         });
 
         modelBuilder.Entity<MarketingMessageLog>(entity =>

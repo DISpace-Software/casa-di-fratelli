@@ -7,7 +7,6 @@ import {
   indoorGroups,
   openTerraceGroups,
   adminReservationTimes,
-  isRetiredTableId,
   tableIdsByArea,
   tablesByArea,
 } from "../domain/reservations/tableConfig";
@@ -31,6 +30,7 @@ import {
   getMapModalPortalTarget,
   shouldUseNativeMapFullscreen,
 } from "../domain/adminMap/mapInteraction";
+import { getActiveLayoutTables } from "../domain/reservations/layoutTables";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
 
 const ADMIN_MAP_VIEW_STORAGE_KEY = "casa-admin-map-view-mode";
@@ -1840,6 +1840,9 @@ function ReservationOperationsMap({
   onCreateReservation,
   onClaimReservation,
   onRelease,
+  publicTableHolds = [],
+  onBlockPublicTables,
+  onRemovePublicTableHold,
   requireTableClaim = false,
   diningEnabled = true,
   ordersOnly = false,
@@ -1866,23 +1869,11 @@ function ReservationOperationsMap({
     ["garden", text.garden],
     ["openTerrace", text.openTerrace],
   ];
-  const getAreaTableCount = (area) => {
-    const savedCount = layout.filter((item) => item.area === area && item.isActive).length;
-    return savedCount || (tablesByArea[area] || []).length;
-  };
+  const getAreaTableCount = (area) =>
+    getActiveLayoutTables(layout, area, tablesByArea[area] || []).length;
   const getActiveTablesForArea = React.useCallback(
-    (area) => {
-      const savedTables = layout
-        .filter((item) => item.area === area && item.isActive && !isRetiredTableId(item.id))
-        .map(normalizeLayoutItem)
-        .map((table) => mapViewMode === "section" ? table : orientTableForMap(table));
-
-      return savedTables.length
-        ? savedTables
-        : (tablesByArea[area] || [])
-            .map((table) => normalizeLayoutItem({ ...table, area, isActive: true }))
-            .map((table) => mapViewMode === "section" ? table : orientTableForMap(table));
-    },
+    (area) => getActiveLayoutTables(layout, area, tablesByArea[area] || [])
+      .map((table) => mapViewMode === "section" ? table : orientTableForMap(table)),
     [layout, mapViewMode]
   );
   const areaTables = React.useMemo(
@@ -2154,6 +2145,14 @@ function ReservationOperationsMap({
     [getReservationBounds, moveDraft.area, moveDraft.tableIds, moveReservationId]
   );
   const canSaveMove = moveDraft.tableIds.length > 0;
+  const selectedPublicTableHold = selectedReservation
+    ? publicTableHolds.find((hold) => {
+        const holdDate = hold.reservedDate || hold.ReservedDate;
+        const holdTableIds = hold.tableIds || hold.TableIds || [];
+        return holdDate === selectedReservation.reservedDate &&
+          selectedReservation.tableIds.every((tableId) => holdTableIds.includes(tableId));
+      })
+    : null;
 
   function toggleReservationSelection(reservationId) {
     setSelectedReservationId((current) => (current === reservationId ? null : reservationId));
@@ -3179,6 +3178,24 @@ function ReservationOperationsMap({
                 {onOpenReservation && (
                   <button type="button" onClick={() => onOpenReservation(selectedReservation)} className="ghost-button rounded-xl px-4 py-3 text-sm font-semibold">
                     {text.openReservation}
+                  </button>
+                )}
+                {!ordersOnly && onBlockPublicTables && !selectedPublicTableHold && (
+                  <button
+                    type="button"
+                    onClick={() => onBlockPublicTables(selectedReservation)}
+                    className="rounded-xl border border-amber-300/30 bg-amber-400/15 px-4 py-3 text-sm font-semibold text-amber-100"
+                  >
+                    {adminLocalText(language, "Блокирай маса за деня", "Block table for the day", "Заблокировать стол на день")}
+                  </button>
+                )}
+                {!ordersOnly && selectedPublicTableHold && onRemovePublicTableHold && (
+                  <button
+                    type="button"
+                    onClick={() => onRemovePublicTableHold(selectedPublicTableHold)}
+                    className="rounded-xl border border-amber-300/30 bg-amber-400/15 px-4 py-3 text-sm font-semibold text-amber-100"
+                  >
+                    {adminLocalText(language, "Премахни блокирането", "Remove public block", "Снять блокировку")}
                   </button>
                 )}
                 {!ordersOnly && onCancel && !selectedReservation.isArrived && (
@@ -5568,6 +5585,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [menuItems, setMenuItems] = React.useState([]);
   const [eventItems, setEventItems] = React.useState([]);
   const [blacklist, setBlacklist] = React.useState([]);
+  const [publicTableHolds, setPublicTableHolds] = React.useState([]);
   const [customerProfiles, setCustomerProfiles] = React.useState([]);
   const [adminUsers, setAdminUsers] = React.useState([]);
   const [auditLogs, setAuditLogs] = React.useState([]);
@@ -5678,14 +5696,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     const next = {};
 
     areas.forEach((area) => {
-      const savedTables = tableLayout
-        .filter((item) => item.area === area && item.isActive)
-        .map(normalizeLayoutItem)
+      next[area] = getActiveLayoutTables(tableLayout, area, tablesByArea[area] || [])
         .sort((first, second) => first.id.localeCompare(second.id, undefined, { numeric: true }));
-
-      next[area] = savedTables.length
-        ? savedTables
-        : (tablesByArea[area] || []).map((table) => normalizeLayoutItem({ ...table, area, isActive: true }));
     });
 
     next.all = areas.flatMap((area) => next[area]);
@@ -5872,6 +5884,20 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
   }, [withAdminToken]);
 
+  const loadPublicTableHolds = React.useCallback(async () => {
+    try {
+      const data = await fetchJsonOrEmpty(
+        `${API_BASE_URL}/api/reservations/public-table-holds`,
+        [],
+        withAdminToken()
+      );
+      setPublicTableHolds(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to load public table holds", error);
+      setAdminError(error?.message || "Failed to load blocked public tables.");
+    }
+  }, [withAdminToken]);
+
   const loadCustomerProfiles = React.useCallback(async () => {
     try {
       const data = await fetchJsonOrEmpty(`${API_BASE_URL}/api/customers`, [], withAdminToken());
@@ -5938,6 +5964,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
       loadReservations();
       loadBlacklist();
+      loadPublicTableHolds();
       loadCustomerProfiles();
       if (isProVersion) {
         loadDiningOrders();
@@ -5954,7 +5981,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return () => {
       cancelled = true;
     };
-  }, [canViewFeedback, isProductionRole, isProVersion, isWaiterRole, loadBlacklist, loadCustomerProfiles, loadDiningOrders, loadEvents, loadFeedbackEntries, loadMenuItems, loadProductTier, loadReservations, loadTableLayout]);
+  }, [canViewFeedback, isProductionRole, isProVersion, isWaiterRole, loadBlacklist, loadCustomerProfiles, loadDiningOrders, loadEvents, loadFeedbackEntries, loadMenuItems, loadProductTier, loadPublicTableHolds, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     setAdminError("");
@@ -6422,21 +6449,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     setAdminNotice("");
     setAdminError("");
 
-    const blacklistPayload = {
-      guestName: reservation.guestName,
-      phone: reservation.phone,
-      email: reservation.email,
-      reason: "No-show",
-      notes: reservation.internalNote || reservation.notes || "",
-    };
-    const isAlreadyBlacklisted = blacklistKeys.has(String(reservation.phone || "").trim().toLowerCase()) ||
-      blacklistKeys.has(String(reservation.email || "").trim().toLowerCase());
-
-    if (!isAlreadyBlacklisted) {
-      const saved = await saveBlacklistPayload(blacklistPayload);
-      if (!saved) return;
-    }
-
     const response = await adminFetch(`${API_BASE_URL}/api/reservations/${reservation.id}/no-show`, {
       method: "PATCH",
     });
@@ -6465,6 +6477,47 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     setAdminNotice(adminLanguage === "bg" ? "Масата е освободена." : "Table released.");
     await loadReservations();
+  }
+
+  async function blockReservationTablesFromPublic(reservation) {
+    setAdminNotice("");
+    setAdminError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/reservations/public-table-holds`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reservedDate: reservation.reservedDate,
+        tableIds: reservation.tableIds,
+        note: `Reserved for restaurant use from reservation #${reservation.id}`,
+      }),
+    });
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to block the table from public booking."));
+      return;
+    }
+    setAdminNotice(adminLocalText(
+      adminLanguage,
+      `Маса ${reservation.tableIds.join(", ")} е скрита от онлайн резервации за ${reservation.reservedDate}.`,
+      `Table ${reservation.tableIds.join(", ")} is hidden from online booking for ${reservation.reservedDate}.`,
+      `Стол ${reservation.tableIds.join(", ")} скрыт от онлайн-бронирования на ${reservation.reservedDate}.`
+    ));
+    await loadPublicTableHolds();
+  }
+
+  async function removePublicTableHold(hold) {
+    const id = hold.id || hold.Id;
+    if (!id) return;
+    setAdminNotice("");
+    setAdminError("");
+    const response = await adminFetch(`${API_BASE_URL}/api/reservations/public-table-holds/${id}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      setAdminError(await readErrorMessage(response, "Failed to remove the public table block."));
+      return;
+    }
+    setAdminNotice(adminLocalText(adminLanguage, "Блокирането е премахнато.", "Public block removed.", "Блокировка снята."));
+    await loadPublicTableHolds();
   }
 
   async function moveReservationFromMap(reservation, area, tableIds, guestCount) {
@@ -6736,7 +6789,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   }
 
   async function addToBlacklist(reservation) {
-    await markReservationNoShow(reservation);
+    await saveBlacklistPayload({
+      guestName: reservation.guestName,
+      phone: reservation.phone,
+      email: reservation.email,
+      reason: "Manual review",
+      notes: reservation.internalNote || reservation.notes || "",
+    });
   }
 
   async function addCustomerToBlacklist(customer) {
@@ -7771,7 +7830,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       acc[key].marketingConsent = acc[key].marketingConsent || r.marketingConsent;
       acc[key].isBlacklisted =
         acc[key].isBlacklisted ||
-        r.isBlacklisted ||
         blacklistKeys.has(String(r.phone || "").trim().toLowerCase()) ||
         blacklistKeys.has(String(r.email || "").trim().toLowerCase());
 
@@ -8143,6 +8201,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       await Promise.all([
         ...(isWaiterRole ? [loadMenuItems()] : [loadReservations({ silent }), ...(isProVersion ? [loadMenuItems()] : [])]),
         ...(isProVersion ? [loadDiningOrders()] : []),
+        ...(!isWaiterRole ? [loadPublicTableHolds()] : []),
         loadTableLayout(),
       ]);
       return;
@@ -8165,6 +8224,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     loadEvents,
     loadFeedbackEntries,
     loadMenuItems,
+    loadPublicTableHolds,
     loadReservations,
     loadTableLayout,
   ]);
@@ -8885,6 +8945,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 onCreateReservation={isWaiterRole ? null : saveAdminReservationPayload}
                 onClaimReservation={isWaiterRole ? claimReservationForConsumption : null}
                 onRelease={releaseReservationTable}
+                publicTableHolds={publicTableHolds}
+                onBlockPublicTables={isWaiterRole ? null : blockReservationTablesFromPublic}
+                onRemovePublicTableHold={isWaiterRole ? null : removePublicTableHold}
                 requireTableClaim={isWaiterRole}
                 diningEnabled={isProVersion}
                 ordersOnly={false}

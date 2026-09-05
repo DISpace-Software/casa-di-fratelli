@@ -35,10 +35,8 @@ builder.Services.AddScoped<InventoryRecipeSeedService>();
 builder.Services.AddScoped<MarketingCampaignService>();
 builder.Services.AddScoped<BackupExportService>();
 builder.Services.AddScoped<RestaurantClosureService>();
-builder.Services.AddScoped<AutomaticTableReleaseService>();
 builder.Services.AddHostedService<MarketingCampaignHostedService>();
 builder.Services.AddHostedService<BackupHostedService>();
-builder.Services.AddHostedService<AutomaticTableReleaseHostedService>();
 
 builder.Services.AddDbContext<AppDbContext>((provider, options) =>
     options.UseNpgsql(provider.GetRequiredService<TenantDatabaseConnectionResolver>().Resolve()));

@@ -5,7 +5,6 @@ import {
   defaultGardenTables,
   defaultIndoorTables,
   defaultOpenTerraceTables,
-  isRetiredTableId,
   reservationTimes,
 } from "../domain/reservations/tableConfig";
 import {
@@ -14,8 +13,9 @@ import {
   getTodayInputValue,
   isDateBeyondReservationWindow,
   isPastTimeForDate,
-  isWithinReservationBuffer,
 } from "../domain/reservations/dateTimeRules";
+import { getActiveLayoutTables } from "../domain/reservations/layoutTables";
+import { isBlockedSlotForSelection } from "../domain/reservations/availability";
 import { getPublicMapTablePoints } from "../domain/reservations/publicMapLayout";
 
 const birthdayDays = Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(2, "0"));
@@ -608,7 +608,6 @@ function BookingModal({
   isSubmitting,
   submitError,
   submitSuccess,
-  onOpenPrivacy,
 }) {
   const formRef = React.useRef(null);
   const storedGuest = React.useMemo(() => readStoredReservationGuest(), []);
@@ -855,13 +854,17 @@ function BookingModal({
                     "I agree that Casa di Fratelli may process my data for this reservation and I accept the ",
                     "Согласен, чтобы Casa di Fratelli обработал мои данные для резервации, и принимаю "
                   )}
-                  <button
-                    type="button"
-                    onClick={onOpenPrivacy}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="font-semibold text-[#f2d39a] underline underline-offset-4 transition hover:text-white"
                   >
                     {localText(language, "Политиката за поверителност", "Privacy Policy", "Политику конфиденциальности")}
-                  </button>
+                    <span className="sr-only">
+                      {localText(language, " (отваря се в нов раздел)", " (opens in a new tab)", " (откроется в новой вкладке)")}
+                    </span>
+                  </a>
                   .
                 </span>
               </label>
@@ -917,26 +920,7 @@ function BookingModal({
   );
 }
 
-function normalizeLayoutTables(items, area, fallback) {
-  if (!Array.isArray(items)) return fallback;
-
-  const normalized = items
-    .filter((item) => (item.area || item.Area) === area)
-    .map((item) => ({
-      id: String(item.id || item.Id || "").trim(),
-      x: Number(item.x ?? item.X ?? 50),
-      y: Number(item.y ?? item.Y ?? 50),
-      seats: Number(item.seats ?? item.Seats ?? 4),
-      special: Boolean(item.special ?? item.Special),
-      wide: Boolean(item.wide ?? item.Wide),
-      isActive: item.isActive ?? item.IsActive ?? true,
-    }))
-    .filter((item) => item.id && item.isActive && !isRetiredTableId(item.id));
-
-  return normalized.length ? normalized : fallback;
-}
-
-export default function ReservationPage({ t, language, setLanguage, onBack, onOpenPrivacy, onReservationComplete, theme, onToggleTheme }) {
+export default function ReservationPage({ t, language, setLanguage, onBack, onReservationComplete, theme, onToggleTheme }) {
   const today = React.useMemo(() => getTodayInputValue(), []);
   const tomorrow = React.useMemo(() => getDateInputValueAfterDays(1), []);
   const adminPhone = "088 821 8318";
@@ -1041,9 +1025,9 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
 
         const items = await response.json();
         setLayoutTables({
-          indoor: normalizeLayoutTables(items, "indoor", defaultIndoorTables),
-          garden: normalizeLayoutTables(items, "garden", defaultGardenTables),
-          openTerrace: normalizeLayoutTables(items, "openTerrace", defaultOpenTerraceTables),
+          indoor: getActiveLayoutTables(items, "indoor", defaultIndoorTables),
+          garden: getActiveLayoutTables(items, "garden", defaultGardenTables),
+          openTerrace: getActiveLayoutTables(items, "openTerrace", defaultOpenTerraceTables),
         });
       } catch (error) {
         console.warn("Using fallback table layout.", error);
@@ -1218,12 +1202,9 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
     return () => clearTimeout(scrollTimeout);
   }, [canShowSearchParams, guestCount, reservationDate, selectedArea, selectedTime, showBookingForm]);
 
-  const selectedDateBlockedSlots = blockedSlots.filter((slot) => {
-    const slotDate = slot.reservedDate || slot.ReservedDate;
-    const slotTime = slot.reservedTime || slot.ReservedTime;
-
-    return slotDate === reservationDate && isWithinReservationBuffer(slotTime, selectedTime);
-  });
+  const selectedDateBlockedSlots = blockedSlots.filter((slot) =>
+    isBlockedSlotForSelection(slot, reservationDate, selectedTime)
+  );
 
   const blockedTableIds = new Set(
     selectedDateBlockedSlots.flatMap((slot) => slot.tableIds || slot.TableIds || [])
@@ -1919,7 +1900,6 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onOp
           isSubmitting={isSubmitting}
           submitError={submitError}
           submitSuccess={submitSuccess}
-          onOpenPrivacy={onOpenPrivacy}
         />
       )}
 

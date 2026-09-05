@@ -141,7 +141,7 @@ public class TableLayoutsController : ControllerBase
     }
 
     [HttpPut]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Save([FromBody] List<TableLayoutItem> layout)
     {
         try
@@ -165,7 +165,7 @@ public class TableLayoutsController : ControllerBase
     }
 
     [HttpPost("reset")]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Reset()
     {
         return await Save(DefaultLayout);

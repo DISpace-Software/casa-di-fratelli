@@ -206,7 +206,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPost("seed")]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Seed()
     {
         try
@@ -229,7 +229,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPost]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Create([FromBody] MenuItem item)
     {
         try
@@ -339,7 +339,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Update(int id, [FromBody] MenuItem updated)
     {
         try
@@ -422,7 +422,7 @@ public class MenuController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [AdminAuthorize]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Delete(int id)
     {
         await EnsureMenuStorageAsync();

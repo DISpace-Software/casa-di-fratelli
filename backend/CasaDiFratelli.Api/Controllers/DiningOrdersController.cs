@@ -285,8 +285,11 @@ public class DiningOrdersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateDiningOrderRequest request)
     {
-        if (request.Items.Count == 0)
+        if (request.Items == null || request.Items.Count == 0)
             return BadRequest(new { message = "Order must contain at least one item." });
+
+        if (request.Items.Any(x => x == null || !x.MenuItemId.HasValue || x.MenuItemId <= 0 || x.Quantity <= 0))
+            return BadRequest(new { message = "Each item must reference a menu item and have a positive quantity." });
 
         var reservation = await _db.Reservations
             .Include(x => x.Tables)
@@ -299,38 +302,29 @@ public class DiningOrdersController : ControllerBase
             return BadRequest(new { message = "This order link is not active." });
 
         var menuItemIds = request.Items
-            .Where(x => x.MenuItemId.HasValue)
             .Select(x => x.MenuItemId!.Value)
             .Distinct()
             .ToList();
-        var barMenuItemIds = await _db.MenuItems
-            .Where(x => menuItemIds.Contains(x.Id) && x.Department == "Bar")
-            .Select(x => x.Id)
-            .ToListAsync();
-        var barMenuItemIdSet = barMenuItemIds.ToHashSet();
+        var menuItems = await _db.MenuItems
+            .AsNoTracking()
+            .Where(x => menuItemIds.Contains(x.Id) && x.IsActive)
+            .ToDictionaryAsync(x => x.Id);
+
+        if (menuItems.Count != menuItemIds.Count)
+            return BadRequest(new { message = "One or more menu items are no longer available. Please refresh the menu." });
 
         var items = request.Items
-            .Where(x => x.Quantity > 0 && !string.IsNullOrWhiteSpace(x.Name) && x.UnitPrice >= 0)
             .Select(x => new DiningOrderItem
             {
                 MenuItemId = x.MenuItemId,
-                Name = x.Name.Trim(),
-                UnitPrice = x.UnitPrice,
+                Name = menuItems[x.MenuItemId!.Value].NameBg,
+                UnitPrice = menuItems[x.MenuItemId!.Value].Price,
                 Quantity = Math.Min(x.Quantity, 99),
                 Notes = string.IsNullOrWhiteSpace(x.Notes) ? null : x.Notes.Trim(),
                 Source = "GuestOnline",
-                Kind = x.MenuItemId.HasValue && barMenuItemIdSet.Contains(x.MenuItemId.Value)
+                Kind = string.Equals(menuItems[x.MenuItemId!.Value].Department, "Bar", StringComparison.OrdinalIgnoreCase)
                     ? "Drink"
-                    : NormalizeItemKind(x.Kind),
-                InventoryExtras = x.InventoryExtras
-                    .Where(extra => extra.InventoryItemId > 0 && extra.Quantity > 0)
-                    .Select(extra => new DiningOrderItemInventoryExtra
-                    {
-                        InventoryItemId = extra.InventoryItemId,
-                        Quantity = extra.Quantity,
-                        Notes = string.IsNullOrWhiteSpace(extra.Notes) ? null : extra.Notes.Trim()
-                    })
-                    .ToList()
+                    : "Dish"
             })
             .ToList();
 

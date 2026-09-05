@@ -1,5 +1,12 @@
 import { isWithinReservationBuffer } from "./dateTimeRules.js";
 
+export function isBlockedSlotForSelection(slot, reservedDate, reservedTime) {
+  const slotDate = slot?.reservedDate || slot?.ReservedDate;
+  const slotTime = slot?.reservedTime || slot?.ReservedTime;
+  const isPublicHold = slot?.isPublicHold ?? slot?.IsPublicHold ?? false;
+  return slotDate === reservedDate && (isPublicHold || isWithinReservationBuffer(slotTime, reservedTime));
+}
+
 export function getUnavailableTableIdsForSlot(
   reservations,
   reservedDate,
