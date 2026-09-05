@@ -10,6 +10,7 @@ import {
   preserveWorldCenter,
   rotatePercentPointClockwise,
   rotatePercentPointCounterClockwise,
+  rotatePercentPointHalfTurn,
   screenToWorld,
   zoomCameraAt,
 } from "../adminMap/mapCamera.js";
@@ -108,4 +109,27 @@ test("camera clamping keeps a large world reachable inside the viewport", () => 
     ),
     { x: 380, y: -950, scale: 1 }
   );
+});
+
+test("open terrace half-turn places the 50 group left and 60 group right without changing stored coordinates", () => {
+  const original = [
+    { id: "50", x: 90.4, y: 25 },
+    { id: "51", x: 75.3, y: 25 },
+    { id: "52", x: 89.7, y: 75 },
+    { id: "53", x: 75.1, y: 75 },
+    { id: "61", x: 39.8, y: 25 },
+    { id: "62", x: 25.1, y: 25 },
+  ];
+  const saved = structuredClone(original);
+  const rotated = original.map((point) => ({ ...point, ...rotatePercentPointHalfTurn(point) }));
+  assert.ok(rotated.filter((point) => point.id.startsWith("5")).every((point) => point.x < 50));
+  assert.ok(rotated.filter((point) => point.id.startsWith("6")).every((point) => point.x > 50));
+  assert.deepEqual(rotated.map((point) => point.id), original.map((point) => point.id));
+  for (let index = 0; index < original.length; index += 1) {
+    const restored = rotatePercentPointHalfTurn(rotated[index]);
+    assert.ok(Math.abs(restored.x - original[index].x) < 1e-10);
+    assert.ok(Math.abs(restored.y - original[index].y) < 1e-10);
+  }
+  assert.deepEqual(original, saved);
+  assert.deepEqual(rotatePercentPointHalfTurn({ x: 50, y: 0 }), { x: 50, y: 100 });
 });

@@ -25,11 +25,13 @@ import {
   localPercentToWorld,
   rotatePercentPointClockwise,
   rotatePercentPointCounterClockwise,
+  rotatePercentPointHalfTurn,
 } from "../domain/adminMap/mapCamera";
 import {
   getMapModalPortalTarget,
   shouldUseNativeMapFullscreen,
 } from "../domain/adminMap/mapInteraction";
+import { findPublicTableHold } from "../domain/reservations/publicTableHolds";
 import { getActiveLayoutTables } from "../domain/reservations/layoutTables";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
 
@@ -1175,6 +1177,7 @@ function normalizeLayoutItem(item) {
 }
 
 function orientTableForMap(table) {
+  if (table.area === "openTerrace") return { ...table, ...rotatePercentPointHalfTurn(table) };
   if (table.area === "garden") return { ...table, ...rotatePercentPointClockwise(table) };
   if (table.area === "indoor") return { ...table, ...rotatePercentPointCounterClockwise(table) };
   return table;
@@ -1386,8 +1389,8 @@ function AdminMapDecor({ area }) {
 
   if (area === "openTerrace") {
     return (
-      <div className="pointer-events-none absolute left-1/2 top-2 z-[3] w-[32%] -translate-x-1/2 text-center">
-        <div className="mx-auto h-6 w-16 rounded-b-full border-x border-b border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_0%,rgba(214,178,120,0.28),transparent_62%)]" />
+      <div className="pointer-events-none absolute left-1/2 bottom-2 z-[3] w-[32%] -translate-x-1/2 text-center">
+        <div className="mx-auto h-6 w-16 rounded-t-full border-x border-t border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_100%,rgba(214,178,120,0.28),transparent_62%)]" />
         <div className="mx-auto h-1 w-20 rounded-full bg-[#d6b278]/55" />
         <div className="mx-auto mt-0.5 max-w-[116px] rounded-full border border-[#c9a56a]/28 bg-black/48 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.14em] text-[#f2d39a] backdrop-blur">
           Вход в ресторан
@@ -1452,8 +1455,8 @@ function LegacyAdminMapDecor({ area }) {
 
   if (area === "openTerrace") {
     return (
-      <div className="pointer-events-none absolute left-1/2 top-2 z-[3] w-[32%] -translate-x-1/2 text-center">
-        <div className="mx-auto h-6 w-16 rounded-b-full border-x border-b border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_0%,rgba(214,178,120,0.28),transparent_62%)]" />
+      <div className="pointer-events-none absolute left-1/2 bottom-2 z-[3] w-[32%] -translate-x-1/2 text-center">
+        <div className="mx-auto h-6 w-16 rounded-t-full border-x border-t border-[#d6b278]/55 bg-[radial-gradient(circle_at_50%_100%,rgba(214,178,120,0.28),transparent_62%)]" />
         <div className="mx-auto h-1 w-20 rounded-full bg-[#d6b278]/55" />
         <div className="mx-auto mt-0.5 max-w-[116px] rounded-full border border-[#c9a56a]/28 bg-black/48 px-2 py-0.5 text-[7px] font-bold uppercase tracking-[0.14em] text-[#f2d39a] backdrop-blur">
           Вход в ресторан
@@ -1532,6 +1535,8 @@ function TableLayoutEditor({
       ? rotatePercentPointCounterClockwise(displayPoint)
       : selectedArea === "indoor"
       ? rotatePercentPointClockwise(displayPoint)
+      : selectedArea === "openTerrace"
+      ? rotatePercentPointHalfTurn(displayPoint)
       : displayPoint;
     const current = layout.find((item) => item.id === tableId);
     if (!current) return;
@@ -1629,6 +1634,8 @@ function TableLayoutEditor({
                 ? rotatePercentPointClockwise(table)
                 : selectedArea === "indoor"
                 ? rotatePercentPointCounterClockwise(table)
+                : selectedArea === "openTerrace"
+                ? rotatePercentPointHalfTurn(table)
                 : table;
 
               return (
@@ -1876,7 +1883,7 @@ function ReservationOperationsMap({
     getActiveLayoutTables(layout, area, tablesByArea[area] || []).length;
   const getActiveTablesForArea = React.useCallback(
     (area) => getActiveLayoutTables(layout, area, tablesByArea[area] || [])
-      .map((table) => mapViewMode === "section" ? table : orientTableForMap(table)),
+      .map((table) => mapViewMode === "section" && table.area !== "openTerrace" ? table : orientTableForMap(table)),
     [layout, mapViewMode]
   );
   const areaTables = React.useMemo(
@@ -2149,12 +2156,7 @@ function ReservationOperationsMap({
   );
   const canSaveMove = moveDraft.tableIds.length > 0;
   const selectedPublicTableHold = selectedReservation
-    ? publicTableHolds.find((hold) => {
-        const holdDate = hold.reservedDate || hold.ReservedDate;
-        const holdTableIds = hold.tableIds || hold.TableIds || [];
-        return holdDate === selectedReservation.reservedDate &&
-          selectedReservation.tableIds.every((tableId) => holdTableIds.includes(tableId));
-      })
+    ? findPublicTableHold(publicTableHolds, selectedReservation.reservedDate, selectedReservation.tableIds)
     : null;
 
   function toggleReservationSelection(reservationId) {
@@ -2364,6 +2366,31 @@ function ReservationOperationsMap({
       document.body.style.overflow = originalOverflow;
     };
   }, [showConsumption]);
+
+  function renderPublicTableHoldControl(table) {
+    if (ordersOnly || !onBlockPublicTables) return null;
+    const hold = findPublicTableHold(publicTableHolds, mapDate, [table.id]);
+    const heldIds = hold?.tableIds || hold?.TableIds || [];
+    return (
+      <div className="mt-3 space-y-2">
+        <p className="text-xs text-white/55">
+          {mapDate}{hold ? ` · ${text.table} ${heldIds.join(", ")}` : ""}
+        </p>
+        <button
+          type="button"
+          disabled={hold ? !onRemovePublicTableHold : mapDate < todayDate}
+          onClick={() => hold
+            ? onRemovePublicTableHold?.(hold)
+            : onBlockPublicTables({ reservedDate: mapDate, tableIds: [table.id] })}
+          className="w-full rounded-xl border border-amber-300/30 bg-amber-400/15 px-3 py-2 text-xs font-semibold text-amber-100 disabled:opacity-40"
+        >
+          {hold
+            ? adminLocalText(language, "Премахни блокирането", "Remove public block", "Снять блокировку")
+            : adminLocalText(language, "Блокирай маса за деня", "Block table for the day", "Заблокировать стол на день")}
+        </button>
+      </div>
+    );
+  }
 
   function renderTableReservationControls(table) {
     if (!onCreateReservation) return null;
@@ -3047,6 +3074,7 @@ function ReservationOperationsMap({
                       </button>
                     </div>
 
+                    {renderPublicTableHoldControl(table)}
                     {ordersOnly ? (
                       tableOrders.length === 0 ? (
                         <p className="mt-3 text-sm leading-6 text-white/55">{text.ordersEmpty || text.tableTodayEmpty}</p>
@@ -6570,7 +6598,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       body: JSON.stringify({
         reservedDate: reservation.reservedDate,
         tableIds: reservation.tableIds,
-        note: `Reserved for restaurant use from reservation #${reservation.id}`,
+        note: reservation.id ? `Reserved for restaurant use from reservation #${reservation.id}` : "Reserved for restaurant use from table map",
       }),
     });
     if (!response.ok) {

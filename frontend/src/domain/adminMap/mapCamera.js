@@ -30,6 +30,10 @@ export function rotatePercentPointCounterClockwise(point) {
   };
 }
 
+export function rotatePercentPointHalfTurn(point) {
+  return { x: 100 - point.x, y: 100 - point.y };
+}
+
 export function zoomCameraAt(camera, point, nextScale, minScale, maxScale) {
   const scale = clamp(nextScale, minScale, maxScale);
   const worldPoint = screenToWorld(point, camera);
