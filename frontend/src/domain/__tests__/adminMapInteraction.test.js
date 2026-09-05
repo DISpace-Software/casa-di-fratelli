@@ -1,11 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  getMapPopoverAlignment,
   getMapModalPortalTarget,
   isTabletMapViewport,
   shouldStartMapGesture,
   shouldUseNativeMapFullscreen,
 } from "../adminMap/mapInteraction.js";
+
+test("map popovers align inward near both horizontal edges", () => {
+  assert.equal(getMapPopoverAlignment(5), "start");
+  assert.equal(getMapPopoverAlignment(27.9), "start");
+  assert.equal(getMapPopoverAlignment(50), "center");
+  assert.equal(getMapPopoverAlignment(72.1), "end");
+  assert.equal(getMapPopoverAlignment(95), "end");
+});
 
 test("desktop primary-button drag can start a map gesture", () => {
   assert.equal(shouldStartMapGesture({ pointerType: "mouse", button: 0, isInteractiveTarget: false }), true);

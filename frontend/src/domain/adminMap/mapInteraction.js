@@ -3,6 +3,12 @@ export function shouldStartMapGesture({ pointerType, button, isInteractiveTarget
   return pointerType !== "mouse" || button === 0;
 }
 
+export function getMapPopoverAlignment(centerPercent) {
+  if (Number(centerPercent) < 28) return "start";
+  if (Number(centerPercent) > 72) return "end";
+  return "center";
+}
+
 export function isTabletMapViewport({ width, height }, navigatorLike) {
   const shortestSide = Math.min(Number(width || 0), Number(height || 0));
   return Number(navigatorLike?.maxTouchPoints || 0) > 0 && shortestSide >= 600;

@@ -28,6 +28,7 @@ import {
   rotatePercentPointHalfTurn,
 } from "../domain/adminMap/mapCamera";
 import {
+  getMapPopoverAlignment,
   getMapModalPortalTarget,
   shouldUseNativeMapFullscreen,
 } from "../domain/adminMap/mapInteraction";
@@ -2766,11 +2767,11 @@ function ReservationOperationsMap({
               reservation.isArrived &&
               !reservationOrders.some((order) => Boolean(order.assignedWaiterId));
             const popoverPosition = bounds.labelTop > 72 ? "sm:top-auto sm:bottom-11" : "sm:top-11";
-            const mobilePopoverOffset =
-              bounds.centerX < 28
-                ? "left-0 translate-x-0"
-                : bounds.centerX > 72
-                ? "right-0 translate-x-0"
+            const popoverAlignment = getMapPopoverAlignment(bounds.centerX);
+            const mobilePopoverOffset = popoverAlignment === "start"
+              ? "left-1/2 translate-x-0"
+              : popoverAlignment === "end"
+                ? "right-1/2 translate-x-0"
                 : "left-1/2 -translate-x-1/2";
             const zone = ADMIN_MAP_ZONES.find((item) => item.id === bounds.area) || ADMIN_MAP_ZONES[0];
 
@@ -2826,7 +2827,7 @@ function ReservationOperationsMap({
                   </button>
 
                   {isSelected && (
-                    <div data-map-keep-open="true" className={`absolute ${mobilePopoverOffset} top-9 z-[240] w-[190px] rounded-2xl border border-white/12 bg-[#15110e]/95 p-2.5 text-left shadow-[0_22px_70px_rgba(0,0,0,0.68)] backdrop-blur sm:left-1/2 sm:right-auto ${popoverPosition} sm:w-[220px] sm:-translate-x-1/2 sm:p-3 lg:w-[230px]`}>
+                    <div data-map-keep-open="true" className={`absolute ${mobilePopoverOffset} top-9 z-[240] w-[190px] rounded-2xl border border-white/12 bg-[#15110e]/95 p-2.5 text-left shadow-[0_22px_70px_rgba(0,0,0,0.68)] backdrop-blur ${popoverPosition} sm:w-[220px] sm:p-3 lg:w-[230px]`}>
                       <div className="text-sm font-semibold text-[#fff4df]">{reservation.guestName}</div>
                       <div className="mt-1 text-xs text-white/50">
                         {reservation.reservedTime} · {reservation.guestCount} {text.guests} · {reservation.tableIds.join(", ")}
@@ -3103,10 +3104,10 @@ function ReservationOperationsMap({
                     className={`absolute z-[240] max-h-[min(520px,calc(100svh-7rem))] w-[230px] overscroll-contain overflow-y-auto rounded-2xl border border-[#f2d39a]/18 bg-[#15110e]/95 p-3 text-left shadow-[0_22px_70px_rgba(0,0,0,0.7)] backdrop-blur sm:w-[280px] ${
                       placeTablePopoverAbove ? "bottom-10 sm:bottom-12 lg:bottom-16" : "top-10 sm:top-12 lg:top-16"
                     } ${
-                      table.x < 28
-                        ? "left-0"
-                        : table.x > 72
-                        ? "right-0"
+                      getMapPopoverAlignment(table.x) === "start"
+                        ? "left-1/2"
+                        : getMapPopoverAlignment(table.x) === "end"
+                        ? "right-1/2"
                         : "left-1/2 -translate-x-1/2"
                     }`}
                   >
