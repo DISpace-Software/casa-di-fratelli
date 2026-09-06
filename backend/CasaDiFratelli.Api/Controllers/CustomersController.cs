@@ -41,11 +41,20 @@ public class CustomersController : ControllerBase
             .OrderByDescending(x => x.ReservedDate)
             .ThenByDescending(x => x.ReservedTime)
             .ToListAsync();
+        var birthdayLogs = await _db.MarketingMessageLogs
+            .AsNoTracking()
+            .Where(x => x.CampaignKey == "birthday")
+            .OrderByDescending(x => x.SentAtUtc)
+            .ToListAsync();
 
         var result = customers.Select(customer =>
         {
             var email = (customer.Email ?? string.Empty).Trim().ToLowerInvariant();
             var phone = (customer.Phone ?? string.Empty).Trim().ToLowerInvariant();
+            var birthdayEmailLastSentAtUtc = birthdayLogs
+                .Where(log => !string.IsNullOrWhiteSpace(email) && log.CustomerKey == email)
+                .Select(log => (DateTime?)log.SentAtUtc)
+                .FirstOrDefault();
             var history = reservations
                 .Where(reservation =>
                 {
@@ -88,6 +97,7 @@ public class CustomersController : ControllerBase
                 customer.MarketingConsent,
                 customer.FirstReservationAtUtc,
                 customer.LastReservationAtUtc,
+                BirthdayEmailLastSentAtUtc = birthdayEmailLastSentAtUtc,
                 Reservations = history
             };
         });

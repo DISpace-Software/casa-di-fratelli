@@ -32,7 +32,7 @@ import {
   getMapModalPortalTarget,
   shouldUseNativeMapFullscreen,
 } from "../domain/adminMap/mapInteraction";
-import { daysUntilBirthday, getCustomerBirthDate, searchCustomers, sortCustomers } from "../domain/customers/customerDirectory";
+import { formatBirthdayEmailSentAt, daysUntilBirthday, getCustomerBirthDate, searchCustomers, sortCustomers } from "../domain/customers/customerDirectory";
 import { findPublicTableHold } from "../domain/reservations/publicTableHolds";
 import { getActiveLayoutTables } from "../domain/reservations/layoutTables";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
@@ -3911,6 +3911,7 @@ function MarketingModule({ adminLanguage, adminFetch }) {
     ["{{discountPercent}}%", adminLanguage === "bg" ? "Отстъпка" : "Discount"],
     ["{{restaurantName}}", adminLanguage === "bg" ? "Ресторант" : "Restaurant"],
     ["{{date}}", adminLanguage === "bg" ? "Дата" : "Date"],
+    ["{{birthdayTiming}}", adminLocalText(adminLanguage, "Точно време до рождения ден", "Exact birthday timing", "Точный срок до дня рождения")],
   ];
 
   const campaignMeta = [
@@ -5777,6 +5778,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [customerPeriod, setCustomerPeriod] = React.useState("all");
   const [customerSort, setCustomerSort] = React.useState("visits");
   const [customerQuery, setCustomerQuery] = React.useState("");
+  const [birthdayEmailStates, setBirthdayEmailStates] = React.useState({});
+  const birthdayEmailPendingRef = React.useRef(new Set());
   const [showManualCustomerForm, setShowManualCustomerForm] = React.useState(false);
   const [showCreateReservation, setShowCreateReservation] = React.useState(false);
   const [menuForm, setMenuForm] = React.useState(emptyMenuItem);
@@ -6963,6 +6966,33 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     });
   }
 
+  async function sendCustomerBirthdayEmail(customer) {
+    const id = customer.profileId;
+    if (!canManageMarketing || !id || !customer.marketingConsent || !String(customer.email || "").trim() || birthdayEmailPendingRef.current.has(id)) return;
+    birthdayEmailPendingRef.current.add(id);
+    setBirthdayEmailStates((current) => ({ ...current, [id]: { status: "sending", message: "" } }));
+    try {
+      const response = await adminFetch(`${API_BASE_URL}/api/marketing/birthday/${id}/send`, { method: "POST" });
+      if (!response.ok) {
+        const message = await readErrorMessage(response, adminLocalText(adminLanguage, "Имейлът не е изпратен. Опитайте отново.", "Email was not sent. Try again.", "Письмо не отправлено. Повторите попытку."));
+        setBirthdayEmailStates((current) => ({ ...current, [id]: { status: "error", message } }));
+        return;
+      }
+      setBirthdayEmailStates((current) => ({ ...current, [id]: {
+        status: "success",
+        message: adminLocalText(adminLanguage, "Имейлът е изпратен успешно.", "Email sent successfully.", "Письмо успешно отправлено."),
+      } }));
+      await loadCustomerProfiles();
+    } catch {
+      setBirthdayEmailStates((current) => ({ ...current, [id]: {
+        status: "error",
+        message: adminLocalText(adminLanguage, "Не успяхме да потвърдим изпращането. Проверете последната отправка преди нов опит.", "Could not confirm sending. Check the last sent time before retrying.", "Не удалось подтвердить отправку. Проверьте время последней отправки перед повтором."),
+      } }));
+    } finally {
+      birthdayEmailPendingRef.current.delete(id);
+    }
+  }
+
   async function addCustomerToBlacklist(customer) {
     await saveBlacklistPayload({
       guestName: customer.guestName || "",
@@ -7956,6 +7986,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       key,
       profileId: profile.id ?? profile.Id,
       birthDate: getCustomerBirthDate(profile),
+      birthdayEmailLastSentAtUtc: profile.birthdayEmailLastSentAtUtc ?? profile.BirthdayEmailLastSentAtUtc ?? null,
       guestName: profile.guestName ?? profile.GuestName ?? "—",
       phone,
       email,
@@ -12072,6 +12103,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
                     {sortedCustomers.map((c, index) => {
                       const expanded = expandedCustomerKey === c.key;
+                      const birthdayEmailState = birthdayEmailStates[c.profileId];
+                      const birthdayEmailBusy = birthdayEmailState?.status === "sending";
+                      const birthdayEmailSentAt = formatBirthdayEmailSentAt(c.birthdayEmailLastSentAtUtc, adminLanguage);
                       const visitsLabel = adminLocalText(adminLanguage, "посещения", "visits", "посещений");
                       const customerReservationsToShow = c.periodReservations?.length ? c.periodReservations : c.reservations;
 
@@ -12127,6 +12161,35 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                     ? adminLocalText(adminLanguage, "Днес!", "Today!", "Сегодня!")
                                     : `${daysUntilBirthday(c.birthDate, customerToday)} ${adminLocalText(adminLanguage, "дни до празника", "days to go", "дней до праздника")}`}
                                 </span>
+                              )}
+                            </div>
+                          )}
+                          {customersMode === "birthdays" && (
+                            <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="min-w-0 space-y-1 text-xs text-white/60">
+                                <p className="break-all">{c.email || adminLocalText(adminLanguage, "Няма добавен имейл", "No email saved", "Email не указан")}</p>
+                                {!c.marketingConsent && (
+                                  <p className="text-amber-200">{adminLocalText(adminLanguage, "Няма съгласие за маркетингови имейли", "No marketing email consent", "Нет согласия на маркетинговые письма")}</p>
+                                )}
+                                <p>{adminLocalText(adminLanguage, "Последно изпратен", "Last sent", "Последняя отправка")}: {birthdayEmailSentAt || adminLocalText(adminLanguage, "Все още не е изпращан", "Not sent yet", "Ещё не отправлялось")}</p>
+                                {birthdayEmailState?.message && (
+                                  <p role={birthdayEmailState.status === "error" ? "alert" : "status"} className={birthdayEmailState.status === "error" ? "text-red-200" : "text-emerald-200"}>
+                                    {birthdayEmailState.message}
+                                  </p>
+                                )}
+                              </div>
+                              {canManageMarketing && (
+                                <button
+                                  type="button"
+                                  onClick={() => sendCustomerBirthdayEmail(c)}
+                                  disabled={birthdayEmailBusy || !c.profileId || !c.marketingConsent || !String(c.email || "").trim()}
+                                  aria-busy={birthdayEmailBusy}
+                                  className="luxury-button shrink-0 rounded-xl px-4 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40 sm:max-w-[240px]"
+                                >
+                                  {birthdayEmailBusy
+                                    ? adminLocalText(adminLanguage, "Изпращане…", "Sending…", "Отправка…")
+                                    : adminLocalText(adminLanguage, "Изпрати имейл за рожден ден", "Send birthday email", "Отправить письмо ко дню рождения")}
+                                </button>
                               )}
                             </div>
                           )}

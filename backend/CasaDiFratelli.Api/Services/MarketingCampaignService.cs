@@ -1,4 +1,7 @@
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using CasaDiFratelli.Api.Data;
 using CasaDiFratelli.Api.Models;
@@ -91,7 +94,16 @@ public class MarketingCampaignService
 
             if (dryRun) continue;
 
-            await _email.SendMarketingAsync(candidate.Email, candidate.Subject, candidate.Html);
+            var delivered = await _email.TrySendMarketingAsync(
+                candidate.Email,
+                candidate.Subject,
+                candidate.Html,
+                BuildIdempotencyKey(candidate));
+            if (!delivered)
+            {
+                skipped++;
+                continue;
+            }
             _db.MarketingMessageLogs.Add(new MarketingMessageLog
             {
                 CampaignKey = candidate.CampaignKey,
@@ -109,6 +121,56 @@ public class MarketingCampaignService
             await _db.SaveChangesAsync();
 
         return new MarketingRunResult(candidates.Count, sent, skipped, candidates.Take(100).ToList());
+    }
+
+    public async Task<BirthdaySendResult> SendBirthdayAsync(int customerId)
+    {
+        var customer = await _db.CustomerProfiles.FirstOrDefaultAsync(x => x.Id == customerId);
+        if (customer == null) return new BirthdaySendResult(false, false, "Customer not found.", null, null);
+        if (!customer.BirthDate.HasValue) return new BirthdaySendResult(false, false, "Customer birthday is missing.", null, null);
+        if (!customer.MarketingConsent) return new BirthdaySendResult(false, false, "Customer has not consented to marketing emails.", null, null);
+        if (string.IsNullOrWhiteSpace(customer.Email)) return new BirthdaySendResult(false, false, "Customer email is missing.", null, null);
+
+        var today = GetRestaurantToday();
+        var birthday = MarketingBirthdayRules.NextBirthday(customer.BirthDate.Value, today);
+        var settings = await GetSettingsAsync();
+        var candidate = BuildBirthdayCandidate(customer, settings.Birthday, CustomerKey(customer), birthday, today);
+        var existing = await _db.MarketingMessageLogs
+            .Where(x => x.CampaignKey == "birthday" && x.CustomerKey == candidate.CustomerKey && x.SentForDate == birthday)
+            .OrderByDescending(x => x.SentAtUtc)
+            .FirstOrDefaultAsync();
+        if (existing != null)
+            return new BirthdaySendResult(false, true, "Birthday email was already sent for this birthday.", existing.SentAtUtc, birthday);
+
+        var delivered = await _email.TrySendMarketingAsync(candidate.Email, candidate.Subject, candidate.Html, BuildIdempotencyKey(candidate));
+        if (!delivered)
+            return new BirthdaySendResult(false, false, "Resend did not confirm delivery.", null, birthday);
+
+        var sentAt = DateTime.UtcNow;
+        _db.MarketingMessageLogs.Add(new MarketingMessageLog
+        {
+            CampaignKey = candidate.CampaignKey,
+            CustomerKey = candidate.CustomerKey,
+            Email = candidate.Email,
+            SentForDate = candidate.SentForDate,
+            SentAtUtc = sentAt,
+            Subject = candidate.Subject,
+            DiscountPercent = candidate.DiscountPercent
+        });
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            var loggedAt = await _db.MarketingMessageLogs.AsNoTracking()
+                .Where(x => x.CampaignKey == "birthday" && x.CustomerKey == candidate.CustomerKey && x.SentForDate == birthday)
+                .Select(x => (DateTime?)x.SentAtUtc)
+                .FirstOrDefaultAsync();
+            return new BirthdaySendResult(false, true, "Birthday email was already sent for this birthday.", loggedAt, birthday);
+        }
+
+        return new BirthdaySendResult(true, false, "Birthday email sent.", sentAt, birthday);
     }
 
     private async Task<List<MarketingCandidate>> BuildCandidatesForCustomerAsync(CustomerProfile customer, MarketingSettings settings, DateOnly today)
@@ -132,17 +194,9 @@ public class MarketingCampaignService
 
         if (settings.Birthday.Enabled && customer.BirthDate.HasValue)
         {
-            var birthdayThisYear = new DateOnly(today.Year, customer.BirthDate.Value.Month, customer.BirthDate.Value.Day);
-            if (birthdayThisYear < today.AddDays(-1))
-                birthdayThisYear = birthdayThisYear.AddYears(1);
-
-            var shouldSend = birthdayThisYear.AddDays(-settings.Birthday.DaysBefore) == today;
-            var firstBirthdayReservation = reservations.Count <= 1 && reservations.Any(x =>
-                x.ReservedDate.Month == customer.BirthDate.Value.Month &&
-                x.ReservedDate.Day == customer.BirthDate.Value.Day);
-
-            if (shouldSend && !firstBirthdayReservation && customer.ReservationCount > 1)
-                result.Add(BuildCandidate(customer, settings.Birthday, "birthday", customerKey, birthdayThisYear));
+            var birthday = MarketingBirthdayRules.NextBirthday(customer.BirthDate.Value, today);
+            if (MarketingBirthdayRules.IsWithinSendingWindow(birthday, today, settings.Birthday.DaysBefore))
+                result.Add(BuildBirthdayCandidate(customer, settings.Birthday, customerKey, birthday, today));
         }
 
         var lastVisit = reservations.LastOrDefault()?.ReservedDate;
@@ -183,6 +237,36 @@ public class MarketingCampaignService
             campaign.DiscountPercent,
             subject,
             html);
+    }
+
+    private static MarketingCandidate BuildBirthdayCandidate(
+        CustomerProfile customer,
+        MarketingCampaignSettings campaign,
+        string customerKey,
+        DateOnly birthday,
+        DateOnly today)
+    {
+        var days = birthday.DayNumber - today.DayNumber;
+        var timing = days == 0
+            ? $"днес, {birthday:dd.MM.yyyy}"
+            : $"след {days} {(days == 1 ? "ден" : "дни")}, на {birthday:dd.MM.yyyy}";
+        var subject = ApplyTemplate(campaign.Subject, customer, campaign, birthday)
+            .Replace("{{birthdayTiming}}", timing);
+        var configuredMessage = ApplyTemplate(campaign.HtmlTemplate, customer, campaign, birthday)
+            .Replace("{{birthdayTiming}}", timing);
+        configuredMessage = Regex.Replace(configuredMessage, @"след\s+\d+\s+дни", timing, RegexOptions.IgnoreCase);
+        configuredMessage = Regex.Replace(configuredMessage, @"через\s+\d+\s+д(?:ень|ня|ней)", timing, RegexOptions.IgnoreCase);
+        configuredMessage = Regex.Replace(configuredMessage, @"in\s+\d+\s+days?", timing, RegexOptions.IgnoreCase);
+        var message = $"Вашият рожден ден е {timing}.\n\n{configuredMessage}";
+        return new MarketingCandidate("birthday", customerKey, customer.Email ?? string.Empty,
+            customer.GuestName ?? string.Empty, birthday, campaign.DiscountPercent, subject, BuildEmailHtml(message));
+    }
+
+    private static string BuildIdempotencyKey(MarketingCandidate candidate)
+    {
+        var identity = $"{candidate.CampaignKey}|{candidate.CustomerKey}|{candidate.SentForDate:yyyy-MM-dd}";
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity))).ToLowerInvariant();
+        return $"casa-marketing-{hash}";
     }
 
     private static string ApplyTemplate(string template, CustomerProfile customer, MarketingCampaignSettings campaign, DateOnly date)
@@ -239,6 +323,8 @@ public class MarketingCampaignService
 }
 
 public record MarketingRunResult(int Candidates, int Sent, int SkippedAlreadySent, List<MarketingCandidate> Preview);
+
+public record BirthdaySendResult(bool Sent, bool AlreadySent, string Message, DateTime? SentAtUtc, DateOnly? BirthdayDate);
 
 public record MarketingCandidate(
     string CampaignKey,

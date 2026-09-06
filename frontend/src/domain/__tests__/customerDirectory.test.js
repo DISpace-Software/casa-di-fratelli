@@ -31,3 +31,12 @@ test("birthday sorting is upcoming-first, missing last, without mutating custome
   assert.deepEqual(sortCustomers(customers, "birthday", "en", "2026-12-30").map((customer) => customer.guestName), ["B", "A", "C"]);
   assert.deepEqual(customers, original);
 });
+
+test("birthday email timestamps use restaurant time and accept .NET UTC without suffix", async () => {
+  const { formatBirthdayEmailSentAt } = await import("../customers/customerDirectory.js");
+  assert.equal(formatBirthdayEmailSentAt("2026-09-05T12:30:00", "en-GB"), "05/09/2026, 15:30");
+  assert.equal(formatBirthdayEmailSentAt("2026-09-05T12:30:00Z", "en-GB"), "05/09/2026, 15:30");
+  assert.equal(formatBirthdayEmailSentAt("2026-01-05T12:30:00Z", "en-GB"), "05/01/2026, 14:30");
+  assert.equal(formatBirthdayEmailSentAt(null), "");
+  assert.equal(formatBirthdayEmailSentAt("invalid"), "");
+});

@@ -41,3 +41,14 @@ export function sortCustomers(customers, sort, language, today) {
     return second.periodCount - first.periodCount || second.count - first.count;
   });
 }
+
+export function formatBirthdayEmailSentAt(value, language = "bg") {
+  if (!value) return "";
+  const raw = String(value).trim();
+  const utc = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(raw) ? `${raw}Z` : raw;
+  const date = new Date(utc);
+  if (!Number.isFinite(date.getTime())) return "";
+  return new Intl.DateTimeFormat(language, {
+    timeZone: "Europe/Sofia", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+  }).format(date);
+}

@@ -53,6 +53,24 @@ public class MarketingController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("birthday/{customerId:int}/send")]
+    public async Task<IActionResult> SendBirthday(int customerId)
+    {
+        if (!CanManageMarketing()) return Forbid();
+
+        var result = await _marketing.SendBirthdayAsync(customerId);
+        if (!result.Sent && !result.AlreadySent)
+            return BadRequest(new { result.Message });
+
+        await _audit.RecordAsync(
+            HttpContext,
+            result.Sent ? "send-birthday" : "birthday-already-sent",
+            "CustomerProfile",
+            customerId.ToString(),
+            after: result);
+        return Ok(result);
+    }
+
     private bool CanManageMarketing()
     {
         var admin = AdminAuthService.Current(HttpContext);

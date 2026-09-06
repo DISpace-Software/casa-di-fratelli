@@ -34,7 +34,12 @@ public class EmailService
         await SendInternalAsync(to, subject, html, isMarketing: true);
     }
 
-    private async Task SendInternalAsync(string to, string subject, string html, bool isMarketing)
+    public Task<bool> TrySendMarketingAsync(string to, string subject, string html, string idempotencyKey)
+    {
+        return SendInternalAsync(to, subject, html, isMarketing: true, idempotencyKey);
+    }
+
+    private async Task<bool> SendInternalAsync(string to, string subject, string html, bool isMarketing, string? idempotencyKey = null)
     {
         try
         {
@@ -51,13 +56,13 @@ public class EmailService
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 _logger.LogWarning("Email was not sent because RESEND_API_KEY is missing.");
-                return;
+                return false;
             }
 
             if (string.IsNullOrWhiteSpace(to))
             {
                 _logger.LogWarning("Email was not sent because recipient is empty.");
-                return;
+                return false;
             }
 
             var replyTo = _configuration["REPLY_TO_EMAIL"];
@@ -97,26 +102,30 @@ public class EmailService
 
             using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            if (!string.IsNullOrWhiteSpace(idempotencyKey))
+                request.Headers.Add("Idempotency-Key", idempotencyKey);
             request.Content = new StringContent(
                 JsonSerializer.Serialize(payload),
                 Encoding.UTF8,
                 "application/json"
             );
 
-            var response = await _httpClient.SendAsync(request);
+            using var response = await _httpClient.SendAsync(request);
 
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
                 _logger.LogError("Failed to send email via Resend. Status: {Status}. Body: {Body}", response.StatusCode, error);
-                return;
+                return false;
             }
 
             _logger.LogInformation("Email sent via Resend to {Recipient} with subject {Subject}.", to, subject);
+            return true;
         }
         catch (Exception error)
         {
             _logger.LogError(error, "Email sending failed before the request could complete.");
+            return false;
         }
     }
 
