@@ -2,6 +2,7 @@ using CasaDiFratelli.Api.Services.Tenancy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
+using CasaDiFratelli.Api.Controllers;
 
 // Pure configuration and middleware checks: no application startup, network,
 // database connections, migrations, credentials or hosted services are used.
@@ -10,6 +11,10 @@ static void Check(bool condition, string scenario)
     if (!condition) throw new Exception(scenario);
     Console.WriteLine($"PASS {scenario}");
 }
+
+Check(!typeof(ReservationsController).GetMethods()
+        .Any(method => method.Name == "OnActionExecutionAsync"),
+    "Controller filter implementation is not exposed as an MVC action");
 
 static TenantDefinition Tenant(string id) => new()
 {

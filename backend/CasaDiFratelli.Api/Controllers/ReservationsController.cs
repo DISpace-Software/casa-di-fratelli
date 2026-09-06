@@ -41,7 +41,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     private TenantBrandingSettings _brand = new();
     private string HtmlRestaurantName => WebUtility.HtmlEncode(_brand.Name);
 
-    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    async Task IAsyncActionFilter.OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
         _brand = await _branding.GetAsync();
         await next();
