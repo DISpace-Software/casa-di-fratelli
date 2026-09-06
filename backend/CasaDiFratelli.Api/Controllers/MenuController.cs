@@ -1,3 +1,4 @@
+using CasaDiFratelli.Api.Services.Tenancy;
 using CasaDiFratelli.Api.Data;
 using CasaDiFratelli.Api.Filters;
 using CasaDiFratelli.Api.Models;
@@ -17,17 +18,19 @@ public class MenuController : ControllerBase
     private readonly EmailService _emailService;
     private readonly ILogger<MenuController> _logger;
     private readonly AuditService _audit;
+    private readonly TenantBrandingService _branding;
 
     public MenuController(
         AppDbContext db,
         EmailService emailService,
         ILogger<MenuController> logger,
-        AuditService audit)
+        AuditService audit, TenantBrandingService branding)
     {
         _db = db;
         _emailService = emailService;
         _logger = logger;
         _audit = audit;
+        _branding = branding;
     }
 
     private static void AddParameter(IDbCommand command, string name, object? value)
@@ -280,6 +283,7 @@ public class MenuController : ControllerBase
 
             if (item.NotifySubscribers)
             {
+                var branding = await _branding.GetAsync();
                 var subscribers = await _db.CustomerProfiles
                     .Where(x => x.MarketingConsent && !string.IsNullOrWhiteSpace(x.Email))
                     .ToListAsync();
@@ -290,7 +294,7 @@ public class MenuController : ControllerBase
                     {
                         await _emailService.SendAsync(
                             customer.Email!,
-                            $"Ново предложение · Casa di Fratelli",
+                            $"Ново предложение · {branding.Name}",
                             $"""
                             <div style="font-family:Arial,sans-serif">
                                 <h2>{item.NameBg}</h2>
@@ -303,7 +307,7 @@ public class MenuController : ControllerBase
                                 </p>
 
                                 <p>
-                                    Очакваме Ви в Casa di Fratelli.
+                                    Очакваме Ви в {System.Net.WebUtility.HtmlEncode(branding.Name)}.
                                 </p>
                             </div>
                             """

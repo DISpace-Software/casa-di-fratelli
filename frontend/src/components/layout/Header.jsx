@@ -1,3 +1,4 @@
+import { useTenantBranding } from "../../context/TenantBrandingContext";
 import React from "react";
 import ThemeToggleIcon from "./ThemeToggleIcon";
 
@@ -34,9 +35,10 @@ export default function Header({
   theme = "dark",
   onToggleTheme,
 }) {
+  const { branding } = useTenantBranding();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const locationUrl =
-    "https://www.google.com/maps/search/?api=1&query=Casa%20di%20Fratelli%20Plovdiv";
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${branding.name} ${branding.address} ${branding.city}`)}`;
   const fallbackText = (bg, en, ru) => (language === "ru" ? ru : language === "en" ? en : bg);
   const locationLabel = t.navLocation || fallbackText("Локация", "Location", "Локация");
   const menuLabel = t.navMenu || fallbackText("Меню", "Menu", "Меню");
@@ -94,7 +96,7 @@ export default function Header({
             className="brand-led nav-reveal group min-w-0 text-left transition hover:opacity-95"
           >
             <img
-              src="/casa-di-fratelli-logo.svg"
+              src={branding.logoUrl || "/restaurant-generic.svg"}
               alt={t.brand}
               className="brand-logo header-logo h-11 w-[142px] object-left md:h-16 md:w-[210px]"
             />

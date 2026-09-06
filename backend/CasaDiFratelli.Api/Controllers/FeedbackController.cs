@@ -1,3 +1,4 @@
+using CasaDiFratelli.Api.Services.Tenancy;
 using CasaDiFratelli.Api.Data;
 using CasaDiFratelli.Api.Filters;
 using CasaDiFratelli.Api.Models;
@@ -13,22 +14,22 @@ namespace CasaDiFratelli.Api.Controllers;
 public class FeedbackController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private readonly IConfiguration _configuration;
+    private readonly TenantBrandingService _branding;
     private readonly AuditService _audit;
 
-    public FeedbackController(AppDbContext db, IConfiguration configuration, AuditService audit)
+    public FeedbackController(AppDbContext db, TenantBrandingService branding, AuditService audit)
     {
         _db = db;
-        _configuration = configuration;
+        _branding = branding;
         _audit = audit;
     }
 
     [HttpGet("meta")]
-    public IActionResult GetMeta()
+    public async Task<IActionResult> GetMeta()
     {
         return Ok(new
         {
-            reviewUrl = GetReviewUrl()
+            reviewUrl = await GetReviewUrlAsync()
         });
     }
 
@@ -147,7 +148,7 @@ public class FeedbackController : ControllerBase
         {
             feedback.Id,
             feedback.DiscountCode,
-            reviewUrl = GetReviewUrl()
+            reviewUrl = await GetReviewUrlAsync()
         });
     }
 
@@ -183,11 +184,7 @@ public class FeedbackController : ControllerBase
         return NoContent();
     }
 
-    private string GetReviewUrl()
-    {
-        return (_configuration["REVIEW_URL"] ??
-            "https://www.google.com/maps/search/?api=1&query=Casa%20di%20Fratelli%20Vechernitsa%209%20Plovdiv").Trim();
-    }
+    private async Task<string> GetReviewUrlAsync() => (await _branding.GetAsync()).GoogleReviewUrl;
 
     private static int ClampRating(int value) => Math.Clamp(value, 1, 5);
 

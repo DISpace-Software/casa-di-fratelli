@@ -1,3 +1,4 @@
+import { useTenantBranding } from "../../context/TenantBrandingContext";
 const deliveryLinks = [
   {
     key: "takeaway",
@@ -29,6 +30,8 @@ function localText(language, bg, en, ru = bg) {
 }
 
 export default function DeliverySection({ language }) {
+  const { branding } = useTenantBranding();
+  if (!branding.isCasa) return null;
   return (
     <section id="delivery" className="delivery-section border-y border-white/8 px-6 py-20">
       <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1fr_0.85fr] md:items-center">

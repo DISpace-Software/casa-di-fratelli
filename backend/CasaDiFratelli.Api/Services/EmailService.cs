@@ -1,3 +1,4 @@
+using CasaDiFratelli.Api.Services.Tenancy;
 using System.Net.Http.Headers;
 using System.Net;
 using System.Text;
@@ -10,6 +11,7 @@ public class EmailService
 {
     private const string DefaultFromEmail = "Casa di Fratelli <reservations@mail.casadifratelli.bg>";
     private const string DefaultMarketingFromEmail = "Casa di Fratelli <offers@mail.casadifratelli.bg>";
+    private readonly TenantBrandingService _branding;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
@@ -17,8 +19,10 @@ public class EmailService
     public EmailService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<EmailService> logger)
+        ILogger<EmailService> logger,
+        TenantBrandingService branding)
     {
+        _branding = branding;
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
@@ -43,14 +47,19 @@ public class EmailService
     {
         try
         {
-            var apiKey = _configuration["RESEND_API_KEY"];
+            var apiKey = _branding.GetEmailConfiguration("RESEND_API_KEY");
             var fromEmail = isMarketing
-                ? _configuration["MARKETING_FROM_EMAIL"]
-                : _configuration["FROM_EMAIL"];
+                ? _branding.GetEmailConfiguration("MARKETING_FROM_EMAIL")
+                : _branding.GetEmailConfiguration("FROM_EMAIL");
 
             if (string.IsNullOrWhiteSpace(fromEmail))
             {
-                fromEmail = isMarketing ? DefaultMarketingFromEmail : DefaultFromEmail;
+                fromEmail = _branding.IsCasa ? (isMarketing ? DefaultMarketingFromEmail : DefaultFromEmail) : null;
+                if (string.IsNullOrWhiteSpace(fromEmail))
+                {
+                    _logger.LogError("Email sender is not configured for the current tenant.");
+                    return false;
+                }
             }
 
             if (string.IsNullOrWhiteSpace(apiKey))
@@ -65,8 +74,8 @@ public class EmailService
                 return false;
             }
 
-            var replyTo = _configuration["REPLY_TO_EMAIL"];
-            var unsubscribeEmail = _configuration["UNSUBSCRIBE_EMAIL"];
+            var replyTo = _branding.GetEmailConfiguration("REPLY_TO_EMAIL");
+            var unsubscribeEmail = _branding.GetEmailConfiguration("UNSUBSCRIBE_EMAIL");
             if (string.IsNullOrWhiteSpace(unsubscribeEmail))
                 unsubscribeEmail = replyTo;
 

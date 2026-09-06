@@ -1,3 +1,5 @@
+import { useTenantBranding } from "./context/TenantBrandingContext";
+import { brandTranslations } from "./config/tenantBranding";
 import React from "react";
 import translations from "./i18n/translations";
 import { tables } from "./data/tablesData";
@@ -113,6 +115,7 @@ function isInteractiveSwipeTarget(target) {
 }
 
 function CookieConsentBanner({ language, onOpenPrivacy }) {
+  const { branding } = useTenantBranding();
   const [choice, setChoice] = React.useState(() => getCookieValue(COOKIE_CONSENT_COOKIE));
 
   if (choice) return null;
@@ -132,7 +135,7 @@ function CookieConsentBanner({ language, onOpenPrivacy }) {
     <div className="fixed inset-x-3 bottom-3 z-[85] mx-auto max-w-5xl rounded-[24px] border border-white/12 bg-stone-950/95 p-4 text-white shadow-2xl shadow-black/40 backdrop-blur md:bottom-5 md:p-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="min-w-0">
-          <p className="section-kicker">Casa di Fratelli</p>
+          <p className="section-kicker">{branding.name}</p>
           <p className="mt-2 text-sm leading-6 text-stone-300">
             {language === "en"
               ? "We use cookies to remember your reservation details on this device, so the next booking form can be filled automatically."
@@ -170,6 +173,7 @@ function CookieConsentBanner({ language, onOpenPrivacy }) {
 }
 
 function RestaurantClosureModal({ closure, onReserve, onDismiss }) {
+  const { branding } = useTenantBranding();
   if (!closure?.isActive) return null;
 
   const lines = String(closure.message || "").split("\n");
@@ -194,7 +198,7 @@ function RestaurantClosureModal({ closure, onReserve, onDismiss }) {
         </button>
 
         <div className="relative">
-          <img src="/casa-di-fratelli-logo.svg" alt="Casa di Fratelli" className="mx-auto h-16 w-52 object-contain" />
+          <img src={branding.logoUrl || "/restaurant-generic.svg"} alt={branding.name} className="mx-auto h-16 w-52 object-contain" />
           <div className="mx-auto my-6 h-px w-28 bg-gradient-to-r from-transparent via-[#e7c98d] to-transparent" />
           <div id="closure-title" className="space-y-1.5 text-lg leading-7 text-[#fff7e9] md:text-xl md:leading-8">
             {lines.map((line, index) => (
@@ -222,6 +226,7 @@ function RestaurantClosureModal({ closure, onReserve, onDismiss }) {
 }
 
 function AdminLogin({ onLogin }) {
+  const { branding } = useTenantBranding();
   const resetParams = React.useMemo(() => {
     if (typeof window === "undefined") return { email: "", token: "" };
 
@@ -391,11 +396,11 @@ function AdminLogin({ onLogin }) {
         className="luxury-panel w-full max-w-md rounded-[28px] p-6 md:p-8"
       >
         <img
-          src="/casa-di-fratelli-logo.svg"
-          alt="Casa di Fratelli"
+          src={branding.logoUrl || "/restaurant-generic.svg"}
+          alt={branding.name}
           className="brand-logo mb-7 h-16 w-[220px] object-left"
         />
-        <p className="section-kicker">Casa di Fratelli Admin OS</p>
+        <p className="section-kicker">{branding.name} Admin OS</p>
         <h1 className="mt-3 text-3xl font-semibold text-[#fff4df]">
           {authMode === "login" ? "Admin Login" : authMode === "forgot" ? "Възстановяване" : "Нова парола"}
         </h1>
@@ -503,6 +508,7 @@ function AdminLogin({ onLogin }) {
 }
 
 function ReservationConfirmPage({ onBackHome }) {
+  const { branding } = useTenantBranding();
   const [status, setStatus] = React.useState("loading");
   const [message, setMessage] = React.useState("");
   const [reservation, setReservation] = React.useState(null);
@@ -553,8 +559,8 @@ function ReservationConfirmPage({ onBackHome }) {
     <div className="luxury-shell flex min-h-screen items-center justify-center px-5 py-10 text-white">
       <div className="luxury-panel w-full max-w-lg rounded-[32px] p-6 text-center md:p-9">
         <img
-          src="/casa-di-fratelli-logo.svg"
-          alt="Casa di Fratelli"
+          src={branding.logoUrl || "/restaurant-generic.svg"}
+          alt={branding.name}
           className="brand-logo mx-auto mb-7 h-16 w-[230px] object-center"
         />
         <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full border text-3xl ${
@@ -566,7 +572,7 @@ function ReservationConfirmPage({ onBackHome }) {
         }`}>
           {status === "loading" ? "…" : status === "success" ? "✓" : "!"}
         </div>
-        <p className="section-kicker mt-6">Casa di Fratelli</p>
+        <p className="section-kicker mt-6">{branding.name}</p>
         <h1 className="mt-3 text-3xl font-semibold text-[#fff4df]">
           {status === "loading"
             ? "Потвърждаваме резервацията..."
@@ -680,6 +686,7 @@ function FeedbackSection({ number, title, children }) {
 }
 
 function FeedbackPage({ onBackHome }) {
+  const { branding } = useTenantBranding();
   const params = React.useMemo(() => {
     if (typeof window === "undefined") return new URLSearchParams();
     return new URLSearchParams(window.location.search);
@@ -812,7 +819,7 @@ function FeedbackPage({ onBackHome }) {
 
         <div className="grid gap-7 lg:grid-cols-[0.8fr_1.2fr]">
           <aside className="lg:sticky lg:top-8 lg:self-start">
-            <img src="/casa-di-fratelli-logo.svg" alt="Casa di Fratelli" className="brand-logo mb-7 h-16 w-[230px] object-left" />
+            <img src={branding.logoUrl || "/restaurant-generic.svg"} alt={branding.name} className="brand-logo mb-7 h-16 w-[230px] object-left" />
             <p className="section-kicker">Обратна връзка</p>
             <h1 className="mt-3 text-4xl font-semibold leading-tight text-[#fff4df] md:text-5xl">
               Вашето мнение оформя следващото посещение.
@@ -918,12 +925,12 @@ function FeedbackPage({ onBackHome }) {
             </FeedbackSection>
 
             <FeedbackSection number="07" title="Лоялност">
-              <RatingControl label="Колко вероятно е да посетите Casa di Fratelli отново?" value={form.returnLikelihood} onChange={(value) => updateField("returnLikelihood", value)} max={10} min={1} compact />
-              <RatingControl label="Колко вероятно е да препоръчате Casa di Fratelli на приятел или колега?" value={form.recommendLikelihood} onChange={(value) => updateField("recommendLikelihood", value)} max={10} min={0} compact />
+              <RatingControl label={`Колко вероятно е да посетите ${branding.name} отново?`} value={form.returnLikelihood} onChange={(value) => updateField("returnLikelihood", value)} max={10} min={1} compact />
+              <RatingControl label={`Колко вероятно е да препоръчате ${branding.name} на приятел или колега?`} value={form.recommendLikelihood} onChange={(value) => updateField("recommendLikelihood", value)} max={10} min={0} compact />
             </FeedbackSection>
 
             <FeedbackSection number="08" title="Най-важният въпрос">
-              <FeedbackTextarea important label="Ако можехте да промените само едно нещо в Casa di Fratelli, какво би било то?" value={form.oneThingToChange} onChange={(value) => updateField("oneThingToChange", value)} placeholder="Един конкретен детайл, който би направил преживяването още по-добро..." />
+              <FeedbackTextarea important label={`Ако можехте да промените само едно нещо в ${branding.name}, какво би било то?`} value={form.oneThingToChange} onChange={(value) => updateField("oneThingToChange", value)} placeholder="Един конкретен детайл, който би направил преживяването още по-добро..." />
             </FeedbackSection>
 
             {showGooglePrompt && reviewUrl && (
@@ -968,6 +975,7 @@ function FeedbackPage({ onBackHome }) {
 }
 
 export default function App() {
+  const { branding } = useTenantBranding();
   const [language, setLanguage] = React.useState(safeReadStoredLanguage);
   const [theme, setTheme] = React.useState(safeReadStoredTheme);
   const [currentPage, setCurrentPage] = React.useState(getInitialPage);
@@ -987,7 +995,7 @@ export default function App() {
   const swipeStartRef = React.useRef(null);
   const pendingHomeSectionRef = React.useRef("");
 
-  const t = translations[language] || translations.bg;
+  const t = brandTranslations(translations[language] || translations.bg, branding, language);
 
   const loadMenuItems = React.useCallback(async () => {
     try {
@@ -1090,9 +1098,9 @@ export default function App() {
     );
 
     document.title = currentPage === "admin"
-      ? "Casa di Fratelli Admin"
-      : "Casa di Fratelli | Италиански ресторант, пица и паста в Пловдив";
-  }, [currentPage]);
+      ? `${branding.name} Admin`
+      : `${branding.name} | ${branding.city}`;
+  }, [currentPage, branding]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;

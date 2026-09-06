@@ -1,3 +1,5 @@
+import TenantBrandingSettings from "../components/admin/TenantBrandingSettings";
+import { useTenantBranding } from "../context/TenantBrandingContext";
 import React from "react";
 import { createPortal, flushSync } from "react-dom";
 import { API_BASE_URL } from "../config/api";
@@ -5743,6 +5745,7 @@ function Panel({ title, subtitle, children, right, bare = false }) {
 }
 
 export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenuChanged, onEventsChanged, theme, onToggleTheme }) {
+  const { branding } = useTenantBranding();
   const [activeTab, setActiveTab] = React.useState("home");
   const [adminLanguage, setAdminLanguage] = React.useState("bg");
   const [reservations, setReservations] = React.useState([]);
@@ -7619,7 +7622,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         await navigator.credentials.create({
           publicKey: {
             challenge: crypto.getRandomValues(new Uint8Array(32)),
-            rp: { name: "Casa di Fratelli" },
+            rp: { name: branding.name },
             user: {
               id: crypto.getRandomValues(new Uint8Array(16)),
               name: adminUser?.email || "admin",
@@ -8648,14 +8651,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
           <div className={isDashboard ? "max-w-[760px]" : "pr-2"}>
             <img
-              src="/casa-di-fratelli-logo.svg"
-              alt="Casa di Fratelli"
+              src={branding.logoUrl || "/restaurant-generic.svg"}
+              alt={branding.name}
               className={`brand-logo object-left ${isDashboard ? "mb-5 h-16 w-[220px]" : "h-12 w-[168px]"}`}
             />
             {isDashboard && (
               <>
                 <p className="section-kicker">
-                  Casa di Fratelli Admin OS
+                  {branding.name} Admin OS
                 </p>
                 <h1 className="admin-hero-title mt-3 text-4xl font-semibold text-[#fff4df] md:text-5xl">
                   {a.appTitle}
@@ -12291,6 +12294,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   </button>
                 }
               >
+                {canManageMarketing && <TenantBrandingSettings key={JSON.stringify(branding)} adminFetch={adminFetch} />}
                 <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
                   <div className="space-y-4">
                     {canClearOperationalData && (

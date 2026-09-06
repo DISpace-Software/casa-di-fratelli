@@ -2,8 +2,8 @@
 
 SeatMap uses one ASP.NET Core backend and a dedicated PostgreSQL database for
 each restaurant. Frontends may be deployed independently with different
-domains, branding, assets, and `VITE_API_BASE_URL`, while keeping the API
-contract identical.
+domains and the same build: public identity and reservation rules are loaded
+from the resolved tenant through `GET /api/branding`.
 
 ## Request and database flow
 
@@ -81,6 +81,9 @@ fallbacks only for the `DefaultConnection` tenant.
 3. Add its connection string and unique initial admin credentials as secrets.
 4. Deploy its frontend with the shared backend in `VITE_API_BASE_URL`.
 5. Restart the backend.
+6. Sign in as `Owner` or `Developer`, open the administrator settings, and
+   save the restaurant name, contacts, localized address/opening hours, logo,
+   social links, timezone, and reservation limits.
 
 At startup the backend validates tenant configuration and, for every active
 tenant:
@@ -93,6 +96,42 @@ tenant:
   `true`.
 
 The default menu must normally remain disabled for new brands.
+
+## Branding and business settings
+
+Branding is stored as `tenant.branding.v1` in the tenant's own `AppSettings`
+table. It therefore follows the same database isolation and backup policy as
+the restaurant's reservations and customers. The public endpoint exposes only
+display content and reservation rules. Provider credentials and sender
+addresses are never returned to the browser.
+
+The editable settings include:
+
+- restaurant name, phone, public email, logo and review/social URLs;
+- Bulgarian, English, and Russian address and opening-hours text;
+- IANA timezone;
+- public lead time and maximum booking window;
+- public/admin latest reservation time and walk-in service times.
+
+The frontend keeps Casa di Fratelli values only as a compatibility fallback
+while its branding request is unavailable. A non-Casa tenant returned by the
+API receives empty contacts/assets rather than inheriting Casa links.
+
+Email and push credentials remain server-side and are scoped by tenant. For a
+tenant ID `restaurant-bella`, use environment variables equivalent to:
+
+```text
+Tenancy__Email__restaurant-bella__RESEND_API_KEY=<resend key>
+Tenancy__Email__restaurant-bella__FROM_EMAIL=Restaurant Bella <reservations@mail.restaurantbella.bg>
+Tenancy__Email__restaurant-bella__MARKETING_FROM_EMAIL=Restaurant Bella <offers@mail.restaurantbella.bg>
+Tenancy__Email__restaurant-bella__REPLY_TO_EMAIL=hello@restaurantbella.bg
+Tenancy__Email__restaurant-bella__UNSUBSCRIBE_EMAIL=hello@restaurantbella.bg
+Tenancy__Email__restaurant-bella__VAPID_SUBJECT=mailto:owner@restaurantbella.bg
+```
+
+Global email variables remain a compatibility fallback for Casa di Fratelli
+only. This prevents a newly added restaurant from sending through Casa's
+identity by mistake.
 
 ## Background jobs and backups
 
@@ -132,21 +171,26 @@ Startup fails fast when:
 - tenant IDs, slugs, or frontend origins are duplicated;
 - the default tenant is absent from the active tenant list;
 - a connection string key, frontend URL, or admin credential key is missing;
-- a database mode other than `DedicatedDatabase` is requested.
+- a database mode other than `DedicatedDatabase` is requested;
+- two tenant connection strings target the same host, port, and database;
+- IDs can collide after backup-path normalization;
+- aliases, domains, IDs, slugs, or frontend origins overlap between tenants.
 
 Failing startup is intentional: serving a request from the wrong database is
 worse than temporary unavailability.
 
 ## Current boundaries
 
-Physical data isolation is implemented. Existing controller contracts and
-entity schemas remain unchanged.
+Physical data isolation and runtime branding are implemented. Editorial home
+page content such as awards, chefs, gallery photographs, delivery providers,
+SEO files (`robots.txt`, sitemap, web manifests), and legal documents are
+deployment content. Review or replace those files for each restaurant before
+publishing its public site.
 
-Brand-specific email copy, push text, restaurant phone numbers, opening hours,
-and public frontend content still contain Casa di Fratelli defaults in several
-features. Before onboarding a differently branded restaurant, move those
-values into a tenant branding/settings service. This is separate from database
-isolation and should be done incrementally without changing reservation APIs.
+The shared backend remains one deployment failure domain: a failed startup
+migration for one tenant prevents the service from starting for every tenant.
+For a larger fleet, move migrations to a controlled deployment job and add
+per-tenant health monitoring.
 
 Shared-database tenancy is deliberately unsupported. If added later, every
 tenant-owned table must receive `TenantId`, composite uniqueness constraints,

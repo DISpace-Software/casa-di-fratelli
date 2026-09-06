@@ -1,3 +1,4 @@
+using CasaDiFratelli.Api.Services.Tenancy;
 using System.Text.Json;
 using CasaDiFratelli.Api.Data;
 using CasaDiFratelli.Api.Models;
@@ -10,12 +11,14 @@ public class PushNotificationService
 {
     private const string VapidPublicKeySetting = "VapidPublicKey";
     private const string VapidPrivateKeySetting = "VapidPrivateKey";
+    private readonly TenantBrandingService _branding;
     private readonly AppDbContext _db;
     private readonly IConfiguration _configuration;
     private readonly ILogger<PushNotificationService> _logger;
 
-    public PushNotificationService(AppDbContext db, IConfiguration configuration, ILogger<PushNotificationService> logger)
+    public PushNotificationService(AppDbContext db, IConfiguration configuration, ILogger<PushNotificationService> logger, TenantBrandingService branding)
     {
+        _branding = branding;
         _db = db;
         _configuration = configuration;
         _logger = logger;
@@ -29,10 +32,11 @@ public class PushNotificationService
 
     public async Task NotifyNewReservationAsync(Reservation reservation)
     {
+        var branding = await _branding.GetAsync();
         var tableLabel = string.Join(", ", reservation.Tables.Select(table => table.TableCode));
         var payload = JsonSerializer.Serialize(new
         {
-            title = "Нова резервация · Casa di Fratelli",
+            title = $"Нова резервация · {branding.Name}",
             body = $"{reservation.GuestName} · {reservation.ReservedDate:dd.MM.yyyy} {reservation.ReservedTime} · {reservation.GuestCount} гости",
             url = "/admin",
             tag = $"reservation-{reservation.Id}",
@@ -90,13 +94,13 @@ public class PushNotificationService
 
     private string GetVapidSubject()
     {
-        var configuredSubject = _configuration["VAPID_SUBJECT"];
+        var configuredSubject = _branding.GetEmailConfiguration("VAPID_SUBJECT");
         if (!string.IsNullOrWhiteSpace(configuredSubject))
             return configuredSubject;
 
-        var adminEmail = _configuration["ADMIN_EMAIL"];
+        var adminEmail = _branding.GetEmailConfiguration("ADMIN_EMAIL");
         return string.IsNullOrWhiteSpace(adminEmail)
-            ? "mailto:admin@casadifratelli.bg"
+            ? (_branding.IsCasa ? "mailto:admin@casadifratelli.bg" : throw new InvalidOperationException("Tenant VAPID_SUBJECT is required."))
             : $"mailto:{adminEmail}";
     }
 

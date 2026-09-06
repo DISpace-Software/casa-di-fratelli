@@ -1,3 +1,4 @@
+using CasaDiFratelli.Api.Services.Tenancy;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
@@ -20,11 +21,14 @@ public class MarketingCampaignService
 
     private readonly AppDbContext _db;
     private readonly EmailService _email;
+    private readonly TenantBrandingService _branding;
+    private TenantBrandingSettings _brand = new();
 
-    public MarketingCampaignService(AppDbContext db, EmailService email)
+    public MarketingCampaignService(AppDbContext db, EmailService email, TenantBrandingService branding)
     {
         _db = db;
         _email = email;
+        _branding = branding;
     }
 
     public async Task<MarketingSettings> GetSettingsAsync()
@@ -65,6 +69,7 @@ public class MarketingCampaignService
 
     public async Task<MarketingRunResult> RunAsync(bool dryRun)
     {
+        _brand = await _branding.GetAsync();
         var settings = await GetSettingsAsync();
         var today = GetRestaurantToday();
         var customers = await _db.CustomerProfiles
@@ -223,7 +228,7 @@ public class MarketingCampaignService
         return result;
     }
 
-    private static MarketingCandidate BuildCandidate(CustomerProfile customer, MarketingCampaignSettings campaign, string key, string customerKey, DateOnly date)
+    private MarketingCandidate BuildCandidate(CustomerProfile customer, MarketingCampaignSettings campaign, string key, string customerKey, DateOnly date)
     {
         var subject = ApplyTemplate(campaign.Subject, customer, campaign, date);
         var message = ApplyTemplate(campaign.HtmlTemplate, customer, campaign, date);
@@ -239,7 +244,7 @@ public class MarketingCampaignService
             html);
     }
 
-    private static MarketingCandidate BuildBirthdayCandidate(
+    private MarketingCandidate BuildBirthdayCandidate(
         CustomerProfile customer,
         MarketingCampaignSettings campaign,
         string customerKey,
@@ -262,24 +267,26 @@ public class MarketingCampaignService
             customer.GuestName ?? string.Empty, birthday, campaign.DiscountPercent, subject, BuildEmailHtml(message));
     }
 
-    private static string BuildIdempotencyKey(MarketingCandidate candidate)
+    private string BuildIdempotencyKey(MarketingCandidate candidate)
     {
         var identity = $"{candidate.CampaignKey}|{candidate.CustomerKey}|{candidate.SentForDate:yyyy-MM-dd}";
+        if (!_branding.IsCasa) identity = $"{_branding.TenantId}|{identity}";
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity))).ToLowerInvariant();
         return $"casa-marketing-{hash}";
     }
 
-    private static string ApplyTemplate(string template, CustomerProfile customer, MarketingCampaignSettings campaign, DateOnly date)
+    private string ApplyTemplate(string template, CustomerProfile customer, MarketingCampaignSettings campaign, DateOnly date)
     {
         var guest = customer.GuestName ?? "приятелю";
         return (template ?? string.Empty)
             .Replace("{{guestName}}", guest)
             .Replace("{{discountPercent}}", campaign.DiscountPercent.ToString("0.##"))
             .Replace("{{date}}", date.ToString("dd.MM.yyyy"))
-            .Replace("{{restaurantName}}", "Casa di Fratelli");
+            .Replace("{{restaurantName}}", _brand.Name)
+            .Replace("Casa di Fratelli", _brand.Name);
     }
 
-    private static string BuildEmailHtml(string message)
+    private string BuildEmailHtml(string message)
     {
         var paragraphs = (message ?? string.Empty)
             .Replace("\r\n", "\n")
@@ -288,15 +295,15 @@ public class MarketingCampaignService
             .ToList();
 
         if (paragraphs.Count == 0)
-            paragraphs.Add("Очакваме Ви в Casa di Fratelli.");
+            paragraphs.Add(WebUtility.HtmlEncode($"Очакваме Ви в {_brand.Name}."));
 
         var body = string.Join("\n", paragraphs.Select(paragraph => $"<p>{paragraph}</p>"));
 
         return $$"""
             <div style="font-family:Arial,sans-serif;line-height:1.65;color:#1f2937;background:#fffaf1;padding:28px;border-radius:18px">
-              <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#a87328;font-weight:700;margin-bottom:14px">Casa di Fratelli</div>
+              <div style="font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#a87328;font-weight:700;margin-bottom:14px">{{WebUtility.HtmlEncode(_brand.Name)}}</div>
               <div style="font-size:16px">{{body}}</div>
-              <div style="margin-top:24px;padding-top:18px;border-top:1px solid #eadcc6;color:#7a6b5c;font-size:13px">С уважение,<br>екипът на Casa di Fratelli</div>
+              <div style="margin-top:24px;padding-top:18px;border-top:1px solid #eadcc6;color:#7a6b5c;font-size:13px">С уважение,<br>екипът на {{WebUtility.HtmlEncode(_brand.Name)}}</div>
             </div>
             """;
     }
@@ -308,11 +315,11 @@ public class MarketingCampaignService
             : (customer.Phone ?? string.Empty).Trim().ToLowerInvariant();
     }
 
-    private static DateOnly GetRestaurantToday()
+    private DateOnly GetRestaurantToday()
     {
         try
         {
-            var timezone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Sofia");
+            var timezone = TimeZoneInfo.FindSystemTimeZoneById(_brand.TimeZoneId);
             return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timezone));
         }
         catch

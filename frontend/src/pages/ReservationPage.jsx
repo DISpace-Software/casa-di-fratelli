@@ -1,3 +1,5 @@
+import { tenantReservationTimes } from "../config/tenantBranding";
+import { useTenantBranding } from "../context/TenantBrandingContext";
 import React from "react";
 import ThemeToggleIcon from "../components/layout/ThemeToggleIcon";
 import { API_BASE_URL } from "../config/api";
@@ -5,7 +7,6 @@ import {
   defaultGardenTables,
   defaultIndoorTables,
   defaultOpenTerraceTables,
-  reservationTimes,
 } from "../domain/reservations/tableConfig";
 import {
   getAvailableReservationTimesForDate,
@@ -609,6 +610,7 @@ function BookingModal({
   submitError,
   submitSuccess,
 }) {
+  const { branding } = useTenantBranding();
   const formRef = React.useRef(null);
   const storedGuest = React.useMemo(() => readStoredReservationGuest(), []);
   const [isFormReady, setIsFormReady] = React.useState(false);
@@ -850,9 +852,9 @@ function BookingModal({
                 <span>
                   {localText(
                     language,
-                    "Съгласявам се Casa di Fratelli да обработи данните ми за целите на резервацията и приемам ",
-                    "I agree that Casa di Fratelli may process my data for this reservation and I accept the ",
-                    "Согласен, чтобы Casa di Fratelli обработал мои данные для резервации, и принимаю "
+                    `Съгласявам се ${branding.name} да обработи данните ми за целите на резервацията и приемам `,
+                    `I agree that ${branding.name} may process my data for this reservation and I accept the `,
+                    `Согласен, чтобы ${branding.name} обработал мои данные для резервации, и принимаю `
                   )}
                   <a
                     href="/privacy"
@@ -921,9 +923,11 @@ function BookingModal({
 }
 
 export default function ReservationPage({ t, language, setLanguage, onBack, onReservationComplete, theme, onToggleTheme }) {
+  const { branding } = useTenantBranding();
+  const reservationTimes = React.useMemo(() => tenantReservationTimes(branding.publicLatestReservationTime), [branding.publicLatestReservationTime]);
   const today = React.useMemo(() => getTodayInputValue(), []);
   const tomorrow = React.useMemo(() => getDateInputValueAfterDays(1), []);
-  const adminPhone = "088 821 8318";
+  const adminPhone = branding.phone;
 
   const [reservationDate, setReservationDate] = React.useState(() => {
     if (typeof window === "undefined") return "";
@@ -1038,11 +1042,11 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
   }, []);
 
   React.useEffect(() => {
-    if (reservationDate && selectedTime && isPastTimeForDate(reservationDate, selectedTime, new Date(), 15)) {
+    if (reservationDate && selectedTime && isPastTimeForDate(reservationDate, selectedTime, new Date(), branding.publicLeadMinutes)) {
       setSelectedTime("");
       setSelectedTables([]);
     }
-  }, [reservationDate, selectedTime]);
+  }, [reservationDate, selectedTime, branding.publicLeadMinutes]);
 
   const isDateClosed = Boolean(
     restaurantClosure?.enabled &&
@@ -1053,19 +1057,19 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
   const availableReservationTimes = isDateClosed
     ? []
     : reservationDate
-    ? getAvailableReservationTimesForDate(reservationTimes, reservationDate, new Date(), 15)
+    ? getAvailableReservationTimesForDate(reservationTimes, reservationDate, new Date(), branding.publicLeadMinutes)
     : reservationTimes;
   const todayReservationTimes = React.useMemo(
-    () => getAvailableReservationTimesForDate(reservationTimes, today, new Date(), 15),
-    [today]
+    () => getAvailableReservationTimesForDate(reservationTimes, today, new Date(), branding.publicLeadMinutes),
+    [today, reservationTimes, branding.publicLeadMinutes]
   );
   const isTodayBookable = todayReservationTimes.length > 0;
   const distantDateMessage =
     localText(
       language,
-      `Онлайн резервации се приемат до 10 дни напред. За по-далечна дата се обадете на ${adminPhone}.`,
-      `Online reservations are available up to 10 days ahead. For a later date, please call ${adminPhone}.`,
-      `Онлайн-резервации доступны максимум на 10 дней вперёд. Для более поздней даты позвоните ${adminPhone}.`
+      `Онлайн резервации се приемат до ${branding.publicMaxReservationDaysAhead} дни напред. За по-далечна дата се обадете на ${adminPhone}.`,
+      `Online reservations are available up to ${branding.publicMaxReservationDaysAhead} days ahead. For a later date, please call ${adminPhone}.`,
+      `Онлайн-резервации доступны максимум на ${branding.publicMaxReservationDaysAhead} дней вперёд. Для более поздней даты позвоните ${adminPhone}.`
     );
 
   const labels = {
@@ -1139,7 +1143,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
 
     if (nextDate < today) return;
 
-    if (isDateBeyondReservationWindow(nextDate, 10)) {
+    if (isDateBeyondReservationWindow(nextDate, branding.publicMaxReservationDaysAhead)) {
       setDateSelectionError(distantDateMessage);
       setReservationDate("");
       setSelectedTime("");
@@ -1288,7 +1292,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
       return;
     }
 
-    if (isDateBeyondReservationWindow(normalizedReservationDate, 10)) {
+    if (isDateBeyondReservationWindow(normalizedReservationDate, branding.publicMaxReservationDaysAhead)) {
       setIsSubmitting(false);
       setSubmitError(distantDateMessage);
       return;
@@ -1464,14 +1468,14 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
           <div className="luxury-panel rounded-[28px] p-5 md:p-7 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
             <div>
               <img
-                src="/casa-di-fratelli-logo.svg"
-                alt="Casa di Fratelli"
+                src={branding.logoUrl || "/restaurant-generic.svg"}
+                alt={branding.name}
                 className="brand-logo mb-4 h-16 w-[220px] object-left"
               />
               <div className="section-kicker mb-3">
                 Luxury reservation map
               </div>
-              <h1 className="text-4xl font-semibold leading-tight text-[#fff4df] md:text-6xl">Casa di Fratelli</h1>
+              <h1 className="text-4xl font-semibold leading-tight text-[#fff4df] md:text-6xl">{branding.name}</h1>
               <p className="mt-3 max-w-2xl text-sm text-white/70 md:text-base">
                 {localText(
                   language,
@@ -1872,7 +1876,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
                 </button>
               ))}
               <a
-                href="tel:+359888218318"
+                href={`tel:${branding.phone}`}
                 className="ghost-button rounded-2xl px-5 py-3 text-sm font-semibold"
               >
                 {localText(language, "Позвъни на администратор", "Call administrator", "Позвонить администратору")}
@@ -1906,7 +1910,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
       {dailyLimitNotice && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 px-4 backdrop-blur-md" role="dialog" aria-modal="true">
           <div className="luxury-panel w-full max-w-md rounded-[28px] p-6 text-center text-white shadow-2xl md:p-8">
-            <p className="section-kicker">Casa di Fratelli</p>
+            <p className="section-kicker">{branding.name}</p>
             <h2 className="mt-3 text-2xl font-semibold text-[#fff4df]">
               Лимит за резервации
             </h2>
@@ -1916,7 +1920,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
             </p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <a
-                href="tel:+359888218318"
+                href={`tel:${branding.phone}`}
                 className="luxury-button rounded-2xl px-5 py-3 text-sm font-semibold"
               >
                 Позвъни
@@ -1939,7 +1943,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-[#c9a56a]/30 bg-[#c9a56a]/12 text-3xl text-[#f2d39a]">
               ✓
             </div>
-            <p className="section-kicker mt-5">Casa di Fratelli</p>
+            <p className="section-kicker mt-5">{branding.name}</p>
             <h2 className="mt-3 text-2xl font-semibold text-[#fff4df]">
               {localText(language, "Потвърдете от имейла", "Confirm from your email", "Подтвердите через email")}
             </h2>
@@ -1975,7 +1979,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-emerald-300/30 bg-emerald-400/12 text-3xl text-emerald-200">
               ✓
             </div>
-            <p className="section-kicker mt-5">Casa di Fratelli</p>
+            <p className="section-kicker mt-5">{branding.name}</p>
             <h2 className="mt-3 text-2xl font-semibold text-[#fff4df]">
               {localText(
                 language,

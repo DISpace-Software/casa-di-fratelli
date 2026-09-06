@@ -20,6 +20,15 @@ public sealed class CurrentTenant : ICurrentTenant
 
     public void Resolve(TenantDefinition tenant)
     {
+        if (!tenant.IsActive || string.IsNullOrWhiteSpace(tenant.Id))
+            throw new InvalidOperationException("An active tenant is required.");
+        if (IsResolved)
+        {
+            if (!TenantId.Equals(tenant.Id, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("A dependency-injection scope cannot change tenants.");
+            return;
+        }
+
         TenantId = tenant.Id;
         TenantSlug = tenant.Slug;
         TenantName = tenant.Name;

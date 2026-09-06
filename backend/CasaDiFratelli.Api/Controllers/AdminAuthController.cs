@@ -19,6 +19,7 @@ public class AdminAuthController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly ProductTierService _tiers;
     private readonly ICurrentTenant _currentTenant;
+    private readonly TenantBrandingService _branding;
 
     public AdminAuthController(
         AppDbContext db,
@@ -27,7 +28,7 @@ public class AdminAuthController : ControllerBase
         EmailService emailService,
         IConfiguration configuration,
         ProductTierService tiers,
-        ICurrentTenant currentTenant)
+        ICurrentTenant currentTenant, TenantBrandingService branding)
     {
         _db = db;
         _auth = auth;
@@ -36,6 +37,7 @@ public class AdminAuthController : ControllerBase
         _configuration = configuration;
         _tiers = tiers;
         _currentTenant = currentTenant;
+        _branding = branding;
     }
 
     public sealed record AdminLoginRequest(string Email, string Password);
@@ -123,13 +125,14 @@ public class AdminAuthController : ControllerBase
                 var adminUrl = GetAdminUrl();
                 var resetUrl = $"{adminUrl}?resetToken={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
 
+                var branding = await _branding.GetAsync();
                 await _emailService.SendAsync(
                     user.Email,
-                    "Възстановяване на админ парола · Casa di Fratelli",
+                    $"Възстановяване на админ парола · {branding.Name}",
                     $"""
                     <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
                       <h2>Възстановяване на парола</h2>
-                      <p>Получихме заявка за нова админ парола в <strong>Casa di Fratelli</strong>.</p>
+                      <p>Получихме заявка за нова админ парола в <strong>{System.Net.WebUtility.HtmlEncode(branding.Name)}</strong>.</p>
                       <p>Линкът е валиден 30 минути.</p>
                       <p>
                         <a href="{resetUrl}" style="display:inline-block;background:#c9a56a;color:#111827;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:700">

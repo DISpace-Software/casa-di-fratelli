@@ -1,4 +1,6 @@
+import { useTenantBranding } from "../../context/TenantBrandingContext";
 export default function ReservationPreviewSection({ t, onOpenReservation }) {
+  const { branding } = useTenantBranding();
   return (
     <section id="reservation" className="mx-auto max-w-7xl px-6 py-24">
       <div className="grid gap-6 md:grid-cols-[0.85fr_1.15fr]">
@@ -16,12 +18,12 @@ export default function ReservationPreviewSection({ t, onOpenReservation }) {
           <div className="mt-8 space-y-3 text-stone-300">
             <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
               <span className="font-semibold text-white">{t.address}:</span>{" "}
-              ж.к. Христо Смирненски Западен, Vechernica 9, 4000 Пловдив
+              {branding.address}
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
               <span className="font-semibold text-white">{t.phone}:</span>{" "}
-              <a href="tel:+359888218318" className="transition hover:text-[#f2d39a]">
-                088 821 8318
+              <a href={`tel:${branding.phone}`} className="transition hover:text-[#f2d39a]">
+                {branding.phone}
               </a>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">

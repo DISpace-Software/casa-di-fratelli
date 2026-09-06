@@ -1,8 +1,10 @@
+import { useTenantBranding } from "../../context/TenantBrandingContext";
 export default function Footer({ t, onOpenPrivacy }) {
+  const { branding } = useTenantBranding();
   return (
     <footer className="site-footer border-t border-white/10 bg-black/20 px-6 py-10 text-center text-sm text-stone-400">
       <img
-        src="/casa-di-fratelli-logo.svg"
+        src={branding.logoUrl || "/restaurant-generic.svg"}
         alt={t.brand}
         className="brand-logo footer-logo mx-auto mb-5 h-16 w-[220px]"
       />

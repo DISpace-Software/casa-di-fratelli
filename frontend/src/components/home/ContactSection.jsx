@@ -1,3 +1,4 @@
+import { useTenantBranding } from "../../context/TenantBrandingContext";
 const socials = [
   {
     key: "facebook",
@@ -28,6 +29,7 @@ const socials = [
 ];
 
 export default function ContactSection({ t }) {
+  const { branding } = useTenantBranding();
   return (
     <section id="contacts" className="px-5 py-14 md:px-8">
       <div className="mx-auto max-w-6xl">
@@ -43,7 +45,11 @@ export default function ContactSection({ t }) {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row md:flex-col">
-            {socials.map((social) => (
+            <a className="text-[#f2d39a]" href={`tel:${branding.phone}`}>{branding.phone}</a>
+            {branding.email && <a className="text-[#f2d39a]" href={`mailto:${branding.email}`}>{branding.email}</a>}
+            {branding.address && <p>{branding.address} · {branding.city}</p>}
+            <p>{branding.openingHoursText}</p>
+            {socials.map((social) => ({ ...social, href: branding[`${social.key}Url`] })).filter((social) => social.href).map((social) => (
               <a
                 key={social.key}
                 href={social.href}

@@ -21,10 +21,11 @@ public sealed class TenantDatabaseConnectionResolver
 
     public string Resolve()
     {
-        var tenant = _currentTenant.IsResolved
-            ? _options.Tenants.FirstOrDefault(item =>
-                item.Id.Equals(_currentTenant.TenantId, StringComparison.OrdinalIgnoreCase))
-            : _options.DefaultTenant;
+        if (!_currentTenant.IsResolved)
+            throw new InvalidOperationException("Resolve the tenant before database access.");
+
+        var tenant = _options.Tenants.FirstOrDefault(item =>
+            item.Id.Equals(_currentTenant.TenantId, StringComparison.OrdinalIgnoreCase));
 
         if (tenant == null || !tenant.IsActive)
             throw new InvalidOperationException("A valid active tenant is required before database access.");
@@ -54,6 +55,27 @@ public sealed class TenantDatabaseConnectionResolver
         }
 
         return ConvertPostgresUrl(connectionString);
+    }
+
+    public void ValidateDedicatedDatabaseTargets()
+    {
+        var targets = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var tenant in _options.Tenants.Where(item => item.IsActive))
+        {
+            var connection = new NpgsqlConnectionStringBuilder(ResolveFor(tenant));
+            var host = string.Join(",", (connection.Host ?? string.Empty).Split(',')
+                .Select(value => value.Trim().TrimEnd('.').ToLowerInvariant())
+                .OrderBy(value => value, StringComparer.Ordinal));
+            // PostgreSQL defaults Database to Username when it is omitted.
+            var database = string.IsNullOrEmpty(connection.Database) ? connection.Username : connection.Database;
+            if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(database))
+                throw new InvalidOperationException($"Tenant '{tenant.Id}' requires an explicit database host and database name.");
+            var target = System.Text.Json.JsonSerializer.Serialize(new { host, connection.Port, database });
+            if (targets.TryGetValue(target, out var previousTenant))
+                throw new InvalidOperationException(
+                    $"Tenants '{previousTenant}' and '{tenant.Id}' resolve to the same database. Dedicated databases are required.");
+            targets.Add(target, tenant.Id);
+        }
     }
 
     private static string ConvertPostgresUrl(string value)

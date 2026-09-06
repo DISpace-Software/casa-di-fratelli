@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc.Filters;
 using CasaDiFratelli.Api.Data;
 using CasaDiFratelli.Api.Dtos;
 using CasaDiFratelli.Api.Models;
@@ -15,12 +16,12 @@ namespace CasaDiFratelli.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ReservationsController : ControllerBase
+public class ReservationsController : ControllerBase, IAsyncActionFilter
 {
     private const int PublicDailyContactReservationLimit = 2;
-    private const int PublicMaxReservationDaysAhead = 10;
-    private static readonly TimeOnly PublicLatestReservationTime = new(21, 0);
-    private static readonly TimeOnly AdminLatestReservationTime = new(23, 0);
+    private int PublicMaxReservationDaysAhead => _brand.PublicMaxReservationDaysAhead;
+    private TimeOnly PublicLatestReservationTime => TimeOnly.Parse(_brand.PublicLatestReservationTime);
+    private TimeOnly AdminLatestReservationTime => TimeOnly.Parse(_brand.AdminLatestReservationTime);
     private const string ReservationStatusAwaitingEmailConfirmation = "AwaitingEmailConfirmation";
     private const string ReservationStatusPending = "Pending";
     private const string ReservationStatusApproved = "Approved";
@@ -36,6 +37,15 @@ public class ReservationsController : ControllerBase
     private readonly PushNotificationService _pushNotifications;
     private readonly RestaurantClosureService _closures;
     private readonly ICurrentTenant _currentTenant;
+    private readonly TenantBrandingService _branding;
+    private TenantBrandingSettings _brand = new();
+    private string HtmlRestaurantName => WebUtility.HtmlEncode(_brand.Name);
+
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        _brand = await _branding.GetAsync();
+        await next();
+    }
 
     private sealed record TableLayoutCapacityItem(string? Id, int Seats, bool IsActive);
 
@@ -49,7 +59,8 @@ public class ReservationsController : ControllerBase
         ProductTierService tiers,
         PushNotificationService pushNotifications,
         RestaurantClosureService closures,
-        ICurrentTenant currentTenant)
+        ICurrentTenant currentTenant,
+        TenantBrandingService branding)
     {
         _db = db;
         _emailService = emailService;
@@ -61,13 +72,14 @@ public class ReservationsController : ControllerBase
         _pushNotifications = pushNotifications;
         _closures = closures;
         _currentTenant = currentTenant;
+        _branding = branding;
     }
 
-    private static DateTime GetRestaurantNow()
+    private DateTime GetRestaurantNow()
     {
         try
         {
-            var timezone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Sofia");
+            var timezone = TimeZoneInfo.FindSystemTimeZoneById(_brand.TimeZoneId);
             return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timezone);
         }
         catch
@@ -76,7 +88,7 @@ public class ReservationsController : ControllerBase
         }
     }
 
-    private static bool IsPastReservationTime(DateOnly reservedDate, string reservedTime)
+    private bool IsPastReservationTime(DateOnly reservedDate, string reservedTime)
     {
         if (!TimeOnly.TryParse(reservedTime, out var time))
             return false;
@@ -94,7 +106,7 @@ public class ReservationsController : ControllerBase
         return selectedDateTime <= now;
     }
 
-    private static bool IsPublicReservationTooSoon(DateOnly reservedDate, string reservedTime)
+    private bool IsPublicReservationTooSoon(DateOnly reservedDate, string reservedTime)
     {
         if (!TimeOnly.TryParse(reservedTime, out var time))
             return false;
@@ -109,10 +121,10 @@ public class ReservationsController : ControllerBase
         if (time.Hour <= 3 && now.Hour >= 10)
             selectedDateTime = selectedDateTime.AddDays(1);
 
-        return selectedDateTime < now.AddMinutes(15);
+        return selectedDateTime < now.AddMinutes(_brand.PublicLeadMinutes);
     }
 
-    private static bool IsReservationTimeAllowed(string reservedTime, bool createdByAdmin)
+    private bool IsReservationTimeAllowed(string reservedTime, bool createdByAdmin)
     {
         if (!TimeOnly.TryParse(reservedTime, out var time))
             return false;
@@ -164,8 +176,7 @@ public class ReservationsController : ControllerBase
 
     private string GetReviewUrl()
     {
-        return (_configuration["REVIEW_URL"] ??
-            "https://www.google.com/maps/search/?api=1&query=Casa%20di%20Fratelli%20Vechernitsa%209%20Plovdiv").Trim();
+        return _brand.GoogleReviewUrl;
     }
 
     private async Task<int> GetTableCapacityAsync(List<string> tableIds)
@@ -257,11 +268,11 @@ public class ReservationsController : ControllerBase
 
         await _emailService.SendAsync(
             reservation.Email,
-            "Потвърдете резервацията си · Casa di Fratelli",
+            $"Потвърдете резервацията си · {_brand.Name}",
             $"""
             <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937;background:#f8f3ea;padding:28px">
               <div style="max-width:620px;margin:0 auto;background:#fffaf2;border:1px solid #ead8bd;border-radius:22px;padding:28px">
-                <p style="letter-spacing:0.22em;text-transform:uppercase;color:#9a682d;font-size:12px;font-weight:700;margin:0 0 12px">Casa di Fratelli</p>
+                <p style="letter-spacing:0.22em;text-transform:uppercase;color:#9a682d;font-size:12px;font-weight:700;margin:0 0 12px">{HtmlRestaurantName}</p>
                 <h2 style="margin:0 0 14px;color:#2b1d15;font-size:28px">Потвърдете Вашата резервация</h2>
                 <p>Здравейте, {guestName},</p>
                 <p>Получихме заявката Ви за резервация. За да пазим масите коректно за всички гости, моля потвърдете резервацията от бутона по-долу.</p>
@@ -302,14 +313,14 @@ public class ReservationsController : ControllerBase
         {
             await _emailService.SendAsync(
                 reservation.Email,
-                "Благодарим Ви за посещението · Casa di Fratelli",
+                $"Благодарим Ви за посещението · {_brand.Name}",
                 $"""
                 <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937;background:#f8f3ea;padding:28px">
                   <div style="max-width:640px;margin:0 auto;background:#fffaf2;border:1px solid #ead8bd;border-radius:22px;padding:28px">
-                  <p style="letter-spacing:0.22em;text-transform:uppercase;color:#9a682d;font-size:12px;font-weight:700;margin:0 0 12px">Casa di Fratelli</p>
+                  <p style="letter-spacing:0.22em;text-transform:uppercase;color:#9a682d;font-size:12px;font-weight:700;margin:0 0 12px">{HtmlRestaurantName}</p>
                   <h2 style="margin:0 0 14px;color:#2b1d15">Благодарим Ви, че бяхте наши гости</h2>
                   <p>Здравейте, {guestName},</p>
-                  <p>За нас беше удоволствие да Ви посрещнем в <strong>Casa di Fratelli</strong>.</p>
+                  <p>За нас беше удоволствие да Ви посрещнем в <strong>{HtmlRestaurantName}</strong>.</p>
                   <p>Ще ни помогнете много, ако отделите минута за кратка обратна връзка за атмосферата, храната, обслужването и онлайн резервацията. Като благодарност ще получите <strong>5% за следващото посещение</strong>.</p>
                   <p>
                     <a href="{feedbackUrl}" style="display:inline-block;background:#c9a56a;color:#111827;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:700;margin-right:8px">
@@ -330,14 +341,14 @@ public class ReservationsController : ControllerBase
 
         await _emailService.SendAsync(
             reservation.Email,
-            "Благодарим Ви отново · Casa di Fratelli",
+            $"Благодарим Ви отново · {_brand.Name}",
             $"""
             <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937;background:#f8f3ea;padding:28px">
               <div style="max-width:640px;margin:0 auto;background:#fffaf2;border:1px solid #ead8bd;border-radius:22px;padding:28px">
-              <p style="letter-spacing:0.22em;text-transform:uppercase;color:#9a682d;font-size:12px;font-weight:700;margin:0 0 12px">Casa di Fratelli</p>
+              <p style="letter-spacing:0.22em;text-transform:uppercase;color:#9a682d;font-size:12px;font-weight:700;margin:0 0 12px">{HtmlRestaurantName}</p>
               <h2 style="margin:0 0 14px;color:#2b1d15">Благодарим Ви отново</h2>
               <p>Здравейте, {guestName},</p>
-              <p>Благодарим Ви, че отново избрахте <strong>Casa di Fratelli</strong>.</p>
+              <p>Благодарим Ви, че отново избрахте <strong>{HtmlRestaurantName}</strong>.</p>
               <p>За нас е чест да Ви посрещаме отново. Надяваме се вечерта Ви да е била спокойна, вкусна и запомняща се.</p>
               <p>
                 <a href="{reviewUrl}" style="display:inline-block;border:1px solid #c9a56a;color:#7a4a17;padding:11px 18px;border-radius:12px;text-decoration:none;font-weight:700">
@@ -408,7 +419,7 @@ public class ReservationsController : ControllerBase
 
     private async Task SendAdminReservationEmailAsync(Reservation reservation)
     {
-        var adminEmail = _configuration["ADMIN_EMAIL"];
+        var adminEmail = _branding.GetEmailConfiguration("ADMIN_EMAIL");
         if (string.IsNullOrWhiteSpace(adminEmail))
             return;
 
@@ -419,7 +430,7 @@ public class ReservationsController : ControllerBase
             $"Нова потвърдена резервация: {reservation.GuestName} · {reservation.ReservedDate:dd.MM.yyyy} г. {reservation.ReservedTime}",
             $"""
             <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-              <h2>Нова потвърдена резервация в Casa di Fratelli</h2>
+              <h2>Нова потвърдена резервация в {HtmlRestaurantName}</h2>
               <p><strong>Гост:</strong> {reservation.GuestName}</p>
               <p><strong>Телефон:</strong> {reservation.Phone}</p>
               <p><strong>Email:</strong> {reservation.Email}</p>
@@ -575,15 +586,15 @@ public class ReservationsController : ControllerBase
 
         if (!IsReservationTimeAllowed(request.ReservedTime, request.CreatedByAdmin))
             return BadRequest(request.CreatedByAdmin
-                ? "Admin reservations are available until 23:00."
-                : "Online reservations are available until 21:00. For a later time, please call 088 821 8318.");
+                ? $"Admin reservations are available until {_brand.AdminLatestReservationTime}."
+                : $"Online reservations are available until {_brand.PublicLatestReservationTime}. For a later time, please call {_brand.Phone}.");
 
         if (!request.CreatedByAdmin && IsPublicReservationTooSoon(request.ReservedDate, request.ReservedTime))
-            return BadRequest("Online reservations must be made at least 15 minutes before the selected time.");
+            return BadRequest($"Online reservations must be made at least {_brand.PublicLeadMinutes} minutes before the selected time.");
 
         var today = DateOnly.FromDateTime(GetRestaurantNow());
         if (!request.CreatedByAdmin && request.ReservedDate > today.AddDays(PublicMaxReservationDaysAhead))
-            return BadRequest("Online reservations are available up to 10 days ahead. For a later date, please call 088 821 8318.");
+            return BadRequest($"Online reservations are available up to {_brand.PublicMaxReservationDaysAhead} days ahead. For a later date, please call {_brand.Phone}.");
 
         var guestName = request.GuestName.Trim();
         var phone = request.Phone.Trim();
@@ -702,7 +713,7 @@ public class ReservationsController : ControllerBase
             await _db.SaveChangesAsync();
             if (!request.CreatedByAdmin)
             {
-                _ = SendAdminReservationEmailAsync(reservation);
+                await SendAdminReservationEmailAsync(reservation);
                 await _pushNotifications.NotifyNewReservationAsync(reservation);
             }
         }
@@ -754,15 +765,15 @@ public class ReservationsController : ControllerBase
         var guestCount = Math.Clamp(request.GuestCount <= 0 ? 2 : request.GuestCount, 1, 40);
 
         var now = GetRestaurantNow();
-        var openingTime = new TimeOnly(10, 0);
-        var latestWalkInTime = new TimeOnly(23, 30);
+        var openingTime = TimeOnly.Parse(_brand.WalkInOpeningTime);
+        var latestWalkInTime = TimeOnly.Parse(_brand.WalkInLatestTime);
         var currentTime = TimeOnly.FromDateTime(now);
 
         if (currentTime < openingTime || currentTime > latestWalkInTime)
         {
             return BadRequest(new
             {
-                message = "Walk-in seating is available only during restaurant working hours: 10:00-23:30."
+                message = $"Walk-in seating is available only during restaurant working hours: {_brand.WalkInOpeningTime}-{_brand.WalkInLatestTime}."
             });
         }
 
@@ -928,7 +939,7 @@ public class ReservationsController : ControllerBase
         await UpsertCustomerProfileForConfirmedReservationAsync(reservation);
         await MarkReservationBlacklistFlagAsync(reservation);
         await _db.SaveChangesAsync();
-        _ = SendAdminReservationEmailAsync(reservation);
+        await SendAdminReservationEmailAsync(reservation);
         await _pushNotifications.NotifyNewReservationAsync(reservation);
 
         return Ok(new
@@ -975,12 +986,12 @@ public class ReservationsController : ControllerBase
 {
     await _emailService.SendAsync(
         reservation.Email,
-        "Вашата резервация е потвърдена · Casa di Fratelli",
+        $"Вашата резервация е потвърдена · {_brand.Name}",
         $"""
         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
           <h2>Вашата резервация е потвърдена</h2>
           <p>Здравейте, {reservation.GuestName},</p>
-          <p>С радост потвърждаваме Вашата резервация в <strong>Casa di Fratelli</strong>.</p>
+          <p>С радост потвърждаваме Вашата резервация в <strong>{HtmlRestaurantName}</strong>.</p>
           <p><strong>Дата:</strong> {reservation.ReservedDate:dd.MM.yyyy} г.</p>
           <p><strong>Час:</strong> {reservation.ReservedTime}</p>
           <p><strong>Маси:</strong> {string.Join(", ", reservation.Tables.Select(t => t.TableCode))}</p>
@@ -1030,10 +1041,10 @@ public class ReservationsController : ControllerBase
 
             await _emailService.SendAsync(
                 reservation.Email,
-                "Можете да поръчате от дигиталното меню · Casa di Fratelli",
+                $"Можете да поръчате от дигиталното меню · {_brand.Name}",
                 $"""
                 <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
-                  <h2>Добре дошли в Casa di Fratelli</h2>
+                  <h2>Добре дошли в {HtmlRestaurantName}</h2>
                   <p>Здравейте, {reservation.GuestName},</p>
                   <p>Можете да разгледате дигиталното ни меню и да изпратите поръчка директно от телефона си, без да чакате сервитьор.</p>
                   <p><strong>Маса:</strong> {string.Join(", ", reservation.Tables.Select(t => t.TableCode))}</p>
@@ -1469,12 +1480,12 @@ public class ReservationsController : ControllerBase
 {
     await _emailService.SendAsync(
         reservation.Email,
-        "Вашата резервация е отменена · Casa di Fratelli",
+        $"Вашата резервация е отменена · {_brand.Name}",
         $"""
         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
           <h2>Вашата резервация е отменена</h2>
           <p>Здравейте, {reservation.GuestName},</p>
-          <p>Информираме Ви, че резервацията Ви в <strong>Casa di Fratelli</strong> беше отменена.</p>
+          <p>Информираме Ви, че резервацията Ви в <strong>{HtmlRestaurantName}</strong> беше отменена.</p>
           <p><strong>Дата:</strong> {reservation.ReservedDate:dd.MM.yyyy} г.</p>
           <p><strong>Час:</strong> {reservation.ReservedTime}</p>
           <p>Ако желаете, можете да направите нова резервация през сайта.</p>

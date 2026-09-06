@@ -1,3 +1,4 @@
+import { useTenantBranding } from "../../context/TenantBrandingContext";
 import { chefImage } from "../../data/restaurantData";
 
 function localText(language, bg, en, ru = bg) {
@@ -7,6 +8,7 @@ function localText(language, bg, en, ru = bg) {
 }
 
 export default function MenuHero({ data, onOpenReservation, language }) {
+  const { branding } = useTenantBranding();
   return (
     <section className="relative overflow-hidden border-b border-white/10">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(201,165,106,0.2),transparent_32rem),radial-gradient(circle_at_90%_10%,rgba(40,160,116,0.14),transparent_28rem)]" />
@@ -14,8 +16,8 @@ export default function MenuHero({ data, onOpenReservation, language }) {
       <div className="mx-auto grid max-w-7xl items-center gap-7 px-5 py-7 md:grid-cols-2 md:gap-10 md:px-6 md:py-24">
         <div className="relative z-10">
           <img
-            src="/casa-di-fratelli-logo.svg"
-            alt="Casa di Fratelli"
+            src={branding.logoUrl || "/restaurant-generic.svg"}
+            alt={branding.name}
             className="brand-logo mb-5 h-16 w-[210px] object-left md:mb-7 md:h-20 md:w-[260px]"
           />
           <div className="section-kicker mb-4">

@@ -21,6 +21,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<CurrentTenant>();
 builder.Services.AddScoped<ICurrentTenant>(provider => provider.GetRequiredService<CurrentTenant>());
 builder.Services.AddScoped<TenantDatabaseConnectionResolver>();
+builder.Services.AddScoped<TenantBrandingService>();
 builder.Services.AddHttpClient<EmailService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(5);
@@ -106,6 +107,12 @@ app.Use(async (context, next) =>
 });
 
 var tenantOptions = app.Services.GetRequiredService<IOptions<TenantResolutionOptions>>().Value;
+// Validate every target before migrating or bootstrapping any restaurant.
+using (var validationScope = app.Services.CreateScope())
+{
+    validationScope.ServiceProvider.GetRequiredService<TenantDatabaseConnectionResolver>()
+        .ValidateDedicatedDatabaseTargets();
+}
 foreach (var tenant in tenantOptions.Tenants.Where(item => item.IsActive))
 {
     using var scope = app.Services.CreateScope();

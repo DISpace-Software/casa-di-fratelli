@@ -1,3 +1,4 @@
+import { useTenantBranding } from "../../context/TenantBrandingContext";
 import React from "react";
 
 function localText(language, bg, en, ru = bg) {
@@ -7,33 +8,34 @@ function localText(language, bg, en, ru = bg) {
 }
 
 export default function HeroSection({ t, language }) {
+  const { branding } = useTenantBranding();
   const [deliveryOpen, setDeliveryOpen] = React.useState(false);
-  const directPhone = "0888218318";
+  const directPhone = branding.phone;
   const takeawayUrl = "https://www.takeaway.com/bg/menu/jorjio-grill-pizzadzordzio-gril-pica?serviceType=delivery&utm_source=google&utm_medium=organic&utm_campaign=foodorder";
   const glovoUrl = "https://glovoapp.com/en/bg/plovdiv/stores/jorjio-grill-pizza-pdv";
 
   return (
     <section className="site-hero relative min-h-[calc(100vh-92px)] overflow-hidden">
-      <img
-        src="/restaurant-terrace.jpg"
+      {branding.heroImageUrl && <img
+        src={branding.heroImageUrl}
         alt={t.interiorAlt}
         className="absolute inset-0 h-full w-full scale-[1.03] object-cover object-[56%_center] md:object-center"
-      />
+      />}
       <div className="hero-soften absolute inset-0 backdrop-blur-[0.6px]" />
       <div className="hero-shade absolute inset-0 bg-[linear-gradient(90deg,rgba(7,5,4,0.96)_0%,rgba(9,7,5,0.82)_42%,rgba(9,7,5,0.28)_75%,rgba(9,7,5,0.64)_100%)]" />
       <div className="hero-warmth absolute inset-0 bg-[radial-gradient(circle_at_72%_18%,rgba(201,165,106,0.18),transparent_24rem),radial-gradient(circle_at_16%_82%,rgba(36,115,78,0.2),transparent_24rem)]" />
       <div className="hero-bottom-fade absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#090705] to-transparent" />
-      <img
+      {branding.isCasa && <img
         src="/hero-chef-plating-cutout.png"
         alt=""
         aria-hidden="true"
         className="hero-chef-overlay pointer-events-none absolute bottom-0 right-0 z-[2] h-[52vh] max-h-[760px] w-[66vw] max-w-[860px] object-contain object-right-bottom opacity-95 md:h-[88vh] md:w-[48vw]"
-      />
+      />}
 
       <div className="relative z-10 mx-auto flex min-h-[calc(100vh-92px)] max-w-7xl items-center px-6 py-16 md:py-20">
         <div className="max-w-3xl">
           <img
-            src="/casa-di-fratelli-logo.svg"
+            src={branding.logoUrl || "/restaurant-generic.svg"}
             alt={t.brand}
             className="brand-logo hero-logo mb-8 h-24 w-[270px] object-left md:h-32 md:w-[390px]"
           />
@@ -48,7 +50,7 @@ export default function HeroSection({ t, language }) {
           <div className="mt-8 flex flex-wrap gap-4">
             <button
               type="button"
-              onClick={() => setDeliveryOpen(true)}
+              onClick={() => branding.isCasa ? setDeliveryOpen(true) : window.location.assign(`tel:${branding.phone}`)}
               className="luxury-button rounded-full px-7 py-3 font-semibold"
             >
               {localText(language, "Casa di Fratelli у дома", "Casa di Fratelli at home", "Casa di Fratelli дома")}

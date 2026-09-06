@@ -27,9 +27,8 @@ public sealed class TenantResolutionMiddleware
         var requestedTenant = string.IsNullOrWhiteSpace(requestedTenantValue)
             ? null
             : FindTenant(requestedTenantValue);
-        var originTenant = string.IsNullOrWhiteSpace(originValue)
-            ? null
-            : FindTenant(originValue);
+        var originTenant = FindOriginTenant(originValue);
+        var hostTenant = FindHostTenant(context.Request.Host.Host);
 
         if (!string.IsNullOrWhiteSpace(requestedTenantValue) && requestedTenant == null)
         {
@@ -47,6 +46,14 @@ public sealed class TenantResolutionMiddleware
             return;
         }
 
+        if (hostTenant != null &&
+            ((requestedTenant != null && !requestedTenant.Id.Equals(hostTenant.Id, StringComparison.OrdinalIgnoreCase)) ||
+             (originTenant != null && !originTenant.Id.Equals(hostTenant.Id, StringComparison.OrdinalIgnoreCase))))
+        {
+            await WriteTenantErrorAsync(context, "TENANT_HOST_MISMATCH", "The requested tenant does not match the configured host.");
+            return;
+        }
+
         var tenant = ResolveTenant(context);
         if (tenant == null && _options.RequireKnownTenant)
         {
@@ -54,7 +61,8 @@ public sealed class TenantResolutionMiddleware
             return;
         }
 
-        tenant ??= _options.DefaultTenant;
+        tenant ??= _options.Tenants.First(item => item.IsActive &&
+            item.Id.Equals(_options.DefaultTenant.Id, StringComparison.OrdinalIgnoreCase));
         currentTenant.Resolve(tenant);
         context.Response.Headers["X-Tenant-Id"] = tenant.Id;
 
@@ -74,8 +82,8 @@ public sealed class TenantResolutionMiddleware
             context.Request.Headers["X-Tenant-Id"].FirstOrDefault(),
             context.Request.RouteValues["tenant"]?.ToString(),
             context.Request.RouteValues["tenantSlug"]?.ToString(),
-            ResolveFromOrigin(context.Request.Headers.Origin.FirstOrDefault()),
-            ResolveFromHost(context.Request.Host.Host)
+            FindOriginTenant(ResolveFromOrigin(context.Request.Headers.Origin.FirstOrDefault()))?.Id,
+            FindHostTenant(context.Request.Host.Host)?.Id
         };
 
         foreach (var candidate in candidates.Where(x => !string.IsNullOrWhiteSpace(x)))
@@ -85,19 +93,26 @@ public sealed class TenantResolutionMiddleware
                 return match;
         }
 
-        var host = context.Request.Host.Host;
-        if (!string.IsNullOrWhiteSpace(host))
-        {
-            var domainMatch = _options.Tenants.FirstOrDefault(tenant =>
-                tenant.IsActive &&
-                !string.IsNullOrWhiteSpace(tenant.Domain) &&
-                host.Equals(tenant.Domain, StringComparison.OrdinalIgnoreCase));
-
-            if (domainMatch != null)
-                return domainMatch;
-        }
-
         return null;
+    }
+
+    private TenantDefinition? FindOriginTenant(string? origin)
+    {
+        if (string.IsNullOrWhiteSpace(origin)) return null;
+        return _options.Tenants.FirstOrDefault(tenant => tenant.IsActive &&
+            (tenant.FrontendOrigins.Any(value => NormalizeOrigin(value).Equals(origin, StringComparison.OrdinalIgnoreCase)) ||
+             (!string.IsNullOrWhiteSpace(tenant.Domain) &&
+              $"https://{tenant.Domain}".Equals(origin, StringComparison.OrdinalIgnoreCase))));
+    }
+
+    private TenantDefinition? FindHostTenant(string host)
+    {
+        if (string.IsNullOrWhiteSpace(host) || DevelopmentHosts.Contains(host)) return null;
+        // Never infer a tenant from the first label of an arbitrary domain.
+        return _options.Tenants.FirstOrDefault(tenant => tenant.IsActive &&
+            (host.Equals(tenant.Domain, StringComparison.OrdinalIgnoreCase) ||
+             tenant.FrontendOrigins.Any(origin => Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+                 host.Equals(uri.Host, StringComparison.OrdinalIgnoreCase))));
     }
 
     private TenantDefinition? FindTenant(string value)
@@ -125,16 +140,4 @@ public sealed class TenantResolutionMiddleware
 
     private static string NormalizeOrigin(string value) => value.Trim().TrimEnd('/');
 
-    private static string? ResolveFromHost(string host)
-    {
-        if (string.IsNullOrWhiteSpace(host) || DevelopmentHosts.Contains(host))
-            return null;
-
-        var parts = host.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (parts.Length <= 2)
-            return null;
-
-        var subdomain = parts[0];
-        return subdomain.Equals("www", StringComparison.OrdinalIgnoreCase) ? null : subdomain;
-    }
 }

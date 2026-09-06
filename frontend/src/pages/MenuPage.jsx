@@ -1,3 +1,4 @@
+import { useTenantBranding } from "../context/TenantBrandingContext";
 import React from "react";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
@@ -187,6 +188,7 @@ export default function MenuPage({
   theme,
   onToggleTheme,
 }) {
+  const { branding } = useTenantBranding();
   const data = React.useMemo(
     () => buildMenuDataFromCms(cmsMenuItems, language, getMenuPageCopy(language)),
     [cmsMenuItems, language]
@@ -491,7 +493,7 @@ export default function MenuPage({
           <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
             <div>
               <div className="section-kicker">
-                Casa di Fratelli
+                {branding.name}
               </div>
               <h1 className="mt-1 text-xl font-semibold text-[#fff4df]">
                 {localText(language, "Дигитално меню", "Digital menu", "Дигитальное меню")}

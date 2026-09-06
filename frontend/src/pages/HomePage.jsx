@@ -1,3 +1,4 @@
+import { useTenantBranding } from "../context/TenantBrandingContext";
 import Header from "../components/layout/Header";
 import HeroSection from "../components/home/HeroSection";
 import Footer from "../components/layout/Footer";
@@ -24,6 +25,7 @@ export default function HomePage({
   theme,
   onToggleTheme,
 }) {
+  const { branding } = useTenantBranding();
   return (
     <div className="luxury-shell min-h-screen overflow-x-hidden text-stone-100">
       <Header
@@ -45,18 +47,18 @@ export default function HomePage({
         language={language}
       />
 
-      <AboutSection t={t} />
+      {branding.isCasa && <AboutSection t={t} />}
       <MenuSection
         t={t}
         language={language}
         onOpenMenu={onOpenMenu}
         cmsMenuItems={cmsMenuItems}
       />
-      <DeliverySection language={language} />
-      <GallerySection t={t} />
-      <AwardsSection language={language} />
+      {branding.isCasa && <DeliverySection language={language} />}
+      {branding.isCasa && <GallerySection t={t} />}
+      {branding.isCasa && <AwardsSection language={language} />}
       <ReservationPreviewSection t={t} onOpenReservation={onOpenReservation} />
-      <ReviewsSection language={language} />
+      {branding.isCasa && <ReviewsSection language={language} />}
       <EventsSection language={language} events={cmsEvents} />
       <ContactSection t={t} />
       <Footer t={t} onOpenPrivacy={onOpenPrivacy} />
