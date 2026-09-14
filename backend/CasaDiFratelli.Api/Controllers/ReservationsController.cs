@@ -1215,7 +1215,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             return BadRequest("One or more reservation fields are too long.");
         if (!string.IsNullOrWhiteSpace(email) && !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email))
             return BadRequest("Invalid email address.");
-        if (request.GuestCount <= 0 || request.GuestCount > 100)
+        if (request.GuestCount <= 0)
             return BadRequest("Invalid guests.");
         if (tableIds.Count == 0)
             return BadRequest("At least one valid table must be selected.");
@@ -1235,8 +1235,6 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         {
             return BadRequest("One or more selected tables are not active.");
         }
-        if (await GetTableCapacityAsync(tableIds) < request.GuestCount)
-            return BadRequest("The selected tables do not have enough seats.");
         if ((request.Notes?.Length ?? 0) > 2000 || (request.InternalNote?.Length ?? 0) > 2000)
             return BadRequest("Reservation notes are too long.");
 

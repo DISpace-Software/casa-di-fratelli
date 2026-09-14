@@ -1075,6 +1075,52 @@ async function readErrorMessage(response, fallback) {
   }
 }
 
+function localizeReservationSaveError(message, language = "bg") {
+  const normalized = String(message || "").trim();
+  if (!normalized) {
+    return adminLocalText(language, "Резервацията не е запазена. Проверете данните или заетостта и опитайте отново.", "Reservation was not saved. Check the details or availability and try again.", "Резервация не сохранена. Проверьте данные или доступность и повторите.");
+  }
+
+  const translations = {
+    "The selected tables do not have enough seats.": [
+      "Избраните маси нямат достатъчно места за този брой гости.",
+      "The selected tables do not have enough seats for this number of guests.",
+      "У выбранных столов недостаточно мест для такого количества гостей.",
+    ],
+    "One or more selected tables are reserved less than three hours from this time.": [
+      "Една или повече избрани маси са заети в рамките на три часа от този час.",
+      "One or more selected tables are reserved less than three hours from this time.",
+      "Один или несколько выбранных столов заняты в пределах трёх часов от этого времени.",
+    ],
+    "Reservation date or time has already passed.": [
+      "Датата или часът на резервацията вече са минали.",
+      "Reservation date or time has already passed.",
+      "Дата или время резервации уже прошли.",
+    ],
+    "Admin reservations are available until 23:00.": [
+      "Административните резервации са възможни до 23:00.",
+      "Admin reservations are available until 23:00.",
+      "Административные резервации доступны до 23:00.",
+    ],
+    "One or more selected tables are not active.": [
+      "Една или повече избрани маси не са активни.",
+      "One or more selected tables are not active.",
+      "Один или несколько выбранных столов не активны.",
+    ],
+    "Invalid email address.": [
+      "Невалиден имейл адрес.",
+      "Invalid email address.",
+      "Неверный email адрес.",
+    ],
+  };
+
+  const translated = translations[normalized];
+  if (!translated) return normalized;
+  if (language === "en") return translated[1];
+  if (language === "ru") return translated[2];
+  return translated[0];
+}
+
 async function fetchJsonOrEmpty(url, fallback, options = {}) {
   const response = await fetch(url, options);
 
@@ -2345,7 +2391,7 @@ function ReservationOperationsMap({
         ? await onEditReservation?.(tableReservationDraft.id, payload)
         : await onCreateReservation?.(payload);
       if (saved !== true) {
-        setReservationFormError(adminLocalText(language, "Резервацията не е запазена. Проверете данните или заетостта и опитайте отново.", "Reservation was not saved. Check the details or availability and try again.", "Резервация не сохранена. Проверьте данные или доступность и повторите."));
+        setReservationFormError(localizeReservationSaveError(saved?.message, language));
         return;
       }
       setTableReservationDraft(null);
@@ -2551,7 +2597,6 @@ function ReservationOperationsMap({
               <input
                 type="number"
                 min="1"
-                max="40"
                 aria-label={adminLocalText(language, "Гости", "Guests", "Гости")}
                 value={tableReservationDraft.guestCount}
                 onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestCount: event.target.value }))}
@@ -7196,8 +7241,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
-      setAdminError(await readErrorMessage(response, "Failed to update reservation."));
-      return false;
+      const message = await readErrorMessage(response, "Failed to update reservation.");
+      setAdminError(message);
+      return { ok: false, message };
     }
     await loadReservations();
     setAdminNotice(adminLocalText(adminLanguage, "Резервацията е запазена.", "Reservation saved.", "Резервация сохранена."));
@@ -9557,7 +9603,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   <input
                                     type="number"
                                     min="1"
-                                    max="40"
                                     value={tableEdit.guestCount}
                                     onChange={(e) => setTableEditGuestCount(r, e.target.value)}
                                     disabled={r.status === "Cancelled"}
@@ -9793,7 +9838,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                           <input
                                             type="number"
                                             min="1"
-                                            max="40"
                                             value={tableEdit.guestCount}
                                             onChange={(e) => setTableEditGuestCount(r, e.target.value)}
                                             disabled={r.status === "Cancelled"}
