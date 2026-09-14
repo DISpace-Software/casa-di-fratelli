@@ -5881,6 +5881,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     currentPassword: false,
     newPassword: false,
   });
+  const [reservationTrashOpen, setReservationTrashOpen] = React.useState(false);
+  const [deletedReservations, setDeletedReservations] = React.useState([]);
+  const [reservationTrashBusy, setReservationTrashBusy] = React.useState(false);
+  const [reservationTrashError, setReservationTrashError] = React.useState("");
   const [editingAdminId, setEditingAdminId] = React.useState(null);
   const [adminEditForm, setAdminEditForm] = React.useState({
     name: "",
@@ -5900,6 +5904,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const canClearOperationalData = currentAdminRole === "Developer";
   const canManageMarketing = ["Owner", "Developer"].includes(currentAdminRole);
   const canUseMaintenance = ["Administrator", "Owner", "Developer"].includes(currentAdminRole);
+  const canUseReservationTrash = canUseMaintenance;
   const canViewFeedback = ["Administrator", "Owner", "Developer"].includes(currentAdminRole);
   const canManageAdmins = ["Owner", "Developer"].includes(currentAdminRole);
   const hasDeveloperAdmin = adminUsers.some((user) => normalizeAdminRole(user.role || user.Role) === "Developer");
@@ -6007,6 +6012,32 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
   }, [withAdminToken]);
 
+  const loadDeletedReservations = React.useCallback(async ({ silent = false } = {}) => {
+    if (!canUseReservationTrash) {
+      setDeletedReservations([]);
+      return;
+    }
+
+    if (!silent) {
+      setReservationTrashBusy(true);
+      setReservationTrashError("");
+    }
+
+    try {
+      const data = await fetchJsonOrEmpty(`${API_BASE_URL}/api/maintenance/reservations/archive?kind=deleted`, [], withAdminToken());
+      setDeletedReservations(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to load deleted reservations", error);
+      if (!silent) {
+        setReservationTrashError(error?.message || "Failed to load deleted reservations.");
+      }
+    } finally {
+      if (!silent) {
+        setReservationTrashBusy(false);
+      }
+    }
+  }, [canUseReservationTrash, withAdminToken]);
+
   const loadMenuItems = React.useCallback(async () => {
     try {
       const menuData = await fetchJsonOrEmpty(`${API_BASE_URL}/api/menu`, [], withAdminToken());
@@ -6016,6 +6047,11 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       setAdminError(error?.message || "Failed to load menu.");
     }
   }, [withAdminToken]);
+
+  React.useEffect(() => {
+    if (!canUseReservationTrash) return;
+    loadDeletedReservations({ silent: true });
+  }, [canUseReservationTrash, loadDeletedReservations]);
 
   const loadEvents = React.useCallback(async () => {
     try {
@@ -6428,7 +6464,37 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
 
     setAdminNotice(adminLanguage === "bg" ? "Резервацията е архивирана." : "Reservation archived.");
-    await loadReservations();
+    await Promise.all([
+      loadReservations(),
+      loadDeletedReservations({ silent: true }),
+    ]);
+  }
+
+  async function restoreReservationFromTrash(id) {
+    setAdminNotice("");
+    setAdminError("");
+    setReservationTrashError("");
+    setReservationTrashBusy(true);
+
+    try {
+      const response = await adminFetch(`${API_BASE_URL}/api/maintenance/reservations/${id}/restore`, { method: "POST" });
+      if (!response.ok) {
+        const message = await readErrorMessage(response, "Failed to restore reservation.");
+        setReservationTrashError(message);
+        return;
+      }
+
+      setAdminNotice(adminLanguage === "bg" ? "Резервацията е възстановена." : "Reservation restored.");
+      await Promise.all([
+        loadReservations({ silent: true }),
+        loadDeletedReservations({ silent: true }),
+      ]);
+    } catch (error) {
+      console.error("Failed to restore reservation", error);
+      setReservationTrashError(error?.message || "Failed to restore reservation.");
+    } finally {
+      setReservationTrashBusy(false);
+    }
   }
 
   async function updateDiningOrderStatus(orderId, status) {
@@ -8657,6 +8723,114 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const recentDashboardOrders = diningOrders
     .filter((order) => !["Done", "Cancelled"].includes(order.status))
     .slice(0, 5);
+
+  function renderReservationTrash() {
+    if (!canUseReservationTrash || isDashboard) return null;
+
+    const title = adminLanguage === "bg" ? "Кошче с резервации" : "Reservation trash";
+    const emptyText = adminLanguage === "bg" ? "Няма изтрити резервации." : "No deleted reservations.";
+
+    return (
+      <div className="fixed bottom-4 right-4 z-[10020] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+        {reservationTrashOpen && (
+          <div className="w-[min(380px,calc(100vw-2rem))] overflow-hidden rounded-[22px] border border-[#f2d39a]/24 bg-[#15110e]/96 text-left shadow-[0_28px_90px_rgba(0,0,0,0.72)] backdrop-blur-xl">
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+              <div>
+                <div className="section-kicker text-[10px]">{title}</div>
+                <div className="mt-1 text-xs text-white/45">
+                  {deletedReservations.length} {adminLanguage === "bg" ? "записа" : "records"}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => loadDeletedReservations()}
+                disabled={reservationTrashBusy}
+                className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-[#f2d39a] transition hover:border-[#f2d39a]/35 disabled:opacity-50"
+              >
+                {reservationTrashBusy ? "..." : adminLanguage === "bg" ? "Обнови" : "Refresh"}
+              </button>
+            </div>
+
+            <div className="max-h-[min(520px,calc(100svh-9rem))] overflow-y-auto p-3">
+              {reservationTrashError && (
+                <div className="mb-3 rounded-2xl border border-red-300/25 bg-red-500/15 px-3 py-2 text-sm text-red-100">
+                  {reservationTrashError}
+                </div>
+              )}
+
+              {deletedReservations.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/50">
+                  {emptyText}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {deletedReservations.map((reservation) => {
+                    const id = reservation.id || reservation.Id;
+                    const tableIds = reservation.tableIds || reservation.TableIds || [];
+                    const deletedAt = reservation.deletedAtUtc || reservation.DeletedAtUtc;
+                    return (
+                      <div key={id} className="rounded-2xl border border-white/10 bg-black/24 p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-semibold text-[#fff4df]">
+                              {reservation.guestName || reservation.GuestName || "-"}
+                            </div>
+                            <div className="mt-1 text-xs leading-5 text-white/50">
+                              {(reservation.reservedDate || reservation.ReservedDate || "").slice(0, 10)} · {reservation.reservedTime || reservation.ReservedTime || "-"} · {reservation.guestCount ?? reservation.GuestCount ?? 0} {adminLanguage === "bg" ? "гости" : "guests"}
+                            </div>
+                            <div className="text-xs leading-5 text-white/40">
+                              {adminLanguage === "bg" ? "Маси" : "Tables"}: {tableIds.join(", ") || "-"}
+                            </div>
+                            {deletedAt && (
+                              <div className="mt-1 text-[11px] text-white/30">
+                                {new Date(deletedAt).toLocaleString()}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => restoreReservationFromTrash(id)}
+                            disabled={reservationTrashBusy}
+                            className="shrink-0 rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:border-emerald-200/40 disabled:opacity-50"
+                          >
+                            {adminLanguage === "bg" ? "Възстанови" : "Restore"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => {
+            setReservationTrashOpen((isOpen) => !isOpen);
+            if (!reservationTrashOpen) loadDeletedReservations({ silent: true });
+          }}
+          className="relative flex h-14 w-14 items-center justify-center rounded-full border border-[#f2d39a]/35 bg-[#15110e]/95 text-[#f2d39a] shadow-[0_18px_48px_rgba(0,0,0,0.58)] backdrop-blur transition hover:border-[#f2d39a]/65 hover:bg-[#211811] focus:outline-none focus:ring-2 focus:ring-[#f2d39a]/45"
+          aria-label={title}
+          title={title}
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18" />
+            <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6" />
+            <path d="M6.5 6l.8 14A2 2 0 0 0 9.3 22h5.4a2 2 0 0 0 2-1.9l.8-14" />
+            <path d="M10 10v7" />
+            <path d="M14 10v7" />
+          </svg>
+          {deletedReservations.length > 0 && (
+            <span className="absolute -right-1 -top-1 min-w-5 rounded-full border border-[#15110e] bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-white">
+              {deletedReservations.length > 99 ? "99+" : deletedReservations.length}
+            </span>
+          )}
+        </button>
+      </div>
+    );
+  }
 
   const openAdminTab = (key) => {
     if (key !== "liveMap") {
@@ -12576,6 +12750,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           </>
         ) : null}
       </div>
+      {renderReservationTrash()}
     </div>
   );
 }
