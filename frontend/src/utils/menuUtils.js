@@ -3,9 +3,31 @@ const categoryLabels = {
   starters: { bg: "Нещо за начало", en: "Starters", ru: "Закуски" },
   "pasta-risotto": { bg: "Паста и ризото", en: "Pasta & Risotto", ru: "Паста и ризотто" },
   mains: { bg: "Основни и рибни", en: "Mains & Fish", ru: "Основные блюда и рыба" },
+  bbq: { bg: "BBQ Josper", en: "BBQ Josper", ru: "BBQ Josper" },
   pizza: { bg: "Пица", en: "Pizza", ru: "Пицца" },
   bread: { bg: "Домашен хляб", en: "Homemade Bread", ru: "Домашний хлеб" },
   desserts: { bg: "Десерти", en: "Desserts", ru: "Десерты" },
+  "hot-drinks": { bg: "Топли напитки", en: "Hot drinks", ru: "Горячие напитки" },
+  "drink-extras": { bg: "Добавки към напитки", en: "Drink extras", ru: "Добавки к напиткам" },
+  "soft-drinks": { bg: "Безалкохолни", en: "Soft drinks", ru: "Безалкогольные напитки" },
+  lemonades: { bg: "Лимонади", en: "Lemonades", ru: "Лимонады" },
+  water: { bg: "Вода", en: "Water", ru: "Вода" },
+  "cold-drinks": { bg: "Студени напитки", en: "Cold drinks", ru: "Холодные напитки" },
+  "fresh-juice": { bg: "Фреш", en: "Fresh juice", ru: "Фреш" },
+  "draft-beer": { bg: "Наливна бира", en: "Draft beer", ru: "Разливное пиво" },
+  "bottled-beer-cider": { bg: "Бутилирана бира и сайдер", en: "Bottled beer & cider", ru: "Бутылочное пиво и сидр" },
+  "scotch-whisky": { bg: "Шотландско уиски", en: "Scotch whisky", ru: "Шотландский виски" },
+  "irish-whisky": { bg: "Ирландско уиски", en: "Irish whisky", ru: "Ирландский виски" },
+  "bourbon-tennessee": { bg: "Бърбън и тенеси", en: "Bourbon & Tennessee", ru: "Бурбон и теннесси" },
+  "cognac-brandy": { bg: "Коняк и бренди", en: "Cognac & brandy", ru: "Коньяк и бренди" },
+  "anise-drinks": { bg: "Анасонови напитки", en: "Anise drinks", ru: "Анисовые напитки" },
+  rum: { bg: "Ром", en: "Rum", ru: "Ром" },
+  vodka: { bg: "Водка", en: "Vodka", ru: "Водка" },
+  gin: { bg: "Джин", en: "Gin", ru: "Джин" },
+  tequila: { bg: "Текила", en: "Tequila", ru: "Текила" },
+  "liqueurs-vermouth": { bg: "Ликьори и вермути", en: "Liqueurs & vermouth", ru: "Ликёры и вермуты" },
+  rakia: { bg: "Ракия", en: "Rakia", ru: "Ракия" },
+  cocktails: { bg: "Коктейли", en: "Cocktails", ru: "Коктейли" },
   main: { bg: "Основни", en: "Main", ru: "Основные" },
   drinks: { bg: "Напитки", en: "Drinks", ru: "Напитки" },
 };
@@ -97,7 +119,7 @@ export function buildMenuDataFromCms(items, language, fallbackData) {
       department,
       kind: department === "Bar" ? "Drink" : "Dish",
       name:
-        getValue(item, language === "en" ? "nameEn" : "nameBg") ||
+        getValue(item, language === "en" ? "nameEn" : language === "ru" ? "nameRu" : "nameBg") ||
         getValue(item, "nameBg") ||
         getValue(item, "nameEn") ||
         "",
@@ -106,7 +128,7 @@ export function buildMenuDataFromCms(items, language, fallbackData) {
       priceValue: Number(getValue(item, "price") || 0),
       imageUrl: getValue(item, "imageUrl") || "",
       description:
-        getValue(item, language === "en" ? "descriptionEn" : "descriptionBg") ||
+        getValue(item, language === "en" ? "descriptionEn" : language === "ru" ? "descriptionRu" : "descriptionBg") ||
         getValue(item, "descriptionBg") ||
         getValue(item, "descriptionEn") ||
         "",

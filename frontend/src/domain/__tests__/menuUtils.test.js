@@ -74,3 +74,46 @@ test("CMS menu builder falls back when no active CMS items exist", () => {
   assert.equal(result.categories[0].id, "fallback");
   assert.equal(result.categories[0].items[0].price, "€12.30");
 });
+
+test("CMS menu builder localizes the new detailed drink categories", () => {
+  const result = buildMenuDataFromCms(
+    [
+      {
+        category: "draft-beer",
+        department: "Bar",
+        nameBg: "Шуменско",
+        weight: "500 мл",
+        price: 2.69,
+        isActive: true,
+      },
+    ],
+    "bg",
+    fallbackData
+  );
+
+  assert.equal(result.categories[0].title, "Наливна бира");
+  assert.equal(result.departments[0].title, "Напитки");
+});
+
+test("CMS menu builder uses Russian menu fields for Russian guests", () => {
+  const result = buildMenuDataFromCms(
+    [
+      {
+        category: "salads",
+        nameBg: "Салата",
+        nameEn: "Salad",
+        nameRu: "Салат",
+        descriptionBg: "Домати",
+        descriptionEn: "Tomatoes",
+        descriptionRu: "Помидоры",
+        price: 8,
+        isActive: true,
+      },
+    ],
+    "ru",
+    fallbackData
+  );
+
+  assert.equal(result.categories[0].items[0].name, "Салат");
+  assert.equal(result.categories[0].items[0].description, "Помидоры");
+});

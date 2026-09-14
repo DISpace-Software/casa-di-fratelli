@@ -44,8 +44,10 @@ const ADMIN_MAP_VIEW_STORAGE_KEY = "casa-admin-map-view-mode";
 const emptyMenuItem = {
   nameBg: "",
   nameEn: "",
+  nameRu: "",
   descriptionBg: "",
   descriptionEn: "",
+  descriptionRu: "",
   imageUrl: "",
   weight: "",
   price: "",
@@ -871,12 +873,31 @@ const categoryDisplayNames = {
     starters: "Нещо за начало",
     "pasta-risotto": "Паста и ризото",
     mains: "Основни и рибни",
+    bbq: "BBQ Josper",
     pizza: "Пица",
     bread: "Домашен хляб",
     desserts: "Десерти",
+    "hot-drinks": "Топли напитки",
+    "drink-extras": "Добавки към напитки",
     "cold-drinks": "Студени напитки",
     "soft-drinks": "Безалкохолни",
     lemonades: "Лимонади",
+    water: "Вода",
+    "fresh-juice": "Фреш",
+    "draft-beer": "Наливна бира",
+    "bottled-beer-cider": "Бутилирана бира и сайдер",
+    "scotch-whisky": "Шотландско уиски",
+    "irish-whisky": "Ирландско уиски",
+    "bourbon-tennessee": "Бърбън и тенеси",
+    "cognac-brandy": "Коняк и бренди",
+    "anise-drinks": "Анасонови напитки",
+    rum: "Ром",
+    vodka: "Водка",
+    gin: "Джин",
+    tequila: "Текила",
+    "liqueurs-vermouth": "Ликьори и вермути",
+    rakia: "Ракия",
+    cocktails: "Коктейли",
     alcohol: "Алкохол",
     main: "Основни",
   },
@@ -885,12 +906,31 @@ const categoryDisplayNames = {
     starters: "Starters",
     "pasta-risotto": "Pasta & Risotto",
     mains: "Mains & Fish",
+    bbq: "BBQ Josper",
     pizza: "Pizza",
     bread: "Bread",
     desserts: "Desserts",
+    "hot-drinks": "Hot drinks",
+    "drink-extras": "Drink extras",
     "cold-drinks": "Cold drinks",
     "soft-drinks": "Soft drinks",
     lemonades: "Lemonades",
+    water: "Water",
+    "fresh-juice": "Fresh juice",
+    "draft-beer": "Draft beer",
+    "bottled-beer-cider": "Bottled beer & cider",
+    "scotch-whisky": "Scotch whisky",
+    "irish-whisky": "Irish whisky",
+    "bourbon-tennessee": "Bourbon & Tennessee",
+    "cognac-brandy": "Cognac & brandy",
+    "anise-drinks": "Anise drinks",
+    rum: "Rum",
+    vodka: "Vodka",
+    gin: "Gin",
+    tequila: "Tequila",
+    "liqueurs-vermouth": "Liqueurs & vermouth",
+    rakia: "Rakia",
+    cocktails: "Cocktails",
     alcohol: "Alcohol",
     main: "Main",
   },
@@ -899,12 +939,31 @@ const categoryDisplayNames = {
     starters: "Закуски",
     "pasta-risotto": "Паста и ризотто",
     mains: "Основные блюда и рыба",
+    bbq: "BBQ Josper",
     pizza: "Пицца",
     bread: "Домашний хлеб",
     desserts: "Десерты",
+    "hot-drinks": "Горячие напитки",
+    "drink-extras": "Добавки к напиткам",
     "cold-drinks": "Холодные напитки",
     "soft-drinks": "Безалкогольные",
     lemonades: "Лимонады",
+    water: "Вода",
+    "fresh-juice": "Фреш",
+    "draft-beer": "Разливное пиво",
+    "bottled-beer-cider": "Бутылочное пиво и сидр",
+    "scotch-whisky": "Шотландский виски",
+    "irish-whisky": "Ирландский виски",
+    "bourbon-tennessee": "Бурбон и теннесси",
+    "cognac-brandy": "Коньяк и бренди",
+    "anise-drinks": "Анисовые напитки",
+    rum: "Ром",
+    vodka: "Водка",
+    gin: "Джин",
+    tequila: "Текила",
+    "liqueurs-vermouth": "Ликёры и вермуты",
+    rakia: "Ракия",
+    cocktails: "Коктейли",
     alcohol: "Алкоголь",
     main: "Основные",
   },
@@ -942,7 +1001,8 @@ function getCategoryLabel(category, language) {
 }
 
 function getMenuItemName(item, language = "bg") {
-  return getValue(item, language === "en" ? "nameEn" : "nameBg") || getValue(item, "nameBg") || getValue(item, "nameEn") || "";
+  const key = language === "en" ? "nameEn" : language === "ru" ? "nameRu" : "nameBg";
+  return getValue(item, key) || getValue(item, "nameBg") || getValue(item, "nameEn") || "";
 }
 
 function getMenuCategoryGroups(items, language = "bg") {
@@ -10800,7 +10860,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         </h3>
                       </div>
 
-                      <div className="grid gap-4 md:grid-cols-2">
+                      <div className="grid gap-4 md:grid-cols-3">
                         <div>
                           <label className="mb-2 block text-sm text-stone-400">{a.menu.nameBg}</label>
                           <input
@@ -10816,6 +10876,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           <input
                             value={menuForm.nameEn}
                             onChange={(e) => setMenuForm((prev) => ({ ...prev, nameEn: e.target.value }))}
+                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm text-stone-400">Название на русском</label>
+                          <input
+                            value={menuForm.nameRu}
+                            onChange={(e) => setMenuForm((prev) => ({ ...prev, nameRu: e.target.value }))}
                             className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
                           />
                         </div>
@@ -10998,7 +11067,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       </div>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-4 md:grid-cols-3">
                       <div>
                         <label className="mb-2 block text-sm text-stone-400">{a.menu.descriptionBg}</label>
                         <textarea
@@ -11014,6 +11083,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <textarea
                           value={menuForm.descriptionEn}
                           onChange={(e) => setMenuForm((prev) => ({ ...prev, descriptionEn: e.target.value }))}
+                          rows={5}
+                          className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm text-stone-400">Описание на русском</label>
+                        <textarea
+                          value={menuForm.descriptionRu}
+                          onChange={(e) => setMenuForm((prev) => ({ ...prev, descriptionRu: e.target.value }))}
                           rows={5}
                           className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
                         />
@@ -11178,6 +11257,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           <div>
                             <div className="text-lg font-semibold">{item.nameBg || item.NameBg}</div>
                             <div className="mt-1 text-sm text-stone-400">{item.nameEn || item.NameEn || "—"}</div>
+                            <div className="mt-1 text-sm text-stone-500">{item.nameRu || item.NameRu || "—"}</div>
                           </div>
                           <div className="rounded-full bg-amber-400 px-3 py-1 text-sm font-semibold text-black">
                             €{Number(item.price || item.Price || 0).toFixed(2)}
@@ -11209,6 +11289,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <p className="mt-3 text-sm leading-6 text-stone-500">
                           {item.descriptionEn || item.DescriptionEn || "—"}
                         </p>
+                        <p className="mt-3 text-sm leading-6 text-stone-500">
+                          {item.descriptionRu || item.DescriptionRu || "—"}
+                        </p>
 
                         <div className="mt-5 flex gap-2">
                           <button
@@ -11220,8 +11303,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               setMenuForm({
                                 nameBg: item.nameBg || item.NameBg || "",
                                 nameEn: item.nameEn || item.NameEn || "",
+                                nameRu: item.nameRu || item.NameRu || "",
                                 descriptionBg: item.descriptionBg || item.DescriptionBg || "",
                                 descriptionEn: item.descriptionEn || item.DescriptionEn || "",
+                                descriptionRu: item.descriptionRu || item.DescriptionRu || "",
                                 imageUrl: item.imageUrl || item.ImageUrl || "",
                                 weight: item.weight || item.Weight || "",
                                 price: item.price || item.Price || "",

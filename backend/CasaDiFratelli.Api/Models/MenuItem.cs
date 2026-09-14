@@ -6,9 +6,11 @@ public class MenuItem
 
     public string NameBg { get; set; } = string.Empty;
     public string NameEn { get; set; } = string.Empty;
+    public string NameRu { get; set; } = string.Empty;
 
     public string DescriptionBg { get; set; } = string.Empty;
     public string DescriptionEn { get; set; } = string.Empty;
+    public string DescriptionRu { get; set; } = string.Empty;
     public string ImageUrl { get; set; } = string.Empty;
 
     public string Weight { get; set; } = string.Empty;

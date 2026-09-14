@@ -106,6 +106,10 @@ namespace CasaDiFratelli.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("DescriptionRu")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
@@ -114,6 +118,10 @@ namespace CasaDiFratelli.Api.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NameRu")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
