@@ -217,6 +217,7 @@ export default function MenuPage({
   const activeCategoryButtonRef = React.useRef(null);
   const manualCategoryRef = React.useRef("");
   const manualCategoryTimerRef = React.useRef(null);
+  const [categoryRailEdges, setCategoryRailEdges] = React.useState({ left: true, right: false });
   const activeCategoryData =
     visibleCategories.find((category) => category.id === activeCategory) ||
     visibleCategories[0];
@@ -277,6 +278,28 @@ export default function MenuPage({
     });
   }, [activeCategory]);
 
+  React.useEffect(() => {
+    const container = categoryNavRef.current;
+    if (!container) return undefined;
+
+    const updateEdges = () => {
+      const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+      setCategoryRailEdges({
+        left: container.scrollLeft <= 2,
+        right: container.scrollLeft >= maxScrollLeft - 2,
+      });
+    };
+
+    updateEdges();
+    container.addEventListener("scroll", updateEdges, { passive: true });
+    window.addEventListener("resize", updateEdges);
+
+    return () => {
+      container.removeEventListener("scroll", updateEdges);
+      window.removeEventListener("resize", updateEdges);
+    };
+  }, [activeDepartment, visibleCategories]);
+
   React.useEffect(() => () => {
     if (manualCategoryTimerRef.current) {
       window.clearTimeout(manualCategoryTimerRef.current);
@@ -316,6 +339,16 @@ export default function MenuPage({
         element.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }, 80);
+  };
+
+  const scrollCategoryRail = (direction) => {
+    const container = categoryNavRef.current;
+    if (!container) return;
+
+    container.scrollBy({
+      left: direction * Math.max(320, container.clientWidth * 0.72),
+      behavior: "smooth",
+    });
   };
 
   const isOrderLink = Boolean(orderParams.reservationId && orderParams.token);
@@ -590,9 +623,35 @@ export default function MenuPage({
             <div className="pointer-events-none absolute bottom-1 left-0 top-0 z-10 w-8 bg-gradient-to-r from-[#090705] to-transparent md:hidden" />
             <div className="pointer-events-none absolute bottom-1 right-0 top-0 z-10 w-8 bg-gradient-to-l from-[#090705] to-transparent md:hidden" />
 
+            <button
+              type="button"
+              aria-label={localText(language, "Предишни секции", "Previous sections", "Предыдущие разделы")}
+              title={localText(language, "Предишни секции", "Previous sections", "Предыдущие разделы")}
+              onClick={() => scrollCategoryRail(-1)}
+              disabled={categoryRailEdges.left}
+              className="absolute left-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[#17130f]/95 text-[#f2d3a0] shadow-lg shadow-black/30 transition hover:border-[#c9a56a]/45 hover:bg-[#2a2118] disabled:pointer-events-none disabled:opacity-25 md:flex"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m15 18-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              aria-label={localText(language, "Следващи секции", "Next sections", "Следующие разделы")}
+              title={localText(language, "Следващи секции", "Next sections", "Следующие разделы")}
+              onClick={() => scrollCategoryRail(1)}
+              disabled={categoryRailEdges.right}
+              className="absolute right-0 top-1/2 z-20 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/10 bg-[#17130f]/95 text-[#f2d3a0] shadow-lg shadow-black/30 transition hover:border-[#c9a56a]/45 hover:bg-[#2a2118] disabled:pointer-events-none disabled:opacity-25 md:flex"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m9 18 6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
             <div
               ref={categoryNavRef}
-              className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 scrollbar-none md:px-0 md:gap-3"
+              className="flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1 scrollbar-none md:mx-12 md:gap-3 md:px-0"
             >
               {visibleCategories.map((category) => {
                 const isActive = activeCategory === category.id;
@@ -604,13 +663,13 @@ export default function MenuPage({
                     type="button"
                     aria-current={isActive ? "true" : undefined}
                     onClick={() => handleCategoryClick(category.id)}
-                    className={`menu-category-chip min-w-[9.4rem] snap-start rounded-2xl border px-3.5 py-3 text-left transition active:scale-[0.98] md:min-w-0 md:rounded-full md:px-4 md:py-2 ${
+                    className={`menu-category-chip w-[9.4rem] shrink-0 snap-start rounded-2xl border px-3.5 py-3 text-left transition active:scale-[0.98] md:w-auto md:whitespace-nowrap md:rounded-full md:px-4 md:py-2 ${
                       isActive
                         ? "border-[#c9a56a]/45 bg-[#c9a56a] text-black shadow-lg shadow-[#c9a56a]/20"
                         : "border-white/10 bg-white/5 text-white/75 hover:border-[#c9a56a]/30 hover:text-[#f2d3a0]"
                     }`}
                   >
-                    <span className="block truncate text-sm font-semibold md:inline md:text-sm">
+                    <span className="block truncate text-sm font-semibold md:text-sm">
                       {category.title}
                     </span>
                     <span className={`mt-1 block text-xs md:hidden ${
