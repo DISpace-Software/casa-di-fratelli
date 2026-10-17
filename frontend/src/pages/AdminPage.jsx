@@ -1615,7 +1615,6 @@ function TableLayoutEditor({
   onAdd,
   onRemove,
   onSave,
-  onReset,
 }) {
   const mapRef = React.useRef(null);
   const [draggingId, setDraggingId] = React.useState(null);
@@ -1669,9 +1668,6 @@ function TableLayoutEditor({
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={onAdd} className="luxury-button rounded-full px-4 py-2 text-sm">
             {text.add}
-          </button>
-          <button type="button" onClick={onReset} className="ghost-button rounded-full px-4 py-2 text-sm">
-            {text.reset}
           </button>
           <button type="button" onClick={onSave} className="luxury-button rounded-full px-4 py-2 text-sm">
             {text.save}
@@ -6463,23 +6459,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
 
     setAdminNotice("Table layout saved.");
-    await loadTableLayout();
-  }
-
-  async function resetTableLayout() {
-    setAdminNotice("");
-    setAdminError("");
-
-    const response = await adminFetch(`${API_BASE_URL}/api/table-layouts/reset`, {
-      method: "POST",
-    });
-
-    if (!response.ok) {
-      setAdminError(await readErrorMessage(response, "Failed to reset table layout."));
-      return;
-    }
-
-    setAdminNotice("Table layout reset.");
     await loadTableLayout();
   }
 
@@ -11639,7 +11618,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 onAdd={addTableLayoutItem}
                 onRemove={removeTableLayoutItem}
                 onSave={saveTableLayout}
-                onReset={resetTableLayout}
               />
             )}
 
