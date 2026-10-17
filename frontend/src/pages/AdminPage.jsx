@@ -1,3 +1,4 @@
+import { buildTimeRange } from "../domain/reservations/hallBlockRules";
 import { getReservationMinutesFromNow, formatLocalDate, getLiveReservationCandidates } from "../domain/adminMap/liveReservations";
 import TenantBrandingSettings from "../components/admin/TenantBrandingSettings";
 import { useTenantBranding } from "../context/TenantBrandingContext";
@@ -1094,37 +1095,6 @@ function getMoveCandidateOptions(area, guestCount, unavailableTableIds, areaTabl
     first.tableIds.length - second.tableIds.length ||
     first.tableIds.join(",").localeCompare(second.tableIds.join(","), undefined, { numeric: true })
   );
-}
-
-function buildTimeRange(startTime, endTime) {
-  const toMinutes = (value) => {
-    const [hours, minutes] = String(value || "").split(":").map(Number);
-    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
-    return hours * 60 + minutes;
-  };
-
-  const fromMinutes = (value) => {
-    const hours = Math.floor(value / 60);
-    const minutes = value % 60;
-    return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-  };
-
-  const start = toMinutes(startTime);
-  const end = toMinutes(endTime);
-
-  if (start === null || end === null) return [];
-
-  const normalizedEnd = end < start ? end + 24 * 60 : end;
-
-  const times = [];
-
-  for (let value = start; value <= normalizedEnd; value += 60) {
-    times.push(fromMinutes(value % (24 * 60)));
-  }
-  const lastTime = fromMinutes(normalizedEnd % (24 * 60));
-  if (times.at(-1) !== lastTime) times.push(lastTime);
-
-  return times;
 }
 
 async function readErrorMessage(response, fallback) {
@@ -7371,7 +7341,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     setAdminError("");
 
     if (!hallBlock.reservedDate || times.length === 0) {
-      setAdminError("Choose a valid date and time range.");
+      setAdminError(adminLocalText(adminLanguage, "Изберете дата, начален и краен час.", "Choose a date, start time and end time.", "Выберите дату, время начала и окончания."));
       return;
     }
 
@@ -8295,10 +8265,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     () => getAvailableReservationTimesForDate(adminReservationTimes, adminReservation.reservedDate),
     [adminReservation.reservedDate]
   );
-  const availableHallBlockTimes = React.useMemo(
-    () => getAvailableReservationTimesForDate(adminReservationTimes, hallBlock.reservedDate),
-    [hallBlock.reservedDate]
-  );
+  const availableHallBlockTimes = adminReservationTimes;
 
   React.useEffect(() => {
     if (!adminReservation.reservedTime) return;
@@ -8311,24 +8278,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }));
   }, [adminReservation.reservedDate, adminReservation.reservedTime]);
 
-  React.useEffect(() => {
-    if (!hallBlock.reservedDate) return;
-    const nextPatch = {};
 
-    if (hallBlock.startTime && isPastTimeForDate(hallBlock.reservedDate, hallBlock.startTime)) {
-      nextPatch.startTime = "";
-    }
-
-    if (hallBlock.endTime && isPastTimeForDate(hallBlock.reservedDate, hallBlock.endTime)) {
-      nextPatch.endTime = "";
-    }
-
-    if (Object.keys(nextPatch).length === 0) return;
-    setHallBlock((prev) => ({
-      ...prev,
-      ...nextPatch,
-    }));
-  }, [hallBlock.reservedDate, hallBlock.startTime, hallBlock.endTime]);
 
   const adminReservationTableIds = getAdminReservationTableIds();
   const adminReservationUnavailableTableIds = getUnavailableTableIdsForSlot(
@@ -10559,6 +10509,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         setHallBlock((prev) => ({
                           ...prev,
                           reservedDate: e.target.value,
+                          startTime: prev.startTime || emptyHallBlock.startTime,
+                          endTime: prev.endTime || emptyHallBlock.endTime,
                         }));
                       }}
                       required

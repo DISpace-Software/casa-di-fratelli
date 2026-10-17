@@ -19,3 +19,16 @@ test('overnight and single-slot blocks use exact times', () => {
   assert.equal(isWithinHallBlock('19:00', '19:00'), true);
   assert.equal(isWithinHallBlock('19:00', '19:15'), false);
 });
+
+import { buildTimeRange } from '../reservations/hallBlockRules.js';
+test('24 October hall block uses 10:00 through 22:00 without clearing early hours', () => {
+  const times = buildTimeRange('10:00', '22:00');
+  assert.equal(times.length, 13);
+  assert.equal(times[0], '10:00');
+  assert.equal(times.at(-1), '22:00');
+});
+test('hall block preserves quarter-hour end and rejects missing times', () => {
+  assert.deepEqual(buildTimeRange('18:00', '20:45'), ['18:00', '19:00', '20:00', '20:45']);
+  assert.deepEqual(buildTimeRange('', '22:00'), []);
+  assert.deepEqual(buildTimeRange('10:00', ''), []);
+});
