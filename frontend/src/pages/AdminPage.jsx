@@ -1121,6 +1121,8 @@ function buildTimeRange(startTime, endTime) {
   for (let value = start; value <= normalizedEnd; value += 60) {
     times.push(fromMinutes(value % (24 * 60)));
   }
+  const lastTime = fromMinutes(normalizedEnd % (24 * 60));
+  if (times.at(-1) !== lastTime) times.push(lastTime);
 
   return times;
 }
@@ -5836,7 +5838,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [noteEdits, setNoteEdits] = React.useState({});
   const [orderMenuSearches, setOrderMenuSearches] = React.useState({});
   const [hallBlock, setHallBlock] = React.useState(emptyHallBlock);
-  const [hallBlockConflicts, setHallBlockConflicts] = React.useState([]);
   const [restaurantClosure, setRestaurantClosure] = React.useState(defaultRestaurantClosure);
   const [adminNotice, setAdminNotice] = React.useState("");
   const [adminError, setAdminError] = React.useState("");
@@ -6845,16 +6846,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     setActiveTab("reservations");
   }
 
-  function openReservationFromBlockConflict(conflict) {
-    const id = conflict.id || conflict.Id;
-    const guestName = conflict.guestName || conflict.GuestName || "";
-    const phone = conflict.phone || conflict.Phone || "";
-    setSearch(guestName || phone);
-    setStatusFilter("All");
-    if (id) setExpandedId(id);
-    setActiveTab("reservations");
-  }
-
   function getTableEdit(reservation) {
     return (
       tableEdits[reservation.id] || {
@@ -7377,7 +7368,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     setAdminNotice("");
     setAdminError("");
-    setHallBlockConflicts([]);
 
     if (!hallBlock.reservedDate || times.length === 0) {
       setAdminError("Choose a valid date and time range.");
@@ -7398,19 +7388,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     if (!response.ok) {
       setAdminError(await readErrorMessage(response, "Failed to block tables."));
-      return;
-    }
-
-    const result = await response.json().catch(() => null);
-    const conflicts = result?.conflicts || result?.Conflicts || [];
-
-    if (conflicts.length > 0 || Number(result?.created ?? result?.Created ?? 1) === 0) {
-      setHallBlockConflicts(conflicts);
-      setAdminNotice(
-        adminLanguage === "bg"
-          ? "В избрания период има резервации. Прегледайте ги преди да блокирате зоната."
-          : "There are reservations in the selected period. Review them before blocking the area."
-      );
       return;
     }
 
@@ -10407,8 +10384,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 title={adminLanguage === "bg" ? "Блокирай зала" : "Block hall"}
                 subtitle={
                   adminLanguage === "bg"
-                    ? "Затваря избраната зона или целия ресторант за ден или диапазон от часове."
-                    : "Close one area or the whole restaurant for a day or a time range."
+                    ? "Спира новите онлайн резервации за избраната зона, дата и часове. Съществуващите резервации остават без промяна."
+                    : adminLanguage === "ru"
+                    ? "Закрывает выбранный зал, дату и время для новых онлайн-бронирований. Существующие брони сохраняются."
+                    : "Stop new online bookings for the selected area, date and times. Existing reservations stay unchanged."
                 }
               >
                 <form
@@ -10514,7 +10493,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                             key={option.value}
                             type="button"
                             onClick={() => {
-                              setHallBlockConflicts([]);
                               setHallBlock((prev) => ({
                                 ...prev,
                                 area: option.value,
@@ -10559,7 +10537,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                       value={hallBlock.reservedDate}
                       min={todayInput}
                       onChange={(e) => {
-                        setHallBlockConflicts([]);
                         setHallBlock((prev) => ({
                           ...prev,
                           reservedDate: e.target.value,
@@ -10577,7 +10554,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     <select
                       value={hallBlock.startTime}
                       onChange={(e) => {
-                        setHallBlockConflicts([]);
                         setHallBlock((prev) => ({
                           ...prev,
                           startTime: e.target.value,
@@ -10601,7 +10577,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     <select
                       value={hallBlock.endTime}
                       onChange={(e) => {
-                        setHallBlockConflicts([]);
                         setHallBlock((prev) => ({
                           ...prev,
                           endTime: e.target.value,
@@ -10665,82 +10640,6 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     {adminLanguage === "bg" ? "Блокирай избраната зона" : "Block selected area"}
                   </button>
 
-                  {hallBlockConflicts.length > 0 && (
-                    <div className="md:col-span-4 rounded-[26px] border border-[#f2d39a]/25 bg-[#c9a56a]/10 p-5 shadow-[0_20px_55px_rgba(0,0,0,0.18)]">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <div className="section-kicker text-[0.66rem]">
-                            {adminLanguage === "bg" ? "Намерени резервации" : "Existing reservations"}
-                          </div>
-                          <h3 className="mt-2 text-xl font-semibold text-[#fff4df]">
-                            {adminLanguage === "bg"
-                              ? "Този период вече има гости"
-                              : "This period already has guests"}
-                          </h3>
-                          <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">
-                            {adminLanguage === "bg"
-                              ? "Премести или откажи тези резервации, след което можеш спокойно да блокираш залата."
-                              : "Move or cancel these reservations, then you can block the area safely."}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => openReservationFromBlockConflict(hallBlockConflicts[0])}
-                          className="ghost-button rounded-2xl px-4 py-3 text-sm font-semibold"
-                        >
-                          {adminLanguage === "bg" ? "Открий в резервации" : "Open in reservations"}
-                        </button>
-                      </div>
-
-                      <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                        {hallBlockConflicts.map((conflict, index) => {
-                          const id = conflict.id || conflict.Id || index;
-                          const guestName = conflict.guestName || conflict.GuestName || "Reservation";
-                          const phone = conflict.phone || conflict.Phone || "";
-                          const reservedDate = conflict.reservedDate || conflict.ReservedDate || hallBlock.reservedDate;
-                          const reservedTime = conflict.reservedTime || conflict.ReservedTime || conflict.requestedTime || conflict.RequestedTime || "";
-                          const requestedTime = conflict.requestedTime || conflict.RequestedTime || "";
-                          const tables = conflict.tableIds || conflict.TableIds || [];
-                          const guestCount = conflict.guestCount ?? conflict.GuestCount ?? 0;
-
-                          return (
-                            <button
-                              key={`${id}-${requestedTime}-${index}`}
-                              type="button"
-                              onClick={() => openReservationFromBlockConflict(conflict)}
-                              className="rounded-2xl border border-white/10 bg-black/20 p-4 text-left transition hover:border-[#f2d39a]/35 hover:bg-[#f2d39a]/10"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <div className="truncate text-base font-semibold text-[#fff4df]">{guestName}</div>
-                                  <div className="mt-1 text-sm text-white/58">
-                                    {reservedDate} · {reservedTime}
-                                    {requestedTime && requestedTime !== reservedTime ? ` · ${requestedTime}` : ""}
-                                  </div>
-                                </div>
-                                <span className="rounded-full border border-[#f2d39a]/25 bg-[#c9a56a]/15 px-3 py-1 text-xs font-semibold text-[#f2d39a]">
-                                  #{id}
-                                </span>
-                              </div>
-                              <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/55">
-                                <span className="rounded-full border border-white/10 px-3 py-1">
-                                  {adminLanguage === "bg" ? "Маси" : "Tables"}: {tables.join(", ") || "—"}
-                                </span>
-                                <span className="rounded-full border border-white/10 px-3 py-1">
-                                  {guestCount} {adminLanguage === "bg" ? "гости" : "guests"}
-                                </span>
-                                {phone && (
-                                  <span className="rounded-full border border-white/10 px-3 py-1">
-                                    {phone}
-                                  </span>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
                 </form>
               </Panel>
             )}

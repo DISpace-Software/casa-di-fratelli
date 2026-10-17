@@ -43,6 +43,19 @@ public class ReservationConflictService
         };
     }
 
+    public static bool IsWithinHallBlock(string range, TimeOnly time)
+    {
+        foreach (var part in range.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var bounds = part.Split(" - ", StringSplitOptions.TrimEntries);
+            if (!TimeOnly.TryParse(bounds[0], out var start)) continue;
+            if (bounds.Length == 1) { if (time == start) return true; continue; }
+            if (!TimeOnly.TryParse(bounds[1], out var end)) continue;
+            if (start <= end ? time >= start && time <= end : time >= start || time <= end) return true;
+        }
+        return false;
+    }
+
     private static List<TimeOnly> ExpandReservationTimes(string reservedTime)
     {
         var values = new List<TimeOnly>();
@@ -107,6 +120,13 @@ public class ReservationConflictService
 
         foreach (var candidate in candidates)
         {
+            if (candidate.CreatedByAdmin && candidate.Phone == "admin" && candidate.GuestName == "Admin block")
+            {
+                if (targetTimes.Any(time => IsWithinHallBlock(candidate.ReservedTime, time)))
+                    return new TableConflict(candidate.Id, candidate.ReservedTime, candidate.Tables.Select(t => t.TableCode).ToList());
+                continue;
+            }
+
             var candidateTimes = ExpandReservationTimes(candidate.ReservedTime);
             if (candidateTimes.Count == 0)
                 continue;

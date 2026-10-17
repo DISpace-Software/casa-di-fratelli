@@ -41,6 +41,24 @@ Check(await controller.PermanentlyDeleteReservation(3) is ConflictObjectResult, 
 Check(await controller.PermanentlyDeleteReservation(5) is NoContentResult, "Cancelled booking purge failed");
 Check(!await db.Reservations.IgnoreQueryFilters().AnyAsync(x => x.Id == 5) && !await db.ReservationTables.AnyAsync(x => x.ReservationId == 5), "Purge left booking or table links");
 Check(await db.Reservations.AnyAsync(x => x.Id == 2) && await db.DiningOrders.AnyAsync(x => x.ReservationId == 3), "Unrelated operational data changed");
+string GuestSnapshot() => System.Text.Json.JsonSerializer.Serialize(new { active.Id, active.GuestName, active.ReservedDate, active.ReservedTime, active.Status, active.IsArrived, active.IsDeleted, Tables = active.Tables.Select(t => t.TableCode).ToList() });
+var guestSnapshot = GuestSnapshot();
+var reservationsController = new ReservationsController(db, null!, null!, new ReservationConflictService(db), null!, new AuditService(db), null!, null!, null!, null!, null!)
+{ ControllerContext = controller.ControllerContext };
+Check(await reservationsController.BlockTables(new CasaDiFratelli.Api.Dtos.CreateHallBlockRequest
+{ ReservedDate = date, Area = "indoor", Times = ["18:15", "20:45"], TableIds = ["2", "6"], Note = "Private event" }) is OkObjectResult, "Block over existing booking must succeed");
+Check(GuestSnapshot() == guestSnapshot, "Hall block changed existing guest reservation");
+var block = await db.Reservations.SingleAsync(x => x.GuestName == "Admin block");
+Check(block.ReservedTime == "18:15 - 20:45" && block.Tables.Count == 2, "Hall block lost time range or tables");
+var conflictService = new ReservationConflictService(db);
+Check(await conflictService.FindTableConflictAsync(date, "19:30", ["6"]) != null, "New booking inside block must be rejected");
+Check(await conflictService.FindTableConflictAsync(date, "20:45", ["6"]) != null, "Block must include exact end time");
+Check(await conflictService.FindTableConflictAsync(date, "21:00", ["6"]) == null, "Block must not extend beyond selected end");
+Check(await conflictService.FindTableConflictAsync(date, "18:00", ["6"]) == null, "Block must not start before selected time");
+Check(await conflictService.FindTableConflictAsync(date.AddDays(1), "19:30", ["6"]) == null, "Block must not affect another date");
+Check(await conflictService.FindTableConflictAsync(date, "19:30", ["99"]) == null, "Block must not affect other tables");
+Check(ReservationConflictService.IsWithinHallBlock("22:00 - 01:00", new TimeOnly(0, 30)), "Overnight block failed");
+Console.WriteLine("PASS: hall block over existing guests, unchanged guest data, exact time boundaries, date/table isolation and overnight range.");
 controller.HttpContext.Items["AdminUser"] = new AdminPrincipal(2, "Waiter", "waiter@example.com", "Waiter");
 Check(await controller.PermanentlyDeleteReservation(3) is ForbidResult && await controller.RestoreReservation(3) is ForbidResult, "Waiter must not restore or delete trash");
 Console.WriteLine("PASS: trash contents, walk-ins, restore, conflicts, purge, linked orders, unrelated bookings, role restrictions.");
