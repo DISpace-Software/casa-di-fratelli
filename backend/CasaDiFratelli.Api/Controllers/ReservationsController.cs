@@ -1394,6 +1394,21 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         });
     }
 
+    [HttpPatch("blocks/{id:int}/unblock")]
+    [AdminAuthorize]
+    public async Task<IActionResult> UnblockHall(int id)
+    {
+        var block = await _db.Reservations.FirstOrDefaultAsync(x => x.Id == id);
+        if (block == null) return NotFound();
+        if (!block.CreatedByAdmin || block.Phone != "admin" || block.GuestName != "Admin block")
+            return BadRequest(new { message = "This record is not a hall block." });
+        if (block.Status == ReservationStatusReleased) return Ok(new { block.Id, block.Status });
+        block.Status = ReservationStatusReleased;
+        await _db.SaveChangesAsync();
+        await _audit.RecordAsync(HttpContext, "unblock-hall", "Reservation", block.Id.ToString(), after: new { block.Id, block.Status });
+        return Ok(new { block.Id, block.Status });
+    }
+
     [HttpPatch("{id}/release")]
     [AdminAuthorize]
     public async Task<IActionResult> Release(int id)

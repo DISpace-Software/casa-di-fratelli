@@ -5838,6 +5838,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [noteEdits, setNoteEdits] = React.useState({});
   const [orderMenuSearches, setOrderMenuSearches] = React.useState({});
   const [hallBlock, setHallBlock] = React.useState(emptyHallBlock);
+  const [unblockingHallId, setUnblockingHallId] = React.useState(null);
   const [restaurantClosure, setRestaurantClosure] = React.useState(defaultRestaurantClosure);
   const [adminNotice, setAdminNotice] = React.useState("");
   const [adminError, setAdminError] = React.useState("");
@@ -7398,7 +7399,25 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         : `Blocked ${times.length} time slots.`
     );
     await loadReservations();
-    setActiveTab("reservations");
+  }
+
+  async function unblockHall(id) {
+    setUnblockingHallId(id);
+    setAdminError("");
+    setAdminNotice("");
+    try {
+      const response = await adminFetch(`${API_BASE_URL}/api/reservations/blocks/${id}/unblock`, { method: "PATCH" });
+      if (!response.ok) {
+        setAdminError(await readErrorMessage(response, "Failed to unblock hall."));
+        return;
+      }
+      await loadReservations();
+      setAdminNotice(adminLocalText(adminLanguage, "Блокировката е премахната. Съществуващите резервации са запазени.", "Block removed. Existing reservations are preserved.", "Блокировка снята. Существующие брони сохранены."));
+    } catch (error) {
+      setAdminError(error?.message || "Failed to unblock hall.");
+    } finally {
+      setUnblockingHallId(null);
+    }
   }
 
   async function saveRestaurantClosure(event) {
@@ -10641,6 +10660,26 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   </button>
 
                 </form>
+                <section className="mt-8 border-t border-white/10 pt-6">
+                  <h3 className="text-xl font-semibold text-[#fff4df]">{adminLocalText(adminLanguage, "Блокировки на зали", "Hall blocks", "Блокировки залов")}</h3>
+                  <p className="mt-2 text-sm text-white/55">{adminLocalText(adminLanguage, "Разблокирането отваря масите за нови онлайн резервации. Съществуващите резервации остават.", "Unblocking opens tables for new online bookings. Existing reservations stay unchanged.", "Разблокировка открывает столы для новых онлайн-бронирований. Существующие брони остаются.")}</p>
+                  <div className="mt-4 space-y-3">
+                    {reservations.filter((item) => item.createdByAdmin && item.phone === "admin" && item.guestName === "Admin block" && item.status === "Approved").sort((a, b) => `${b.reservedDate} ${b.reservedTime}`.localeCompare(`${a.reservedDate} ${a.reservedTime}`)).map((block) => (
+                      <div key={block.id} className="flex flex-col gap-4 rounded-2xl border border-[#c9a56a]/25 bg-black/20 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <div className="font-semibold text-[#fff4df]">{block.area === "all" ? adminLocalText(adminLanguage, "Цял ресторант", "Whole restaurant", "Весь ресторан") : block.area === "garden" ? adminLocalText(adminLanguage, "Покрита тераса", "Covered terrace", "Крытая терраса") : block.area === "openTerrace" ? adminLocalText(adminLanguage, "Открита тераса", "Open terrace", "Открытая терраса") : adminLocalText(adminLanguage, "Зала / Непушачи", "Indoor / Non-smoking", "Зал / Для некурящих")}</div>
+                          <div className="mt-1 text-sm text-white/65">{block.reservedDate} · {block.reservedTime}</div>
+                          <div className="mt-1 text-xs text-white/45">{adminLocalText(adminLanguage, "Маси", "Tables", "Столы")}: {block.tableIds.join(", ")}</div>
+                          {block.notes && <p className="mt-2 text-sm text-white/55">{block.notes}</p>}
+                        </div>
+                        <button type="button" disabled={unblockingHallId !== null} onClick={() => unblockHall(block.id)} className="shrink-0 rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-4 py-3 text-sm font-semibold text-emerald-100 disabled:opacity-50">
+                          {unblockingHallId === block.id ? "..." : adminLocalText(adminLanguage, "Разблокирай", "Unblock", "Разблокировать")}
+                        </button>
+                      </div>
+                    ))}
+                    {!reservations.some((item) => item.createdByAdmin && item.phone === "admin" && item.guestName === "Admin block" && item.status === "Approved") && <p className="rounded-2xl border border-white/10 p-4 text-sm text-white/50">{adminLocalText(adminLanguage, "Няма блокировки на зали.", "No hall blocks.", "Блокировок залов нет.")}</p>}
+                  </div>
+                </section>
               </Panel>
             )}
 

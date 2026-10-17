@@ -58,6 +58,12 @@ Check(await conflictService.FindTableConflictAsync(date, "18:00", ["6"]) == null
 Check(await conflictService.FindTableConflictAsync(date.AddDays(1), "19:30", ["6"]) == null, "Block must not affect another date");
 Check(await conflictService.FindTableConflictAsync(date, "19:30", ["99"]) == null, "Block must not affect other tables");
 Check(ReservationConflictService.IsWithinHallBlock("22:00 - 01:00", new TimeOnly(0, 30)), "Overnight block failed");
+Check(await reservationsController.UnblockHall(active.Id) is BadRequestObjectResult, "Unblock must reject guest reservations");
+Check(await reservationsController.UnblockHall(block.Id) is OkObjectResult && block.Status == "Released", "Unblock must release selected hall block");
+Check(await conflictService.FindTableConflictAsync(date, "19:30", ["6"]) == null, "Unblock must open tables to new bookings");
+Check(GuestSnapshot() == guestSnapshot, "Unblock changed existing guest booking");
+Check(await reservationsController.UnblockHall(block.Id) is OkObjectResult, "Unblock retry must be idempotent");
+Console.WriteLine("PASS: unblock affects only hall blocks, opens availability, preserves guests and supports retry.");
 Console.WriteLine("PASS: hall block over existing guests, unchanged guest data, exact time boundaries, date/table isolation and overnight range.");
 controller.HttpContext.Items["AdminUser"] = new AdminPrincipal(2, "Waiter", "waiter@example.com", "Waiter");
 Check(await controller.PermanentlyDeleteReservation(3) is ForbidResult && await controller.RestoreReservation(3) is ForbidResult, "Waiter must not restore or delete trash");
