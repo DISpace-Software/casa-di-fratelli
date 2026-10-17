@@ -1965,3 +1965,42 @@ html[data-theme="light"] .zone-preview-card :where(.text-white, [class*="text-wh
     margin-top: 1.5rem;
   }
 }
+
+/* Map windows belong to the visible screen, outside the clipped/panned map. */
+.admin-map-overlay-root {
+  position: fixed;
+  z-index: 10050;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  touch-action: auto;
+  overscroll-behavior: contain;
+}
+.admin-map-overlay-modal { background: rgb(0 0 0 / 65%); }
+.admin-map-overlay-floating { pointer-events: none; align-items: flex-end; }
+.admin-map-overlay-panel {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  width: min(440px, 100%);
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgb(242 211 154 / 28%);
+  border-radius: 22px;
+  background: #15110e;
+  color: #fff4df;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 70%);
+}
+.admin-map-overlay-wide { width: min(1024px, 100%); }
+.admin-map-overlay-header { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-bottom: 1px solid rgb(255 255 255 / 10%); }
+.admin-map-overlay-content { min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; overflow-wrap: anywhere; }
+.admin-map-overlay-content > * { width: 100%; max-width: 100%; max-height: none; }
+.admin-map-overlay-content > form { overflow: visible; }
+.admin-map-overlay-root :is(button, a, input, select) { min-height: 44px; }
+.admin-map-overlay-root :is(input, select, textarea) { font-size: 16px; }
+.admin-map-overlay-floating .admin-map-overlay-panel { width: min(360px, 100%); max-height: min(300px, 100%); }

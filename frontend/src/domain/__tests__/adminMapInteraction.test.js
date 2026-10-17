@@ -91,3 +91,10 @@ test("iPad desktop user agent is detected by touch support", () => {
     maxTouchPoints: 5,
   }), false);
 });
+
+test("map windows use iPad visual viewport after keyboard opens or screen rotates", async () => {
+  const { getMapOverlayViewport } = await import('../adminMap/mapInteraction.js');
+  assert.deepEqual(getMapOverlayViewport({ innerWidth: 1024, innerHeight: 768 }), { left: 0, top: 0, width: 1024, height: 768 });
+  assert.deepEqual(getMapOverlayViewport({ innerWidth: 1024, innerHeight: 768, visualViewport: { width: 1024, height: 340, offsetTop: 160, offsetLeft: 0 } }), { left: 0, top: 160, width: 1024, height: 340 });
+  assert.deepEqual(getMapOverlayViewport({ innerWidth: 768, innerHeight: 1024, visualViewport: { width: 768, height: 980, offsetTop: 0, offsetLeft: 0 } }), { left: 0, top: 0, width: 768, height: 980 });
+});

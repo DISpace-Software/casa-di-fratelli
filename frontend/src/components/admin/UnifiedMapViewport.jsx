@@ -415,7 +415,7 @@ export default function UnifiedMapViewport({
           ? "fixed inset-0 z-[250] m-0 flex h-[100dvh] max-h-none w-screen max-w-none flex-col border-0 bg-[#090806] px-[max(10px,env(safe-area-inset-left))] pb-[max(10px,env(safe-area-inset-bottom))] pt-[max(10px,env(safe-area-inset-top))] text-white"
           : ""
       }`}
-      style={isExpanded ? { touchAction: "none", overscrollBehavior: "none" } : undefined}
+      style={isExpanded ? { touchAction: "auto", overscrollBehavior: "none" } : undefined}
     >
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <select

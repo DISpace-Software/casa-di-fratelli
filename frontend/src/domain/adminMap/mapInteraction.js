@@ -37,3 +37,13 @@ export function shouldUseNativeMapFullscreen(navigatorLike) {
 
   return !isAppleTouchDevice;
 }
+
+export function getMapOverlayViewport(windowLike) {
+  const viewport = windowLike?.visualViewport;
+  return {
+    left: Math.max(0, Number(viewport?.offsetLeft || 0)),
+    top: Math.max(0, Number(viewport?.offsetTop || 0)),
+    width: Math.max(1, Number(viewport?.width || windowLike?.innerWidth || 1)),
+    height: Math.max(1, Number(viewport?.height || windowLike?.innerHeight || 1)),
+  };
+}

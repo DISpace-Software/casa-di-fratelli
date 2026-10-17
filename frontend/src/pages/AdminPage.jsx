@@ -1,9 +1,10 @@
+import MapOverlay from "../components/admin/MapOverlay";
 import { buildTimeRange } from "../domain/reservations/hallBlockRules";
 import { getReservationMinutesFromNow, formatLocalDate, getLiveReservationCandidates } from "../domain/adminMap/liveReservations";
 import TenantBrandingSettings from "../components/admin/TenantBrandingSettings";
 import { useTenantBranding } from "../context/TenantBrandingContext";
 import React from "react";
-import { createPortal, flushSync } from "react-dom";
+import { flushSync } from "react-dom";
 import { API_BASE_URL } from "../config/api";
 import {
   defaultGardenTables,
@@ -32,8 +33,6 @@ import {
   rotatePercentPointHalfTurn,
 } from "../domain/adminMap/mapCamera";
 import {
-  getMapPopoverAlignment,
-  getMapModalPortalTarget,
   shouldUseNativeMapFullscreen,
 } from "../domain/adminMap/mapInteraction";
 import { formatBirthdayEmailSentAt, daysUntilBirthday, getCustomerBirthDate, searchCustomers, sortCustomers } from "../domain/customers/customerDirectory";
@@ -2365,21 +2364,6 @@ function ReservationOperationsMap({
   }
 
   React.useEffect(() => {
-    if (!isReservationFormOpen) return undefined;
-
-    const previouslyFocused = document.activeElement;
-    const previousOverflow = document.body.style.overflow;
-    const ownsScrollLock = previousOverflow !== "hidden";
-    if (ownsScrollLock) document.body.style.overflow = "hidden";
-    reservationFormRef.current?.querySelector("input")?.focus({ preventScroll: true });
-
-    return () => {
-      if (ownsScrollLock) document.body.style.overflow = previousOverflow;
-      if (previouslyFocused?.isConnected) previouslyFocused.focus?.({ preventScroll: true });
-    };
-  }, [isReservationFormOpen]);
-
-  React.useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60000);
     return () => window.clearInterval(timer);
   }, []);
@@ -2392,17 +2376,6 @@ function ReservationOperationsMap({
     setWalkInDraft(null);
     setTableReservationDraft(null);
   }, [mapDate, moveReservationId]);
-
-  React.useEffect(() => {
-    if (!showConsumption) return;
-
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
-  }, [showConsumption]);
 
   function renderPublicTableHoldControl(table) {
     if (ordersOnly || !onBlockPublicTables) return null;
@@ -2456,40 +2429,19 @@ function ReservationOperationsMap({
   function renderFloatingTableReservationForm() {
     if (!tableReservationDraft || typeof document === "undefined") return null;
 
-    return createPortal((
+    return (
+      <MapOverlay title={adminLocalText(language, "Резервация", "Reservation", "Резервация")} onClose={() => { if (!reservationFormBusy) setTableReservationDraft(null); }}>
       <div
         data-map-keep-open="true"
-        className="fixed inset-0 z-[10000] flex items-center justify-center overflow-y-auto overscroll-contain bg-black/65 p-3 backdrop-blur-[2px] sm:p-5"
+        className="w-full"
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            event.preventDefault();
-            event.stopPropagation();
-            if (!reservationFormBusy) setTableReservationDraft(null);
-          }
-          if (event.key !== "Tab") return;
-          const controls = Array.from(reservationFormRef.current?.querySelectorAll(
-            'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]'
-          ) || []);
-          const first = controls[0];
-          const last = controls[controls.length - 1];
-          if (event.shiftKey && document.activeElement === first) {
-            event.preventDefault();
-            last?.focus();
-          } else if (!event.shiftKey && document.activeElement === last) {
-            event.preventDefault();
-            first?.focus();
-          }
-        }}
       >
         <form
           ref={reservationFormRef}
           onSubmit={submitTableReservation}
-          role="dialog"
-          aria-modal="true"
           aria-label={adminLocalText(language, "Резервация", "Reservation", "Резервация")}
-          className="max-h-[calc(100dvh-2.5rem)] w-full max-w-[440px] overflow-y-auto overscroll-contain rounded-[24px] border border-[#f2d39a]/22 bg-[#15110e]/96 p-4 text-left shadow-[0_28px_90px_rgba(0,0,0,0.72)] sm:p-5"
+          className="w-full max-w-[440px] rounded-[24px] border border-[#f2d39a]/22 bg-[#15110e]/96 p-4 text-left shadow-[0_28px_90px_rgba(0,0,0,0.72)] sm:p-5"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -2600,7 +2552,8 @@ function ReservationOperationsMap({
           </div>
         </form>
       </div>
-    ), getMapModalPortalTarget(document));
+      </MapOverlay>
+    );
   }
 
   const MapViewport = mapViewMode === "section" ? SectionMapViewport : UnifiedMapViewport;
@@ -2774,13 +2727,6 @@ function ReservationOperationsMap({
               requireTableClaim &&
               reservation.isArrived &&
               !reservationOrders.some((order) => Boolean(order.assignedWaiterId));
-            const popoverPosition = bounds.labelTop > 72 ? "sm:top-auto sm:bottom-11" : "sm:top-11";
-            const popoverAlignment = getMapPopoverAlignment(bounds.centerX);
-            const mobilePopoverOffset = popoverAlignment === "start"
-              ? "left-1/2 translate-x-0"
-              : popoverAlignment === "end"
-                ? "right-1/2 translate-x-0"
-                : "left-1/2 -translate-x-1/2";
             const zone = ADMIN_MAP_ZONES.find((item) => item.id === bounds.area) || ADMIN_MAP_ZONES[0];
 
             return (
@@ -2834,8 +2780,9 @@ function ReservationOperationsMap({
                     </span>
                   </button>
 
-                  {isSelected && (
-                    <div data-map-keep-open="true" className={`absolute ${mobilePopoverOffset} top-9 z-[240] w-[190px] rounded-2xl border border-white/12 bg-[#15110e]/95 p-2.5 text-left shadow-[0_22px_70px_rgba(0,0,0,0.68)] backdrop-blur ${popoverPosition} sm:w-[220px] sm:p-3 lg:w-[230px]`}>
+                  {isSelected && !isReservationFormOpen && !walkInDraft && !showConsumption && (
+                    <MapOverlay title={reservation.guestName} onClose={() => setSelectedReservationId(null)}>
+                    <div className="p-4">
                       <div className="text-sm font-semibold text-[#fff4df]">{reservation.guestName}</div>
                       <div className="mt-1 text-xs text-white/50">
                         {reservation.reservedTime} · {reservation.guestCount} {text.guests} · {reservation.tableIds.join(", ")}
@@ -2935,6 +2882,7 @@ function ReservationOperationsMap({
                         </button>
                       )}
                     </div>
+                    </MapOverlay>
                   )}
                 </div>
               </div>
@@ -2942,23 +2890,11 @@ function ReservationOperationsMap({
           })}
 
           {moveSelectionBounds && selectedReservation && (mapViewMode === "scroll" || moveSelectionBounds.area === selectedArea) && (() => {
-            const zone = ADMIN_MAP_ZONES.find((item) => item.id === moveSelectionBounds.area) || ADMIN_MAP_ZONES[0];
-            const localPosition = {
-              x: moveSelectionBounds.centerX,
-              y: Math.max(7, moveSelectionBounds.minY - 9),
-            };
-            const position = mapViewMode === "section" ? localPosition : localPercentToWorld(zone, localPosition);
             const requiredGuests = Number(moveDraft.guestCount || selectedReservation.guestCount || 1);
 
             return (
-              <div
-                data-map-keep-open="true"
-                className="absolute z-[120] w-[220px] -translate-x-1/2 -translate-y-full rounded-2xl border border-[#f2d39a]/40 bg-[#15110e]/96 p-3 shadow-[0_24px_80px_rgba(0,0,0,0.72)] backdrop-blur-xl sm:w-[250px]"
-                style={{
-                  left: mapViewMode === "section" ? `${position.x}%` : position.x,
-                  top: mapViewMode === "section" ? `${position.y}%` : position.y,
-                }}
-              >
+              <MapOverlay modal={false} title={adminLocalText(language, "Премести резервация", "Move reservation", "Переместить бронь")} onClose={cancelMove}>
+              <div className="p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#c9a56a]">
@@ -3016,6 +2952,7 @@ function ReservationOperationsMap({
                   {adminLocalText(language, "Запази", "Save", "Сохранить")}
                 </button>
               </div>
+              </MapOverlay>
             );
           })()}
 
@@ -3035,9 +2972,7 @@ function ReservationOperationsMap({
             const isMoveAllowed =
               isMoveMode &&
               !isMoveUnavailable;
-            const hasOpenTableReservationForm =
               tableReservationDraft?.tableId === table.id && tableReservationDraft?.area === table.area;
-            const placeTablePopoverAbove = hasOpenTableReservationForm ? table.y > 48 : table.y > 72;
             const zone = ADMIN_MAP_ZONES.find((item) => item.id === table.area) || ADMIN_MAP_ZONES[0];
             const worldPosition = localPercentToWorld(zone, table);
 
@@ -3106,19 +3041,9 @@ function ReservationOperationsMap({
                   {table.id}
                 </button>
 
-                {isSelectedTable && (
-                  <div
-                    data-map-keep-open="true"
-                    className={`absolute z-[240] max-h-[min(520px,calc(100svh-7rem))] w-[230px] overscroll-contain overflow-y-auto rounded-2xl border border-[#f2d39a]/18 bg-[#15110e]/95 p-3 text-left shadow-[0_22px_70px_rgba(0,0,0,0.7)] backdrop-blur sm:w-[280px] ${
-                      placeTablePopoverAbove ? "bottom-10 sm:bottom-12 lg:bottom-16" : "top-10 sm:top-12 lg:top-16"
-                    } ${
-                      getMapPopoverAlignment(table.x) === "start"
-                        ? "left-1/2"
-                        : getMapPopoverAlignment(table.x) === "end"
-                        ? "right-1/2"
-                        : "left-1/2 -translate-x-1/2"
-                    }`}
-                  >
+                {isSelectedTable && !isReservationFormOpen && !walkInDraft && !showConsumption && (
+                  <MapOverlay title={`${text.table} ${table.id}`} onClose={() => setSelectedTableId(null)}>
+                  <div className="p-4">
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <div className="section-kicker text-[9px]">{text.tableTodayTitle}</div>
@@ -3226,6 +3151,7 @@ function ReservationOperationsMap({
                       </div>
                     )}
                   </div>
+                  </MapOverlay>
                 )}
               </div>
             );
@@ -3381,15 +3307,11 @@ function ReservationOperationsMap({
                 )}
               </div>
 
-              {diningEnabled && showConsumption && selectedReservation.isArrived && typeof document !== "undefined" && createPortal((
-                <div
-                  className="fixed inset-0 z-[9999] overflow-y-auto bg-black/72 p-2 backdrop-blur-md sm:p-3 md:p-4"
-                  role="dialog"
-                  aria-modal="true"
-                >
+              {diningEnabled && showConsumption && selectedReservation.isArrived && typeof document !== "undefined" && (
+                <MapOverlay wide title={text.consumption} onClose={() => setShowConsumption(false)}>
                   <div
                     ref={consumptionPanelRef}
-                    className="mx-auto flex min-h-[calc(100svh-1rem)] w-full max-w-5xl min-w-0 flex-col overflow-hidden rounded-[22px] border border-emerald-300/20 bg-[#15110e] shadow-[0_32px_120px_rgba(0,0,0,0.72)] sm:min-h-[calc(100svh-1.5rem)] md:min-h-0 md:h-[min(760px,calc(100svh-2rem))] md:rounded-[26px]"
+                    className="mx-auto flex w-full max-w-5xl min-w-0 flex-col overflow-hidden rounded-[22px] border border-emerald-300/20 bg-[#15110e] shadow-[0_32px_120px_rgba(0,0,0,0.72)] md:min-h-0 md:h-[min(680px,calc(100dvh-8rem))] md:rounded-[26px]"
                   >
                     <div className="shrink-0 border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-3 md:p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -3545,12 +3467,12 @@ function ReservationOperationsMap({
                       </div>
                     </div>
                   </div>
-                </div>
-              ), getMapModalPortalTarget(document))}
+                </MapOverlay>
+              )}
             </div>
           )}
-          {walkInDraft && typeof document !== "undefined" && createPortal((
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/72 p-4 backdrop-blur-md" role="dialog" aria-modal="true">
+          {walkInDraft && typeof document !== "undefined" && (
+            <MapOverlay title={adminLocalText(language, "Настаняване", "Walk-in", "Разместить гостей")} onClose={closeWalkInModal}>
               <form
                 onSubmit={submitWalkInModal}
                 className="w-full max-w-md overflow-hidden rounded-[28px] border border-emerald-300/20 bg-[#15110e] shadow-[0_32px_120px_rgba(0,0,0,0.72)]"
@@ -3617,8 +3539,8 @@ function ReservationOperationsMap({
                   </div>
                 </div>
               </form>
-            </div>
-          ), getMapModalPortalTarget(document))}
+            </MapOverlay>
+          )}
         </div>
       </div>
     </Panel>
