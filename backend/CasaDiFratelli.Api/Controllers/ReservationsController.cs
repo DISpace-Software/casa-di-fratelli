@@ -1079,6 +1079,11 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
 
         reservation.Status = "Cancelled";
         reservation.IsArrived = false;
+        var cancelledBy = AdminAuthService.Current(HttpContext);
+        reservation.DeletedAtUtc = DateTime.UtcNow;
+        reservation.DeletedByAdminUserId = cancelledBy?.Id;
+        reservation.DeletedByAdminName = cancelledBy?.Name;
+        reservation.DeleteReason = "Marked as no-show by admin";
         reservation.IsNoShow = true;
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "no-show", "Reservation", reservation.Id.ToString(), after: new { reservation.Id, reservation.Status, reservation.IsNoShow });
@@ -1471,6 +1476,11 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
 
         reservation.Status = "Cancelled";
         reservation.IsArrived = false;
+        var cancelledBy = AdminAuthService.Current(HttpContext);
+        reservation.DeletedAtUtc = DateTime.UtcNow;
+        reservation.DeletedByAdminUserId = cancelledBy?.Id;
+        reservation.DeletedByAdminName = cancelledBy?.Name;
+        reservation.DeleteReason = "Cancelled by admin";
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "cancel", "Reservation", reservation.Id.ToString(), after: new { reservation.Id, reservation.Status });
 

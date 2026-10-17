@@ -15,12 +15,14 @@ public class MaintenanceController : ControllerBase
     private readonly AppDbContext _db;
     private readonly AuditService _audit;
     private readonly BackupExportService _backups;
+    private readonly ReservationConflictService _conflicts;
 
-    public MaintenanceController(AppDbContext db, AuditService audit, BackupExportService backups)
+    public MaintenanceController(AppDbContext db, AuditService audit, BackupExportService backups, ReservationConflictService conflicts)
     {
         _db = db;
         _audit = audit;
         _backups = backups;
+        _conflicts = conflicts;
     }
 
     [HttpPost("clear-reservations-and-orders")]
@@ -71,10 +73,22 @@ public class MaintenanceController : ControllerBase
         if (!AdminRoleAccess.CanRestoreReservations(admin?.Role))
             return Forbid();
 
-        var reservation = await _db.Reservations.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id);
+        var reservation = await _db.Reservations.IgnoreQueryFilters().Include(x => x.Tables).FirstOrDefaultAsync(x => x.Id == id);
         if (reservation == null) return NotFound();
 
-        var before = new { reservation.Id, reservation.IsDeleted, reservation.DeleteReason };
+        if (!reservation.IsDeleted && reservation.Status != "Cancelled")
+            return BadRequest(new { message = "Only reservations in the trash can be restored." });
+
+        var nextStatus = reservation.Status == "Cancelled" ? "Approved" : reservation.Status;
+        if (nextStatus is "Approved" or "Pending")
+        {
+            var conflict = await _conflicts.FindTableConflictAsync(reservation.ReservedDate,
+                reservation.ReservedTime, reservation.Tables.Select(x => x.TableCode).ToList(), reservation.Id);
+            if (conflict != null) return Conflict(ReservationConflictService.ToConflictResponse(conflict));
+        }
+        var before = new { reservation.Id, reservation.IsDeleted, reservation.DeleteReason, reservation.Status };
+        reservation.Status = nextStatus;
+        if (before.Status == "Cancelled") reservation.IsNoShow = false;
         reservation.IsDeleted = false;
         reservation.DeletedAtUtc = null;
         reservation.DeletedByAdminUserId = null;
@@ -83,6 +97,30 @@ public class MaintenanceController : ControllerBase
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "restore", "Reservation", id.ToString(), before, after: new { reservation.Id, reservation.IsDeleted });
         return Ok(new { reservation.Id, reservation.IsDeleted });
+    }
+
+    [HttpDelete("reservations/{id:int}/permanent")]
+    public async Task<IActionResult> PermanentlyDeleteReservation(int id)
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanDeleteReservations(admin?.Role)) return Forbid();
+
+        var reservation = await _db.Reservations.IgnoreQueryFilters()
+            .Include(x => x.Tables).FirstOrDefaultAsync(x => x.Id == id);
+        if (reservation == null) return NotFound();
+        if (!reservation.IsDeleted && reservation.Status != "Cancelled")
+            return BadRequest(new { message = "Only reservations in the trash can be permanently deleted." });
+        if (await _db.DiningOrders.IgnoreQueryFilters().AnyAsync(x => x.ReservationId == id))
+            return Conflict(new { message = "This reservation has linked orders and cannot be permanently deleted." });
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        await _audit.RecordAsync(HttpContext, "permanent-delete", "Reservation", id.ToString(),
+            before: new { reservation.Id, reservation.Status, reservation.IsDeleted });
+        _db.ReservationTables.RemoveRange(reservation.Tables);
+        _db.Reservations.Remove(reservation);
+        await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
+        return NoContent();
     }
 
     [HttpGet("reservations/deleted")]
@@ -94,7 +132,7 @@ public class MaintenanceController : ControllerBase
 
         var reservations = await _db.Reservations
             .IgnoreQueryFilters()
-            .Where(x => x.IsDeleted)
+            .Where(x => x.IsDeleted || x.Status == "Cancelled")
             .Include(x => x.Tables)
             .OrderByDescending(x => x.DeletedAtUtc)
             .Take(200)
@@ -107,6 +145,7 @@ public class MaintenanceController : ControllerBase
                 x.ReservedDate,
                 x.ReservedTime,
                 x.Status,
+                x.GuestCount,
                 x.DeletedAtUtc,
                 x.DeletedByAdminName,
                 x.DeleteReason,
@@ -127,12 +166,12 @@ public class MaintenanceController : ControllerBase
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var normalizedKind = NormalizeArchiveKind(kind);
         var query = normalizedKind == "deleted"
-            ? _db.Reservations.IgnoreQueryFilters().Where(x => x.IsDeleted)
+            ? _db.Reservations.IgnoreQueryFilters().Where(x => x.IsDeleted || x.Status == "Cancelled")
             : _db.Reservations.AsQueryable();
 
         if (fromDate.HasValue) query = query.Where(x => x.ReservedDate >= fromDate.Value);
         if (toDate.HasValue) query = query.Where(x => x.ReservedDate <= toDate.Value);
-        if (normalizedKind != "walkins")
+        if (normalizedKind != "walkins" && normalizedKind != "deleted")
             query = query.Where(x => !x.IsWalkIn);
 
         query = normalizedKind switch

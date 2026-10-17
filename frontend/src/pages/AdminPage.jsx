@@ -1,3 +1,4 @@
+import { getReservationMinutesFromNow, formatLocalDate, getLiveReservationCandidates } from "../domain/adminMap/liveReservations";
 import TenantBrandingSettings from "../components/admin/TenantBrandingSettings";
 import { useTenantBranding } from "../context/TenantBrandingContext";
 import React from "react";
@@ -1293,44 +1294,6 @@ function orientTableForMap(table) {
   return table;
 }
 
-function getReservationMinutesFromNow(reservation, now = new Date()) {
-  if (!reservation?.reservedDate || !reservation?.reservedTime) return null;
-
-  const [hours, minutes] = String(reservation.reservedTime).split(":").map(Number);
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
-
-  const [year, month, day] = String(reservation.reservedDate).split("-").map(Number);
-  const target = Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)
-    ? new Date(year, month - 1, day, hours, minutes, 0, 0)
-    : new Date(now);
-
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
-    target.setHours(hours, minutes, 0, 0);
-  }
-
-  const candidates = [target];
-  if (hours <= 3) {
-    const nextServiceDayTarget = new Date(target);
-    nextServiceDayTarget.setDate(nextServiceDayTarget.getDate() + 1);
-    candidates.push(nextServiceDayTarget);
-  }
-
-  const closestTarget = candidates.reduce((closest, candidate) => {
-    const closestDistance = Math.abs(closest.getTime() - now.getTime());
-    const candidateDistance = Math.abs(candidate.getTime() - now.getTime());
-    return candidateDistance < closestDistance ? candidate : closest;
-  }, candidates[0]);
-
-  return Math.round((closestTarget.getTime() - now.getTime()) / 60000);
-}
-
-function formatLocalDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 function getNextAdminReservationTime(now = new Date()) {
   const minutesNow = now.getHours() * 60 + now.getMinutes();
   return adminReservationTimes.find((time) => {
@@ -1343,36 +1306,6 @@ function isInteractiveSwipeTarget(target) {
   return Boolean(target?.closest?.(
     "input, textarea, select, button, a, [role='button'], [data-admin-swipe-lock='true']"
   ));
-}
-
-function getLiveReservationCandidates(reservations, now = new Date()) {
-  const today = formatLocalDate(now);
-
-  return reservations
-    .filter((reservation) => {
-      if (!["Pending", "Approved"].includes(reservation.status) || reservation.isNoShow) return false;
-      if (reservation.reservedDate !== today) return false;
-
-      const minutes = getReservationMinutesFromNow(reservation, now);
-      return minutes !== null && minutes >= -90;
-    })
-    .sort((first, second) => {
-      if (first.isArrived !== second.isArrived) {
-        return first.isArrived ? -1 : 1;
-      }
-
-      const firstMinutes = getReservationMinutesFromNow(first, now) ?? 9999;
-      const secondMinutes = getReservationMinutesFromNow(second, now) ?? 9999;
-
-      const firstIsPast = firstMinutes < 0;
-      const secondIsPast = secondMinutes < 0;
-
-      if (firstIsPast !== secondIsPast) {
-        return firstIsPast ? 1 : -1;
-      }
-
-      return Math.abs(firstMinutes) - Math.abs(secondMinutes);
-    });
 }
 
 function buildLiveReservationsByTable(reservations, now = new Date()) {
@@ -6055,7 +5988,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
     try {
       const reservationsData = await fetchJsonOrEmpty(`${API_BASE_URL}/api/reservations`, [], withAdminToken());
-      setReservations(Array.isArray(reservationsData) ? reservationsData.map(normalizeReservation) : []);
+      setReservations(Array.isArray(reservationsData) ? reservationsData.map(normalizeReservation).filter((reservation) => reservation.status !== "Cancelled") : []);
     } catch (error) {
       console.error("Failed to load reservations", error);
       if (!silent) {
@@ -6475,7 +6408,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
-    await loadReservations();
+    await Promise.all([loadReservations(), loadDeletedReservations({ silent: true })]);
   }
 
   async function archiveReservation(id) {
@@ -6531,6 +6464,28 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     } catch (error) {
       console.error("Failed to restore reservation", error);
       setReservationTrashError(error?.message || "Failed to restore reservation.");
+    } finally {
+      setReservationTrashBusy(false);
+    }
+  }
+
+  async function permanentlyDeleteReservationFromTrash(id) {
+    if (!window.confirm(adminLocalText(adminLanguage,
+      "Да изтрием ли окончателно тази резервация? Възстановяване няма да е възможно.",
+      "Permanently delete this reservation? It cannot be restored.",
+      "Удалить эту бронь навсегда? Восстановить её будет невозможно."
+    ))) return;
+    setReservationTrashBusy(true);
+    setReservationTrashError("");
+    try {
+      const response = await adminFetch(`${API_BASE_URL}/api/maintenance/reservations/${id}/permanent`, { method: "DELETE" });
+      if (!response.ok) {
+        setReservationTrashError(await readErrorMessage(response, "Failed to delete reservation."));
+        return;
+      }
+      await loadDeletedReservations({ silent: true });
+    } catch (error) {
+      setReservationTrashError(error?.message || "Failed to delete reservation.");
     } finally {
       setReservationTrashBusy(false);
     }
@@ -8764,10 +8719,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     .slice(0, 5);
 
   function renderReservationTrash() {
-    if (!canUseReservationTrash || isDashboard) return null;
+    if (!canUseReservationTrash) return null;
 
     const title = adminLanguage === "bg" ? "Кошче с резервации" : "Reservation trash";
-    const emptyText = adminLanguage === "bg" ? "Няма изтрити резервации." : "No deleted reservations.";
+    const emptyText = adminLocalText(adminLanguage, "Няма отменени или изтрити резервации.", "No cancelled or deleted reservations.", "Нет отменённых или удалённых броней.");
 
     return (
       <div className="fixed bottom-4 right-4 z-[10020] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
@@ -8826,14 +8781,19 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               </div>
                             )}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => restoreReservationFromTrash(id)}
-                            disabled={reservationTrashBusy}
-                            className="shrink-0 rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:border-emerald-200/40 disabled:opacity-50"
-                          >
-                            {adminLanguage === "bg" ? "Възстанови" : "Restore"}
-                          </button>
+                          <div className="flex shrink-0 flex-col gap-2">
+                            <button
+                              type="button"
+                              onClick={() => restoreReservationFromTrash(id)}
+                              disabled={reservationTrashBusy}
+                              className="shrink-0 rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100 transition hover:border-emerald-200/40 disabled:opacity-50"
+                            >
+                              {adminLocalText(adminLanguage, "Възстанови", "Restore", "Восстановить")}
+                            </button>
+                            <button type="button" onClick={() => permanentlyDeleteReservationFromTrash(id)} disabled={reservationTrashBusy} className="rounded-xl border border-red-300/25 bg-red-500/15 px-3 py-2 text-xs font-semibold text-red-100 disabled:opacity-50">
+                              {adminLocalText(adminLanguage, "Изтрий завинаги", "Delete forever", "Удалить навсегда")}
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
