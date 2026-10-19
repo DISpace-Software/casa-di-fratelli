@@ -142,6 +142,7 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Source).IsRequired().HasMaxLength(40);
             entity.Property(x => x.AssignedWaiterName).HasMaxLength(120);
             entity.Property(x => x.DeletedByAdminName).HasMaxLength(120);
+            entity.HasOne(x => x.Reservation).WithMany().HasForeignKey(x => x.ReservationId).OnDelete(DeleteBehavior.SetNull);
             entity.HasIndex(x => x.IsDeleted);
             entity.HasQueryFilter(x => !x.IsDeleted);
             entity.HasMany(x => x.Items).WithOne(x => x.DiningOrder).HasForeignKey(x => x.DiningOrderId);

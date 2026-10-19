@@ -11,6 +11,7 @@ static void Check(bool result, string message) { if (!result) throw new Exceptio
 await using var connection = new SqliteConnection("Data Source=:memory:");
 await connection.OpenAsync();
 await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
+Check(db.Database.GetMigrations().Contains("20261019195000_PreserveOrdersAfterReservationDeletion"), "Order preservation migration is not discoverable");
 await db.Database.EnsureCreatedAsync();
 var controller = new MaintenanceController(db, new AuditService(db), null!, new ReservationConflictService(db));
 controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
@@ -36,8 +37,9 @@ Check(await controller.RestoreReservation(1) is OkObjectResult && cancelled.Stat
 Check(cancelled.Tables.Single().TableCode == "1", "Restore lost table assignment");
 Check(await controller.RestoreReservation(4) is OkObjectResult && !archived.IsDeleted && archived.Status == "Pending", "Archived pending booking must retain status");
 Check(await controller.PermanentlyDeleteReservation(2) is BadRequestObjectResult, "Active bookings must never be purged");
-db.DiningOrders.Add(new DiningOrder { ReservationId = 3 }); await db.SaveChangesAsync();
-Check(await controller.PermanentlyDeleteReservation(3) is ConflictObjectResult, "Linked orders must prevent purge");
+var linkedOrder = new DiningOrder { ReservationId = 3, GuestName = "Test guest", TableLabel = "2", TotalPrice = 24m, Status = "Done", Items = [new() { Name = "Test dish", UnitPrice = 12m, Quantity = 2, Status = "Done" }] };
+var alreadyArchived = new DiningOrder { ReservationId = 3, IsDeleted = true, DeleteReason = "Earlier archive", TotalPrice = 5m };
+db.DiningOrders.AddRange(linkedOrder, alreadyArchived); await db.SaveChangesAsync();
 Check(await controller.PermanentlyDeleteReservation(5) is NoContentResult, "Cancelled booking purge failed");
 Check(!await db.Reservations.IgnoreQueryFilters().AnyAsync(x => x.Id == 5) && !await db.ReservationTables.AnyAsync(x => x.ReservationId == 5), "Purge left booking or table links");
 Check(await db.Reservations.AnyAsync(x => x.Id == 2) && await db.DiningOrders.AnyAsync(x => x.ReservationId == 3), "Unrelated operational data changed");
@@ -70,6 +72,14 @@ Check(GuestSnapshot() == guestSnapshot, "Unblock changed existing guest booking"
 Check(await reservationsController.UnblockHall(block.Id) is OkObjectResult, "Unblock retry must be idempotent");
 Console.WriteLine("PASS: unblock affects only hall blocks, opens availability, preserves guests and supports retry.");
 Console.WriteLine("PASS: hall block over existing guests, unchanged guest data, exact time boundaries, date/table isolation and overnight range.");
+Check(await controller.PermanentlyDeleteReservation(3) is NoContentResult, "Linked orders must no longer prevent reservation purge");
+Check(!await db.Reservations.IgnoreQueryFilters().AnyAsync(x => x.Id == 3), "Reservation with orders was not purged");
+var preservedOrder = await db.DiningOrders.IgnoreQueryFilters().Include(x => x.Items).SingleAsync(x => x.Id == linkedOrder.Id);
+Check(preservedOrder.ReservationId == null && preservedOrder.IsDeleted && preservedOrder.TotalPrice == 24m && preservedOrder.Status == "Done", "Order history was changed or not archived");
+Check(preservedOrder.Items.Single().Name == "Test dish" && preservedOrder.Items.Single().Quantity == 2, "Order items were lost");
+Check(alreadyArchived.ReservationId == null && alreadyArchived.DeleteReason == "Earlier archive", "Existing archive metadata changed");
+Check(await db.Reservations.AnyAsync(x => x.Id == 2), "Purging linked booking changed unrelated reservation");
+Console.WriteLine("PASS: reservation purge detaches and archives linked orders, preserves amounts/items/status and existing archive metadata.");
 controller.HttpContext.Items["AdminUser"] = new AdminPrincipal(2, "Waiter", "waiter@example.com", "Waiter");
 Check(await controller.PermanentlyDeleteReservation(3) is ForbidResult && await controller.RestoreReservation(3) is ForbidResult, "Waiter must not restore or delete trash");
 Console.WriteLine("PASS: trash contents, walk-ins, restore, conflicts, purge, linked orders, unrelated bookings, role restrictions.");

@@ -105,17 +105,28 @@ public class MaintenanceController : ControllerBase
         var admin = AdminAuthService.Current(HttpContext);
         if (!AdminRoleAccess.CanDeleteReservations(admin?.Role)) return Forbid();
 
+        await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable);
         var reservation = await _db.Reservations.IgnoreQueryFilters()
             .Include(x => x.Tables).FirstOrDefaultAsync(x => x.Id == id);
         if (reservation == null) return NotFound();
         if (!reservation.IsDeleted && reservation.Status != "Cancelled")
             return BadRequest(new { message = "Only reservations in the trash can be permanently deleted." });
-        if (await _db.DiningOrders.IgnoreQueryFilters().AnyAsync(x => x.ReservationId == id))
-            return Conflict(new { message = "This reservation has linked orders and cannot be permanently deleted." });
-
-        await using var transaction = await _db.Database.BeginTransactionAsync();
+        var linkedOrders = await _db.DiningOrders.IgnoreQueryFilters()
+            .Where(x => x.ReservationId == id).ToListAsync();
+        var now = DateTime.UtcNow;
+        foreach (var order in linkedOrders)
+        {
+            order.ReservationId = null;
+            order.Reservation = null;
+            if (order.IsDeleted) continue;
+            order.IsDeleted = true;
+            order.DeletedAtUtc = now;
+            order.DeletedByAdminUserId = admin?.Id;
+            order.DeletedByAdminName = admin?.Name;
+            order.DeleteReason = $"Reservation #{id} permanently deleted; order preserved in archive";
+        }
         await _audit.RecordAsync(HttpContext, "permanent-delete", "Reservation", id.ToString(),
-            before: new { reservation.Id, reservation.Status, reservation.IsDeleted });
+            before: new { reservation.Id, reservation.Status, reservation.IsDeleted, ArchivedOrderIds = linkedOrders.Select(x => x.Id).ToList() });
         _db.ReservationTables.RemoveRange(reservation.Tables);
         _db.Reservations.Remove(reservation);
         await _db.SaveChangesAsync();

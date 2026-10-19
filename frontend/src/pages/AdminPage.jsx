@@ -6345,9 +6345,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
   async function permanentlyDeleteReservationFromTrash(id) {
     if (!window.confirm(adminLocalText(adminLanguage,
-      "Да изтрием ли окончателно тази резервация? Възстановяване няма да е възможно.",
-      "Permanently delete this reservation? It cannot be restored.",
-      "Удалить эту бронь навсегда? Восстановить её будет невозможно."
+      "Да изтрием ли окончателно тази резервация? Възстановяване няма да е възможно. Свързаните поръчки ще се запазят в архива.",
+      "Permanently delete this reservation? It cannot be restored. Linked orders will be preserved in the archive.",
+      "Удалить эту бронь навсегда? Восстановить её будет невозможно. Связанные заказы сохранятся в архиве."
     ))) return;
     setReservationTrashBusy(true);
     setReservationTrashError("");
