@@ -83,7 +83,7 @@ public class MaintenanceController : ControllerBase
         if (nextStatus is "Approved" or "Pending")
         {
             var conflict = await _conflicts.FindTableConflictAsync(reservation.ReservedDate,
-                reservation.ReservedTime, reservation.Tables.Select(x => x.TableCode).ToList(), reservation.Id);
+                reservation.ReservedTime, reservation.Tables.Select(x => x.TableCode).ToList(), reservation.Id, includeHallBlocks: false);
             if (conflict != null) return Conflict(ReservationConflictService.ToConflictResponse(conflict));
         }
         var before = new { reservation.Id, reservation.IsDeleted, reservation.DeleteReason, reservation.Status };

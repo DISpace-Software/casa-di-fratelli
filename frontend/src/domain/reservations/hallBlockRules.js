@@ -29,3 +29,11 @@ export function buildTimeRange(startTime, endTime) {
   return times;
 }
 
+
+export function isHallBlock(reservation) {
+  return reservation?.isHallBlock ?? reservation?.IsHallBlock ?? Boolean(
+    (reservation?.createdByAdmin ?? reservation?.CreatedByAdmin) &&
+    (reservation?.phone ?? reservation?.Phone) === "admin" &&
+    (reservation?.guestName ?? reservation?.GuestName) === "Admin block"
+  );
+}

@@ -58,6 +58,11 @@ Check(await conflictService.FindTableConflictAsync(date, "18:00", ["6"]) == null
 Check(await conflictService.FindTableConflictAsync(date.AddDays(1), "19:30", ["6"]) == null, "Block must not affect another date");
 Check(await conflictService.FindTableConflictAsync(date, "19:30", ["99"]) == null, "Block must not affect other tables");
 Check(ReservationConflictService.IsWithinHallBlock("22:00 - 01:00", new TimeOnly(0, 30)), "Overnight block failed");
+Check(await conflictService.FindTableConflictAsync(date, "19:30", ["6"], includeHallBlocks: false) == null, "Admin must work inside a public hall block");
+Check(await conflictService.FindTableConflictAsync(date, "19:00", ["2"], includeHallBlocks: false) != null, "Admin must still respect real guest reservations");
+Check(await conflictService.FindTableConflictAsync(date, "19:30", ["6"]) != null, "Public booking must remain blocked while admin works");
+Check(await reservationsController.UpdateTables(active.Id, new CasaDiFratelli.Api.Dtos.UpdateReservationTablesRequest { TableIds = ["2"] }) is OkObjectResult, "Admin table editing must work while public hall block is active");
+Check(await conflictService.FindTableConflictAsync(date, "19:30", ["6"]) != null, "Admin editing must not remove public block");
 Check(await reservationsController.UnblockHall(active.Id) is BadRequestObjectResult, "Unblock must reject guest reservations");
 Check(await reservationsController.UnblockHall(block.Id) is OkObjectResult && block.Status == "Released", "Unblock must release selected hall block");
 Check(await conflictService.FindTableConflictAsync(date, "19:30", ["6"]) == null, "Unblock must open tables to new bookings");

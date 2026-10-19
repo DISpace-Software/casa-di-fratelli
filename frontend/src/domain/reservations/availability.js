@@ -1,3 +1,4 @@
+import { isHallBlock } from "./hallBlockRules.js";
 import { isWithinReservationBuffer, timeToMinutes } from "./dateTimeRules.js";
 
 export function isWithinHallBlock(range, time) {
@@ -10,11 +11,6 @@ export function isWithinHallBlock(range, time) {
     if (start === null || end === null) return false;
     return start <= end ? minute >= start && minute <= end : minute >= start || minute <= end;
   });
-}
-
-function isHallBlock(reservation) {
-  return reservation?.isHallBlock ?? reservation?.IsHallBlock ??
-    (reservation?.createdByAdmin && reservation?.phone === "admin" && reservation?.guestName === "Admin block");
 }
 
 export function isBlockedSlotForSelection(slot, reservedDate, reservedTime) {
@@ -35,13 +31,13 @@ export function getUnavailableTableIdsForSlot(
   return new Set(
     reservations
       .filter((reservation) => {
-        if (reservation.status !== "Approved") return false;
+        if (reservation.status !== "Approved" || isHallBlock(reservation)) return false;
         if (excludeReservationId && reservation.id === excludeReservationId) return false;
         if (!Array.isArray(reservation.tableIds) || reservation.tableIds.length === 0) return false;
 
         return (
           String(reservation.reservedDate) === String(reservedDate) &&
-          (isHallBlock(reservation) ? isWithinHallBlock(reservation.reservedTime, reservedTime) : isWithinReservationBuffer(reservation.reservedTime, reservedTime))
+          isWithinReservationBuffer(reservation.reservedTime, reservedTime)
         );
       })
       .flatMap((reservation) => reservation.tableIds)

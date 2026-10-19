@@ -659,7 +659,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             }
         }
 
-        var conflict = await _reservationConflictService.FindTableConflictAsync(request.ReservedDate, request.ReservedTime, tableIds);
+        var conflict = await _reservationConflictService.FindTableConflictAsync(request.ReservedDate, request.ReservedTime, tableIds, includeHallBlocks: !request.CreatedByAdmin);
 
         if (conflict != null)
         {
@@ -806,6 +806,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
                 x.ReservedDate == reservedDate &&
                 x.Status != ReservationStatusCancelled &&
                 x.Status != ReservationStatusReleased &&
+                !(x.CreatedByAdmin && x.Phone == "admin" && x.GuestName == "Admin block") &&
                 !x.IsNoShow &&
                 !x.IsArrived &&
                 x.Tables.Any(t => tableIds.Contains(t.TableCode)))
@@ -923,7 +924,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
                 reservation.ReservedDate,
                 reservation.ReservedTime,
                 tableIds,
-                reservation.Id);
+                reservation.Id, includeHallBlocks: false);
 
             if (conflict != null)
             {
@@ -971,7 +972,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             reservation.ReservedDate,
             reservation.ReservedTime,
             tableIds,
-            id);
+            id, includeHallBlocks: false);
 
         if (conflict != null)
         {
@@ -1137,7 +1138,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             nextReservedDate,
             nextReservedTime,
             tableIds,
-            id);
+            id, includeHallBlocks: false);
 
         if (conflict != null)
             return Conflict(ReservationConflictService.ToConflictResponse(conflict));
@@ -1252,7 +1253,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
 
         await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         var conflict = await _reservationConflictService.FindTableConflictAsync(
-            request.ReservedDate, reservedTime, tableIds, reservation.Id);
+            request.ReservedDate, reservedTime, tableIds, reservation.Id, includeHallBlocks: false);
         if (conflict != null)
             return Conflict(ReservationConflictService.ToConflictResponse(conflict));
 

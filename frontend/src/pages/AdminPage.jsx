@@ -1,6 +1,6 @@
 import MapOverlay from "../components/admin/MapOverlay";
-import { buildTimeRange } from "../domain/reservations/hallBlockRules";
-import { getReservationMinutesFromNow, formatLocalDate, getLiveReservationCandidates } from "../domain/adminMap/liveReservations";
+import { buildTimeRange, isHallBlock } from "../domain/reservations/hallBlockRules";
+import { getReservationMinutesFromNow, formatLocalDate, getLiveReservationCandidates, buildReservationsByTableForDate } from "../domain/adminMap/liveReservations";
 import TenantBrandingSettings from "../components/admin/TenantBrandingSettings";
 import { useTenantBranding } from "../context/TenantBrandingContext";
 import React from "react";
@@ -1289,28 +1289,6 @@ function buildLiveReservationsByTable(reservations, now = new Date()) {
       }
     });
   });
-
-  return byTable;
-}
-
-function buildReservationsByTableForDate(reservations, selectedDate) {
-  const byTable = new Map();
-
-  reservations
-    .filter((reservation) => {
-      if (!["Pending", "Approved"].includes(reservation.status) || reservation.isNoShow) return false;
-      if (reservation.reservedDate !== selectedDate) return false;
-      if (["Cancelled", "Released"].includes(reservation.status)) return false;
-      return true;
-    })
-    .sort((first, second) => String(first.reservedTime).localeCompare(String(second.reservedTime)))
-    .forEach((reservation) => {
-      reservation.tableIds.forEach((tableId) => {
-        if (!byTable.has(tableId)) {
-          byTable.set(tableId, reservation);
-        }
-      });
-    });
 
   return byTable;
 }
@@ -9217,7 +9195,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 text={a.liveMap}
                 language={adminLanguage}
                 layout={tableLayout}
-                reservations={reservations}
+                reservations={reservations.filter((reservation) => !isHallBlock(reservation))}
                 diningOrders={diningOrders}
                 menuItems={menuItems}
                 selectedArea={reservationMapArea}

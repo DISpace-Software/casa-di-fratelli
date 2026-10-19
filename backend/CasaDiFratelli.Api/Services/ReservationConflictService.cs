@@ -94,12 +94,14 @@ public class ReservationConflictService
         DateOnly reservedDate,
         string reservedTime,
         List<string> tableIds,
-        int? excludeReservationId = null)
+        int? excludeReservationId = null,
+        bool includeHallBlocks = true)
     {
         var candidates = await _db.Reservations
             .Include(x => x.Tables)
             .Where(x =>
                 x.Status == "Approved" &&
+                (includeHallBlocks || !(x.CreatedByAdmin && x.Phone == "admin" && x.GuestName == "Admin block")) &&
                 x.ReservedDate == reservedDate &&
                 (!excludeReservationId.HasValue || x.Id != excludeReservationId.Value) &&
                 x.Tables.Any(t => tableIds.Contains(t.TableCode)))

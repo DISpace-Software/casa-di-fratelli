@@ -1,3 +1,4 @@
+import { isHallBlock } from "../reservations/hallBlockRules.js";
 export function getReservationMinutesFromNow(reservation, now = new Date()) {
   if (!reservation?.reservedDate || !reservation?.reservedTime) return null;
 
@@ -41,7 +42,7 @@ export function getLiveReservationCandidates(reservations, now = new Date()) {
 
   return reservations
     .filter((reservation) => {
-      if (!["Pending", "Approved"].includes(reservation.status) || reservation.isNoShow) return false;
+      if (isHallBlock(reservation) || !["Pending", "Approved"].includes(reservation.status) || reservation.isNoShow) return false;
       if (reservation.reservedDate !== today) return false;
 
       const minutes = getReservationMinutesFromNow(reservation, now);
@@ -64,5 +65,28 @@ export function getLiveReservationCandidates(reservations, now = new Date()) {
 
       return Math.abs(firstMinutes) - Math.abs(secondMinutes);
     });
+}
+
+
+export function buildReservationsByTableForDate(reservations, selectedDate) {
+  const byTable = new Map();
+
+  reservations
+    .filter((reservation) => {
+      if (isHallBlock(reservation) || !["Pending", "Approved"].includes(reservation.status) || reservation.isNoShow) return false;
+      if (reservation.reservedDate !== selectedDate) return false;
+      if (["Cancelled", "Released"].includes(reservation.status)) return false;
+      return true;
+    })
+    .sort((first, second) => String(first.reservedTime).localeCompare(String(second.reservedTime)))
+    .forEach((reservation) => {
+      reservation.tableIds.forEach((tableId) => {
+        if (!byTable.has(tableId)) {
+          byTable.set(tableId, reservation);
+        }
+      });
+    });
+
+  return byTable;
 }
 
