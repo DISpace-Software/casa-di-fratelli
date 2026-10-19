@@ -46,7 +46,7 @@ export default function ContactSection({ t }) {
 
           <div className="flex flex-col gap-3 sm:flex-row md:flex-col">
             <a className="text-[#f2d39a]" href={`tel:${branding.phone}`}>{branding.phone}</a>
-            {branding.email && <a className="text-[#f2d39a]" href={`mailto:${branding.email}`}>{branding.email}</a>}
+            {!branding.isCasa && branding.email && <a className="text-[#f2d39a]" href={`mailto:${branding.email}`}>{branding.email}</a>}
             {branding.address && <p>{branding.address} · {branding.city}</p>}
             <p>{branding.openingHoursText}</p>
             {socials.map((social) => ({ ...social, href: branding[`${social.key}Url`] })).filter((social) => social.href).map((social) => (
@@ -67,6 +67,22 @@ export default function ContactSection({ t }) {
               </a>
             ))}
           </div>
+          {branding.isCasa && t.emailContacts && (
+            <div className="min-w-0 border-t border-white/10 pt-6 md:col-span-2">
+              <h3 className="section-kicker">{t.emailContactsTitle}</h3>
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                {t.emailContacts.map(([email, description]) => (
+                  <div key={email} className="min-w-0 rounded-2xl border border-[#c9a56a]/20 bg-black/20 p-4">
+                    <dt><a href={`mailto:${email}`} className="inline-flex min-h-11 max-w-full items-center break-all font-semibold text-[#f2d39a] underline-offset-4 hover:underline">{email}</a></dt>
+                    <dd className="mt-1 text-sm leading-6 text-stone-300">{description}</dd>
+                  </div>
+                ))}
+              </dl>
+              {branding.email && !t.emailContacts.some(([email]) => email === branding.email) && (
+                <a className="mt-4 inline-block break-all text-[#f2d39a]" href={`mailto:${branding.email}`}>{branding.email}</a>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </section>

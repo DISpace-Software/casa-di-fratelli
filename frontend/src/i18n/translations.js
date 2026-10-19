@@ -56,6 +56,14 @@ const translations = {
     contactText:
       "Открийте Casa di Fratelli в социалните мрежи за новини, специални вечери и моменти от ресторанта.",
     contactOpen: "Отвори профила",
+    emailContactsTitle: "Пишете ни по имейл",
+    emailContacts: [
+      ["info@casadifratelli.bg", "Общи въпроси, контакти и запитвания към ресторанта."],
+      ["reservations@casadifratelli.bg", "Резервации, потвърждения и известия за отмяна."],
+      ["friends@casadifratelli.bg", "Поздравления за рожден ден, специални оферти, отстъпки и новини."],
+      ["events@casadifratelli.bg", "Банкети, фирмени събития и частни празненства."],
+      ["fratellirestaurant25@gmail.com", "Допълнителен контакт с екипа на ресторанта."],
+    ],
     address: "Адрес",
     phone: "Телефон",
     hours: "Работно време",
@@ -164,6 +172,14 @@ const translations = {
     contactText:
       "Find Casa di Fratelli on social media for news, special evenings, and moments from the restaurant.",
     contactOpen: "Open profile",
+    emailContactsTitle: "Email us",
+    emailContacts: [
+      ["info@casadifratelli.bg", "General questions, contacts and restaurant enquiries."],
+      ["reservations@casadifratelli.bg", "Reservations, confirmations and cancellation notices."],
+      ["friends@casadifratelli.bg", "Birthday greetings, special offers, discounts and news."],
+      ["events@casadifratelli.bg", "Banquets, corporate events and private celebrations."],
+      ["fratellirestaurant25@gmail.com", "Additional contact with the restaurant team."],
+    ],
     address: "Address",
     phone: "Phone",
     hours: "Opening Hours",
@@ -274,6 +290,14 @@ const translations = {
     contactText:
       "Найдите Casa di Fratelli в социальных сетях, чтобы видеть новости, специальные вечера и моменты из ресторана.",
     contactOpen: "Открыть профиль",
+    emailContactsTitle: "Напишите нам",
+    emailContacts: [
+      ["info@casadifratelli.bg", "Общие вопросы и обращения в ресторан."],
+      ["reservations@casadifratelli.bg", "Бронирования, подтверждения и уведомления об отмене."],
+      ["friends@casadifratelli.bg", "Поздравления с днём рождения, специальные предложения, скидки и новости."],
+      ["events@casadifratelli.bg", "Банкеты, корпоративные мероприятия и частные праздники."],
+      ["fratellirestaurant25@gmail.com", "Дополнительный контакт с командой ресторана."],
+    ],
     address: "Адрес",
     phone: "Телефон",
     hours: "Рабочее время",
