@@ -1,3 +1,6 @@
+using CasaDiFratelli.Api.Services.Tenancy;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging.Abstractions;
 using CasaDiFratelli.Api.Controllers;
 using CasaDiFratelli.Api.Data;
 using CasaDiFratelli.Api.Models;
@@ -110,3 +113,40 @@ Check((await History(page: int.MaxValue, size: 1)).GetProperty("Page").GetInt32(
 Check(await marketing.GetHistory(pageSize: 101) is BadRequestObjectResult, "History page size must be bounded");
 Check(await db.MarketingMessageLogs.CountAsync() == 2, "Reading history must not modify or send messages");
 Console.WriteLine("PASS: marketing history permissions, search, campaign filter, pagination, UTC timestamps and read-only behavior.");
+
+
+// Capture Resend requests locally: these checks never contact an email provider.
+var emailConfig = new ConfigurationBuilder().AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.json"))
+    .AddInMemoryCollection(new Dictionary<string, string?> {
+        ["RESEND_API_KEY"] = "test-only-not-a-real-key",
+        ["FROM_EMAIL"] = "Casa di Fratelli <reservations@mail.casadifratelli.bg>",
+        ["MARKETING_FROM_EMAIL"] = "Casa di Fratelli <offers@mail.casadifratelli.bg>",
+        ["ADMIN_EMAIL"] = "fratellirestaurant25@gmail.com"
+    }).Build();
+var casaTenant = new CurrentTenant();
+casaTenant.Resolve(new TenantDefinition { Id = "casa-di-fratelli", Name = "Casa di Fratelli", Slug = "casa-di-fratelli" });
+var emailBranding = new TenantBrandingService(db, casaTenant, emailConfig, NullLogger<TenantBrandingService>.Instance);
+var capture = new CaptureEmailHandler();
+var emailService = new EmailService(new HttpClient(capture), emailConfig, NullLogger<EmailService>.Instance, emailBranding);
+await emailService.SendAsync("guest@example.com", "Confirmation", "<p>Confirmation</p>");
+await emailService.TrySendMarketingAsync("guest@example.com", "Birthday", "<p>Birthday</p>", "test-birthday");
+await emailService.SendAsync(emailBranding.GetEmailConfiguration("ADMIN_EMAIL")!, "New confirmed reservation", "<p>Admin notice</p>");
+Check(capture.Messages.Count == 3, "Expected all three local email requests");
+Check(capture.Messages[0].GetProperty("from").GetString() == "Casa di Fratelli <reservations@casadifratelli.bg>", "Guest sender must use reservations at main domain despite legacy global config");
+Check(capture.Messages[1].GetProperty("from").GetString() == "Casa di Fratelli <friends@casadifratelli.bg>", "Marketing sender must use friends at main domain");
+Check(capture.Messages[2].GetProperty("to")[0].GetString() == "fratellirestaurant25@gmail.com", "Admin notifications must retain original inbox");
+var otherTenant = new CurrentTenant();
+otherTenant.Resolve(new TenantDefinition { Id = "other", Name = "Other", Slug = "other" });
+var otherBranding = new TenantBrandingService(db, otherTenant, emailConfig, NullLogger<TenantBrandingService>.Instance);
+Check(otherBranding.GetEmailConfiguration("FROM_EMAIL") == null, "Another tenant must not inherit Casa senders");
+Console.WriteLine("PASS: separate reservation/marketing senders, legacy config precedence, unchanged admin recipient and tenant isolation; no real emails sent.");
+
+sealed class CaptureEmailHandler : HttpMessageHandler
+{
+    public List<System.Text.Json.JsonElement> Messages { get; } = [];
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        Messages.Add(System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(await request.Content!.ReadAsStringAsync(cancellationToken)));
+        return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent("{}") };
+    }
+}

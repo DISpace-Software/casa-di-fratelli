@@ -9,8 +9,8 @@ namespace CasaDiFratelli.Api.Services;
 
 public class EmailService
 {
-    private const string DefaultFromEmail = "Casa di Fratelli <reservations@mail.casadifratelli.bg>";
-    private const string DefaultMarketingFromEmail = "Casa di Fratelli <offers@mail.casadifratelli.bg>";
+    private const string DefaultFromEmail = "Casa di Fratelli <reservations@casadifratelli.bg>";
+    private const string DefaultMarketingFromEmail = "Casa di Fratelli <friends@casadifratelli.bg>";
     private readonly TenantBrandingService _branding;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
