@@ -83,3 +83,30 @@ Console.WriteLine("PASS: reservation purge detaches and archives linked orders, 
 controller.HttpContext.Items["AdminUser"] = new AdminPrincipal(2, "Waiter", "waiter@example.com", "Waiter");
 Check(await controller.PermanentlyDeleteReservation(3) is ForbidResult && await controller.RestoreReservation(3) is ForbidResult, "Waiter must not restore or delete trash");
 Console.WriteLine("PASS: trash contents, walk-ins, restore, conflicts, purge, linked orders, unrelated bookings, role restrictions.");
+
+var marketing = new MarketingController(db, null!, null!) { ControllerContext = controller.ControllerContext };
+Check(await marketing.GetHistory() is ForbidResult, "Marketing history must enforce owner/developer permissions");
+controller.HttpContext.Items["AdminUser"] = new AdminPrincipal(1, "Test owner", "test@example.com", "Owner");
+db.CustomerProfiles.Add(new CustomerProfile { Email = " Guest@Example.com ", GuestName = "History Guest" });
+db.MarketingMessageLogs.AddRange(
+    new MarketingMessageLog { CampaignKey = "birthday", CustomerKey = "guest@example.com", Email = "guest@example.com", Subject = "Birthday greeting", SentForDate = date, SentAtUtc = new DateTime(2026, 10, 17, 8, 0, 0, DateTimeKind.Utc) },
+    new MarketingMessageLog { CampaignKey = "loyalty", CustomerKey = "other@example.com", Email = "other@example.com", Subject = "Loyal guest", SentForDate = date, SentAtUtc = new DateTime(2026, 10, 18, 8, 0, 0, DateTimeKind.Utc) });
+await db.SaveChangesAsync();
+async Task<System.Text.Json.JsonElement> History(string? campaign = null, string? search = null, int page = 1, int size = 20)
+{
+    var result = await marketing.GetHistory(campaign, search, page, size) as OkObjectResult;
+    Check(result != null, "History request failed");
+    return System.Text.Json.JsonSerializer.SerializeToElement(result!.Value);
+}
+var history = await History(size: 1);
+Check(history.GetProperty("Total").GetInt32() == 2 && history.GetProperty("Items")[0].GetProperty("CampaignKey").GetString() == "loyalty", "History must paginate newest first");
+history = await History(search: "HISTORY GUEST");
+Check(history.GetProperty("Total").GetInt32() == 1 && history.GetProperty("Items")[0].GetProperty("GuestName").GetString() == "History Guest", "History must search names and resolve normalized email");
+Check(history.GetProperty("Items")[0].GetProperty("SentAtUtc").GetString()!.EndsWith("Z"), "History timestamps must explicitly indicate UTC");
+Check((await History(campaign: "birthday")).GetProperty("Total").GetInt32() == 1, "Campaign filter failed");
+Check((await History(search: "OTHER@EXAMPLE")).GetProperty("Total").GetInt32() == 1, "Recipient search must be case insensitive");
+Check((await History(search: "no match")).GetProperty("Total").GetInt32() == 0, "Empty history search failed");
+Check((await History(page: int.MaxValue, size: 1)).GetProperty("Page").GetInt32() == 2, "Out of range page must clamp safely");
+Check(await marketing.GetHistory(pageSize: 101) is BadRequestObjectResult, "History page size must be bounded");
+Check(await db.MarketingMessageLogs.CountAsync() == 2, "Reading history must not modify or send messages");
+Console.WriteLine("PASS: marketing history permissions, search, campaign filter, pagination, UTC timestamps and read-only behavior.");

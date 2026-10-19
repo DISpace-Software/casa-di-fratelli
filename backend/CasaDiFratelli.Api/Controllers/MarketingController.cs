@@ -32,6 +32,39 @@ public class MarketingController : ControllerBase
         return Ok(new { Settings = settings, Stats = stats });
     }
 
+    [HttpGet("history")]
+    public async Task<IActionResult> GetHistory([FromQuery] string? campaign = null, [FromQuery] string? search = null,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+    {
+        if (!CanManageMarketing()) return Forbid();
+        if (page < 1 || pageSize < 1 || pageSize > 100) return BadRequest(new { Message = "Invalid page or page size." });
+        var query = _db.MarketingMessageLogs.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(campaign)) query = query.Where(x => x.CampaignKey == campaign.Trim());
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLower();
+            query = query.Where(x => x.Email.ToLower().Contains(term) || x.Subject.ToLower().Contains(term)
+                || _db.CustomerProfiles.Any(c => c.Email != null && c.Email.Trim().ToLower() == x.CustomerKey
+                    && c.GuestName != null && c.GuestName.ToLower().Contains(term)));
+        }
+        var total = await query.CountAsync();
+        var pages = Math.Max(1, (int)Math.Ceiling(total / (double)pageSize));
+        page = Math.Min(page, pages);
+        var logs = await query.OrderByDescending(x => x.SentAtUtc).ThenByDescending(x => x.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+        var keys = logs.Select(x => x.CustomerKey).Distinct().ToArray();
+        var customers = await _db.CustomerProfiles.AsNoTracking()
+            .Where(x => x.Email != null && keys.Contains(x.Email.Trim().ToLower()))
+            .Select(x => new { x.Email, x.GuestName }).ToListAsync();
+        var names = customers.GroupBy(x => x.Email!.Trim().ToLowerInvariant())
+            .ToDictionary(x => x.Key, x => x.FirstOrDefault(c => !string.IsNullOrWhiteSpace(c.GuestName))?.GuestName);
+        return Ok(new { Total = total, Page = page, PageSize = pageSize, Items = logs.Select(x => new
+        {
+            x.Id, x.CampaignKey, x.Email, GuestName = names.GetValueOrDefault(x.CustomerKey),
+            SentAtUtc = DateTime.SpecifyKind(x.SentAtUtc, DateTimeKind.Utc), x.SentForDate, x.Subject, x.DiscountPercent
+        }) });
+    }
+
     [HttpPut("settings")]
     public async Task<IActionResult> SaveSettings([FromBody] MarketingSettings settings)
     {

@@ -1,3 +1,4 @@
+import MarketingHistory from "../components/admin/MarketingHistory";
 import MapOverlay from "../components/admin/MapOverlay";
 import { buildTimeRange, isHallBlock } from "../domain/reservations/hallBlockRules";
 import { getReservationMinutesFromNow, formatLocalDate, getLiveReservationCandidates, buildReservationsByTableForDate } from "../domain/adminMap/liveReservations";
@@ -3730,6 +3731,7 @@ function ThemeIcon({ theme, className = "h-5 w-5" }) {
 }
 
 function MarketingModule({ adminLanguage, adminFetch }) {
+  const [historyVersion, setHistoryVersion] = React.useState(0);
   const [settings, setSettings] = React.useState(null);
   const [stats, setStats] = React.useState(null);
   const [preview, setPreview] = React.useState(null);
@@ -3902,6 +3904,7 @@ function MarketingModule({ adminLanguage, adminFetch }) {
     }
     const data = await response.json();
     setPreview(data);
+    if (!dryRun) setHistoryVersion((version) => version + 1);
     setNotice(dryRun
       ? (adminLanguage === "bg" ? "Проверката е готова." : "Preview ready.")
       : (adminLanguage === "bg" ? `Изпратени писма: ${data.sent ?? data.Sent ?? 0}` : `Emails sent: ${data.sent ?? data.Sent ?? 0}`));
@@ -3922,6 +3925,7 @@ function MarketingModule({ adminLanguage, adminFetch }) {
 
   return (
     <Panel title={text.title} subtitle={text.subtitle}>
+      <MarketingHistory adminLanguage={adminLanguage} adminFetch={adminFetch} refreshVersion={historyVersion} />
       <form onSubmit={saveSettings} className="space-y-5">
         {(notice || error) && (
           <div className={`rounded-2xl border px-4 py-3 text-sm ${error ? "border-red-300/30 bg-red-500/15 text-red-100" : "border-emerald-300/25 bg-emerald-500/12 text-emerald-100"}`}>
