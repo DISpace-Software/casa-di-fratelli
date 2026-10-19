@@ -187,7 +187,12 @@ public class MenuController : ControllerBase
                 DescriptionBg = reader.IsDBNull(4) ? string.Empty : reader.GetString(4),
                 DescriptionEn = reader.IsDBNull(5) ? string.Empty : reader.GetString(5),
                 DescriptionRu = reader.IsDBNull(6) ? string.Empty : reader.GetString(6),
-                ImageUrl = reader.IsDBNull(7) ? string.Empty : reader.GetString(7),
+                ImageUrl = CasaDrinkPhotos.Resolve(
+                    reader.IsDBNull(7) ? string.Empty : reader.GetString(7),
+                    _branding.IsCasa,
+                    reader.IsDBNull(10) ? "Kitchen" : reader.GetString(10),
+                    reader.IsDBNull(1) ? string.Empty : reader.GetString(1),
+                    reader.IsDBNull(8) ? string.Empty : reader.GetString(8)),
                 Weight = reader.IsDBNull(8) ? string.Empty : reader.GetString(8),
                 Price = reader.IsDBNull(9) ? 0m : Convert.ToDecimal(reader.GetValue(9)),
                 Department = reader.IsDBNull(10) ? "Kitchen" : reader.GetString(10),

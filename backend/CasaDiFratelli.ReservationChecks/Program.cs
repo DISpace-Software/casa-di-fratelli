@@ -11,6 +11,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
 
 static void Check(bool result, string message) { if (!result) throw new Exception(message); }
+Check(CasaDrinkPhotos.Resolve("", true, "Bar", "Кока-Кола", "250 мл").StartsWith("/drinks/"), "Casa drink must have a catalogue photo");
+Check(CasaDrinkPhotos.Resolve("/custom.png", true, "Bar", "Кока-Кола", "250 мл") == "/custom.png", "Admin photo must take precedence over the catalogue");
+Check(CasaDrinkPhotos.Resolve("", false, "Bar", "Кока-Кола", "250 мл") == "", "Casa photos must not appear for another tenant");
+Check(CasaDrinkPhotos.Resolve("", true, "Kitchen", "Кока-Кола", "250 мл") == "", "Catalogue must apply only to drinks");
+Check(CasaDrinkPhotos.Resolve("", true, "Bar", "Unknown drink", "250 мл") == "", "Unknown products must retain the normal fallback");
 await using var connection = new SqliteConnection("Data Source=:memory:");
 await connection.OpenAsync();
 await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
