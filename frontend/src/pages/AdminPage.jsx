@@ -2958,6 +2958,7 @@ function ReservationOperationsMap({
 
           {areaTables.filter((table) => mapViewMode === "scroll" || table.area === selectedArea).map((table) => {
             const reservation = liveByTable.get(table.id);
+            const isAdminBlocked = Boolean(findPublicTableHold(publicTableHolds, mapDate, [table.id]));
             const tableOrders = activeOrdersByTable.get(table.id) || [];
             const hasTableOrders = tableOrders.length > 0;
             const minutes = reservation ? getReservationMinutesFromNow(reservation, now) : null;
@@ -2972,7 +2973,6 @@ function ReservationOperationsMap({
             const isMoveAllowed =
               isMoveMode &&
               !isMoveUnavailable;
-              tableReservationDraft?.tableId === table.id && tableReservationDraft?.area === table.area;
             const zone = ADMIN_MAP_ZONES.find((item) => item.id === table.area) || ADMIN_MAP_ZONES[0];
             const worldPosition = localPercentToWorld(zone, table);
 
@@ -2987,6 +2987,8 @@ function ReservationOperationsMap({
               >
                 <button
                   type="button"
+                  data-admin-blocked={isAdminBlocked ? "true" : "false"}
+                  title={isAdminBlocked ? adminLocalText(language, "Блокирана от администратор", "Blocked by admin", "Заблокирован администратором") : undefined}
                   data-reserved={reservation ? "true" : "false"}
                   data-arrived={reservation?.isArrived ? "true" : "false"}
                   data-selected={isSelectedTable || isMoveSelected ? "true" : "false"}

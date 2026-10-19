@@ -2004,3 +2004,17 @@ html[data-theme="light"] .zone-preview-card :where(.text-white, [class*="text-wh
 .admin-map-overlay-root :is(button, a, input, select) { min-height: 44px; }
 .admin-map-overlay-root :is(input, select, textarea) { font-size: 16px; }
 .admin-map-overlay-floating .admin-map-overlay-panel { width: min(360px, 100%); max-height: min(300px, 100%); }
+
+/* Admin day blocks stay white in both map modes and both themes. */
+.admin-page .admin-map-table-node[data-admin-blocked="true"],
+html[data-theme="light"] .admin-page .admin-map-table-node[data-admin-blocked="true"] {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 80%), 0 8px 22px rgb(0 0 0 / 22%) !important;
+}
+.admin-page .admin-map-table-node[data-admin-blocked="true"][data-selected="true"],
+html[data-theme="light"] .admin-page .admin-map-table-node[data-admin-blocked="true"][data-selected="true"] {
+  outline: 3px solid #c9a56a;
+  outline-offset: 3px;
+}
