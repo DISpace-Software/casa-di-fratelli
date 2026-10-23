@@ -1,3 +1,4 @@
+import { useSeasonalZones } from "../context/SeasonalZonesContext";
 import { tenantReservationTimes } from "../config/tenantBranding";
 import { useTenantBranding } from "../context/TenantBrandingContext";
 import React from "react";
@@ -944,6 +945,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
   const [emailConfirmationNotice, setEmailConfirmationNotice] = React.useState(null);
   const [autoConfirmationNotice, setAutoConfirmationNotice] = React.useState(null);
   const [dailyLimitNotice, setDailyLimitNotice] = React.useState(false);
+  const { closedAreas, loaded: zonesLoaded, error: zonesError, reloadZones } = useSeasonalZones();
   const [selectedArea, setSelectedArea] = React.useState("indoor");
   const [selectedTables, setSelectedTables] = React.useState([]);
   const [showBookingForm, setShowBookingForm] = React.useState(false);
@@ -1113,10 +1115,18 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
       subtitle: localText(language, "Свежа външна зона", "Open air corner", "Свежая открытая зона"),
       capacity: "8",
     },
-  ];
+  ].filter((zone) => zonesLoaded && !closedAreas.includes(zone.value));
+
+  React.useEffect(() => {
+    if (zonesLoaded && (!selectedArea || closedAreas.includes(selectedArea))) {
+      setSelectedArea(["indoor", "garden", "openTerrace"].find((area) => !closedAreas.includes(area)) || "");
+      setSelectedTables([]);
+      setShowBookingForm(false);
+    }
+  }, [closedAreas, selectedArea, zonesLoaded]);
 
   const requestedGuests = Number(guestCount || 0);
-  const canShowSearchParams = Boolean(selectedArea && reservationDate && selectedTime && guestCount);
+  const canShowSearchParams = Boolean(zonesLoaded && !closedAreas.includes(selectedArea) && selectedArea && reservationDate && selectedTime && guestCount);
 
   const openSelectionControl = (control) => {
     if (!control) return;
@@ -1532,6 +1542,7 @@ export default function ReservationPage({ t, language, setLanguage, onBack, onRe
                     {localText(language, "Зона", "Area", "Зона")}
                   </label>
                   <div className="grid gap-2 sm:grid-cols-3">
+                    {(!zonesLoaded || zoneOptions.length === 0) && <p role="status" className="col-span-full text-sm text-white/70">{!zonesLoaded ? localText(language, "Зареждане на зоните…", "Loading areas…", "Загрузка зон…") : localText(language, "В момента няма отворени зони за онлайн резервации. Моля, обадете ни се.", "No areas are currently open for online booking. Please call us.", "Сейчас нет открытых зон для онлайн-бронирования. Пожалуйста, позвоните нам.")}{zonesError && <button type="button" onClick={reloadZones} className="ml-2 underline">{localText(language, "Опитай отново", "Retry", "Повторить")}</button>}</p>}
                     {zoneOptions.map((zone) => (
                       <button
                         key={zone.value}

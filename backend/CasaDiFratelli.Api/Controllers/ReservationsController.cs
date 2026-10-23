@@ -36,6 +36,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     private readonly ProductTierService _tiers;
     private readonly PushNotificationService _pushNotifications;
     private readonly RestaurantClosureService _closures;
+    private readonly SeasonalZoneService _seasonalZones;
     private readonly ICurrentTenant _currentTenant;
     private readonly TenantBrandingService _branding;
     private TenantBrandingSettings _brand = new();
@@ -63,6 +64,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         TenantBrandingService branding)
     {
         _db = db;
+        _seasonalZones = new SeasonalZoneService(db);
         _emailService = emailService;
         _configuration = configuration;
         _reservationConflictService = reservationConflictService;
@@ -604,6 +606,9 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         var normalizedPhone = NormalizePhoneForLimit(phone);
 
         var tableIds = ReservationConflictService.NormalizeTableIds(request.TableIds);
+        if (await _seasonalZones.IsSelectionClosedAsync(request.Area, tableIds))
+            return Conflict(new { message = "Тази зона е затворена за сезона. Моля, изберете друга зона.", code = "ZONE_SEASONALLY_CLOSED" });
+
 
         if (tableIds.Count == 0)
             return BadRequest("At least one valid table must be selected.");
@@ -760,6 +765,9 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             return Unauthorized(new { message = "Admin session is required." });
 
         var tableIds = ReservationConflictService.NormalizeTableIds(request.TableIds);
+        if (await _seasonalZones.IsSelectionClosedAsync(request.Area, tableIds))
+            return Conflict(new { message = "Тази зона е затворена за сезона. Моля, изберете друга зона.", code = "ZONE_SEASONALLY_CLOSED" });
+
         if (tableIds.Count == 0)
             return BadRequest(new { message = "At least one table must be selected." });
 

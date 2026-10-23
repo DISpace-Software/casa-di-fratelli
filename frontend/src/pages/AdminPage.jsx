@@ -1,3 +1,4 @@
+import { useSeasonalZones } from "../context/SeasonalZonesContext";
 import MarketingHistory from "../components/admin/MarketingHistory";
 import MapOverlay from "../components/admin/MapOverlay";
 import { buildTimeRange, isHallBlock } from "../domain/reservations/hallBlockRules";
@@ -1846,6 +1847,7 @@ function ReservationOperationsMap({
   onExitMap,
   mapViewMode = "scroll",
 }) {
+  const { closedAreas, loaded: zonesLoaded } = useSeasonalZones();
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState(null);
   const [mapFocusRequestId, setMapFocusRequestId] = React.useState(0);
@@ -1869,13 +1871,22 @@ function ReservationOperationsMap({
     ["indoor", text.indoor],
     ["garden", text.garden],
     ["openTerrace", text.openTerrace],
-  ];
+  ].filter(([area]) => !closedAreas.includes(area));
+  React.useEffect(() => {
+    if (!selectedArea || closedAreas.includes(selectedArea)) {
+      onAreaChange(areas[0]?.[0] || "");
+      setSelectedReservationId(null);
+      setSelectedTableId(null);
+      setTableReservationDraft(null);
+      setWalkInDraft(null);
+    }
+  }, [closedAreas, selectedArea, onAreaChange]);
   const getAreaTableCount = (area) =>
     getActiveLayoutTables(layout, area, tablesByArea[area] || []).length;
   const getActiveTablesForArea = React.useCallback(
-    (area) => getActiveLayoutTables(layout, area, tablesByArea[area] || [])
+    (area) => (closedAreas.includes(area) ? [] : getActiveLayoutTables(layout, area, tablesByArea[area] || []))
       .map((table) => mapViewMode === "section" && table.area !== "openTerrace" ? table : orientTableForMap(table)),
-    [layout, mapViewMode]
+    [layout, mapViewMode, closedAreas]
   );
   const areaTables = React.useMemo(
     () => ["indoor", "garden", "openTerrace"]
@@ -2535,6 +2546,8 @@ function ReservationOperationsMap({
     );
   }
 
+  if (!zonesLoaded || areas.length === 0) return <Panel title={text.title}><p role="status" className="p-6 text-white/70">{!zonesLoaded ? adminLocalText(language, "Зареждане на зоните…", "Loading areas…", "Загрузка зон…") : adminLocalText(language, "Всички зони са затворени за сезона. Отворете зона от „Блокирай зала“.", "All areas are seasonally closed. Reopen an area under Block hall.", "Все зоны закрыты на сезон. Откройте зону в разделе блокировки зала.")}</p></Panel>;
+
   const MapViewport = mapViewMode === "section" ? SectionMapViewport : UnifiedMapViewport;
 
   return (
@@ -2659,7 +2672,7 @@ function ReservationOperationsMap({
           viewMode={mapViewMode}
           text={text}
         >
-          {ADMIN_MAP_ZONES.filter((zone) => mapViewMode === "scroll" || zone.id === selectedArea).map((zone) => {
+          {ADMIN_MAP_ZONES.filter((zone) => !closedAreas.includes(zone.id) && (mapViewMode === "scroll" || zone.id === selectedArea)).map((zone) => {
             const label = areas.find(([area]) => area === zone.id)?.[1] || zone.id;
             return (
               <section
@@ -5657,6 +5670,9 @@ function Panel({ title, subtitle, children, right, bare = false }) {
 }
 
 export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenuChanged, onEventsChanged, theme, onToggleTheme }) {
+  const { closedAreas, loaded: zonesLoaded, error: zonesError, updateZones, reloadZones } = useSeasonalZones();
+  const [savingSeasonalArea, setSavingSeasonalArea] = React.useState("");
+
   const { branding } = useTenantBranding();
   const [activeTab, setActiveTab] = React.useState("home");
   const [adminLanguage, setAdminLanguage] = React.useState("bg");
@@ -5702,6 +5718,12 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [eventForm, setEventForm] = React.useState(emptyEventItem);
   const [editingEventId, setEditingEventId] = React.useState(null);
   const [adminReservation, setAdminReservation] = React.useState(emptyAdminReservation);
+  React.useEffect(() => {
+    if (zonesLoaded && (!adminReservation.area || closedAreas.includes(adminReservation.area))) {
+      setAdminReservation((current) => ({ ...current, area: ["indoor", "garden", "openTerrace"].find((area) => !closedAreas.includes(area)) || "", tableIds: "" }));
+    }
+  }, [closedAreas, zonesLoaded, adminReservation.area]);
+
   const [tableEdits, setTableEdits] = React.useState({});
   const [tableLayout, setTableLayout] = React.useState([]);
   const [layoutArea, setLayoutArea] = React.useState("indoor");
@@ -7238,6 +7260,23 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     setShowCreateReservation(false);
   }
 
+  async function setSeasonalZone(area, closed) {
+    if (savingSeasonalArea) return;
+    setSavingSeasonalArea(area);
+    setAdminError("");
+    try {
+      const response = await adminFetch(`${API_BASE_URL}/api/seasonal-zones/${area}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ closed }),
+      });
+      if (!response.ok) throw new Error(await readErrorMessage(response, "Failed to save seasonal closure."));
+      updateZones(await response.json());
+      setAdminNotice(closed
+        ? adminLocalText(adminLanguage, "Зоната е затворена за сезона и скрита от сайта и картата. Резервациите са запазени.", "Area closed for the season and hidden from the website and map. Reservations are preserved.", "Зона закрыта на сезон и скрыта с сайта и карты. Резервации сохранены.")
+        : adminLocalText(adminLanguage, "Зоната е отворена отново.", "Area reopened.", "Зона снова открыта."));
+    } catch (error) { setAdminError(error.message); }
+    finally { setSavingSeasonalArea(""); }
+  }
+
   async function createHallBlock(event) {
     event.preventDefault();
 
@@ -8211,7 +8250,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       subtitle: adminLanguage === "bg" ? "Навън, компактна зона" : "Outdoor compact area",
       meta: `${activeTableIdsByArea.openTerrace.length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
     },
-  ];
+  ].filter((option) => !closedAreas.includes(option.value));
   const hallBlockAreaOptions = [
     {
       value: "all",
@@ -9640,9 +9679,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   disabled={r.status === "Cancelled"}
                                   className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-amber-300 disabled:opacity-40"
                                 >
-                                  <option value="indoor">{adminLanguage === "bg" ? "Зала / непушачи" : "Hall / non-smoking"}</option>
-                                  <option value="garden">{adminLanguage === "bg" ? "Покрита тераса / пушачи" : "Covered terrace / smoking"}</option>
-                                  <option value="openTerrace">{adminLanguage === "bg" ? "Открита тераса / пушачи" : "Open terrace / smoking"}</option>
+                                  {(!closedAreas.includes("indoor") || tableEdit.area === "indoor") && (<option value="indoor">{adminLanguage === "bg" ? "Зала / непушачи" : "Hall / non-smoking"}</option>)}
+                                  {(!closedAreas.includes("garden") || tableEdit.area === "garden") && (<option value="garden">{adminLanguage === "bg" ? "Покрита тераса / пушачи" : "Covered terrace / smoking"}</option>)}
+                                  {(!closedAreas.includes("openTerrace") || tableEdit.area === "openTerrace") && (<option value="openTerrace">{adminLanguage === "bg" ? "Открита тераса / пушачи" : "Open terrace / smoking"}</option>)}
                                 </select>
                                 <button
                                   type="button"
@@ -9875,9 +9914,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                           disabled={r.status === "Cancelled"}
                                           className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-amber-300 disabled:opacity-40"
                                         >
-                                          <option value="indoor">{adminLanguage === "bg" ? "Зала / непушачи" : "Hall / non-smoking"}</option>
-                                          <option value="garden">{adminLanguage === "bg" ? "Покрита тераса / пушачи" : "Covered terrace / smoking"}</option>
-                                          <option value="openTerrace">{adminLanguage === "bg" ? "Открита тераса / пушачи" : "Open terrace / smoking"}</option>
+                                          {(!closedAreas.includes("indoor") || tableEdit.area === "indoor") && (<option value="indoor">{adminLanguage === "bg" ? "Зала / непушачи" : "Hall / non-smoking"}</option>)}
+                                          {(!closedAreas.includes("garden") || tableEdit.area === "garden") && (<option value="garden">{adminLanguage === "bg" ? "Покрита тераса / пушачи" : "Covered terrace / smoking"}</option>)}
+                                          {(!closedAreas.includes("openTerrace") || tableEdit.area === "openTerrace") && (<option value="openTerrace">{adminLanguage === "bg" ? "Открита тераса / пушачи" : "Open terrace / smoking"}</option>)}
                                         </select>
 
                                         <button
@@ -10265,6 +10304,26 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     : "Stop new online bookings for the selected area, date and times. Existing reservations stay unchanged."
                 }
               >
+                <section className="mb-8 rounded-[28px] border border-[#c9a56a]/30 bg-[#c9a56a]/[0.08] p-5 md:p-6" aria-labelledby="seasonal-zones-heading">
+                  <h3 id="seasonal-zones-heading" className="text-2xl font-semibold text-[#fff4df]">{adminLocalText(adminLanguage, "Сезонно затваряне на зони", "Seasonal area closure", "Сезонное закрытие зон")}</h3>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-white/65">{adminLocalText(adminLanguage, "Затворената зона изчезва от сайта и картата с резервации, докато не я отворите отново. Съществуващите резервации остават в списъка; масите и разположението им се запазват.", "A closed area disappears from the website and reservation map until you reopen it. Existing bookings remain in the list; tables and layout are preserved.", "Закрытая зона исчезает с сайта и карты резерваций, пока вы её не откроете. Существующие брони остаются в списке; столы и расстановка сохраняются.")}</p>
+                  {zonesError && <p role="alert" className="mt-3 text-red-200">{adminLocalText(adminLanguage, "Неуспешно зареждане на зоните.", "Failed to load areas.", "Не удалось загрузить зоны.")} <button type="button" onClick={reloadZones} className="underline">{adminLocalText(adminLanguage, "Опитай отново", "Retry", "Повторить")}</button></p>}
+                  <div className="mt-5 grid gap-3 lg:grid-cols-3">
+                    {[
+                      ["indoor", adminLocalText(adminLanguage, "Зала / Непушачи", "Indoor / Non-smoking", "Зал / Некурящие")],
+                      ["garden", adminLocalText(adminLanguage, "Покрита тераса", "Covered terrace", "Крытая терраса")],
+                      ["openTerrace", adminLocalText(adminLanguage, "Открита тераса", "Open terrace", "Открытая терраса")],
+                    ].map(([area, name]) => {
+                      const closed = closedAreas.includes(area);
+                      return <article key={area} className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-black/25 p-4">
+                        <div><h4 className="font-semibold text-[#fff4df]">{name}</h4><p role="status" className={`mt-2 text-sm ${closed ? "text-amber-200" : "text-emerald-200"}`}>{!zonesLoaded ? "…" : closed ? adminLocalText(adminLanguage, "Затворена за сезона · скрита", "Seasonally closed · hidden", "Закрыта на сезон · скрыта") : adminLocalText(adminLanguage, "Отворена · видима", "Open · visible", "Открыта · видна")}</p></div>
+                        <button type="button" disabled={!zonesLoaded || Boolean(savingSeasonalArea)} aria-busy={savingSeasonalArea === area} onClick={() => setSeasonalZone(area, !closed)} className={`${closed ? "luxury-button" : "ghost-button"} mt-auto min-h-[44px] rounded-2xl px-4 py-3 text-sm font-semibold disabled:opacity-50`}>
+                          {savingSeasonalArea === area ? "…" : closed ? adminLocalText(adminLanguage, "Отвори зоната", "Reopen area", "Открыть зону") : adminLocalText(adminLanguage, "Затвори за сезона", "Close for the season", "Закрыть на сезон")}
+                        </button>
+                      </article>;
+                    })}
+                  </div>
+                </section>
                 <form
                   onSubmit={saveRestaurantClosure}
                   className="mb-8 rounded-[28px] border border-[#c9a56a]/30 bg-[#c9a56a]/[0.08] p-5 md:p-6"

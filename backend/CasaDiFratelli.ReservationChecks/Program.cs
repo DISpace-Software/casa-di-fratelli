@@ -146,6 +146,39 @@ var otherBranding = new TenantBrandingService(db, otherTenant, emailConfig, Null
 Check(otherBranding.GetEmailConfiguration("FROM_EMAIL") == null, "Another tenant must not inherit Casa senders");
 Console.WriteLine("PASS: separate reservation/marketing senders, legacy config precedence, unchanged admin recipient and tenant isolation; no real emails sent.");
 
+// Seasonal visibility changes never rewrite guests, tables or ordinary date/time blocks.
+var seasonalZones = new SeasonalZoneService(db);
+Check((await seasonalZones.GetClosedAreasAsync()).Length == 0, "Zones must be open by default");
+var seasonalSnapshotOptions = new System.Text.Json.JsonSerializerOptions { ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles };
+var beforeSeasonalBookings = System.Text.Json.JsonSerializer.Serialize(await db.Reservations.AsNoTracking().Include(x => x.Tables).OrderBy(x => x.Id).ToListAsync(), seasonalSnapshotOptions);
+await seasonalZones.SetClosedAsync("openTerrace", true);
+await seasonalZones.SetClosedAsync("garden", true);
+await seasonalZones.SetClosedAsync("openTerrace", true);
+Check((await seasonalZones.GetClosedAreasAsync()).Length == 2, "Closing a second zone must preserve the first closure; repeated saves must be idempotent");
+Check(await seasonalZones.IsSelectionClosedAsync("openTerrace", ["46"]), "A closed area must reject new reservations");
+Check(await seasonalZones.IsSelectionClosedAsync("indoor", ["46"]), "Changing Area must not bypass a closed table zone");
+Check(!await seasonalZones.IsSelectionClosedAsync("indoor", ["1"]), "Open areas must remain bookable");
+await db.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS \"TableLayouts\" (\"Id\" integer PRIMARY KEY, \"LayoutJson\" text NOT NULL)");
+var customLayoutJson = "[{\"id\":\"custom-terrace\",\"area\":\"openTerrace\",\"x\":12,\"y\":34,\"seats\":4,\"isActive\":true}]";
+await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"TableLayouts\" (\"Id\", \"LayoutJson\") VALUES (1, {customLayoutJson}) ON CONFLICT (\"Id\") DO UPDATE SET \"LayoutJson\" = {customLayoutJson}");
+Check(await seasonalZones.IsSelectionClosedAsync("indoor", ["custom-terrace"]), "Custom layout tables must also obey seasonal closure");
+var seasonalBookingController = new ReservationsController(db, null!, null!, new ReservationConflictService(db), null!, new AuditService(db), null!, null!, new RestaurantClosureService(db), null!, null!);
+var closedBooking = await seasonalBookingController.Create(new CasaDiFratelli.Api.Dtos.CreateReservationRequest {
+ GuestName = "Seasonal test", Phone = "test", Email = "test@example.com", PrivacyConsent = true, GuestCount = 2,
+ Area = "indoor", TableIds = ["custom-terrace"], ReservedDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1), ReservedTime = "19:00"
+});
+Check(closedBooking is ConflictObjectResult, "The reservation endpoint must reject stale clients for a closed zone before creating any data");
+await seasonalZones.SetClosedAsync("openTerrace", false);
+Check((await new SeasonalZoneService(db).GetClosedAreasAsync()).SequenceEqual(["garden"]), "Reopening must persist and leave other zones closed");
+Check(!await seasonalZones.IsSelectionClosedAsync("openTerrace", ["custom-terrace"]), "Reopening must immediately restore table availability");
+Check(beforeSeasonalBookings == System.Text.Json.JsonSerializer.Serialize(await db.Reservations.AsNoTracking().Include(x => x.Tables).OrderBy(x => x.Id).ToListAsync(), seasonalSnapshotOptions), "Seasonal closure and reopen must preserve every existing booking and table assignment");
+await using (var layoutCheck = db.Database.GetDbConnection().CreateCommand()) {
+ layoutCheck.CommandText = "SELECT \"LayoutJson\" FROM \"TableLayouts\" WHERE \"Id\" = 1";
+ Check((string?)await layoutCheck.ExecuteScalarAsync() == customLayoutJson, "Reopening must preserve the exact saved layout");
+}
+await seasonalZones.SetClosedAsync("garden", false);
+Console.WriteLine("PASS: seasonal close/reopen persistence, independent areas, stale-client prevention, custom tables, unchanged guests and layout.");
+
 sealed class CaptureEmailHandler : HttpMessageHandler
 {
     public List<System.Text.Json.JsonElement> Messages { get; } = [];

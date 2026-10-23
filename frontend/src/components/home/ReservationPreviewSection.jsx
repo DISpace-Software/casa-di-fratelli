@@ -1,6 +1,8 @@
+import { useSeasonalZones } from "../../context/SeasonalZonesContext";
 import { useTenantBranding } from "../../context/TenantBrandingContext";
 export default function ReservationPreviewSection({ t, onOpenReservation }) {
   const { branding } = useTenantBranding();
+  const { closedAreas, loaded } = useSeasonalZones();
   return (
     <section id="reservation" className="mx-auto max-w-7xl px-6 py-24">
       <div className="grid gap-6 md:grid-cols-[0.85fr_1.15fr]">
@@ -48,15 +50,15 @@ export default function ReservationPreviewSection({ t, onOpenReservation }) {
             <p className="mt-4 leading-8 text-stone-300">{t.reservationMapText}</p>
 
             <div className="mt-6 grid gap-3">
-              <div className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+              {loaded && !closedAreas.includes("garden") && (<div className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
                 {t.smokingSection}
-              </div>
-              <div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              </div>)}
+              {loaded && !closedAreas.includes("indoor") && (<div className="rounded-2xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
                 {t.familySection}
-              </div>
-              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
+              </div>)}
+              {loaded && !closedAreas.includes("openTerrace") && (<div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
                 {t.terraceSection}
-              </div>
+              </div>)}
             </div>
 
             <button

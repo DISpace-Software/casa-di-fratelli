@@ -36,6 +36,7 @@ builder.Services.AddScoped<InventoryRecipeSeedService>();
 builder.Services.AddScoped<MarketingCampaignService>();
 builder.Services.AddScoped<BackupExportService>();
 builder.Services.AddScoped<RestaurantClosureService>();
+builder.Services.AddScoped<SeasonalZoneService>();
 builder.Services.AddHostedService<MarketingCampaignHostedService>();
 builder.Services.AddHostedService<BackupHostedService>();
 
