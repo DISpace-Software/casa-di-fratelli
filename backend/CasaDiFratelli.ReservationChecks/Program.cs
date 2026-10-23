@@ -179,12 +179,88 @@ await using (var layoutCheck = db.Database.GetDbConnection().CreateCommand()) {
 await seasonalZones.SetClosedAsync("garden", false);
 Console.WriteLine("PASS: seasonal close/reopen persistence, independent areas, stale-client prevention, custom tables, unchanged guests and layout.");
 
+// Complete release -> persistent queue -> mocked Resend -> retry flow; no guest emails leave this process.
+Check(db.Database.GetMigrations().Contains("20261024010000_AddVisitFeedbackEmailQueue"), "Visit email queue migration must be discoverable");
+var visitEmails = new VisitFeedbackEmailService(db, emailService, emailBranding);
+var visitController = new ReservationsController(db, emailService, emailConfig, new ReservationConflictService(db), null!, new AuditService(db), null!, null!, new RestaurantClosureService(db), casaTenant, emailBranding, visitEmails)
+{ ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
+Reservation Visit(int id, string email, string phone = "0888123456", bool arrived = true) => new() {
+ Id = id, GuestName = "Visit <Test>", Phone = phone, Email = email, GuestCount = 2, Area = "indoor", ReservedDate = date,
+ ReservedTime = "19:00", Status = "Approved", IsArrived = arrived, Tables = [new() { TableCode = "1" }]
+};
+var firstVisit = Visit(101, "  FIRST.VISIT@example.com  ");
+var cancelledBefore = Visit(102, "first.visit@example.com"); cancelledBefore.Status = "Cancelled"; cancelledBefore.IsArrived = false;
+var futureBefore = Visit(103, "first.visit@example.com", arrived: false); futureBefore.ReservedDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(7);
+db.Reservations.AddRange(firstVisit, cancelledBefore, futureBefore);
+db.CustomerProfiles.Add(new CustomerProfile { Email = "first.visit@example.com", Phone = "0888123456", GuestName = "First visit", ReservationCount = 20 });
+await db.SaveChangesAsync();
+var initialMailCount = capture.Messages.Count;
+Check(await visitController.Release(101) is OkObjectResult && firstVisit.Status == "Released", "Arrived guest must be released");
+var firstEmail = await db.VisitFeedbackEmails.AsNoTracking().SingleAsync(x => x.ReservationId == 101);
+Check(firstEmail.IsFirstVisitInvitation && firstEmail.SentAtUtc.HasValue && firstEmail.Email == "first.visit@example.com", "First actual visit must receive the survey despite cancelled/future bookings and inflated profile counts");
+Check(firstEmail.Html.Contains("/feedback?reservationId=101&amp;") && firstEmail.Html.Contains("Visit &lt;Test&gt;") && firstEmail.Html.Contains("5%"), "First visit must use the correct escaped survey link and original offer");
+Check(capture.Messages.Count == initialMailCount + 1, "Release must send one email");
+Check(await visitController.Release(101) is OkObjectResult && capture.Messages.Count == initialMailCount + 1, "Repeated release must not resend an accepted email");
+var returnVisit = Visit(104, "new.address@example.com", "+359 888 123 456"); db.Reservations.Add(returnVisit); await db.SaveChangesAsync();
+await visitController.Release(104);
+Check(!(await db.VisitFeedbackEmails.AsNoTracking().SingleAsync(x => x.ReservationId == 104)).IsFirstVisitInvitation, "Same phone in international format must count the completed previous visit");
+var unvisited = Visit(105, "not.visited@example.com", arrived: false);
+var noShowVisit = Visit(106, "noshow@example.com"); noShowVisit.IsNoShow = true;
+var cancelledVisit = Visit(107, "cancelled@example.com"); cancelledVisit.Status = "Cancelled";
+var oldReleased = Visit(108, "legacy@example.com"); oldReleased.Status = "Released"; oldReleased.IsArrived = false;
+db.Reservations.AddRange(unvisited, noShowVisit, cancelledVisit, oldReleased); await db.SaveChangesAsync();
+var beforeSkipped = capture.Messages.Count;
+await visitController.Release(105);
+Check(await visitController.Release(106) is BadRequestObjectResult && noShowVisit.IsNoShow, "No-show release must not turn into a real visit");
+Check(await visitController.Release(107) is BadRequestObjectResult && cancelledVisit.Status == "Cancelled", "Cancelled reservations must stay cancelled");
+await visitController.Release(108);
+Check(capture.Messages.Count == beforeSkipped && !await db.VisitFeedbackEmails.AnyAsync(x => x.ReservationId >= 105 && x.ReservationId <= 108), "Unvisited, no-show, cancelled and legacy released bookings must never trigger review emails");
+var laterActualVisit = Visit(110, "not.visited@example.com", "0888000110"); db.Reservations.Add(laterActualVisit); await db.SaveChangesAsync();
+await visitController.Release(110);
+Check((await db.VisitFeedbackEmails.AsNoTracking().SingleAsync(x => x.ReservationId == 110)).IsFirstVisitInvitation, "Releasing an unarrived reservation must not consume the first actual visit invitation");
+var failedVisit = Visit(109, "retry@example.com", "0888999111"); db.Reservations.Add(failedVisit); await db.SaveChangesAsync();
+capture.FailNext = true;
+var failedRelease = (OkObjectResult)await visitController.Release(109);
+Check(failedVisit.Status == "Released" && System.Text.Json.JsonSerializer.Serialize(failedRelease.Value).Contains("queued"), "Provider failure must preserve release and report queued delivery");
+var pendingMail = await db.VisitFeedbackEmails.AsNoTracking().SingleAsync(x => x.ReservationId == 109);
+Check(pendingMail.SentAtUtc == null && pendingMail.LastError != null && pendingMail.Attempts == 1, "Failed sending must not be marked sent");
+var failedKey = capture.IdempotencyKeys.Last();
+await db.VisitFeedbackEmails.Where(x => x.ReservationId == 109).ExecuteUpdateAsync(setters => setters.SetProperty(x => x.NextAttemptAtUtc, DateTime.UtcNow.AddMinutes(-1)));
+await using (var retryDb = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options)) {
+ var retryBranding = new TenantBrandingService(retryDb, casaTenant, emailConfig, NullLogger<TenantBrandingService>.Instance);
+ var retryService = new VisitFeedbackEmailService(retryDb, emailService, retryBranding);
+ await retryService.RetryPendingAsync();
+ var sentMail = await retryDb.VisitFeedbackEmails.AsNoTracking().SingleAsync(x => x.ReservationId == 109);
+ Check(sentMail.SentAtUtc.HasValue && sentMail.Attempts == 2 && sentMail.LastError == null, "Pending emails must recover across service scopes after provider failure");
+ var sentCount = capture.Messages.Count; await retryService.RetryPendingAsync();
+ Check(capture.Messages.Count == sentCount, "Background processing must not resend accepted emails");
+}
+Check(!string.IsNullOrWhiteSpace(failedKey) && capture.IdempotencyKeys.Last() == failedKey, "Retries must use the same provider idempotency key");
+Check(capture.Messages.Last().GetProperty("from").GetString() == "Casa di Fratelli <reservations@casadifratelli.bg>", "Feedback mail must use the configured corporate sender");
+Console.WriteLine("PASS: first completed visit, cancelled/future bookings, phone normalization, repeat-release deduplication, no-show protection, persisted failure/retry and corporate sender; no real email sent.");
+
+var beforeTestReservations = await db.Reservations.CountAsync();
+var beforeTestQueue = await db.VisitFeedbackEmails.CountAsync();
+Check(await visitEmails.SendTestAsync("test.only@example.com", "https://casadifratelli.bg"), "The test email must use the same template/sender path");
+var testEmail = capture.Messages.Last(); var testKey = capture.IdempotencyKeys.Last();
+Check(testEmail.GetProperty("subject").GetString()!.StartsWith("[ТЕСТ]"), "Test messages must be clearly labelled");
+Check(testEmail.GetProperty("html").GetString()!.Contains("/feedback?email=") && !testEmail.GetProperty("html").GetString()!.Contains("reservationId=0"), "Test survey links must not reference a nonexistent booking");
+await visitEmails.SendTestAsync("TEST.ONLY@example.com", "https://casadifratelli.bg");
+Check(capture.IdempotencyKeys.Last() == testKey, "Retrying a test on the same day must use the same provider idempotency key");
+Check(await db.Reservations.CountAsync() == beforeTestReservations && await db.VisitFeedbackEmails.CountAsync() == beforeTestQueue, "Email tests must not create fake bookings or guest histories");
+Console.WriteLine("PASS: labelled test email, safe survey URL, same-day idempotency and no fake reservations.");
+
 sealed class CaptureEmailHandler : HttpMessageHandler
 {
     public List<System.Text.Json.JsonElement> Messages { get; } = [];
+    public List<string?> IdempotencyKeys { get; } = [];
+    public bool FailNext { get; set; }
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         Messages.Add(System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(await request.Content!.ReadAsStringAsync(cancellationToken)));
-        return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent("{}") };
+        IdempotencyKeys.Add(request.Headers.TryGetValues("Idempotency-Key", out var keys) ? keys.Single() : null);
+        var status = FailNext ? System.Net.HttpStatusCode.ServiceUnavailable : System.Net.HttpStatusCode.OK;
+        FailNext = false;
+        return new HttpResponseMessage(status) { Content = new StringContent("{}") };
     }
 }

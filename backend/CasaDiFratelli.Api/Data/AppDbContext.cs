@@ -31,6 +31,8 @@ public class AppDbContext : DbContext
     public DbSet<InventoryAudit> InventoryAudits => Set<InventoryAudit>();
     public DbSet<InventoryAuditLine> InventoryAuditLines => Set<InventoryAuditLine>();
     public DbSet<MarketingMessageLog> MarketingMessageLogs => Set<MarketingMessageLog>();
+    public DbSet<VisitFeedbackEmail> VisitFeedbackEmails => Set<VisitFeedbackEmail>();
+
     public DbSet<CustomerFeedback> CustomerFeedbacks => Set<CustomerFeedback>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -111,6 +113,17 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Email).IsRequired().HasMaxLength(180);
             entity.Property(x => x.Subject).IsRequired().HasMaxLength(220);
             entity.HasIndex(x => new { x.CampaignKey, x.CustomerKey, x.SentForDate }).IsUnique();
+        });
+
+        modelBuilder.Entity<VisitFeedbackEmail>(entity =>
+        {
+            entity.Property(x => x.DeduplicationKey).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.Email).HasMaxLength(180).IsRequired();
+            entity.Property(x => x.GuestName).HasMaxLength(120).IsRequired();
+            entity.Property(x => x.Subject).HasMaxLength(220).IsRequired();
+            entity.HasIndex(x => x.ReservationId).IsUnique();
+            entity.HasIndex(x => x.DeduplicationKey).IsUnique();
+            entity.HasIndex(x => new { x.SentAtUtc, x.NextAttemptAtUtc });
         });
 
         modelBuilder.Entity<CustomerFeedback>(entity =>

@@ -37,6 +37,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     private readonly PushNotificationService _pushNotifications;
     private readonly RestaurantClosureService _closures;
     private readonly SeasonalZoneService _seasonalZones;
+    private readonly VisitFeedbackEmailService _visitFeedback;
     private readonly ICurrentTenant _currentTenant;
     private readonly TenantBrandingService _branding;
     private TenantBrandingSettings _brand = new();
@@ -61,7 +62,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         PushNotificationService pushNotifications,
         RestaurantClosureService closures,
         ICurrentTenant currentTenant,
-        TenantBrandingService branding)
+        TenantBrandingService branding,
+        VisitFeedbackEmailService? visitFeedback = null)
     {
         _db = db;
         _seasonalZones = new SeasonalZoneService(db);
@@ -75,6 +77,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         _closures = closures;
         _currentTenant = currentTenant;
         _branding = branding;
+        _visitFeedback = visitFeedback ?? new VisitFeedbackEmailService(db, emailService, branding);
     }
 
     private DateTime GetRestaurantNow()
@@ -174,11 +177,6 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         return string.IsNullOrWhiteSpace(configuredFrontendUrl)
             ? "https://casadifratelli.bg"
             : configuredFrontendUrl.TrimEnd('/');
-    }
-
-    private string GetReviewUrl()
-    {
-        return _brand.GoogleReviewUrl;
     }
 
     private async Task<int> GetTableCapacityAsync(List<string> tableIds)
@@ -295,74 +293,6 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         );
     }
 
-    private async Task SendThankYouEmailAsync(Reservation reservation)
-    {
-        if (string.IsNullOrWhiteSpace(reservation.Email))
-            return;
-
-        var customer = await _db.CustomerProfiles.FirstOrDefaultAsync(x =>
-            (!string.IsNullOrWhiteSpace(reservation.Email) && x.Email == reservation.Email)
-            ||
-            (!string.IsNullOrWhiteSpace(reservation.Phone) && x.Phone == reservation.Phone)
-        );
-        var isFirstReservation = customer == null || customer.ReservationCount <= 1;
-        var hasFeedbackAlready = await _db.CustomerFeedbacks.AnyAsync(x => x.Email == reservation.Email);
-        var guestName = WebUtility.HtmlEncode(reservation.GuestName);
-        var feedbackUrl = WebUtility.HtmlEncode($"{GetFrontendUrl()}/feedback?reservationId={reservation.Id}&email={Uri.EscapeDataString(reservation.Email)}&name={Uri.EscapeDataString(reservation.GuestName)}");
-        var reviewUrl = WebUtility.HtmlEncode(GetReviewUrl());
-
-        if (isFirstReservation && !hasFeedbackAlready)
-        {
-            await _emailService.SendAsync(
-                reservation.Email,
-                $"Благодарим Ви за посещението · {_brand.Name}",
-                $"""
-                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937;background:#f8f3ea;padding:28px">
-                  <div style="max-width:640px;margin:0 auto;background:#fffaf2;border:1px solid #ead8bd;border-radius:22px;padding:28px">
-                  <p style="letter-spacing:0.22em;text-transform:uppercase;color:#9a682d;font-size:12px;font-weight:700;margin:0 0 12px">{HtmlRestaurantName}</p>
-                  <h2 style="margin:0 0 14px;color:#2b1d15">Благодарим Ви, че бяхте наши гости</h2>
-                  <p>Здравейте, {guestName},</p>
-                  <p>За нас беше удоволствие да Ви посрещнем в <strong>{HtmlRestaurantName}</strong>.</p>
-                  <p>Ще ни помогнете много, ако отделите минута за кратка обратна връзка за атмосферата, храната, обслужването и онлайн резервацията. Като благодарност ще получите <strong>5% за следващото посещение</strong>.</p>
-                  <p>
-                    <a href="{feedbackUrl}" style="display:inline-block;background:#c9a56a;color:#111827;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:700;margin-right:8px">
-                      Попълнете обратна връзка
-                    </a>
-                    <a href="{reviewUrl}" style="display:inline-block;border:1px solid #c9a56a;color:#7a4a17;padding:11px 18px;border-radius:12px;text-decoration:none;font-weight:700">
-                      Оставете Google отзив
-                    </a>
-                  </p>
-                  <p style="color:#6b7280">Очакваме Ви отново с удоволствие.</p>
-                  </div>
-                </div>
-                """
-            );
-
-            return;
-        }
-
-        await _emailService.SendAsync(
-            reservation.Email,
-            $"Благодарим Ви отново · {_brand.Name}",
-            $"""
-            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937;background:#f8f3ea;padding:28px">
-              <div style="max-width:640px;margin:0 auto;background:#fffaf2;border:1px solid #ead8bd;border-radius:22px;padding:28px">
-              <p style="letter-spacing:0.22em;text-transform:uppercase;color:#9a682d;font-size:12px;font-weight:700;margin:0 0 12px">{HtmlRestaurantName}</p>
-              <h2 style="margin:0 0 14px;color:#2b1d15">Благодарим Ви отново</h2>
-              <p>Здравейте, {guestName},</p>
-              <p>Благодарим Ви, че отново избрахте <strong>{HtmlRestaurantName}</strong>.</p>
-              <p>За нас е чест да Ви посрещаме отново. Надяваме се вечерта Ви да е била спокойна, вкусна и запомняща се.</p>
-              <p>
-                <a href="{reviewUrl}" style="display:inline-block;border:1px solid #c9a56a;color:#7a4a17;padding:11px 18px;border-radius:12px;text-decoration:none;font-weight:700">
-                  Оставете Google отзив
-                </a>
-              </p>
-              <p style="color:#6b7280">За нас е чест да Ви посрещаме и ще се радваме скоро пак да бъдете наши гости.</p>
-              </div>
-            </div>
-            """
-        );
-    }
 
     private async Task UpsertCustomerProfileForConfirmedReservationAsync(Reservation reservation)
     {
@@ -1429,19 +1359,41 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         if (reservation == null)
             return NotFound();
 
-        reservation.Status = "Released";
-        reservation.IsArrived = false;
-        reservation.IsNoShow = false;
-        await _db.SaveChangesAsync();
+        if (reservation.Status == ReservationStatusReleased)
+        {
+            // Retrying a release must never queue another message or change visit state.
+            return Ok(new { reservation.Id, reservation.Status, reservation.IsArrived, reservation.IsNoShow,
+                FeedbackEmailStatus = await _visitFeedback.DispatchForReservationAsync(reservation.Id) });
+        }
+        if (reservation.Status != ReservationStatusApproved || reservation.IsNoShow || reservation.GuestCount <= 0)
+            return BadRequest(new { message = "Only an active guest reservation can be released." });
+
+        var attended = reservation.IsArrived;
+        await using (var transaction = await _db.Database.BeginTransactionAsync())
+        {
+            var changed = await _db.Reservations.Where(x => x.Id == id && x.Status == ReservationStatusApproved && !x.IsNoShow && x.IsArrived == attended)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(x => x.Status, ReservationStatusReleased).SetProperty(x => x.IsArrived, false).SetProperty(x => x.HasCompletedVisit, attended));
+            if (changed == 0)
+                return Conflict(new { message = "Reservation changed. Please refresh and try again." });
+            reservation.Status = ReservationStatusReleased;
+            reservation.IsArrived = false;
+            reservation.HasCompletedVisit = attended;
+            if (attended) await _visitFeedback.QueueAsync(reservation, GetFrontendUrl());
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
         await _audit.RecordAsync(HttpContext, "release", "Reservation", reservation.Id.ToString(), after: new { reservation.Id, reservation.Status });
-        await SendThankYouEmailAsync(reservation);
+        var feedbackEmailStatus = attended
+            ? string.IsNullOrWhiteSpace(reservation.Email) ? "missing-email" : await _visitFeedback.DispatchForReservationAsync(reservation.Id)
+            : "not-visited";
 
         return Ok(new
         {
             reservation.Id,
             reservation.Status,
             reservation.IsArrived,
-            reservation.IsNoShow
+            reservation.IsNoShow,
+            FeedbackEmailStatus = feedbackEmailStatus
         });
     }
 

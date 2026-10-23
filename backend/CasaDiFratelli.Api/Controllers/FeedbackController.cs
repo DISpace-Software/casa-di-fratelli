@@ -33,6 +33,30 @@ public class FeedbackController : ControllerBase
         });
     }
 
+    public sealed record TestEmailRequest(string Email);
+
+    [HttpPost("test-email")]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
+    public async Task<IActionResult> SendTestEmail([FromBody] TestEmailRequest request,
+        [FromServices] VisitFeedbackEmailService emails, [FromServices] ICurrentTenant tenant)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email) || request.Email.Length > 180 ||
+            !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(request.Email.Trim()))
+            return BadRequest(new { message = "A valid test email is required." });
+        var frontendUrl = !string.IsNullOrWhiteSpace(tenant.FrontendUrl) ? tenant.FrontendUrl : _branding.IsCasa ? "https://casadifratelli.bg" : "";
+        if (string.IsNullOrWhiteSpace(frontendUrl)) return BadRequest(new { message = "Frontend URL is not configured." });
+        var accepted = await emails.SendTestAsync(request.Email, frontendUrl);
+        await _audit.RecordAsync(HttpContext, "test-feedback-email", "FeedbackEmail", "test", after: new { request.Email, Accepted = accepted });
+        return accepted ? Ok(new { accepted = true }) : StatusCode(502, new { message = "Resend did not accept the test email." });
+    }
+
+    [HttpGet("emails")]
+    [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
+    public async Task<IActionResult> GetEmailHistory() => Ok(await _db.VisitFeedbackEmails.AsNoTracking()
+        .OrderByDescending(x => x.CreatedAtUtc).Take(100)
+        .Select(x => new { x.Id, x.ReservationId, x.GuestName, x.Email, x.IsFirstVisitInvitation,
+            x.CreatedAtUtc, x.SentAtUtc, x.NextAttemptAtUtc, x.Attempts, x.LastError }).ToListAsync());
+
     [HttpGet]
     [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> GetAll([FromQuery] string? search = null)

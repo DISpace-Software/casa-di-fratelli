@@ -37,6 +37,8 @@ builder.Services.AddScoped<MarketingCampaignService>();
 builder.Services.AddScoped<BackupExportService>();
 builder.Services.AddScoped<RestaurantClosureService>();
 builder.Services.AddScoped<SeasonalZoneService>();
+builder.Services.AddScoped<VisitFeedbackEmailService>();
+builder.Services.AddHostedService<VisitFeedbackEmailHostedService>();
 builder.Services.AddHostedService<MarketingCampaignHostedService>();
 builder.Services.AddHostedService<BackupHostedService>();
 

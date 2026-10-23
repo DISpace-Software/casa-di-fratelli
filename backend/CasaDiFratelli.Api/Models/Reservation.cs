@@ -49,6 +49,8 @@ public class Reservation
 
     public bool IsArrived { get; set; } = false;
 
+    public bool HasCompletedVisit { get; set; } = false;
+
     public bool IsBlacklisted { get; set; } = false;
     
     public bool IsRegularCustomer { get; set; } = false;

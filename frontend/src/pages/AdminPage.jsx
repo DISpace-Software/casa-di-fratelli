@@ -5674,7 +5674,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [savingSeasonalArea, setSavingSeasonalArea] = React.useState("");
 
   const { branding } = useTenantBranding();
-  const [activeTab, setActiveTab] = React.useState("home");
+  const [activeTab, setActiveTab] = React.useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "feedback" ? "feedback" : "home");
   const [adminLanguage, setAdminLanguage] = React.useState("bg");
   const [reservations, setReservations] = React.useState([]);
   const [diningOrders, setDiningOrders] = React.useState([]);
@@ -5686,6 +5686,9 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [adminUsers, setAdminUsers] = React.useState([]);
   const [auditLogs, setAuditLogs] = React.useState([]);
   const [feedbackEntries, setFeedbackEntries] = React.useState([]);
+  const [feedbackEmails, setFeedbackEmails] = React.useState([]);
+  const [feedbackTestEmail, setFeedbackTestEmail] = React.useState("");
+  const [feedbackTestBusy, setFeedbackTestBusy] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState("");
   const [feedbackSearch, setFeedbackSearch] = React.useState("");
@@ -5955,13 +5958,31 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const loadFeedbackEntries = React.useCallback(async () => {
     try {
       const query = feedbackSearch.trim() ? `?search=${encodeURIComponent(feedbackSearch.trim())}` : "";
-      const feedbackData = await fetchJsonOrEmpty(`${API_BASE_URL}/api/feedback${query}`, [], withAdminToken());
+      const [feedbackData, emailData] = await Promise.all([
+        fetchJsonOrEmpty(`${API_BASE_URL}/api/feedback${query}`, [], withAdminToken()),
+        fetchJsonOrEmpty(`${API_BASE_URL}/api/feedback/emails`, [], withAdminToken()),
+      ]);
       setFeedbackEntries(Array.isArray(feedbackData) ? feedbackData : []);
+      setFeedbackEmails(Array.isArray(emailData) ? emailData : []);
     } catch (error) {
       console.error("Failed to load feedback", error);
       setAdminError(error?.message || "Failed to load feedback.");
     }
   }, [feedbackSearch, withAdminToken]);
+
+  async function sendFeedbackTest(event) {
+    event.preventDefault();
+    if (feedbackTestBusy) return;
+    setFeedbackTestBusy(true);
+    setAdminError("");
+    setAdminNotice("");
+    try {
+      const response = await adminFetch(`${API_BASE_URL}/api/feedback/test-email`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: feedbackTestEmail }) });
+      if (!response.ok) throw new Error(await readErrorMessage(response, "Test email failed."));
+      setAdminNotice(adminLocalText(adminLanguage, "Resend прие тестовото писмо. Проверете входящата поща.", "Resend accepted the test email. Please check the inbox.", "Resend принял тестовое письмо. Проверьте входящую почту."));
+    } catch (error) { setAdminError(error.message); }
+    finally { setFeedbackTestBusy(false); }
+  }
 
   async function markFeedbackDiscountUsed(id) {
     setAdminError("");
@@ -6651,7 +6672,17 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       return;
     }
 
-    setAdminNotice(adminLanguage === "bg" ? "Масата е освободена." : "Table released.");
+    const result = await response.json();
+    const mailStatus = result.feedbackEmailStatus;
+    const mailNotice = mailStatus === "sent"
+      ? adminLocalText(adminLanguage, "Писмото за отзив е изпратено.", "Feedback email sent.", "Письмо с просьбой об отзыве отправлено.")
+      : mailStatus === "queued"
+      ? adminLocalText(adminLanguage, "Писмото е в опашката; ще бъде направен нов опит автоматично.", "Email queued; it will be retried automatically.", "Письмо в очереди; отправка будет повторена автоматически.")
+      : mailStatus === "not-visited"
+      ? adminLocalText(adminLanguage, "Писмо не е изпратено: гостът не е бил отбелязан като пристигнал.", "No email sent: the guest was not marked as arrived.", "Письмо не отправлено: приход гостя не был отмечен.")
+      : mailStatus === "missing-email" || mailStatus === "not-queued"
+      ? adminLocalText(adminLanguage, "Няма валиден email за изпращане на писмо.", "No valid guest email for sending feedback.", "Нет корректного email гостя для отправки письма.") : "";
+    setAdminNotice(`${adminLocalText(adminLanguage, "Масата е освободена.", "Table released.", "Столик освобождён.")} ${mailNotice}`);
     await loadReservations();
   }
 
@@ -11716,6 +11747,23 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   </div>
                 }
               >
+                <section className="mb-6 rounded-3xl border border-white/10 bg-black/20 p-4 md:p-5" aria-labelledby="feedback-email-history">
+                  <h3 id="feedback-email-history" className="text-lg font-semibold text-[#fff4df]">{adminLocalText(adminLanguage, "Писма след посещение", "Post-visit emails", "Письма после посещения")}</h3>
+                  <p className="mt-1 text-sm text-white/55">{adminLocalText(adminLanguage, "История от активирането на проследяването. „Изпратено“ означава, че Resend е приел писмото.", "History since tracking was enabled. Sent means Resend accepted the email.", "История с момента включения отслеживания. «Отправлено» означает, что Resend принял письмо.")}</p>
+                  <form onSubmit={sendFeedbackTest} className="mt-4 flex flex-col gap-3 sm:flex-row">
+                    <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-white/65">{adminLocalText(adminLanguage, "Тестов email", "Test email", "Email для теста")}
+                      <input type="email" required value={feedbackTestEmail} onChange={(event) => setFeedbackTestEmail(event.target.value)} className="min-h-[44px] rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white" />
+                    </label>
+                    <button disabled={feedbackTestBusy} type="submit" className="ghost-button min-h-[44px] self-end rounded-2xl px-4 py-3 text-sm disabled:opacity-50">{feedbackTestBusy ? "…" : adminLocalText(adminLanguage, "Изпрати тестово писмо", "Send test email", "Отправить тестовое письмо")}</button>
+                  </form>
+                  <div className="mt-4 max-h-[420px] overflow-auto">
+                    {feedbackEmails.length === 0 ? <p className="text-sm text-white/55">{adminLocalText(adminLanguage, "Все още няма писма в историята.", "No emails recorded yet.", "В истории пока нет писем.")}</p> : <div className="grid gap-3">{feedbackEmails.map((item) => <article key={item.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-sm">
+                      <div className="flex flex-wrap items-start justify-between gap-2"><div className="min-w-0"><div className="font-semibold text-white">{item.guestName}</div><div className="break-all text-white/60">{item.email}</div></div><span className={item.sentAtUtc ? "text-emerald-200" : "text-amber-200"}>{item.sentAtUtc ? adminLocalText(adminLanguage, "Изпратено", "Sent", "Отправлено") : adminLocalText(adminLanguage, "В опашката", "Queued", "В очереди")}</span></div>
+                      <div className="mt-2 text-xs text-white/55">#{item.reservationId} · {item.isFirstVisitInvitation ? adminLocalText(adminLanguage, "Първо посещение · анкета", "First visit · survey", "Первый визит · анкета") : adminLocalText(adminLanguage, "Повторно посещение", "Return visit", "Повторный визит")} · {new Date(item.sentAtUtc || item.createdAtUtc).toLocaleString(adminLanguage === "en" ? "en-GB" : adminLanguage === "ru" ? "ru-RU" : "bg-BG", { timeZone: "Europe/Sofia" })}</div>
+                      {!item.sentAtUtc && <div className="mt-2 text-xs text-amber-200/80">{adminLocalText(adminLanguage, "Опити", "Attempts", "Попыток")}: {item.attempts} · {adminLocalText(adminLanguage, "Следващ опит", "Next attempt", "Следующая попытка")}: {new Date(item.nextAttemptAtUtc).toLocaleString(adminLanguage === "ru" ? "ru-RU" : "bg-BG", { timeZone: "Europe/Sofia" })}</div>}
+                    </article>)}</div>}
+                  </div>
+                </section>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="rounded-3xl border border-[#c9a56a]/20 bg-[#c9a56a]/10 p-5">
                     <div className="section-kicker">{adminLocalText(adminLanguage, "Получени", "Received", "Получено")}</div>

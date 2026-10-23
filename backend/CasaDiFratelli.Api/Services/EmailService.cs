@@ -38,6 +38,11 @@ public class EmailService
         await SendInternalAsync(to, subject, html, isMarketing: true);
     }
 
+    public Task<bool> TrySendTransactionalAsync(string to, string subject, string html, string idempotencyKey)
+    {
+        return SendInternalAsync(to, subject, html, isMarketing: false, idempotencyKey);
+    }
+
     public Task<bool> TrySendMarketingAsync(string to, string subject, string html, string idempotencyKey)
     {
         return SendInternalAsync(to, subject, html, isMarketing: true, idempotencyKey);
