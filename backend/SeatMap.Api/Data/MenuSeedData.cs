@@ -277,6 +277,11 @@ public static class MenuSeedData
         new(@"Bar", @"cocktails", @"Кулър", @"Cooler", @"Кулер", @"", @"", @"", @"", 7.70m, @"")
     };
 
+    // Startup may initialize a new restaurant, but must preserve an existing
+    // menu, including inactive items, custom dishes and historical duplicates.
+    public static async Task<int> SeedIfEmptyAsync(AppDbContext db) =>
+        await db.MenuItems.AnyAsync() ? 0 : await SeedAsync(db);
+
     public static async Task<int> SeedAsync(AppDbContext db)
     {
         var existingItems = await db.MenuItems.ToListAsync();

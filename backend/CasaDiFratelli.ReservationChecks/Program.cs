@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
 
 static void Check(bool result, string message) { if (!result) throw new Exception(message); }
+await MenuStartupChecks.RunAsync();
 Check(CasaDrinkPhotos.Resolve("", true, "Bar", "Кока-Кола", "250 мл").StartsWith("/drinks/"), "Casa drink must have a catalogue photo");
 Check(CasaDrinkPhotos.Resolve("/custom.png", true, "Bar", "Кока-Кола", "250 мл") == "/custom.png", "Admin photo must take precedence over the catalogue");
 Check(CasaDrinkPhotos.Resolve("", false, "Bar", "Кока-Кола", "250 мл") == "", "Casa photos must not appear for another tenant");

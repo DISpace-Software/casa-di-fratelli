@@ -173,7 +173,7 @@ if (tenantOptions.MigrateOnStartup || migrateRestaurants)
         await AdminSchemaBootstrapper.EnsureAsync(db);
         await scope.ServiceProvider.GetRequiredService<AdminAuthService>().EnsureDefaultAdminAsync();
         if (tenant.SeedDefaultMenu)
-            _ = await MenuSeedData.SeedAsync(db);
+            _ = await MenuSeedData.SeedIfEmptyAsync(db);
         app.Logger.LogInformation("Tenant database initialized. TenantId={TenantId}", tenant.Id);
     }
 }

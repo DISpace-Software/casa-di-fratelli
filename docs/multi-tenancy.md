@@ -99,7 +99,9 @@ At startup the backend validates tenant configuration. With the default
 - applies the compatibility schema bootstrap;
 - creates the initial owner only when the database has no administrators;
 - seeds the Casa di Fratelli menu only when `SeedDefaultMenu` is explicitly
-  `true`.
+  `true` and the restaurant has no menu rows. Existing menus, including fully
+  inactive menus and custom edits, are never synchronized on startup. Explicit
+  administrator-triggered menu synchronization remains a separate operation.
 
 The default menu must normally remain disabled for new brands.
 
