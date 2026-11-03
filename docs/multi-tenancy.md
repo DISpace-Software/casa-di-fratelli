@@ -26,13 +26,19 @@ AppDbContext -> tenant PostgreSQL database
 
 Resolution order:
 
-1. `X-Tenant-Id`;
-2. `{tenant}` route value;
-3. `{tenantSlug}` route value;
+1. Explicit `{restaurantId}` on versioned restaurant routes;
+2. `X-Tenant-Id`;
+3. `{tenant}` / `{tenantSlug}` route values;
 4. configured frontend `Origin`;
-5. API subdomain;
-6. configured tenant domain;
-7. default tenant only when `RequireKnownTenant` is `false`.
+5. exact configured tenant/frontend host;
+6. default tenant only when `RequireKnownTenant` is `false`.
+
+An unknown explicit restaurant is rejected even in non-strict mode. Its route
+selection must agree with any tenant header, known restaurant Origin and known
+restaurant host. Global directory endpoints are explicitly marked as platform
+endpoints and run without resolving a restaurant. See the
+[SeatMap platform guide](seatmap-platform.md) for public v1 routes and shared
+platform origins.
 
 If both `Origin` and `X-Tenant-Id` are present, they must resolve to the same
 tenant. This prevents one restaurant frontend from routing browser requests to
@@ -85,8 +91,8 @@ fallbacks only for the `DefaultConnection` tenant.
    save the restaurant name, contacts, localized address/opening hours, logo,
    social links, timezone, and reservation limits.
 
-At startup the backend validates tenant configuration and, for every active
-tenant:
+At startup the backend validates tenant configuration. With the default
+`Tenancy:MigrateOnStartup=true`, for every active tenant it:
 
 - opens that tenant database;
 - applies EF migrations;
@@ -96,6 +102,12 @@ tenant:
   `true`.
 
 The default menu must normally remain disabled for new brands.
+
+Restaurant initialization can instead run in a separate deployment command with
+`--MigrateRestaurants=true`, followed by HTTP startup with
+`Tenancy__MigrateOnStartup=false`. The opt-in platform database has independent
+migrations and is never migrated automatically during HTTP startup. See the
+[rollout commands](seatmap-platform.md).
 
 ## Branding and business settings
 

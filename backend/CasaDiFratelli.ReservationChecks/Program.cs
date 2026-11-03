@@ -1,10 +1,11 @@
-using CasaDiFratelli.Api.Services.Tenancy;
+using SeatMap.Api.Services.Tenancy;
+using SeatMap.Api.Services.Reservations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
-using CasaDiFratelli.Api.Controllers;
-using CasaDiFratelli.Api.Data;
-using CasaDiFratelli.Api.Models;
-using CasaDiFratelli.Api.Services;
+using SeatMap.Api.Controllers;
+using SeatMap.Api.Data;
+using SeatMap.Api.Models;
+using SeatMap.Api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -53,9 +54,9 @@ Check(!await db.Reservations.IgnoreQueryFilters().AnyAsync(x => x.Id == 5) && !a
 Check(await db.Reservations.AnyAsync(x => x.Id == 2) && await db.DiningOrders.AnyAsync(x => x.ReservationId == 3), "Unrelated operational data changed");
 string GuestSnapshot() => System.Text.Json.JsonSerializer.Serialize(new { active.Id, active.GuestName, active.ReservedDate, active.ReservedTime, active.Status, active.IsArrived, active.IsDeleted, Tables = active.Tables.Select(t => t.TableCode).ToList() });
 var guestSnapshot = GuestSnapshot();
-var reservationsController = new ReservationsController(db, null!, null!, new ReservationConflictService(db), null!, new AuditService(db), null!, null!, null!, null!, null!)
+var reservationsController = new ReservationsController(db, null!, null!, new ReservationConflictService(db), null!, new AuditService(db), null!, currentTenant: null!, branding: null!, booking: null!)
 { ControllerContext = controller.ControllerContext };
-Check(await reservationsController.BlockTables(new CasaDiFratelli.Api.Dtos.CreateHallBlockRequest
+Check(await reservationsController.BlockTables(new SeatMap.Api.Dtos.CreateHallBlockRequest
 { ReservedDate = date, Area = "indoor", Times = ["18:15", "20:45"], TableIds = ["2", "6"], Note = "Private event" }) is OkObjectResult, "Block over existing booking must succeed");
 Check(GuestSnapshot() == guestSnapshot, "Hall block changed existing guest reservation");
 var block = await db.Reservations.SingleAsync(x => x.GuestName == "Admin block");
@@ -71,7 +72,7 @@ Check(ReservationConflictService.IsWithinHallBlock("22:00 - 01:00", new TimeOnly
 Check(await conflictService.FindTableConflictAsync(date, "19:30", ["6"], includeHallBlocks: false) == null, "Admin must work inside a public hall block");
 Check(await conflictService.FindTableConflictAsync(date, "19:00", ["2"], includeHallBlocks: false) != null, "Admin must still respect real guest reservations");
 Check(await conflictService.FindTableConflictAsync(date, "19:30", ["6"]) != null, "Public booking must remain blocked while admin works");
-Check(await reservationsController.UpdateTables(active.Id, new CasaDiFratelli.Api.Dtos.UpdateReservationTablesRequest { TableIds = ["2"] }) is OkObjectResult, "Admin table editing must work while public hall block is active");
+Check(await reservationsController.UpdateTables(active.Id, new SeatMap.Api.Dtos.UpdateReservationTablesRequest { TableIds = ["2"] }) is OkObjectResult, "Admin table editing must work while public hall block is active");
 Check(await conflictService.FindTableConflictAsync(date, "19:30", ["6"]) != null, "Admin editing must not remove public block");
 Check(await reservationsController.UnblockHall(active.Id) is BadRequestObjectResult, "Unblock must reject guest reservations");
 Check(await reservationsController.UnblockHall(block.Id) is OkObjectResult && block.Status == "Released", "Unblock must release selected hall block");
@@ -162,8 +163,10 @@ await db.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS \"TableLayouts\
 var customLayoutJson = "[{\"id\":\"custom-terrace\",\"area\":\"openTerrace\",\"x\":12,\"y\":34,\"seats\":4,\"isActive\":true}]";
 await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"TableLayouts\" (\"Id\", \"LayoutJson\") VALUES (1, {customLayoutJson}) ON CONFLICT (\"Id\") DO UPDATE SET \"LayoutJson\" = {customLayoutJson}");
 Check(await seasonalZones.IsSelectionClosedAsync("indoor", ["custom-terrace"]), "Custom layout tables must also obey seasonal closure");
-var seasonalBookingController = new ReservationsController(db, null!, null!, new ReservationConflictService(db), null!, new AuditService(db), null!, null!, new RestaurantClosureService(db), null!, null!);
-var closedBooking = await seasonalBookingController.Create(new CasaDiFratelli.Api.Dtos.CreateReservationRequest {
+var seasonalBookingService = new ReservationBookingService(db, new ReservationConflictService(db), new RestaurantClosureService(db),
+    new SeasonalZoneService(db), emailBranding, null!, TimeProvider.System, NullLogger<ReservationBookingService>.Instance);
+var seasonalBookingController = new ReservationsController(db, null!, null!, new ReservationConflictService(db), null!, new AuditService(db), null!, casaTenant, emailBranding, seasonalBookingService);
+var closedBooking = await seasonalBookingController.Create(new SeatMap.Api.Dtos.CreateReservationRequest {
  GuestName = "Seasonal test", Phone = "test", Email = "test@example.com", PrivacyConsent = true, GuestCount = 2,
  Area = "indoor", TableIds = ["custom-terrace"], ReservedDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1), ReservedTime = "19:00"
 });
@@ -182,7 +185,7 @@ Console.WriteLine("PASS: seasonal close/reopen persistence, independent areas, s
 // Complete release -> persistent queue -> mocked Resend -> retry flow; no guest emails leave this process.
 Check(db.Database.GetMigrations().Contains("20261024010000_AddVisitFeedbackEmailQueue"), "Visit email queue migration must be discoverable");
 var visitEmails = new VisitFeedbackEmailService(db, emailService, emailBranding);
-var visitController = new ReservationsController(db, emailService, emailConfig, new ReservationConflictService(db), null!, new AuditService(db), null!, null!, new RestaurantClosureService(db), casaTenant, emailBranding, visitEmails)
+var visitController = new ReservationsController(db, emailService, emailConfig, new ReservationConflictService(db), null!, new AuditService(db), null!, casaTenant, emailBranding, booking: null!, visitFeedback: visitEmails)
 { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
 Reservation Visit(int id, string email, string phone = "0888123456", bool arrived = true) => new() {
  Id = id, GuestName = "Visit <Test>", Phone = phone, Email = email, GuestCount = 2, Area = "indoor", ReservedDate = date,
@@ -249,6 +252,8 @@ await visitEmails.SendTestAsync("TEST.ONLY@example.com", "https://casadifratelli
 Check(capture.IdempotencyKeys.Last() == testKey, "Retrying a test on the same day must use the same provider idempotency key");
 Check(await db.Reservations.CountAsync() == beforeTestReservations && await db.VisitFeedbackEmails.CountAsync() == beforeTestQueue, "Email tests must not create fake bookings or guest histories");
 Console.WriteLine("PASS: labelled test email, safe survey URL, same-day idempotency and no fake reservations.");
+
+await BookingServiceChecks.RunAsync();
 
 sealed class CaptureEmailHandler : HttpMessageHandler
 {

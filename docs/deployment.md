@@ -8,6 +8,50 @@
 - Email: Resend
 - Domain: `casadifratelli.bg`
 
+## SeatMap API project name
+
+The backend project is now `backend/SeatMap.Api/SeatMap.Api.csproj` and the
+published entry point is `SeatMap.Api.dll`. The Docker build context remains
+`backend`; `backend/Dockerfile` publishes and starts the renamed project.
+
+For a deployment configured with explicit commands instead of Docker, update
+the project path and DLL name in the hosting settings before deploying this
+revision. With `backend` as the working directory, a publish command is:
+
+```sh
+dotnet publish SeatMap.Api/SeatMap.Api.csproj -c Release -o out
+dotnet out/SeatMap.Api.dll
+```
+
+This repository rename does not rename the Render service or change its public
+URL. The existing frontend API URL, Casa tenant ID, connection configuration and
+database migration IDs are retained. Hosting settings have not been changed by
+the local rename. A public URL change requires its own client migration.
+
+### Render dashboard follow-up — 3 November 2026
+
+The Render project display name was changed from `Casa di Fratelli` to `SeatMap`
+and confirmed in the dashboard. Its existing `Production` environment remains.
+User-provided screenshots subsequently confirmed the API service name
+`seatmap-api` and PostgreSQL instance label `casa-di-fratelli-db` on the same
+service IDs. The API's displayed URL remains
+`https://casa-di-fratelli-api.onrender.com`; PostgreSQL shows `Available`.
+The old Node service `casa-di-fratelli` remains
+suspended; it was not resumed or removed.
+
+Observed API build settings: root directory `backend`, Dockerfile `./Dockerfile`,
+Docker context `.`, empty Docker command override and empty pre-deploy command.
+These settings already resolve the repository Dockerfile after the local project
+rename. No deploy was triggered; the dashboard still showed live commit `3911dd8`.
+
+The project, API and restaurant database display-name changes are complete.
+The user completed the API/database renames after browser button operations
+timed out. The PostgreSQL instance label is distinct from its SQL database name,
+username and connection string; those connection values were not inspected in
+this follow-up. Render integration was suggested but connection has not been
+confirmed. The screenshots still show live commit `3911dd8`: renaming resources
+does not deploy the local SeatMap code changes.
+
 ## Required Environment Variables
 
 Backend:
@@ -54,7 +98,7 @@ In production, set `BACKUP_DIRECTORY` to persistent storage; the default local `
 Before deployment:
 
 ```bash
-dotnet build backend/CasaDiFratelli.Api/CasaDiFratelli.Api.csproj
+dotnet build backend/SeatMap.Api/SeatMap.Api.csproj
 cd frontend && npm run build
 ```
 

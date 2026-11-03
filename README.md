@@ -6,7 +6,7 @@ The current product includes a public restaurant website, online reservations, a
 
 ## Current Architecture
 
-- `backend/CasaDiFratelli.Api` - ASP.NET Core API, PostgreSQL, EF Core migrations, background services, email, push, CRM, orders, inventory, and marketing.
+- `backend/SeatMap.Api` - ASP.NET Core API, PostgreSQL, EF Core migrations, background services, email, push, CRM, orders, inventory, and marketing.
 - `frontend` - Vite/React public website, menu, reservation UX, and admin CRM.
 - `docs` - SaaS architecture notes and operating guidelines.
 
@@ -17,7 +17,7 @@ The application is intentionally being evolved from a single-restaurant product 
 Backend:
 
 ```bash
-dotnet run --project backend/CasaDiFratelli.Api/CasaDiFratelli.Api.csproj
+dotnet run --project backend/SeatMap.Api/SeatMap.Api.csproj
 ```
 
 Frontend:
@@ -31,7 +31,7 @@ npm run dev
 Production builds used during development:
 
 ```bash
-dotnet build backend/CasaDiFratelli.Api/CasaDiFratelli.Api.csproj
+dotnet build backend/SeatMap.Api/SeatMap.Api.csproj
 cd frontend && npm run build
 ```
 
@@ -48,6 +48,12 @@ On startup the API runs EF migrations and the compatibility bootstrapper.
 
 ## SaaS Direction
 
+The SeatMap platform foundation now includes an opt-in separate profile database,
+a public restaurant directory and versioned restaurant read and booking routes. Guest login,
+profile-backed booking and booking projection delivery are not yet implemented.
+See [platform preparation and rollout](docs/seatmap-platform.md) for the exact
+boundary, migration commands and remaining release requirements.
+
 Target model:
 
 - One backend
@@ -60,7 +66,10 @@ The first tenant abstraction exists in `Services/Tenancy`. Current behavior stil
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [SeatMap transition audit and staged plan](docs/seatmap-transition-audit.md)
 - [Multi-tenancy](docs/multi-tenancy.md)
+- [SeatMap platform and mobile preparation](docs/seatmap-platform.md)
+- [Shared booking service](docs/shared-booking.md)
 - [Onboarding a new restaurant](docs/onboarding-new-restaurant.md)
 - [Inventory module](docs/inventory-module.md)
 - [API guidelines](docs/api-guidelines.md)

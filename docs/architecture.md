@@ -1,5 +1,10 @@
 # SeatMap Architecture Audit
 
+For the verified state as of 3 November 2026 and the next incremental steps,
+see [SeatMap transition audit](seatmap-transition-audit.md). The notes below
+provide broader architectural context; they predate the platform foundation
+and shared booking service extraction.
+
 ## Executive Summary
 
 The project has strong product depth for a first restaurant: reservations, table map, CRM, ordering, kitchen/bar workflows, inventory, marketing, events, roles, push notifications, and maintenance tooling already exist.

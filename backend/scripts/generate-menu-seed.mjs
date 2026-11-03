@@ -79,10 +79,10 @@ const rows = items.map((item) => {
 });
 
 const output = `using System.Text;
-using CasaDiFratelli.Api.Models;
+using SeatMap.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace CasaDiFratelli.Api.Data;
+namespace SeatMap.Api.Data;
 
 public static class MenuSeedData
 {

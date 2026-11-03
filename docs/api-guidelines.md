@@ -13,9 +13,12 @@ Controllers should not own large business workflows.
 
 ## Application Services
 
+Creation and email confirmation are implemented in `ReservationBookingService`,
+shared by the legacy website and public v1 adapters. See
+[the booking contract and boundaries](shared-booking.md).
+
 Move workflow logic into services such as:
 
-- `CreateReservation`
 - `MoveReservation`
 - `ReleaseReservation`
 - `CreateDiningOrder`

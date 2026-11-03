@@ -7,7 +7,7 @@
 Для каждого нового клиента используются:
 
 - тот же GitHub-репозиторий и общий backend на Render;
-- новый tenant в `backend/CasaDiFratelli.Api/appsettings.json`;
+- новый tenant в `backend/SeatMap.Api/appsettings.json`;
 - отдельная PostgreSQL-база данных;
 - отдельный Vercel Project из папки `frontend`;
 - отдельный домен ресторана;
@@ -61,7 +61,7 @@ ConnectionStrings__RestaurantBella=<Internal Database URL новой базы>
 
 ## 4. Добавить tenant в backend
 
-В `backend/CasaDiFratelli.Api/appsettings.json` добавьте объект в массив
+В `backend/SeatMap.Api/appsettings.json` добавьте объект в массив
 `Tenancy:Tenants`, не удаляя Casa:
 
 ```json
@@ -77,6 +77,7 @@ ConnectionStrings__RestaurantBella=<Internal Database URL новой базы>
     "https://restaurant-bella.vercel.app"
   ],
   "SeedDefaultMenu": false,
+  "IsListed": false,
   "AdminEmailConfigurationKey": "BELLA_ADMIN_EMAIL",
   "AdminPasswordConfigurationKey": "BELLA_ADMIN_PASSWORD",
   "DatabaseMode": "DedicatedDatabase",
@@ -87,6 +88,10 @@ ConnectionStrings__RestaurantBella=<Internal Database URL новой базы>
 
 Origin указывается как схема + host, без пути и завершающего `/`. Домены, ID,
 slug, connection key и ключи администратора должны быть уникальными.
+
+`IsListed=false` оставляет ресторан вне общего каталога SeatMap на время настройки.
+После проверки сайта и схемы посадки установите `IsListed=true` для публикации.
+Это настройка каталога, а не ограничение доступа к публичному сайту ресторана.
 
 В Render добавьте секреты первого владельца:
 
@@ -126,13 +131,17 @@ Tenancy__Email__restaurant-bella__VAPID_SUBJECT=mailto:owner@restaurantbella.bg
 Локально из корня проекта выполните:
 
 ```bash
-dotnet build backend/CasaDiFratelli.Api/CasaDiFratelli.Api.csproj
+dotnet build backend/SeatMap.Api/SeatMap.Api.csproj
 dotnet run --project backend/CasaDiFratelli.TenancyChecks/CasaDiFratelli.TenancyChecks.csproj
 ```
 
 Сделайте commit и push в `main`. Render проверит tenant-конфигурацию, подключится
 к базам, применит migrations и создаст владельца. Меню Casa не копируется,
 поскольку `SeedDefaultMenu=false`.
+
+Если HTTP-сервис использует `Tenancy__MigrateOnStartup=false`, сначала выполните
+отдельную migration job с `--MigrateRestaurants=true`: обычный запуск API в этом
+режиме не создаёт схему и владельца. См. [порядок развёртывания](seatmap-platform.md).
 
 В Render logs должны появиться:
 

@@ -1,8 +1,8 @@
-using CasaDiFratelli.Api.Services.Tenancy;
+using SeatMap.Api.Services.Tenancy;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
-using CasaDiFratelli.Api.Controllers;
+using SeatMap.Api.Controllers;
 
 // Pure configuration and middleware checks: no application startup, network,
 // database connections, migrations, credentials or hosted services are used.
