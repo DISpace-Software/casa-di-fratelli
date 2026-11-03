@@ -54,6 +54,9 @@ does not deploy the local SeatMap code changes.
 
 ## Required Environment Variables
 
+For the verified SeatMap release on 3 November 2026, see
+[the production release report](seatmap-release-2026-11-03.md).
+
 Backend:
 
 - `ConnectionStrings__DefaultConnection` or `DATABASE_URL`
