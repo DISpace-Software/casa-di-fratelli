@@ -121,7 +121,7 @@ try
     var response = await client.GetAsync("/api/v1/restaurants");
     Check(response.IsSuccessStatusCode && !response.Headers.Contains("X-Tenant-Id"), "Global catalog works in strict mode without selecting Casa");
     Check((await client.GetAsync("/api/v1/restaurants/hidden")).StatusCode == HttpStatusCode.NotFound, "Unpublished restaurant is absent from public directory");
-    foreach (var resource in new[] { "menu", "layout", "zones", "branding" })
+    foreach (var resource in new[] { "menu", "layout", "zones", "branding", "reservations/blocked-slots", "closure" })
     {
         var probe = await client.GetFromJsonAsync<Dictionary<string, string>>($"/api/v1/restaurants/beta/{resource}");
         Check(probe?["tenantId"] == "beta", $"Versioned {resource} route selects beta through real routing");
@@ -147,6 +147,16 @@ try
     using var adminWrite = new HttpRequestMessage(HttpMethod.Put, "/api/v1/restaurants/beta/layout") { Content = JsonContent.Create(new { }) };
     adminWrite.Headers.Add("X-Tenant-Id", "beta");
     Check((await client.SendAsync(adminWrite)).StatusCode == HttpStatusCode.MethodNotAllowed, "Public v1 aliases do not expose admin writes");
+    foreach (var resource in new[] { "reservations/blocked-slots", "closure" })
+    {
+        Check((await client.GetAsync($"/api/v1/restaurants/unknown/{resource}")).StatusCode == HttpStatusCode.NotFound, $"Unknown restaurant cannot use {resource} alias");
+        using var mismatched = new HttpRequestMessage(HttpMethod.Get, $"/api/v1/restaurants/beta/{resource}");
+        mismatched.Headers.Add("X-Tenant-Id", "alpha");
+        Check((await client.SendAsync(mismatched)).StatusCode == HttpStatusCode.NotFound, $"{resource} alias rejects cross-tenant selectors");
+        using var write = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/restaurants/beta/{resource}") { Content = JsonContent.Create(new { }) };
+        write.Headers.Add("X-Tenant-Id", "beta");
+        Check((await client.SendAsync(write)).StatusCode == HttpStatusCode.MethodNotAllowed, $"{resource} alias exposes GET only");
+    }
     using var legacy = new HttpRequestMessage(HttpMethod.Get, "/api/menu");
     legacy.Headers.Add("X-Tenant-Id", "alpha");
     Check((await client.SendAsync(legacy)).IsSuccessStatusCode, "Legacy website menu route remains available");

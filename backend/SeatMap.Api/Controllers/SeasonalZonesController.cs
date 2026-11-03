@@ -18,7 +18,7 @@ public class SeasonalZonesController(SeasonalZoneService zones, AuditService aud
     [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Set(string area, [FromBody] ChangeZoneRequest request)
     {
-        if (!SeasonalZoneService.Areas.Contains(area)) return BadRequest(new { message = "Unknown zone." });
+        if (!(await zones.GetAreasAsync()).Contains(area)) return BadRequest(new { message = "Unknown zone." });
         var before = (await zones.GetClosedAreasAsync()).Contains(area);
         await zones.SetClosedAsync(area, request.Closed);
         await audit.RecordAsync(HttpContext, request.Closed ? "close" : "reopen", "SeasonalZone", area,

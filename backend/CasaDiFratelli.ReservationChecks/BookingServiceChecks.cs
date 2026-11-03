@@ -1,3 +1,4 @@
+using SeatMap.Api.Services.FloorPlans;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
@@ -41,6 +42,7 @@ internal static class BookingServiceChecks
     public static async Task RunAsync()
     {
         await CreationAndConfirmationAsync();
+        await AutomaticConfirmationAsync();
         await RulesAsync();
         await FailureAndAtomicityAsync();
         await ConfirmationTemplateAsync();
@@ -88,6 +90,37 @@ internal static class BookingServiceChecks
         await expired.Db.SaveChangesAsync();
         Check((await expired.Booking.ConfirmByEmailAsync(expired.Notices.Tokens.Single())).Kind == ReservationBookingResultKind.Invalid, "Cancelled booking must not be confirmed");
         Console.WriteLine("PASS: expired and cancelled confirmation links preserve booking state.");
+    }
+
+    private static async Task AutomaticConfirmationAsync()
+    {
+        static void SilentAutomatic(TenantDefinition tenant)
+        {
+            tenant.ReservationConfirmationMode = ReservationConfirmationMode.Automatic;
+            tenant.NotificationsEnabled = false;
+        }
+        await using var cofein = await Restaurant.CreateAsync("cofein", SilentAutomatic);
+        var result = await cofein.Booking.CreateAsync(Request());
+        var saved = await cofein.Db.Reservations.Include(x => x.Tables).SingleAsync();
+        Check(result.Kind == ReservationBookingResultKind.Success && !Json(result).GetProperty("RequiresEmailConfirmation").GetBoolean(), "Automatic first booking must not require an email step");
+        Check(saved.Status == "Approved" && saved.Tables.Single().TableCode == "1", "Automatic booking must immediately occupy its selected table");
+        Check(saved.EmailConfirmationTokenHash == null && saved.EmailConfirmationExpiresAtUtc == null && saved.EmailConfirmedAtUtc == null, "Automatic approval must not generate a token or claim email verification");
+        Check(!Json(result).GetProperty("IsReturningCustomer").GetBoolean() && (await cofein.Db.CustomerProfiles.SingleAsync()).ReservationCount == 1, "New automatic guest must update CRM without being called a returning guest");
+        Check(cofein.Notices.Confirmed == 0 && cofein.Notices.Tokens.Count == 0, "Silent tenant must not invoke booking notification callbacks");
+        var overlap = Request("other@example.test"); overlap.Phone = "another-phone";
+        Check((await cofein.Booking.CreateAsync(overlap)).Kind == ReservationBookingResultKind.Conflict && await cofein.Db.Reservations.CountAsync() == 1, "Automatic booking must block the next conflicting request immediately");
+        var badTime = Request(); badTime.ReservedTime = "22:00";
+        Check((await cofein.Booking.CreateAsync(badTime)).Kind == ReservationBookingResultKind.Invalid, "Automatic mode must preserve normal public time rules");
+        var overCapacity = Request(); overCapacity.TableIds = ["2"]; overCapacity.GuestCount = 9;
+        Check((await cofein.Booking.CreateAsync(overCapacity)).Kind == ReservationBookingResultKind.Invalid, "Automatic mode must preserve guest limits");
+
+        await using var atomic = await Restaurant.CreateAsync("cofein-atomic", SilentAutomatic);
+        await atomic.Db.Database.ExecuteSqlRawAsync("CREATE TRIGGER fail_customer_insert BEFORE INSERT ON CustomerProfiles BEGIN SELECT RAISE(ABORT, 'simulated CRM failure'); END;");
+        try { await atomic.Booking.CreateAsync(Request()); throw new Exception("Automatic persistence failure was ignored"); }
+        catch (DbUpdateException) { }
+        Check(!await atomic.Db.Reservations.AsNoTracking().AnyAsync() && !await atomic.Db.ReservationTables.AnyAsync() && !await atomic.Db.CustomerProfiles.AnyAsync(), "Automatic booking, table occupancy and CRM must roll back together");
+        Check(atomic.Notices.Confirmed == 0 && atomic.Notices.Tokens.Count == 0, "Failed automatic booking must never notify");
+        Console.WriteLine("PASS: Cofein automatic approval immediately occupies tables, retains rules and atomic writes, does not claim verified email and sends no notifications.");
     }
 
     private static async Task RulesAsync()
@@ -209,6 +242,7 @@ internal static class BookingServiceChecks
         builder.Services.AddScoped<TenantBrandingService>();
         builder.Services.AddScoped<ReservationConflictService>();
         builder.Services.AddScoped<RestaurantClosureService>();
+        builder.Services.AddScoped<FloorPlanService>();
         builder.Services.AddScoped<SeasonalZoneService>();
         builder.Services.AddScoped<ReservationBookingService>();
         builder.Services.AddScoped<AdminAuthService>();
@@ -239,6 +273,15 @@ internal static class BookingServiceChecks
             using var legacyConfirm = new HttpRequestMessage(HttpMethod.Get, $"/api/reservations/confirm?token={alpha.Notices.Tokens.Single()}");
             legacyConfirm.Headers.Add("X-Tenant-Id", "alpha");
             Check((await client.SendAsync(legacyConfirm)).IsSuccessStatusCode, "Legacy confirmation failed");
+            foreach (var (legacyPath, resource) in new[] { ("/api/reservations/blocked-slots", "reservations/blocked-slots"), ("/api/restaurant-closure", "closure") })
+            {
+                using var legacyRead = new HttpRequestMessage(HttpMethod.Get, legacyPath);
+                legacyRead.Headers.Add("X-Tenant-Id", "beta");
+                var legacyReadResponse = await client.SendAsync(legacyRead);
+                var versionedReadResponse = await client.GetAsync($"/api/v1/restaurants/beta/{resource}");
+                Check(legacyReadResponse.IsSuccessStatusCode && versionedReadResponse.IsSuccessStatusCode, $"Both {resource} read adapters must execute successfully");
+                Check(JsonNode.DeepEquals(JsonNode.Parse(await legacyReadResponse.Content.ReadAsStringAsync()), JsonNode.Parse(await versionedReadResponse.Content.ReadAsStringAsync())), $"{resource} alias must preserve actual API response shape and data");
+            }
             var forged = Request("forged@example.test"); forged.CreatedByAdmin = true; forged.InternalNote = "Admin secret"; forged.TableIds = ["2"]; forged.PrivacyConsent = false;
             Check((await client.PostAsJsonAsync("/api/v1/restaurants/beta/reservations", forged)).StatusCode == HttpStatusCode.BadRequest, "Public v1 caller bypassed consent with admin flag");
             forged.PrivacyConsent = true;
@@ -297,18 +340,26 @@ internal static class BookingServiceChecks
         public RestaurantClosureService Closures { get; private set; } = null!;
         public SeasonalZoneService Zones { get; private set; } = null!;
         public ReservationBookingService Booking { get; private set; } = null!;
-        public static async Task<Restaurant> CreateAsync(string id)
+        public static async Task<Restaurant> CreateAsync(string id, Action<TenantDefinition>? configure = null)
         {
             var restaurant = new Restaurant();
             await restaurant.Connection.OpenAsync();
             restaurant.Db = new(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(restaurant.Connection).Options);
             await restaurant.Db.Database.EnsureCreatedAsync();
             restaurant.Tenant = new() { Id = id, Name = id, Slug = id, FrontendUrl = $"https://{id}.example.test", Domain = $"{id}.example.test", FrontendOrigins = [$"https://{id}.example.test"] };
+            configure?.Invoke(restaurant.Tenant);
             var current = new CurrentTenant(); current.Resolve(restaurant.Tenant);
             var brand = new TenantBrandingService(restaurant.Db, current, new ConfigurationBuilder().Build(), NullLogger<TenantBrandingService>.Instance);
             await brand.SaveAsync(new() { Name = id, Phone = $"+359-restaurant-{id}" });
-            restaurant.Closures = new(restaurant.Db);
-            restaurant.Zones = new(restaurant.Db);
+            restaurant.Closures = new(restaurant.Db, current);
+            var plans = new FloorPlanService(restaurant.Db, current);
+            var initial = await plans.GetAsync();
+            await plans.SaveAsync(initial with {
+                Zones = [new("indoor", "Hall"), new("garden", "Garden")],
+                Tables = [new("1", "indoor", 20, 20, 4, false, false, true), new("2", "indoor", 50, 20, 8, false, false, true), new("30", "garden", 20, 20, 4, false, false, true)],
+                Combinations = [["1", "2"]]
+            });
+            restaurant.Zones = new(restaurant.Db, plans);
             restaurant.Booking = new(restaurant.Db, new(restaurant.Db), restaurant.Closures, restaurant.Zones, brand, restaurant.Notices, restaurant.Clock, NullLogger<ReservationBookingService>.Instance);
             return restaurant;
         }

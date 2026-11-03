@@ -32,6 +32,7 @@ public class PushNotificationService
 
     public async Task NotifyNewReservationAsync(Reservation reservation)
     {
+        if (!_branding.NotificationsEnabled) return;
         var branding = await _branding.GetAsync();
         var tableLabel = string.Join(", ", reservation.Tables.Select(table => table.TableCode));
         var payload = JsonSerializer.Serialize(new
@@ -49,6 +50,7 @@ public class PushNotificationService
 
     private async Task SendToAdminRolesAsync(string payload)
     {
+        if (!_branding.NotificationsEnabled) return;
         var keys = await GetOrCreateVapidKeysAsync();
         var subject = GetVapidSubject();
         var vapidDetails = new VapidDetails(subject, keys.PublicKey, keys.PrivateKey);

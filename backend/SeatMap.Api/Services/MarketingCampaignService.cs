@@ -69,6 +69,7 @@ public class MarketingCampaignService
 
     public async Task<MarketingRunResult> RunAsync(bool dryRun)
     {
+        if (!_branding.NotificationsEnabled) return new MarketingRunResult(0, 0, 0, []);
         _brand = await _branding.GetAsync();
         var settings = await GetSettingsAsync();
         var today = GetRestaurantToday();
@@ -130,6 +131,7 @@ public class MarketingCampaignService
 
     public async Task<BirthdaySendResult> SendBirthdayAsync(int customerId)
     {
+        if (!_branding.NotificationsEnabled) return new BirthdaySendResult(false, false, "Notifications are disabled for this restaurant.", null, null);
         var customer = await _db.CustomerProfiles.FirstOrDefaultAsync(x => x.Id == customerId);
         if (customer == null) return new BirthdaySendResult(false, false, "Customer not found.", null, null);
         if (!customer.BirthDate.HasValue) return new BirthdaySendResult(false, false, "Customer birthday is missing.", null, null);

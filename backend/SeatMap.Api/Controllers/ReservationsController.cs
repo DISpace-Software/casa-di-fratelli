@@ -1,3 +1,4 @@
+using SeatMap.Api.Services.FloorPlans;
 using Microsoft.AspNetCore.Mvc.Filters;
 using SeatMap.Api.Data;
 using SeatMap.Api.Dtos;
@@ -6,10 +7,8 @@ using SeatMap.Api.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SeatMap.Api.Services;
-using System.Data;
 using System.Net;
 using System.Security.Cryptography;
-using System.Text.Json;
 using SeatMap.Api.Services.Tenancy;
 using SeatMap.Api.Services.Reservations;
 
@@ -46,7 +45,6 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         await next();
     }
 
-    private sealed record TableLayoutCapacityItem(string? Id, int Seats, bool IsActive);
 
     public ReservationsController(
         AppDbContext db,
@@ -62,7 +60,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         VisitFeedbackEmailService? visitFeedback = null)
     {
         _db = db;
-        _seasonalZones = new SeasonalZoneService(db);
+        _seasonalZones = new SeasonalZoneService(db, new FloorPlanService(db, currentTenant));
         _emailService = emailService;
         _configuration = configuration;
         _reservationConflictService = reservationConflictService;
@@ -89,37 +87,6 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     }
 
     private string GetFrontendUrl() => RestaurantPublicLinks.GetFrontendUrl(_currentTenant, _configuration);
-
-    private async Task<Dictionary<string, string>?> GetConfiguredActiveTableCodesAsync()
-    {
-        try
-        {
-            var connection = _db.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-                await connection.OpenAsync();
-
-            await using var command = connection.CreateCommand();
-            command.CommandText = """SELECT "LayoutJson" FROM "TableLayouts" WHERE "Id" = 1;""";
-            var rawJson = await command.ExecuteScalarAsync() as string;
-            if (string.IsNullOrWhiteSpace(rawJson)) return null;
-
-            var layout = JsonSerializer.Deserialize<List<TableLayoutCapacityItem>>(rawJson, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-            if (layout == null) return null;
-
-            return layout
-                .Where(item => item.IsActive && !string.IsNullOrWhiteSpace(item.Id) && !TableCapacityService.IsRetired(item.Id))
-                .Select(item => item.Id!.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToDictionary(code => code, code => code, StringComparer.OrdinalIgnoreCase);
-        }
-        catch
-        {
-            return null;
-        }
-    }
 
     [HttpGet]
     [AdminAuthorize]
@@ -181,6 +148,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     }
 
     [HttpGet("blocked-slots")]
+    [HttpGet("~/api/v1/restaurants/{restaurantId}/reservations/blocked-slots")]
     public async Task<IActionResult> GetBlockedSlots()
     {
         var today = DateOnly.FromDateTime(GetRestaurantNow());
@@ -233,6 +201,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     [AdminAuthorize]
     public async Task<IActionResult> CreateWalkIn([FromBody] CreateWalkInReservationRequest request)
     {
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var admin = AdminAuthService.Current(HttpContext);
         if (admin == null)
             return Unauthorized(new { message = "Admin session is required." });
@@ -244,8 +213,12 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         if (tableIds.Count == 0)
             return BadRequest(new { message = "At least one table must be selected." });
 
-        var guestCount = Math.Clamp(request.GuestCount <= 0 ? 2 : request.GuestCount, 1, 40);
+        var guestCount = request.GuestCount;
+        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, guestCount);
+        if (selection.Error != null) return BadRequest(new { message = selection.Error });
+        tableIds = selection.TableIds;
 
+        var canonicalIds = tableIds.Select(id => id.ToUpperInvariant()).ToList();
         var now = GetRestaurantNow();
         var openingTime = TimeOnly.Parse(_brand.WalkInOpeningTime);
         var latestWalkInTime = TimeOnly.Parse(_brand.WalkInLatestTime);
@@ -268,7 +241,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
                 x.Status == ReservationStatusApproved &&
                 x.IsArrived &&
                 !x.IsNoShow &&
-                x.Tables.Any(t => tableIds.Contains(t.TableCode)));
+                x.Tables.Any(t => canonicalIds.Contains(t.TableCode.ToUpper())));
 
         if (occupiedReservation != null)
         {
@@ -290,7 +263,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
                 !(x.CreatedByAdmin && x.Phone == "admin" && x.GuestName == "Admin block") &&
                 !x.IsNoShow &&
                 !x.IsArrived &&
-                x.Tables.Any(t => tableIds.Contains(t.TableCode)))
+                x.Tables.Any(t => canonicalIds.Contains(t.TableCode.ToUpper())))
             .ToListAsync();
 
         var upcomingReservation = nextReservation
@@ -326,7 +299,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             Phone = string.Empty,
             Email = string.Empty,
             GuestCount = guestCount,
-            Area = string.IsNullOrWhiteSpace(request.Area) ? "indoor" : request.Area.Trim(),
+            Area = selection.Area,
             ReservedDate = reservedDate,
             ReservedTime = reservedTime,
             Status = ReservationStatusApproved,
@@ -349,6 +322,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
 
         _db.Reservations.Add(reservation);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         await _audit.RecordAsync(HttpContext, "walk-in", "Reservation", reservation.Id.ToString(), after: new
         {
             reservation.Id,
@@ -382,6 +356,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     [AdminAuthorize]
     public async Task<IActionResult> Approve(int id)
     {
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var reservation = await _db.Reservations
             .Include(x => x.Tables)
             .FirstOrDefaultAsync(x => x.Id == id);
@@ -390,6 +365,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             return NotFound();
 
         var tableIds = reservation.Tables.Select(t => t.TableCode).ToList();
+        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, reservation.Area, reservation.GuestCount);
+        if (selection.Error != null) return BadRequest(new { message = selection.Error });
 
         var conflict = await _reservationConflictService.FindTableConflictAsync(
             reservation.ReservedDate,
@@ -405,6 +382,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         reservation.Status = "Approved";
         reservation.IsNoShow = false;
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         await _audit.RecordAsync(HttpContext, "approve", "Reservation", reservation.Id.ToString(), after: new { reservation.Id, reservation.Status });
 
         if (!string.IsNullOrWhiteSpace(reservation.Email))
@@ -438,6 +416,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     [AdminAuthorize]
     public async Task<IActionResult> MarkArrived(int id)
     {
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var reservation = await _db.Reservations
             .Include(x => x.Tables)
             .FirstOrDefaultAsync(x => x.Id == id);
@@ -448,6 +427,10 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         if (reservation.Status == "Cancelled")
             return BadRequest("Cancelled reservations cannot be marked as arrived.");
 
+        var selection = await _seasonalZones.Plans.SelectAsync(reservation.Tables.Select(t => t.TableCode), reservation.Area, reservation.GuestCount);
+        if (selection.Error != null) return BadRequest(new { message = selection.Error });
+        var conflict = await _reservationConflictService.FindTableConflictAsync(reservation.ReservedDate, reservation.ReservedTime, selection.TableIds, id, includeHallBlocks: false);
+        if (conflict != null) return Conflict(ReservationConflictService.ToConflictResponse(conflict));
         reservation.Status = "Approved";
         reservation.IsArrived = true;
         reservation.IsNoShow = false;
@@ -457,6 +440,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             reservation.OrderAccessToken ??= CreateOrderAccessToken();
         }
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         await _audit.RecordAsync(HttpContext, "arrive", "Reservation", reservation.Id.ToString(), after: new { reservation.Id, reservation.Status, reservation.IsArrived });
 
         if (isPro && !string.IsNullOrWhiteSpace(reservation.Email))
@@ -526,6 +510,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     [AdminAuthorize]
     public async Task<IActionResult> UpdateTables(int id, [FromBody] UpdateReservationTablesRequest request)
     {
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var reservation = await _db.Reservations
             .Include(x => x.Tables)
             .FirstOrDefaultAsync(x => x.Id == id);
@@ -544,6 +529,10 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         var nextGuestCount = request.GuestCount ?? reservation.GuestCount;
         if (nextGuestCount <= 0)
             return BadRequest("Invalid guests.");
+
+        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, nextGuestCount);
+        if (selection.Error != null) return BadRequest(new { message = selection.Error });
+        tableIds = selection.TableIds;
 
         var nextReservedDate = request.ReservedDate ?? reservation.ReservedDate;
         var nextReservedTime = string.IsNullOrWhiteSpace(request.ReservedTime)
@@ -582,8 +571,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             ReservationId = reservation.Id
         }).ToList();
 
-        if (!string.IsNullOrWhiteSpace(request.Area))
-            reservation.Area = request.Area.Trim();
+        reservation.Area = selection.Area;
 
         if (request.GuestCount.HasValue)
             reservation.GuestCount = request.GuestCount.Value;
@@ -596,6 +584,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         await _db.DiningOrders
             .Where(order => order.ReservationId == reservation.Id)
             .ExecuteUpdateAsync(setters => setters.SetProperty(order => order.TableLabel, nextTableLabel));
+        await transaction.CommitAsync();
         await _audit.RecordAsync(HttpContext, "move-tables", "Reservation", reservation.Id.ToString(), beforeTables, new
         {
             reservation.Area,
@@ -620,6 +609,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> UpdateReservation(int id, [FromBody] UpdateReservationRequest request)
     {
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var reservation = await _db.Reservations
             .Include(x => x.Tables)
             .FirstOrDefaultAsync(x => x.Id == id);
@@ -654,17 +644,10 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         var reservedTime = parsedTime.ToString("HH:mm");
         if (!IsReservationTimeAllowed(reservedTime, createdByAdmin: true))
             return BadRequest("Admin reservations are available until 23:00.");
-        var configuredTables = await GetConfiguredActiveTableCodesAsync();
-        if (configuredTables != null)
-        {
-            if (tableIds.Any(tableId => !configuredTables.ContainsKey(tableId)))
-                return BadRequest("One or more selected tables are not active.");
-            tableIds = tableIds.Select(tableId => configuredTables[tableId]).ToList();
-        }
-        else if (tableIds.Any(TableCapacityService.IsRetired) || tableIds.Any(tableId => TableCapacityService.GetCapacity(new[] { tableId }) <= 0))
-        {
-            return BadRequest("One or more selected tables are not active.");
-        }
+        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, area, request.GuestCount);
+        if (selection.Error != null) return BadRequest(new { message = selection.Error });
+        tableIds = selection.TableIds;
+        area = selection.Area;
         if ((request.Notes?.Length ?? 0) > 2000 || (request.InternalNote?.Length ?? 0) > 2000)
             return BadRequest("Reservation notes are too long.");
 
@@ -674,7 +657,6 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         if (slotChanged && IsPastReservationTime(request.ReservedDate, reservedTime))
             return BadRequest("Reservation date or time has already passed.");
 
-        await using var transaction = await _db.Database.BeginTransactionAsync(IsolationLevel.Serializable);
         var conflict = await _reservationConflictService.FindTableConflictAsync(
             request.ReservedDate, reservedTime, tableIds, reservation.Id, includeHallBlocks: false);
         if (conflict != null)
@@ -723,13 +705,13 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(order => order.TableLabel, tableLabel)
                 .SetProperty(order => order.GuestName, guestName));
+        await transaction.CommitAsync();
         await _audit.RecordAsync(HttpContext, "update", "Reservation", reservation.Id.ToString(), before, new
         {
             reservation.GuestName, reservation.Phone, reservation.Email, reservation.GuestCount,
             reservation.Area, reservation.ReservedDate, reservation.ReservedTime,
             reservation.Notes, reservation.InternalNote, TableIds = tableIds
         });
-        await transaction.CommitAsync();
 
         return Ok(new
         {
@@ -768,8 +750,12 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     [AdminAuthorize]
     public async Task<IActionResult> BlockTables([FromBody] CreateHallBlockRequest request)
     {
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var tableIds = ReservationConflictService.NormalizeTableIds(request.TableIds);
         var times = ReservationConflictService.NormalizeTimes(request.Times);
+        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, 0, block: true);
+        if (selection.Error != null) return BadRequest(new { message = selection.Error });
+        tableIds = selection.TableIds;
 
         if (tableIds.Count == 0)
             return BadRequest("At least one table must be selected.");
@@ -791,7 +777,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             Phone = "admin",
             Email = string.Empty,
             GuestCount = 0,
-            Area = string.IsNullOrWhiteSpace(request.Area) ? "all" : request.Area.Trim(),
+            Area = selection.Area,
             ReservedDate = request.ReservedDate,
             ReservedTime = blockTime,
             Notes = note,
@@ -807,6 +793,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
 
         _db.Reservations.Add(block);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         await _audit.RecordAsync(HttpContext, "block-hall", "Reservation", block.Id.ToString(), after: new { block.ReservedDate, block.ReservedTime, TableIds = tableIds });
 
         return Ok(new

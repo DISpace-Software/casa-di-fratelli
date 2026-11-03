@@ -12,6 +12,7 @@ public sealed class VisitFeedbackEmailService(AppDbContext db, EmailService emai
 {
     public async Task<VisitFeedbackEmail?> QueueAsync(Reservation reservation, string frontendUrl)
     {
+        if (!branding.NotificationsEnabled) return null;
         if (string.IsNullOrWhiteSpace(reservation.Email)) return null;
         var recipient = reservation.Email.Trim().ToLowerInvariant();
         if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(recipient)) return null;
@@ -44,6 +45,7 @@ public sealed class VisitFeedbackEmailService(AppDbContext db, EmailService emai
 
     public async Task<string> DispatchForReservationAsync(int reservationId)
     {
+        if (!branding.NotificationsEnabled) return "disabled";
         var item = await db.VisitFeedbackEmails.AsNoTracking().SingleOrDefaultAsync(x => x.ReservationId == reservationId);
         if (item == null) return "not-queued";
         if (item.SentAtUtc.HasValue) return "sent";
@@ -65,6 +67,7 @@ public sealed class VisitFeedbackEmailService(AppDbContext db, EmailService emai
 
     public async Task RetryPendingAsync()
     {
+        if (!branding.NotificationsEnabled) return;
         var now = DateTime.UtcNow;
         var pending = await db.VisitFeedbackEmails.AsNoTracking()
             .Where(x => x.SentAtUtc == null && x.NextAttemptAtUtc <= now)
@@ -74,6 +77,7 @@ public sealed class VisitFeedbackEmailService(AppDbContext db, EmailService emai
 
     public async Task<bool> SendTestAsync(string recipient, string frontendUrl)
     {
+        if (!branding.NotificationsEnabled) return false;
         var brand = await branding.GetAsync();
         recipient = recipient.Trim().ToLowerInvariant();
         var reservation = new Reservation { GuestName = "Тест Casa di Fratelli", Email = recipient };

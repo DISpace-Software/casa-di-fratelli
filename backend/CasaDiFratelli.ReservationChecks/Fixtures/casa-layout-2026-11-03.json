@@ -1,0 +1,512 @@
+[
+  {
+    "id": "42",
+    "area": "garden",
+    "x": 17,
+    "y": 22,
+    "seats": 6,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "43",
+    "area": "garden",
+    "x": 17,
+    "y": 42,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "44",
+    "area": "garden",
+    "x": 17,
+    "y": 62,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "45",
+    "area": "garden",
+    "x": 17,
+    "y": 82,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "38",
+    "area": "garden",
+    "x": 38,
+    "y": 24,
+    "seats": 8,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "39",
+    "area": "garden",
+    "x": 38,
+    "y": 44,
+    "seats": 8,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "40",
+    "area": "garden",
+    "x": 38,
+    "y": 64,
+    "seats": 6,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "41",
+    "area": "garden",
+    "x": 38,
+    "y": 84,
+    "seats": 6,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "34",
+    "area": "garden",
+    "x": 59,
+    "y": 24,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "35",
+    "area": "garden",
+    "x": 59,
+    "y": 44,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "36",
+    "area": "garden",
+    "x": 59,
+    "y": 64,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "37",
+    "area": "garden",
+    "x": 59,
+    "y": 84,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "30",
+    "area": "garden",
+    "x": 78,
+    "y": 22,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "31",
+    "area": "garden",
+    "x": 78,
+    "y": 42,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "32",
+    "area": "garden",
+    "x": 78,
+    "y": 62,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "33",
+    "area": "garden",
+    "x": 78,
+    "y": 82,
+    "seats": 6,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "1",
+    "area": "indoor",
+    "x": 83,
+    "y": 12,
+    "seats": 4,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "2",
+    "area": "indoor",
+    "x": 83,
+    "y": 22,
+    "seats": 4,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "3",
+    "area": "indoor",
+    "x": 83,
+    "y": 32,
+    "seats": 4,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "4",
+    "area": "indoor",
+    "x": 83,
+    "y": 42,
+    "seats": 4,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "5",
+    "area": "indoor",
+    "x": 53.6,
+    "y": 15.9,
+    "seats": 6,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "6",
+    "area": "indoor",
+    "x": 53.5,
+    "y": 26.7,
+    "seats": 6,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "7",
+    "area": "indoor",
+    "x": 53,
+    "y": 45.1,
+    "seats": 4,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "8",
+    "area": "indoor",
+    "x": 16.2,
+    "y": 11,
+    "seats": 6,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "9",
+    "area": "indoor",
+    "x": 16.4,
+    "y": 20.8,
+    "seats": 6,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "10",
+    "area": "indoor",
+    "x": 16.8,
+    "y": 30,
+    "seats": 6,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "11",
+    "area": "indoor",
+    "x": 16.9,
+    "y": 39.4,
+    "seats": 6,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "20",
+    "area": "indoor",
+    "x": 82,
+    "y": 60,
+    "seats": 4,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "21",
+    "area": "indoor",
+    "x": 82,
+    "y": 70,
+    "seats": 4,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "22",
+    "area": "indoor",
+    "x": 82,
+    "y": 80,
+    "seats": 4,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "23",
+    "area": "indoor",
+    "x": 82,
+    "y": 90,
+    "seats": 4,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "24",
+    "area": "indoor",
+    "x": 57.8,
+    "y": 60.1,
+    "seats": 6,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "25",
+    "area": "indoor",
+    "x": 57.7,
+    "y": 81.5,
+    "seats": 6,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "26",
+    "area": "indoor",
+    "x": 57.8,
+    "y": 90.7,
+    "seats": 4,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "27",
+    "area": "indoor",
+    "x": 30.6,
+    "y": 89.9,
+    "seats": 4,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "28",
+    "area": "indoor",
+    "x": 16,
+    "y": 90,
+    "seats": 6,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "29",
+    "area": "indoor",
+    "x": 16,
+    "y": 80,
+    "seats": 6,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "30aa",
+    "area": "garden",
+    "x": 67.7,
+    "y": 9.8,
+    "seats": 2,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "34aa",
+    "area": "garden",
+    "x": 44.9,
+    "y": 9.8,
+    "seats": 2,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "50",
+    "area": "openTerrace",
+    "x": 87.1,
+    "y": 23,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "51",
+    "area": "openTerrace",
+    "x": 72.7,
+    "y": 23.1,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "52",
+    "area": "openTerrace",
+    "x": 87.4,
+    "y": 46.1,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "53",
+    "area": "openTerrace",
+    "x": 72.8,
+    "y": 45.7,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "60",
+    "area": "openTerrace",
+    "x": 39.1,
+    "y": 22.6,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "61",
+    "area": "openTerrace",
+    "x": 29.1,
+    "y": 22.6,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "62",
+    "area": "openTerrace",
+    "x": 19.3,
+    "y": 22.9,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "63",
+    "area": "openTerrace",
+    "x": 9.6,
+    "y": 23.2,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "64",
+    "area": "openTerrace",
+    "x": 9.6,
+    "y": 46.2,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "65",
+    "area": "openTerrace",
+    "x": 19.6,
+    "y": 46.1,
+    "seats": 4,
+    "special": false,
+    "wide": false,
+    "isActive": true
+  },
+  {
+    "id": "29а",
+    "area": "indoor",
+    "x": 29.8,
+    "y": 79.8,
+    "seats": 2,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  },
+  {
+    "id": "24a",
+    "area": "indoor",
+    "x": 57.9,
+    "y": 69.2,
+    "seats": 2,
+    "special": false,
+    "wide": true,
+    "isActive": true
+  }
+]

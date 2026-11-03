@@ -1,4 +1,5 @@
 import { useSeasonalZones } from "../context/SeasonalZonesContext";
+import { createLayoutSession } from "../domain/adminMap/layoutSession";
 import MarketingHistory from "../components/admin/MarketingHistory";
 import MapOverlay from "../components/admin/MapOverlay";
 import { buildTimeRange, isHallBlock } from "../domain/reservations/hallBlockRules";
@@ -1499,6 +1500,7 @@ function TableLayoutEditor({
   onAdd,
   onRemove,
   onSave,
+  saveDisabled = false,
 }) {
   const mapRef = React.useRef(null);
   const [draggingId, setDraggingId] = React.useState(null);
@@ -1553,7 +1555,7 @@ function TableLayoutEditor({
           <button type="button" onClick={onAdd} className="luxury-button rounded-full px-4 py-2 text-sm">
             {text.add}
           </button>
-          <button type="button" onClick={onSave} className="luxury-button rounded-full px-4 py-2 text-sm">
+          <button type="button" onClick={onSave} disabled={saveDisabled} className="luxury-button rounded-full px-4 py-2 text-sm disabled:opacity-40">
             {text.save}
           </button>
         </div>
@@ -5728,7 +5730,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   }, [closedAreas, zonesLoaded, adminReservation.area]);
 
   const [tableEdits, setTableEdits] = React.useState({});
-  const [tableLayout, setTableLayout] = React.useState([]);
+  const [layoutSession] = React.useState(createLayoutSession);
+  const layoutSync = React.useSyncExternalStore(layoutSession.subscribe, layoutSession.getSnapshot);
+  const tableLayout = activeTab === "layout" ? layoutSync.tables : layoutSync.savedTables;
+  const setTableLayout = layoutSession.edit;
   const [layoutArea, setLayoutArea] = React.useState("indoor");
   const [reservationMapArea, setReservationMapArea] = React.useState("indoor");
   const [adminMapViewMode, setAdminMapViewMode] = React.useState(() => {
@@ -6072,13 +6077,12 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
   const loadTableLayout = React.useCallback(async () => {
     try {
-      const layoutData = await fetchJsonOrEmpty(`${API_BASE_URL}/api/table-layouts`, [], withAdminToken());
-      setTableLayout(Array.isArray(layoutData) ? layoutData.map(normalizeLayoutItem) : []);
+      await layoutSession.load({ request: adminFetch, baseUrl: API_BASE_URL, normalize: normalizeLayoutItem });
     } catch (error) {
       console.error("Failed to load table layout", error);
       setAdminError(error?.message || "Failed to load table layout.");
     }
-  }, [withAdminToken]);
+  }, [adminFetch, layoutSession]);
 
   const loadAdminUsers = React.useCallback(async () => {
     try {
@@ -6300,20 +6304,32 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   async function saveTableLayout() {
     setAdminNotice("");
     setAdminError("");
-
-    const response = await adminFetch(`${API_BASE_URL}/api/table-layouts`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(tableLayout),
-    });
-
-    if (!response.ok) {
-      setAdminError(await readErrorMessage(response, "Failed to save table layout."));
-      return;
+    try {
+      if (await layoutSession.save({ request: adminFetch, baseUrl: API_BASE_URL, normalize: normalizeLayoutItem })) {
+        setAdminNotice("Table layout saved.");
+      }
+    } catch (error) {
+      setAdminError(error?.acknowledged
+        ? adminLocalText(adminLanguage, "Промените са записани, но картата не се обнови. Заредете я отново.", "Changes were saved, but the map could not refresh. Reload it.", "Изменения сохранены, но карта не обновилась. Загрузите её заново.")
+        : error?.status === 409 || error?.status === 428
+        ? adminLocalText(adminLanguage, "Картата е променена. Вашите промени са запазени тук; заредете актуалната карта преди нов запис.", "The map has changed. Your draft is kept here; reload the current map before saving again.", "Карта изменилась. Ваш черновик сохранён здесь; загрузите актуальную карту перед повторным сохранением.")
+        : error?.message || "Failed to save table layout.");
     }
+  }
 
-    setAdminNotice("Table layout saved.");
-    await loadTableLayout();
+  async function reloadTableLayout() {
+    const current = layoutSession.getSnapshot();
+    if ((current.dirty || current.requiresReload) && !window.confirm(adminLocalText(adminLanguage,
+      "Да отхвърлим местните промени и да заредим актуалната карта?",
+      "Discard local changes and load the current map?",
+      "Отменить локальные изменения и загрузить актуальную карту?"))) return;
+    setAdminError("");
+    setAdminNotice("");
+    try {
+      await layoutSession.load({ request: adminFetch, baseUrl: API_BASE_URL, normalize: normalizeLayoutItem, discard: true });
+    } catch (error) {
+      setAdminError(error?.message || "Failed to load table layout.");
+    }
   }
 
   async function updateStatus(id, action) {
@@ -11450,6 +11466,16 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             )}
 
             {activeTab === "layout" && (
+              <div>
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  <button type="button" onClick={reloadTableLayout} disabled={layoutSync.busy} className="ghost-button rounded-full px-4 py-2 text-sm disabled:opacity-40">
+                    {adminLocalText(adminLanguage, "Зареди актуалната карта", "Reload current map", "Загрузить актуальную карту")}
+                  </button>
+                  {layoutSync.requiresReload && <p role="alert" className="text-sm text-amber-100">
+                    {adminLocalText(adminLanguage, "Черновата е запазена. Заредете актуалната карта преди нов запис.", "Draft retained. Reload the current map before saving again.", "Черновик сохранён. Загрузите актуальную карту перед повторным сохранением.")}
+                  </p>}
+                </div>
+                <fieldset disabled={layoutSync.busy || !layoutSync.loaded} className="min-w-0 border-0 p-0" aria-busy={layoutSync.busy}>
               <TableLayoutEditor
                 text={a.layout}
                 layout={tableLayout}
@@ -11464,7 +11490,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 onAdd={addTableLayoutItem}
                 onRemove={removeTableLayoutItem}
                 onSave={saveTableLayout}
+                saveDisabled={layoutSync.requiresReload}
               />
+                </fieldset>
+              </div>
             )}
 
             {activeTab === "blacklist" && (

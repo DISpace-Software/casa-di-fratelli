@@ -26,6 +26,8 @@ public sealed class TenantBrandingService
 
     public bool IsCasa => _tenant.TenantId.Equals("casa-di-fratelli", StringComparison.OrdinalIgnoreCase);
     public string TenantId => _tenant.TenantId;
+    public ReservationConfirmationMode ReservationConfirmationMode => _tenant.ReservationConfirmationMode;
+    public bool NotificationsEnabled => _tenant.IsResolved && _tenant.NotificationsEnabled;
 
     public string? GetEmailConfiguration(string key)
     {

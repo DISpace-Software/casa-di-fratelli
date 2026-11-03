@@ -1,6 +1,7 @@
 using System.Text.Json;
 using SeatMap.Api.Data;
 using SeatMap.Api.Models;
+using SeatMap.Api.Services.Tenancy;
 using Microsoft.EntityFrameworkCore;
 
 namespace SeatMap.Api.Services;
@@ -27,10 +28,12 @@ public sealed class RestaurantClosureService
         "Благодарим ви за разбирането!";
 
     private readonly AppDbContext _db;
+    private readonly bool _useCasaDefaults;
 
-    public RestaurantClosureService(AppDbContext db)
+    public RestaurantClosureService(AppDbContext db, ICurrentTenant tenant)
     {
         _db = db;
+        _useCasaDefaults = tenant.IsResolved && tenant.TenantId.Equals("casa-di-fratelli", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<RestaurantClosureSettings> GetAsync()
@@ -52,9 +55,12 @@ public sealed class RestaurantClosureService
             }
             catch (JsonException)
             {
-                // Invalid legacy data falls back to the initial closure below.
+                // Invalid legacy data falls back only to this restaurant's defaults.
             }
         }
+
+        if (!_useCasaDefaults)
+            return new RestaurantClosureSettings(false, default, default, string.Empty);
 
         return new RestaurantClosureSettings(
             true,
@@ -90,12 +96,12 @@ public sealed class RestaurantClosureService
         return Contains(settings, today);
     }
 
-    private static RestaurantClosureSettings Normalize(RestaurantClosureSettings settings)
+    private RestaurantClosureSettings Normalize(RestaurantClosureSettings settings)
     {
         var start = settings.StartDate;
         var end = settings.EndDate < start ? start : settings.EndDate;
         var message = string.IsNullOrWhiteSpace(settings.Message)
-            ? DefaultMessage
+            ? (_useCasaDefaults ? DefaultMessage : string.Empty)
             : settings.Message.Trim();
         return settings with { StartDate = start, EndDate = end, Message = message };
     }

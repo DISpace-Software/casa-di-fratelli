@@ -35,6 +35,10 @@ public sealed class TenantOptionsValidator : IValidateOptions<TenantResolutionOp
 
         foreach (var tenant in tenants)
         {
+            if (!Enum.IsDefined(tenant.ReservationConfirmationMode))
+                errors.Add($"Tenant '{tenant.Id}' has an unsupported reservation confirmation mode.");
+            if (!tenant.NotificationsEnabled && tenant.ReservationConfirmationMode != ReservationConfirmationMode.Automatic)
+                errors.Add($"Tenant '{tenant.Id}' must use Automatic reservation confirmation when notifications are disabled.");
             if (string.IsNullOrWhiteSpace(tenant.Id))
                 errors.Add("Every active tenant requires an Id.");
             if (string.IsNullOrWhiteSpace(tenant.Slug))

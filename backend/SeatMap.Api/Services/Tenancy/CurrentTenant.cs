@@ -16,6 +16,10 @@ public sealed class CurrentTenant : ICurrentTenant
 
     public string ConnectionStringKey { get; private set; } = "DefaultConnection";
 
+    public ReservationConfirmationMode ReservationConfirmationMode { get; private set; } = ReservationConfirmationMode.EmailForFirstVisit;
+
+    public bool NotificationsEnabled { get; private set; } = true;
+
     public bool IsResolved { get; private set; }
 
     public void Resolve(TenantDefinition tenant)
@@ -36,6 +40,8 @@ public sealed class CurrentTenant : ICurrentTenant
         FrontendUrl = tenant.FrontendUrl;
         DatabaseMode = tenant.DatabaseMode;
         ConnectionStringKey = tenant.ConnectionStringKey;
+        ReservationConfirmationMode = tenant.ReservationConfirmationMode;
+        NotificationsEnabled = tenant.NotificationsEnabled;
         IsResolved = true;
     }
 }

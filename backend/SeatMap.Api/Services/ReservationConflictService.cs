@@ -97,6 +97,7 @@ public class ReservationConflictService
         int? excludeReservationId = null,
         bool includeHallBlocks = true)
     {
+        var canonicalIds = tableIds.Select(id => id.ToUpperInvariant()).ToList();
         var candidates = await _db.Reservations
             .Include(x => x.Tables)
             .Where(x =>
@@ -104,7 +105,7 @@ public class ReservationConflictService
                 (includeHallBlocks || !(x.CreatedByAdmin && x.Phone == "admin" && x.GuestName == "Admin block")) &&
                 x.ReservedDate == reservedDate &&
                 (!excludeReservationId.HasValue || x.Id != excludeReservationId.Value) &&
-                x.Tables.Any(t => tableIds.Contains(t.TableCode)))
+                x.Tables.Any(t => canonicalIds.Contains(t.TableCode.ToUpper())))
             .ToListAsync();
 
         var targetTimes = ExpandReservationTimes(reservedTime);

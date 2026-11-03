@@ -1,3 +1,4 @@
+using SeatMap.Api.Services.FloorPlans;
 using SeatMap.Api.Services.Tenancy;
 using SeatMap.Api.Services.Reservations;
 using Microsoft.Extensions.Configuration;
@@ -13,6 +14,9 @@ using Microsoft.Data.Sqlite;
 
 static void Check(bool result, string message) { if (!result) throw new Exception(message); }
 await MenuStartupChecks.RunAsync();
+await FloorPlanChecks.RunAsync();
+await TenantNotificationChecks.RunAsync();
+await RestaurantClosureChecks.RunAsync();
 Check(CasaDrinkPhotos.Resolve("", true, "Bar", "Кока-Кола", "250 мл").StartsWith("/drinks/"), "Casa drink must have a catalogue photo");
 Check(CasaDrinkPhotos.Resolve("/custom.png", true, "Bar", "Кока-Кола", "250 мл") == "/custom.png", "Admin photo must take precedence over the catalogue");
 Check(CasaDrinkPhotos.Resolve("", false, "Bar", "Кока-Кола", "250 мл") == "", "Casa photos must not appear for another tenant");
@@ -23,7 +27,10 @@ await connection.OpenAsync();
 await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options);
 Check(db.Database.GetMigrations().Contains("20261019195000_PreserveOrdersAfterReservationDeletion"), "Order preservation migration is not discoverable");
 await db.Database.EnsureCreatedAsync();
-var controller = new MaintenanceController(db, new AuditService(db), null!, new ReservationConflictService(db));
+var casaTenant = new CurrentTenant();
+casaTenant.Resolve(new TenantDefinition { Id = "casa-di-fratelli", Name = "Casa di Fratelli", Slug = "casa-di-fratelli" });
+var plans = new FloorPlanService(db, casaTenant);
+var controller = new MaintenanceController(db, new AuditService(db), null!, new ReservationConflictService(db), plans);
 controller.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
 controller.HttpContext.Items["AdminUser"] = new AdminPrincipal(1, "Test admin", "test@example.com", "Administrator");
 db.AdminUsers.Add(new AdminUser { Id = 1, Name = "Test admin", Email = "test@example.com" });
@@ -55,7 +62,7 @@ Check(!await db.Reservations.IgnoreQueryFilters().AnyAsync(x => x.Id == 5) && !a
 Check(await db.Reservations.AnyAsync(x => x.Id == 2) && await db.DiningOrders.AnyAsync(x => x.ReservationId == 3), "Unrelated operational data changed");
 string GuestSnapshot() => System.Text.Json.JsonSerializer.Serialize(new { active.Id, active.GuestName, active.ReservedDate, active.ReservedTime, active.Status, active.IsArrived, active.IsDeleted, Tables = active.Tables.Select(t => t.TableCode).ToList() });
 var guestSnapshot = GuestSnapshot();
-var reservationsController = new ReservationsController(db, null!, null!, new ReservationConflictService(db), null!, new AuditService(db), null!, currentTenant: null!, branding: null!, booking: null!)
+var reservationsController = new ReservationsController(db, null!, null!, new ReservationConflictService(db), null!, new AuditService(db), null!, currentTenant: casaTenant, branding: null!, booking: null!)
 { ControllerContext = controller.ControllerContext };
 Check(await reservationsController.BlockTables(new SeatMap.Api.Dtos.CreateHallBlockRequest
 { ReservedDate = date, Area = "indoor", Times = ["18:15", "20:45"], TableIds = ["2", "6"], Note = "Private event" }) is OkObjectResult, "Block over existing booking must succeed");
@@ -130,8 +137,6 @@ var emailConfig = new ConfigurationBuilder().AddJsonFile(Path.Combine(AppContext
         ["MARKETING_FROM_EMAIL"] = "Casa di Fratelli <offers@mail.casadifratelli.bg>",
         ["ADMIN_EMAIL"] = "fratellirestaurant25@gmail.com"
     }).Build();
-var casaTenant = new CurrentTenant();
-casaTenant.Resolve(new TenantDefinition { Id = "casa-di-fratelli", Name = "Casa di Fratelli", Slug = "casa-di-fratelli" });
 var emailBranding = new TenantBrandingService(db, casaTenant, emailConfig, NullLogger<TenantBrandingService>.Instance);
 var capture = new CaptureEmailHandler();
 var emailService = new EmailService(new HttpClient(capture), emailConfig, NullLogger<EmailService>.Instance, emailBranding);
@@ -149,7 +154,7 @@ Check(otherBranding.GetEmailConfiguration("FROM_EMAIL") == null, "Another tenant
 Console.WriteLine("PASS: separate reservation/marketing senders, legacy config precedence, unchanged admin recipient and tenant isolation; no real emails sent.");
 
 // Seasonal visibility changes never rewrite guests, tables or ordinary date/time blocks.
-var seasonalZones = new SeasonalZoneService(db);
+var seasonalZones = new SeasonalZoneService(db, plans);
 Check((await seasonalZones.GetClosedAreasAsync()).Length == 0, "Zones must be open by default");
 var seasonalSnapshotOptions = new System.Text.Json.JsonSerializerOptions { ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles };
 var beforeSeasonalBookings = System.Text.Json.JsonSerializer.Serialize(await db.Reservations.AsNoTracking().Include(x => x.Tables).OrderBy(x => x.Id).ToListAsync(), seasonalSnapshotOptions);
@@ -164,8 +169,8 @@ await db.Database.ExecuteSqlRawAsync("CREATE TABLE IF NOT EXISTS \"TableLayouts\
 var customLayoutJson = "[{\"id\":\"custom-terrace\",\"area\":\"openTerrace\",\"x\":12,\"y\":34,\"seats\":4,\"isActive\":true}]";
 await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO \"TableLayouts\" (\"Id\", \"LayoutJson\") VALUES (1, {customLayoutJson}) ON CONFLICT (\"Id\") DO UPDATE SET \"LayoutJson\" = {customLayoutJson}");
 Check(await seasonalZones.IsSelectionClosedAsync("indoor", ["custom-terrace"]), "Custom layout tables must also obey seasonal closure");
-var seasonalBookingService = new ReservationBookingService(db, new ReservationConflictService(db), new RestaurantClosureService(db),
-    new SeasonalZoneService(db), emailBranding, null!, TimeProvider.System, NullLogger<ReservationBookingService>.Instance);
+var seasonalBookingService = new ReservationBookingService(db, new ReservationConflictService(db), new RestaurantClosureService(db, casaTenant),
+    new SeasonalZoneService(db, plans), emailBranding, null!, TimeProvider.System, NullLogger<ReservationBookingService>.Instance);
 var seasonalBookingController = new ReservationsController(db, null!, null!, new ReservationConflictService(db), null!, new AuditService(db), null!, casaTenant, emailBranding, seasonalBookingService);
 var closedBooking = await seasonalBookingController.Create(new SeatMap.Api.Dtos.CreateReservationRequest {
  GuestName = "Seasonal test", Phone = "test", Email = "test@example.com", PrivacyConsent = true, GuestCount = 2,
@@ -173,7 +178,7 @@ var closedBooking = await seasonalBookingController.Create(new SeatMap.Api.Dtos.
 });
 Check(closedBooking is ConflictObjectResult, "The reservation endpoint must reject stale clients for a closed zone before creating any data");
 await seasonalZones.SetClosedAsync("openTerrace", false);
-Check((await new SeasonalZoneService(db).GetClosedAreasAsync()).SequenceEqual(["garden"]), "Reopening must persist and leave other zones closed");
+Check((await new SeasonalZoneService(db, plans).GetClosedAreasAsync()).SequenceEqual(["garden"]), "Reopening must persist and leave other zones closed");
 Check(!await seasonalZones.IsSelectionClosedAsync("openTerrace", ["custom-terrace"]), "Reopening must immediately restore table availability");
 Check(beforeSeasonalBookings == System.Text.Json.JsonSerializer.Serialize(await db.Reservations.AsNoTracking().Include(x => x.Tables).OrderBy(x => x.Id).ToListAsync(), seasonalSnapshotOptions), "Seasonal closure and reopen must preserve every existing booking and table assignment");
 await using (var layoutCheck = db.Database.GetDbConnection().CreateCommand()) {

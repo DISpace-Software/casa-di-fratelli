@@ -16,5 +16,9 @@ public interface ICurrentTenant
 
     string ConnectionStringKey { get; }
 
+    ReservationConfirmationMode ReservationConfirmationMode { get; }
+
+    bool NotificationsEnabled { get; }
+
     bool IsResolved { get; }
 }

@@ -7,5 +7,6 @@
     <ProjectReference Include="../SeatMap.Api/SeatMap.Api.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <None Update="Fixtures/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

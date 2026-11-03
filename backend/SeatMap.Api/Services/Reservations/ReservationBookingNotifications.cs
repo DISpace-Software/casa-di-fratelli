@@ -23,12 +23,14 @@ public sealed class ReservationBookingNotifications(
 
     public async Task NotifyConfirmedAsync(Reservation reservation)
     {
+        if (!_branding.NotificationsEnabled) return;
         await SendAdminReservationEmailAsync(reservation);
         await push.NotifyNewReservationAsync(reservation);
     }
 
     public async Task SendConfirmationAsync(Reservation reservation, string token)
     {
+        if (!_branding.NotificationsEnabled) return;
         var brand = await _branding.GetAsync();
         var htmlRestaurantName = WebUtility.HtmlEncode(brand.Name);
         if (string.IsNullOrWhiteSpace(reservation.Email))

@@ -1,3 +1,6 @@
+using SeatMap.Api.Services.Reservations;
+using SeatMap.Api.Services.FloorPlans;
+using SeatMap.Api.Services.Tenancy;
 using System.Text.Json;
 using SeatMap.Api.Data;
 using SeatMap.Api.Dtos;
@@ -16,17 +19,21 @@ public class PublicTableHoldsController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly AuditService _audit;
+    private readonly FloorPlanService _plans;
+    private readonly TenantBrandingService _branding;
 
-    public PublicTableHoldsController(AppDbContext db, AuditService audit)
+    public PublicTableHoldsController(AppDbContext db, AuditService audit, FloorPlanService plans, TenantBrandingService branding)
     {
         _db = db;
         _audit = audit;
+        _plans = plans;
+        _branding = branding;
     }
 
     [HttpGet]
     public async Task<IActionResult> Get([FromQuery] DateOnly? reservedDate)
     {
-        var today = RestaurantToday();
+        var today = await RestaurantTodayAsync();
         var query = _db.PublicTableHolds.AsNoTracking().Where(x => x.ReservedDate >= today);
         if (reservedDate.HasValue)
             query = query.Where(x => x.ReservedDate == reservedDate.Value);
@@ -38,12 +45,11 @@ public class PublicTableHoldsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreatePublicTableHoldRequest request)
     {
-        var tableIds = ReservationConflictService.NormalizeTableIds(request.TableIds)
-            .Where(id => !TableCapacityService.IsRetired(id))
-            .ToList();
-        if (tableIds.Count == 0)
-            return BadRequest(new { message = "At least one active table must be selected." });
-        if (request.ReservedDate < RestaurantToday())
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
+        var selection = await _plans.SelectAsync(request.TableIds, null, 0, block: true);
+        if (selection.Error != null) return BadRequest(new { message = selection.Error });
+        var tableIds = selection.TableIds;
+        if (request.ReservedDate < await RestaurantTodayAsync())
             return BadRequest(new { message = "A public table hold cannot be created for a past date." });
 
         var existing = await _db.PublicTableHolds
@@ -66,6 +72,7 @@ public class PublicTableHoldsController : ControllerBase
         };
         _db.PublicTableHolds.Add(hold);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         await _audit.RecordAsync(HttpContext, "create", "PublicTableHold", hold.Id.ToString(), after: ToResponse(hold));
         return Ok(ToResponse(hold));
     }
@@ -96,14 +103,6 @@ public class PublicTableHoldsController : ControllerBase
         hold.CreatedByAdminName
     };
 
-    private static DateOnly RestaurantToday()
-    {
-        try
-        {
-            var timezone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Sofia");
-            return DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timezone));
-        }
-        catch (TimeZoneNotFoundException) { return DateOnly.FromDateTime(DateTime.Now); }
-        catch (InvalidTimeZoneException) { return DateOnly.FromDateTime(DateTime.Now); }
-    }
+    private async Task<DateOnly> RestaurantTodayAsync() => DateOnly.FromDateTime(
+        ReservationTimeRules.GetRestaurantNow(await _branding.GetAsync(), TimeProvider.System));
 }

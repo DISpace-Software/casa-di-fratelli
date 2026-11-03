@@ -1,6 +1,4 @@
-using System.Data;
 using System.Security.Cryptography;
-using System.Text.Json;
 using SeatMap.Api.Data;
 using SeatMap.Api.Dtos;
 using SeatMap.Api.Models;
@@ -33,10 +31,10 @@ public sealed class ReservationBookingService(
     private readonly SeasonalZoneService _seasonalZones = seasonalZones;
     private readonly IReservationBookingNotifications _notifications = notifications;
     private readonly TimeProvider _time = time;
-    private sealed record TableLayoutCapacityItem(string? Id, int Seats, bool IsActive);
 
     public async Task<ReservationBookingResult> CreateAsync(CreateReservationRequest request, AdminPrincipal? administrator = null)
     {
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var brand = await branding.GetAsync();
         var now = ReservationTimeRules.GetRestaurantNow(brand, _time);
         if (request.CreatedByAdmin && administrator == null)
@@ -103,26 +101,13 @@ public sealed class ReservationBookingService(
         if (tableIds.Count == 0)
             return ReservationBookingResult.Invalid("At least one valid table must be selected.");
 
-        if (!request.CreatedByAdmin && request.GuestCount >= 9)
-            return ReservationBookingResult.Invalid($"For 9 or more guests, please call {brand.Phone} so the host can arrange the best table.");
-
-        if (!request.CreatedByAdmin && tableIds.Count != 1)
-            return ReservationBookingResult.Invalid($"Online reservations can use one table only. For larger groups, please call {brand.Phone}.");
-
-        if (!request.CreatedByAdmin && await GetTableCapacityAsync(tableIds) < request.GuestCount)
-            return ReservationBookingResult.Invalid($"For this number of guests, please call {brand.Phone} so the host can arrange the best table.");
+        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, request.GuestCount, publicBooking: !request.CreatedByAdmin);
+        if (selection.Error != null) return ReservationBookingResult.Invalid(request.CreatedByAdmin ? selection.Error : $"{selection.Error} Please call {brand.Phone} for assistance.");
+        tableIds = selection.TableIds;
 
         if (!request.CreatedByAdmin)
         {
-            var holdsForDate = await _db.PublicTableHolds
-                .AsNoTracking()
-                .Where(x => x.ReservedDate == request.ReservedDate)
-                .Select(x => x.TableIdsJson)
-                .ToListAsync();
-            var heldTableIds = holdsForDate
-                .SelectMany(PublicTableHoldSelection.DeserializeTableIds)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-            if (tableIds.Any(heldTableIds.Contains))
+            if (await IsPubliclyHeldAsync(request.ReservedDate, tableIds))
                 return ReservationBookingResult.Conflict(new { message = "The selected table is reserved for restaurant use on this date. Please choose another table." });
         }
 
@@ -168,7 +153,8 @@ public sealed class ReservationBookingService(
                     x.Status == ReservationStatusReleased ||
                     x.IsArrived ||
                     x.EmailConfirmedAtUtc != null));
-        var requiresEmailConfirmation = !request.CreatedByAdmin && !hasConfirmedReservationWithEmail;
+        var automaticConfirmation = branding.ReservationConfirmationMode == ReservationConfirmationMode.Automatic;
+        var requiresEmailConfirmation = !automaticConfirmation && !request.CreatedByAdmin && !hasConfirmedReservationWithEmail;
         var confirmationToken = requiresEmailConfirmation ? CreateEmailConfirmationToken() : null;
 
         var reservation = new Reservation
@@ -177,7 +163,7 @@ public sealed class ReservationBookingService(
             Phone = phone,
             Email = email,
             GuestCount = request.GuestCount,
-            Area = string.IsNullOrWhiteSpace(request.Area) ? "indoor" : request.Area.Trim(),
+            Area = selection.Area,
             ReservedDate = request.ReservedDate,
             ReservedTime = request.ReservedTime,
             BirthDate = request.BirthDate,
@@ -192,7 +178,8 @@ public sealed class ReservationBookingService(
             InternalNote = request.CreatedByAdmin ? request.InternalNote : null,
             EmailConfirmationTokenHash = confirmationToken == null ? null : HashToken(confirmationToken),
             EmailConfirmationExpiresAtUtc = confirmationToken == null ? null : _time.GetUtcNow().UtcDateTime.AddDays(2),
-            EmailConfirmedAtUtc = requiresEmailConfirmation ? null : _time.GetUtcNow().UtcDateTime,
+            // Approving a booking automatically is not proof of email ownership.
+            EmailConfirmedAtUtc = requiresEmailConfirmation || automaticConfirmation ? null : _time.GetUtcNow().UtcDateTime,
             Tables = tableIds.Select(id => new ReservationTable
             {
                 TableCode = id
@@ -208,6 +195,7 @@ public sealed class ReservationBookingService(
 
         // One SaveChanges commits the booking, table links and CRM changes atomically.
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         if (!requiresEmailConfirmation && !request.CreatedByAdmin)
             await TryNotifyAsync(() => _notifications.NotifyConfirmedAsync(reservation), reservation.Id);
         if (requiresEmailConfirmation && confirmationToken != null)
@@ -245,6 +233,7 @@ public sealed class ReservationBookingService(
         if (string.IsNullOrWhiteSpace(token))
             return ReservationBookingResult.Invalid(new { message = "Confirmation token is required." });
 
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var tokenHash = HashToken(token.Trim());
         var reservation = await _db.Reservations
             .Include(x => x.Tables)
@@ -266,11 +255,15 @@ public sealed class ReservationBookingService(
         if (reservation.Status != ReservationStatusApproved)
         {
             var tableIds = reservation.Tables.Select(t => t.TableCode).ToList();
+            var selection = await _seasonalZones.Plans.SelectAsync(tableIds, reservation.Area, reservation.GuestCount);
+            if (selection.Error != null) return ReservationBookingResult.Invalid(selection.Error);
+            if (!reservation.CreatedByAdmin && await IsPubliclyHeldAsync(reservation.ReservedDate, tableIds))
+                return ReservationBookingResult.Conflict(new { message = "The selected table is no longer available for online booking. Please contact the restaurant." });
             var conflict = await _reservationConflictService.FindTableConflictAsync(
                 reservation.ReservedDate,
                 reservation.ReservedTime,
                 tableIds,
-                reservation.Id, includeHallBlocks: false);
+                reservation.Id, includeHallBlocks: !reservation.CreatedByAdmin);
 
             if (conflict != null)
             {
@@ -287,6 +280,7 @@ public sealed class ReservationBookingService(
         await UpsertCustomerProfileForConfirmedReservationAsync(reservation);
         await MarkReservationBlacklistFlagAsync(reservation);
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         await TryNotifyAsync(() => _notifications.NotifyConfirmedAsync(reservation), reservation.Id);
 
         return ReservationBookingResult.Success(new
@@ -298,6 +292,13 @@ public sealed class ReservationBookingService(
             reservation.ReservedTime,
             TableIds = reservation.Tables.Select(t => t.TableCode).ToList()
         });
+    }
+
+    private async Task<bool> IsPubliclyHeldAsync(DateOnly date, List<string> tableIds)
+    {
+        var holds = await _db.PublicTableHolds.AsNoTracking().Where(x => x.ReservedDate == date).Select(x => x.TableIdsJson).ToListAsync();
+        var held = holds.SelectMany(PublicTableHoldSelection.DeserializeTableIds).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return tableIds.Any(held.Contains);
     }
 
     private static string CreateEmailConfirmationToken()
@@ -323,54 +324,6 @@ public sealed class ReservationBookingService(
             reservation.Status != ReservationStatusCancelled &&
             reservation.Status != ReservationStatusReleased &&
             !reservation.IsNoShow;
-    }
-
-    private async Task<int> GetTableCapacityAsync(List<string> tableIds)
-    {
-        if (tableIds.Count == 0) return 0;
-
-        try
-        {
-            var connection = _db.Database.GetDbConnection();
-            if (connection.State != ConnectionState.Open)
-            {
-                await connection.OpenAsync();
-            }
-
-            await using var command = connection.CreateCommand();
-            command.CommandText = """SELECT "LayoutJson" FROM "TableLayouts" WHERE "Id" = 1;""";
-            var rawJson = await command.ExecuteScalarAsync() as string;
-
-            if (!string.IsNullOrWhiteSpace(rawJson))
-            {
-                var layout = JsonSerializer.Deserialize<List<TableLayoutCapacityItem>>(rawJson, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                if (layout?.Count > 0)
-                {
-                    var capacityById = layout
-                        .Where(item =>
-                            item.IsActive &&
-                            !string.IsNullOrWhiteSpace(item.Id) &&
-                            !TableCapacityService.IsRetired(item.Id))
-                        .GroupBy(item => item.Id!.Trim(), StringComparer.OrdinalIgnoreCase)
-                        .ToDictionary(group => group.Key, group => group.First().Seats, StringComparer.OrdinalIgnoreCase);
-
-                    return tableIds.Sum(tableId =>
-                        capacityById.TryGetValue(tableId, out var capacity)
-                            ? capacity
-                            : TableCapacityService.GetCapacity(new[] { tableId }));
-                }
-            }
-        }
-        catch
-        {
-            // Table layout storage is optional; old static capacities keep reservations working.
-        }
-
-        return TableCapacityService.GetCapacity(tableIds);
     }
 
     private async Task UpsertCustomerProfileForConfirmedReservationAsync(Reservation reservation)
@@ -430,6 +383,7 @@ public sealed class ReservationBookingService(
 
     private async Task TryNotifyAsync(Func<Task> notify, int reservationId)
     {
+        if (!branding.NotificationsEnabled) return;
         try { await notify(); }
         catch (Exception error)
         {

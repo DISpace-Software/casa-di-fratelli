@@ -16,6 +16,7 @@ public class RestaurantClosureController : ControllerBase
     }
 
     [HttpGet]
+    [HttpGet("~/api/v1/restaurants/{restaurantId}/closure")]
     public async Task<IActionResult> Get()
     {
         var settings = await _closures.GetAsync();

@@ -1,3 +1,5 @@
+using SeatMap.Api.Services.Reservations;
+using SeatMap.Api.Services.FloorPlans;
 using SeatMap.Api.Data;
 using SeatMap.Api.Filters;
 using SeatMap.Api.Models;
@@ -16,13 +18,15 @@ public class MaintenanceController : ControllerBase
     private readonly AuditService _audit;
     private readonly BackupExportService _backups;
     private readonly ReservationConflictService _conflicts;
+    private readonly FloorPlanService _plans;
 
-    public MaintenanceController(AppDbContext db, AuditService audit, BackupExportService backups, ReservationConflictService conflicts)
+    public MaintenanceController(AppDbContext db, AuditService audit, BackupExportService backups, ReservationConflictService conflicts, FloorPlanService plans)
     {
         _db = db;
         _audit = audit;
         _backups = backups;
         _conflicts = conflicts;
+        _plans = plans;
     }
 
     [HttpPost("clear-reservations-and-orders")]
@@ -69,6 +73,7 @@ public class MaintenanceController : ControllerBase
     [HttpPost("reservations/{id:int}/restore")]
     public async Task<IActionResult> RestoreReservation(int id)
     {
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var admin = AdminAuthService.Current(HttpContext);
         if (!AdminRoleAccess.CanRestoreReservations(admin?.Role))
             return Forbid();
@@ -82,6 +87,8 @@ public class MaintenanceController : ControllerBase
         var nextStatus = reservation.Status == "Cancelled" ? "Approved" : reservation.Status;
         if (nextStatus is "Approved" or "Pending")
         {
+            var selection = await _plans.SelectAsync(reservation.Tables.Select(t => t.TableCode), reservation.Area, reservation.GuestCount, block: reservation.GuestCount == 0);
+            if (selection.Error != null) return BadRequest(new { message = selection.Error });
             var conflict = await _conflicts.FindTableConflictAsync(reservation.ReservedDate,
                 reservation.ReservedTime, reservation.Tables.Select(x => x.TableCode).ToList(), reservation.Id, includeHallBlocks: false);
             if (conflict != null) return Conflict(ReservationConflictService.ToConflictResponse(conflict));
@@ -95,6 +102,7 @@ public class MaintenanceController : ControllerBase
         reservation.DeletedByAdminName = null;
         reservation.DeleteReason = null;
         await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
         await _audit.RecordAsync(HttpContext, "restore", "Reservation", id.ToString(), before, after: new { reservation.Id, reservation.IsDeleted });
         return Ok(new { reservation.Id, reservation.IsDeleted });
     }

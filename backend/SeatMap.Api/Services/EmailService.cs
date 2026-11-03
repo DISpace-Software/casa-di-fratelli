@@ -50,6 +50,8 @@ public class EmailService
 
     private async Task<bool> SendInternalAsync(string to, string subject, string html, bool isMarketing, string? idempotencyKey = null)
     {
+        // Final transport gate covers controller, background, transactional and marketing callers.
+        if (!_branding.NotificationsEnabled) return false;
         try
         {
             var apiKey = _branding.GetEmailConfiguration("RESEND_API_KEY");
