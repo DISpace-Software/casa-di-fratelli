@@ -1,7 +1,20 @@
 # Shared restaurant administration
 
-Updated: 2026-11-04. Implementation is local; this document does not certify a
-production rollout or completed visual browser verification.
+Updated: 2026-11-04. Production rollout completed; visual browser verification
+remains pending because Chrome automation failed.
+
+Production uses one application at `https://seatmap-admin-eight.vercel.app`:
+
+- Casa: `https://seatmap-admin-eight.vercel.app/r/casa-di-fratelli/admin`
+- Cofein: `https://seatmap-admin-eight.vercel.app/r/cofein/admin`
+
+Legacy `/admin` links, plus Cofein's `/cofein-admin.html`, redirect to it.
+Frontend source: `ec3614d`; backend source: `84e4bc7`. Release evidence is in the
+original workspace's `output/shared-admin-qa/release.json`. Verified: 107 frontend
+tests, 23 two-database HTTP checks, 6 auth DOM checks, 14 complete AdminPage DOM
+checks, 18 production API checks and published-file/redirect checks. DOM checks
+compare the existing Casa header/navigation classes and text; they are not
+screenshots or visual approval. Notifications stay disabled for Cofein.
 
 ## One existing interface
 
@@ -177,8 +190,8 @@ is not the standalone package's routing configuration.
    tenant context in redirects, bookmarks and service-worker notification clicks.
 
 For step 4, connect directly to database `cofein` as `cofein_app`, record the prior
-setting, and apply only this scoped change. This is a deployment instruction;
-it was not run as part of writing this document.
+setting, and apply only this scoped change. The guarded Cofein-only update was applied during the 2026-11-04 rollout;
+the prior value and database backups were stored outside the repository.
 
 ```sql
 BEGIN;
