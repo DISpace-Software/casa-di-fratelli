@@ -39,7 +39,7 @@ internal static class FloorPlanChecks
         foreach (var ids in new string[][] { ["missing"], ["3"], ["1", "2"] }) Check((await pa.SelectAsync(ids, null, 2)).Error != null, "Unknown, inactive or cross-zone selection accepted");
         Check((await pa.SelectAsync(["1"], "private", 2)).Error != null, "Forged zone accepted");
         Check((await pa.SelectAsync(["1", "30A"], "roof", 6, publicBooking: true)).Error == null, "Configured public combination rejected");
-        Check((await pa.SelectAsync(["1", "30A"], "roof", 7)).Error != null, "Admin must respect capacity");
+        Check((await pa.SelectAsync(["1", "30A"], "roof", 7)).Error != null, "Default selection must respect capacity without an explicit trusted staff override");
         var seasonal = new SeasonalZoneService(da, pa);
         await seasonal.SetClosedAsync("roof", true);
         Check((await pa.SelectAsync(["1"], null, 2)).Error != null, "Dynamic zone closure ignored");
@@ -59,7 +59,8 @@ internal static class FloorPlanChecks
         controller.HttpContext.Items["AdminUser"] = new AdminPrincipal(1, "Test", "test@example.test", "Administrator");
         var reservation = await da.Reservations.Include(r => r.Tables).SingleAsync();
         Check(await controller.UpdateTables(reservation.Id, new() { TableIds = ["missing"] }) is BadRequestObjectResult, "Move bypassed map validation");
-        Check(await controller.UpdateTables(reservation.Id, new() { TableIds = ["30A"], Area = "roof", GuestCount = 5 }) is BadRequestObjectResult, "Move bypassed capacity");
+        Check(await controller.UpdateTables(reservation.Id, new() { TableIds = ["30A"], Area = "roof", GuestCount = 5 }) is OkObjectResult, "Authenticated staff move must preserve legacy capacity flexibility");
+        Check(await controller.UpdateTables(reservation.Id, new() { TableIds = ["1"], Area = "roof", GuestCount = 2 }) is OkObjectResult, "Staff move could not restore the original selection");
         Check(await controller.CreateWalkIn(new() { TableIds = ["missing"], Area = "roof", GuestCount = 2 }) is BadRequestObjectResult, "Walk-in bypassed validation");
         Check(await controller.BlockTables(new() { TableIds = ["missing"], Area = "all", Times = ["19:00"] }) is BadRequestObjectResult, "Hall block accepted unknown tables");
         var brand = new TenantBrandingService(da, ta, new ConfigurationBuilder().Build(), NullLogger<TenantBrandingService>.Instance);

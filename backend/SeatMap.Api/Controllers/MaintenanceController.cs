@@ -75,7 +75,7 @@ public class MaintenanceController : ControllerBase
     {
         await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var admin = AdminAuthService.Current(HttpContext);
-        if (!AdminRoleAccess.CanRestoreReservations(admin?.Role))
+        if (admin == null || !AdminRoleAccess.CanRestoreReservations(admin.Role))
             return Forbid();
 
         var reservation = await _db.Reservations.IgnoreQueryFilters().Include(x => x.Tables).FirstOrDefaultAsync(x => x.Id == id);
@@ -87,7 +87,8 @@ public class MaintenanceController : ControllerBase
         var nextStatus = reservation.Status == "Cancelled" ? "Approved" : reservation.Status;
         if (nextStatus is "Approved" or "Pending")
         {
-            var selection = await _plans.SelectAsync(reservation.Tables.Select(t => t.TableCode), reservation.Area, reservation.GuestCount, block: reservation.GuestCount == 0);
+            var selection = await _plans.SelectAsync(reservation.Tables.Select(t => t.TableCode), reservation.Area, reservation.GuestCount,
+                block: reservation.GuestCount == 0, allowCapacityOverride: true);
             if (selection.Error != null) return BadRequest(new { message = selection.Error });
             var conflict = await _conflicts.FindTableConflictAsync(reservation.ReservedDate,
                 reservation.ReservedTime, reservation.Tables.Select(x => x.TableCode).ToList(), reservation.Id, includeHallBlocks: false);

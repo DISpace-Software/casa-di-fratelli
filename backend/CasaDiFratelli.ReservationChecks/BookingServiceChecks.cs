@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -44,9 +45,85 @@ internal static class BookingServiceChecks
         await CreationAndConfirmationAsync();
         await AutomaticConfirmationAsync();
         await RulesAsync();
+        await AdminCapacityOverrideAsync();
         await FailureAndAtomicityAsync();
         await ConfirmationTemplateAsync();
         await HttpAdaptersAsync();
+    }
+
+    private static async Task AdminCapacityOverrideAsync()
+    {
+        await using var restaurant = await Restaurant.CreateAsync("casa-di-fratelli");
+        var current = new CurrentTenant(); current.Resolve(restaurant.Tenant);
+        var plans = new FloorPlanService(restaurant.Db, current);
+        var plan = await plans.GetAsync();
+        await plans.SaveAsync(plan with { Tables = [.. plan.Tables, new("23", "indoor", 82, 90, 4, false, true, true)] });
+
+        var request = Request();
+        request.TableIds = ["23"]; request.GuestCount = 6;
+        request.ReservedDate = new(2026, 11, 6); request.ReservedTime = "19:30";
+        Check((await restaurant.Booking.CreateAsync(request)).Kind == ReservationBookingResultKind.Invalid,
+            "Public six-person booking at four-seat Casa table 23 must remain rejected");
+        request.CreatedByAdmin = true; request.Email = ""; request.PrivacyConsent = false;
+        Check((await restaurant.Booking.CreateAsync(request)).Kind == ReservationBookingResultKind.Unauthorized,
+            "A forged administrator flag must never gain a capacity override");
+        Check(!await restaurant.Db.Reservations.AnyAsync(), "Rejected capacity or forged requests must not persist");
+
+        var administrator = new AdminPrincipal(7, "Owner", "owner@example.test", "Owner");
+        Check((await restaurant.Booking.CreateAsync(request, administrator)).Kind == ReservationBookingResultKind.Success,
+            "Authenticated staff must retain legacy six-person booking at nominal four-seat table 23");
+        var saved = await restaurant.Db.Reservations.Include(r => r.Tables).SingleAsync();
+        Check(saved.GuestCount == 6 && saved.Tables.Single().TableCode == "23" && saved.Status == "Approved" && saved.CreatedByAdminUserId == administrator.Id,
+            "Staff capacity override must preserve the requested guest count, table and authenticated attribution");
+        Check((await plans.GetAsync()).Tables.Single(t => t.Id == "23").Seats == 4,
+            "A staff booking must not rewrite the restaurant's nominal table capacity");
+        Check((await plans.SelectAsync(["23"], "indoor", 6)).Error != null,
+            "Capacity selection must remain strict unless a staff workflow explicitly requests the override");
+        Check((await plans.SelectAsync(["23"], "indoor", 6, publicBooking: true, allowCapacityOverride: true)).Error != null,
+            "Public selection must remain strict even if an internal caller mistakenly supplies the staff override");
+        var currentPlan = await plans.GetAsync();
+        foreach (var invalidPlan in new[] {
+            currentPlan with { Tables = currentPlan.Tables.Select(t => t.Id == "23" ? t with { IsActive = false } : t).ToList() },
+            currentPlan with { Tables = currentPlan.Tables.Select(t => t.Id == "23" ? t with { Id = "23A" } : t).ToList() }
+        })
+        {
+            var rejected = false;
+            try { await plans.SaveAsync(invalidPlan); } catch (ArgumentException) { rejected = true; }
+            Check(rejected, "A future staff booking above nominal capacity must still block deactivating or renaming its table");
+        }
+        request.GuestName = "Another local guest"; request.Phone = "another-local-phone";
+        Check((await restaurant.Booking.CreateAsync(request, administrator)).Kind == ReservationBookingResultKind.Conflict,
+            "Staff capacity flexibility must not bypass occupied-table conflicts");
+        Check(await restaurant.Db.Reservations.CountAsync() == 1 && restaurant.Notices.Confirmed == 0 && restaurant.Notices.Tokens.Count == 0,
+            "The regression scenario must create exactly one manual reservation and send no public notices");
+        var controller = new ReservationsController(restaurant.Db, null!, null!, new(restaurant.Db), null!,
+            new AuditService(restaurant.Db), new ProductTierService(restaurant.Db), current, null!, restaurant.Booking)
+        { ControllerContext = new() { HttpContext = new DefaultHttpContext() } };
+        controller.HttpContext.Items["AdminUser"] = administrator;
+        Check(await controller.UpdateReservation(saved.Id, new() {
+            GuestName = "Edited staff booking", Phone = "local-test", Email = "", GuestCount = 7,
+            Area = "indoor", ReservedDate = saved.ReservedDate, ReservedTime = saved.ReservedTime, TableIds = ["23"]
+        }) is OkObjectResult, "Staff must be able to edit an above-nominal-capacity reservation");
+        Check(saved.GuestCount == 7, "Staff edit must retain the requested guest count");
+        Check(await controller.UpdateTables(saved.Id, new() { Area = "indoor", TableIds = ["1"], GuestCount = 7 }) is OkObjectResult,
+            "Staff must be able to move an above-nominal-capacity reservation to another active table");
+        Check(await controller.UpdateTables(saved.Id, new() { Area = "indoor", TableIds = ["23"], GuestCount = 6 }) is OkObjectResult,
+            "Staff must be able to restore the selected table without rewriting its capacity");
+        Check(await controller.Approve(saved.Id) is OkObjectResult,
+            "Staff approval must accept the manually arranged guest count");
+        Check(await controller.MarkArrived(saved.Id) is OkObjectResult && saved.IsArrived,
+            "Staff arrival must accept the manually arranged guest count");
+        Check((await plans.GetAsync()).Tables.Single(t => t.Id == "23").Seats == 4,
+            "Staff lifecycle actions must not rewrite nominal table capacity");
+        saved.Status = "Cancelled"; saved.IsDeleted = true;
+        await restaurant.Db.SaveChangesAsync();
+        var maintenance = new MaintenanceController(restaurant.Db, new AuditService(restaurant.Db), null!, new(restaurant.Db), plans)
+        { ControllerContext = new() { HttpContext = new DefaultHttpContext() } };
+        Check(await maintenance.RestoreReservation(saved.Id) is ForbidResult, "Unauthenticated restore must not gain staff capacity flexibility");
+        maintenance.HttpContext.Items["AdminUser"] = administrator;
+        Check(await maintenance.RestoreReservation(saved.Id) is OkObjectResult && !saved.IsDeleted && saved.Status == "Approved",
+            "Authorized restore must retain a manually arranged reservation above nominal capacity");
+        Console.WriteLine("PASS: Casa table 23 staff create/edit/move/approve/arrive/restore capacity override, strict public/default selection, authentication, unchanged capacity, protected table identity and overlap protection.");
     }
 
     private static async Task CreationAndConfirmationAsync()

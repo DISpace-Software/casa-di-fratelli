@@ -80,8 +80,8 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
         {
             var ids = booking.Tables.Select(t => t.TableCode).ToList();
             // Legacy bookings may already violate current rules. Only block newly introduced breakage.
-            var previous = Select(before, ids, null, booking.GuestCount, booking.GuestCount == 0);
-            var next = Select(plan, ids, null, booking.GuestCount, booking.GuestCount == 0);
+            var previous = Select(before, ids, null, booking.GuestCount, booking.GuestCount == 0, allowCapacityOverride: booking.CreatedByAdmin);
+            var next = Select(plan, ids, null, booking.GuestCount, booking.GuestCount == 0, allowCapacityOverride: booking.CreatedByAdmin);
             if (previous.Error == null && next.Error != null)
                 throw new ArgumentException($"Move or cancel reservation #{booking.Id} before changing its tables: {next.Error}");
             if (previous.Error == null && previous.Area != next.Area)
@@ -117,10 +117,12 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
         return saved;
     }
 
-    public async Task<TableSelection> SelectAsync(IEnumerable<string>? ids, string? area, int guests, bool block = false, bool publicBooking = false)
+    public async Task<TableSelection> SelectAsync(IEnumerable<string>? ids, string? area, int guests, bool block = false, bool publicBooking = false, bool allowCapacityOverride = false)
     {
         var plan = await GetAsync();
-        var result = Select(plan, ids, area, guests, block);
+        // Nominal capacity can be overridden only by an explicitly trusted staff
+        // workflow. Public calls and every existing caller stay strict by default.
+        var result = Select(plan, ids, area, guests, block, allowCapacityOverride && !publicBooking);
         if (result.Error != null || block) return result;
         if (publicBooking && (guests > plan.PublicMaxGuests || result.TableIds.Count > plan.PublicMaxTables))
             return result with { Error = "This party size or table combination requires contacting the restaurant." };
@@ -130,7 +132,7 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
         return result;
     }
 
-    public static TableSelection Select(FloorPlan plan, IEnumerable<string>? ids, string? area, int guests, bool block = false)
+    public static TableSelection Select(FloorPlan plan, IEnumerable<string>? ids, string? area, int guests, bool block = false, bool allowCapacityOverride = false)
     {
         var requested = ReservationConflictService.NormalizeTableIds(ids);
         TableSelection Fail(string message) => new(message, [], "", 0);
@@ -147,7 +149,7 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
         if (!block && codes.Count > 1 && !plan.Combinations.Any(g => g.Count == codes.Count && g.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(codes)))
             return Fail("This table combination is not allowed by the restaurant.");
         var capacity = tables.Sum(t => t.Seats);
-        if (!block && (guests <= 0 || capacity < guests)) return Fail("The selected tables do not have enough seats.");
+        if (!block && (guests <= 0 || (!allowCapacityOverride && capacity < guests))) return Fail("The selected tables do not have enough seats.");
         return new(null, codes, realArea, capacity);
     }
 

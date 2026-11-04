@@ -1088,7 +1088,7 @@ async function readErrorMessage(response, fallback) {
 
   try {
     const result = rawText ? JSON.parse(rawText) : null;
-    return result?.message || rawText || fallback;
+    return (typeof result === "string" ? result : result?.message) || rawText || fallback;
   } catch {
     return rawText || fallback;
   }
@@ -7279,12 +7279,11 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     const unavailableSelectedTableIds = getUnavailableSelectedTableIds(payload.tableIds, unavailableTableIds);
 
     if (unavailableSelectedTableIds.length > 0) {
-      setAdminError(
-        adminLanguage === "bg"
+      const message = adminLanguage === "bg"
           ? `Маса ${unavailableSelectedTableIds.join(", ")} вече е заета около този час.`
-          : `Table ${unavailableSelectedTableIds.join(", ")} is already reserved around this time.`
-      );
-      return;
+          : `Table ${unavailableSelectedTableIds.join(", ")} is already reserved around this time.`;
+      setAdminError(message);
+      return { ok: false, message };
     }
 
     const response = await adminFetch(`${API_BASE_URL}/api/reservations`, {
@@ -7294,8 +7293,9 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     });
 
     if (!response.ok) {
-      setAdminError(await readErrorMessage(response, "Failed to create reservation."));
-      return false;
+      const message = await readErrorMessage(response, "Failed to create reservation.");
+      setAdminError(localizeReservationSaveError(message, adminLanguage));
+      return { ok: false, message };
     }
 
     setAdminNotice("Reservation created.");
@@ -7307,7 +7307,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     event.preventDefault();
 
     const created = await saveAdminReservationPayload(adminReservation);
-    if (!created) return;
+    if (created !== true) return;
 
     setAdminReservation(emptyAdminReservation);
     setActiveTab("reservations");

@@ -213,8 +213,10 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         if (tableIds.Count == 0)
             return BadRequest(new { message = "At least one table must be selected." });
 
-        var guestCount = request.GuestCount;
-        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, guestCount);
+        // Retain the legacy staff walk-in ceiling while selection still rejects
+        // non-positive counts and invalid tables/zones.
+        var guestCount = Math.Min(request.GuestCount, 40);
+        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, guestCount, allowCapacityOverride: true);
         if (selection.Error != null) return BadRequest(new { message = selection.Error });
         tableIds = selection.TableIds;
 
@@ -365,7 +367,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             return NotFound();
 
         var tableIds = reservation.Tables.Select(t => t.TableCode).ToList();
-        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, reservation.Area, reservation.GuestCount);
+        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, reservation.Area, reservation.GuestCount,
+            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null);
         if (selection.Error != null) return BadRequest(new { message = selection.Error });
 
         var conflict = await _reservationConflictService.FindTableConflictAsync(
@@ -427,7 +430,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         if (reservation.Status == "Cancelled")
             return BadRequest("Cancelled reservations cannot be marked as arrived.");
 
-        var selection = await _seasonalZones.Plans.SelectAsync(reservation.Tables.Select(t => t.TableCode), reservation.Area, reservation.GuestCount);
+        var selection = await _seasonalZones.Plans.SelectAsync(reservation.Tables.Select(t => t.TableCode), reservation.Area, reservation.GuestCount,
+            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null);
         if (selection.Error != null) return BadRequest(new { message = selection.Error });
         var conflict = await _reservationConflictService.FindTableConflictAsync(reservation.ReservedDate, reservation.ReservedTime, selection.TableIds, id, includeHallBlocks: false);
         if (conflict != null) return Conflict(ReservationConflictService.ToConflictResponse(conflict));
@@ -530,7 +534,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         if (nextGuestCount <= 0)
             return BadRequest("Invalid guests.");
 
-        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, nextGuestCount);
+        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, nextGuestCount,
+            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null);
         if (selection.Error != null) return BadRequest(new { message = selection.Error });
         tableIds = selection.TableIds;
 
@@ -644,7 +649,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         var reservedTime = parsedTime.ToString("HH:mm");
         if (!IsReservationTimeAllowed(reservedTime, createdByAdmin: true))
             return BadRequest("Admin reservations are available until 23:00.");
-        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, area, request.GuestCount);
+        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, area, request.GuestCount,
+            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null);
         if (selection.Error != null) return BadRequest(new { message = selection.Error });
         tableIds = selection.TableIds;
         area = selection.Area;
