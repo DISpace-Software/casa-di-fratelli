@@ -28,6 +28,11 @@ import {
 import { getAvailableReservationTimesForDate, isPastTimeForDate } from "../domain/reservations/dateTimeRules";
 import UnifiedMapViewport from "../components/admin/UnifiedMapViewport";
 import { buildMapGeometry } from "../domain/adminMap/mapConfig";
+import CofeinArchitecture from "../components/floorplan/CofeinArchitecture";
+import CofeinTableVisual from "../components/floorplan/CofeinTableVisual";
+import CofeinMapExplorer from "../components/floorplan/CofeinMapExplorer";
+import { getCofeinMapGeometry, projectCofeinTable } from "../domain/floorPlans/cofeinGeometry";
+import "../components/floorplan/cofein-map.css";
 import {
   localPercentToWorld,
   rotatePercentPointClockwise,
@@ -1492,6 +1497,9 @@ function TableLayoutEditor({
   const mapRef = React.useRef(null);
   const [draggingId, setDraggingId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState("");
+  const [spatialView, setSpatialView] = React.useState("all");
+  const cofeinSpatial = tenantContext.tenantId === "cofein"
+    && zones.length > 0 && zones.every(zone => ["interior", "exterior"].includes(zone.id));
   const areas = zones.map(zone => [zone.id, getZoneName(zone, zone.presentation?.startsWith("casa-") ? "bg" : language)]);
   const presentation = zones.find(zone => zone.id === selectedArea)?.presentation || "plain";
   const areaTables = layout.filter((item) => item.area === selectedArea);
@@ -1499,8 +1507,8 @@ function TableLayoutEditor({
   const selectedTable = areaTables.find((item) => item.id === selectedTableId) || areaTables[0];
 
   React.useEffect(() => {
-    setSelectedTableId("");
-  }, [selectedArea]);
+    setSelectedTableId(current => layout.some(table => table.id === current && table.area === selectedArea) ? current : "");
+  }, [selectedArea, layout]);
 
   const moveTable = (tableId, clientX, clientY) => {
     const box = mapRef.current?.getBoundingClientRect();
@@ -1586,7 +1594,23 @@ function TableLayoutEditor({
             ))}
           </div>
 
-          <div
+          {cofeinSpatial ? <CofeinMapExplorer
+            tables={layout.filter(table => table.isActive)}
+            states={Object.fromEntries(layout.map(table => [table.id, { status: "available", selectable: true }]))}
+            selectedIds={selectedTable ? [selectedTable.id] : []}
+            viewId={spatialView}
+            onViewChange={setSpatialView}
+            language={language}
+            onTableSelect={table => { onAreaChange(table.area); setSelectedTableId(table.id); }}
+            onTableMove={(table, point) => {
+              const current = layout.find(item => item.id === table.id);
+              if (!current) return;
+              if (selectedArea !== table.area) onAreaChange(table.area);
+              setSelectedTableId(table.id);
+              const next = { ...current, x: Number(point.x.toFixed(2)), y: Number(point.y.toFixed(2)) };
+              if (!hasLayoutOverlap(layout, next)) onUpdate(table.id, next);
+            }}
+          /> : <div
             ref={mapRef}
             className={`relative min-h-[560px] overflow-hidden rounded-[26px] border border-white/10 ${
               presentation === "casa-garden"
@@ -1634,7 +1658,7 @@ function TableLayoutEditor({
               </button>
               );
             })}
-          </div>
+          </div>}
         </div>
 
         <div className="space-y-3">
@@ -1837,7 +1861,15 @@ function ReservationOperationsMap({
 }) {
   const { plan } = useFloorPlan();
   const { branding } = useTenantBranding();
-  const geometry = React.useMemo(() => buildMapGeometry(plan.zones.filter(z => z.isActive)), [plan]);
+  // Architecture changes presentation only. Identity, capacity and booking rules
+  // continue to come from the restaurant's current floor-plan document.
+  const cofeinSpatial = tenantContext.tenantId === "cofein"
+    && plan.zones.some(zone => zone.isActive)
+    && plan.zones.filter(zone => zone.isActive).every(zone => ["interior", "exterior"].includes(zone.id));
+  const legacySection = mapViewMode === "section" && !cofeinSpatial;
+  const geometry = React.useMemo(() => cofeinSpatial
+    ? getCofeinMapGeometry(plan.zones.filter(zone => zone.isActive))
+    : buildMapGeometry(plan.zones.filter(zone => zone.isActive)), [plan, cofeinSpatial]);
   const mapZones = geometry.zones;
   const { closedAreas, loaded: zonesLoaded } = useSeasonalZones();
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
@@ -1873,8 +1905,8 @@ function ReservationOperationsMap({
     getActiveLayoutTables(layout, area).length;
   const getActiveTablesForArea = React.useCallback(
     (area) => (closedAreas.includes(area) ? [] : getActiveLayoutTables(layout, area))
-      .map((table) => mapViewMode === "section" && table.area !== "openTerrace" ? table : orientTableForMap(table, plan.zones.find(zone => zone.id === table.area)?.presentation)),
-    [layout, mapViewMode, closedAreas, plan]
+      .map((table) => legacySection && table.area !== "openTerrace" ? table : orientTableForMap(table, plan.zones.find(zone => zone.id === table.area)?.presentation)),
+    [layout, legacySection, closedAreas, plan]
   );
   const areaTables = React.useMemo(
     () => plan.zones.filter(zone => zone.isActive).map(zone => zone.id)
@@ -1903,8 +1935,8 @@ function ReservationOperationsMap({
       const tables = getReservationTables(reservation);
       if (tables.length === 0) return null;
 
-      const xValues = tables.map((table) => table.x);
-      const yValues = tables.map((table) => table.y);
+      const xValues = tables.map((table) => cofeinSpatial ? projectCofeinTable(table).x / geometry.world.width * 100 : table.x);
+      const yValues = tables.map((table) => cofeinSpatial ? projectCofeinTable(table).y / geometry.world.height * 100 : table.y);
       const minX = Math.min(...xValues);
       const maxX = Math.max(...xValues);
       const minY = Math.min(...yValues);
@@ -1925,10 +1957,10 @@ function ReservationOperationsMap({
         top: ((minY + maxY) / 2) - height / 2,
         width,
         height,
-        labelTop: Math.max(4, minY - 7),
+        labelTop: cofeinSpatial ? Math.max(2, minY - 2.7) : Math.max(4, minY - 7),
       };
     },
-    [getReservationTables]
+    [getReservationTables, cofeinSpatial, geometry.world.width, geometry.world.height]
   );
   const liveReservations = React.useMemo(() => {
     const unique = new Map();
@@ -1953,7 +1985,7 @@ function ReservationOperationsMap({
       const table = areaTables.find((item) => item.id === selectedTableId && item.area === selectedArea);
       if (table) {
         const zone = mapZones.find((item) => item.id === table.area) || mapZones[0];
-        const point = localPercentToWorld(zone, table);
+        const point = cofeinSpatial ? projectCofeinTable(table) : localPercentToWorld(zone, table);
         return { ...point, key: `table-${table.area}-${table.id}-${mapFocusRequestId}` };
       }
     }
@@ -1963,15 +1995,15 @@ function ReservationOperationsMap({
       if (bounds) {
         const zone = mapZones.find((item) => item.id === bounds.area) || mapZones[0];
         return {
-          x: zone.x + (bounds.centerX / 100) * zone.width,
-          y: zone.y + (bounds.centerY / 100) * zone.height,
+          x: cofeinSpatial ? bounds.centerX / 100 * geometry.world.width : zone.x + (bounds.centerX / 100) * zone.width,
+          y: cofeinSpatial ? bounds.centerY / 100 * geometry.world.height : zone.y + (bounds.centerY / 100) * zone.height,
           key: `reservation-${selectedReservation.id}`,
         };
       }
     }
 
     return null;
-  }, [areaTables, getReservationBounds, mapFocusRequestId, selectedArea, selectedReservation, selectedTableId, mapZones]);
+  }, [areaTables, getReservationBounds, mapFocusRequestId, selectedArea, selectedReservation, selectedTableId, mapZones, cofeinSpatial, geometry.world.width, geometry.world.height]);
   const activeOrdersByReservationId = React.useMemo(() => {
     const grouped = new Map();
 
@@ -2536,7 +2568,7 @@ function ReservationOperationsMap({
 
   if (!zonesLoaded || areas.length === 0) return <Panel title={text.title}><p role="status" className="p-6 text-white/70">{!zonesLoaded ? adminLocalText(language, "Зареждане на зоните…", "Loading areas…", "Загрузка зон…") : adminLocalText(language, "Всички зони са затворени за сезона. Отворете зона от „Блокирай зала“.", "All areas are seasonally closed. Reopen an area under Block hall.", "Все зоны закрыты на сезон. Откройте зону в разделе блокировки зала.")}</p></Panel>;
 
-  const MapViewport = mapViewMode === "section" ? SectionMapViewport : UnifiedMapViewport;
+  const MapViewport = legacySection ? SectionMapViewport : UnifiedMapViewport;
 
   return (
     <Panel title={text.title} subtitle={text.subtitle} bare={!ordersOnly}>
@@ -2578,6 +2610,9 @@ function ReservationOperationsMap({
         <div className="relative min-w-0">
         <MapViewport
           geometry={geometry}
+          storageNamespace={cofeinSpatial ? "cofein-architecture-v1" : undefined}
+          surfaceClassName={cofeinSpatial ? "cofein-admin-map-surface" : undefined}
+          minimumScale={cofeinSpatial ? 0.15 : undefined}
           zones={areas.map(([id, name]) => ({ id, name: `${name} · ${getAreaTableCount(id)} ${text.tables}` }))}
           activeZone={selectedArea}
           onZoneChange={handleMapZoneChange}
@@ -2661,12 +2696,13 @@ function ReservationOperationsMap({
           viewMode={mapViewMode}
           text={text}
         >
-          {mapZones.filter((zone) => !closedAreas.includes(zone.id) && (mapViewMode === "scroll" || zone.id === selectedArea)).map((zone) => {
+          {cofeinSpatial && <CofeinArchitecture language={language} />}
+          {!cofeinSpatial && mapZones.filter((zone) => !closedAreas.includes(zone.id) && (!legacySection || zone.id === selectedArea)).map((zone) => {
             const label = areas.find(([area]) => area === zone.id)?.[1] || zone.id;
             return (
               <section
                 key={zone.id}
-                className={mapViewMode === "section" ? "absolute inset-0 overflow-hidden" : `absolute overflow-hidden rounded-[34px] border ${
+                className={legacySection ? "absolute inset-0 overflow-hidden" : `absolute overflow-hidden rounded-[34px] border ${
                   selectedArea === zone.id ? "border-[#f2d39a]/55 shadow-[0_0_55px_rgba(201,165,106,0.18)]" : "border-white/12"
                 } ${
                   zone.presentation === "casa-garden"
@@ -2675,23 +2711,23 @@ function ReservationOperationsMap({
                     ? "bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),linear-gradient(180deg,rgba(30,34,25,0.98),rgba(14,16,11,0.98))]"
                     : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),linear-gradient(180deg,rgba(39,27,21,0.98),rgba(16,12,10,0.98))]"
                 }`}
-                style={mapViewMode === "section" ? undefined : { left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
+                style={legacySection ? undefined : { left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
                 aria-label={label}
               >
                 <div className="admin-reservation-map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
-                {mapViewMode === "scroll" && (
+                {!legacySection && (
                   <div className="pointer-events-none absolute left-8 top-7 z-[6] rounded-full border border-[#f2d39a]/25 bg-black/55 px-5 py-2 text-sm font-bold uppercase tracking-[0.16em] text-[#fff4df] backdrop-blur">
                     {label}
                   </div>
                 )}
-                {mapViewMode === "section"
+                {legacySection
                   ? <LegacyAdminMapDecor area={zone.id} presentation={zone.presentation} />
                   : <AdminMapDecor area={zone.id} presentation={zone.presentation} />}
               </section>
             );
           })}
 
-          {liveReservations.filter((reservation) => mapViewMode === "scroll" || reservation.area === selectedArea).map((reservation) => {
+          {liveReservations.filter((reservation) => !legacySection || reservation.area === selectedArea).map((reservation) => {
             const bounds = getReservationBounds(reservation);
             if (!bounds) return null;
 
@@ -2714,7 +2750,7 @@ function ReservationOperationsMap({
               <div
                 key={`reservation-${reservation.id}`}
                 className={`pointer-events-none absolute ${isSelected ? "z-[220]" : "z-20"}`}
-                style={mapViewMode === "section"
+                style={cofeinSpatial ? { left: 0, top: 0, width: geometry.world.width, height: geometry.world.height } : legacySection
                   ? { inset: 0 }
                   : { left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
               >
@@ -2870,7 +2906,7 @@ function ReservationOperationsMap({
             );
           })}
 
-          {moveSelectionBounds && selectedReservation && (mapViewMode === "scroll" || moveSelectionBounds.area === selectedArea) && (() => {
+          {moveSelectionBounds && selectedReservation && (!legacySection || moveSelectionBounds.area === selectedArea) && (() => {
             const requiredGuests = Number(moveDraft.guestCount || selectedReservation.guestCount || 1);
 
             return (
@@ -2937,7 +2973,7 @@ function ReservationOperationsMap({
             );
           })()}
 
-          {areaTables.filter((table) => mapViewMode === "scroll" || table.area === selectedArea).map((table) => {
+          {areaTables.filter((table) => !legacySection || table.area === selectedArea).map((table) => {
             const reservation = liveByTable.get(table.id);
             const isAdminBlocked = Boolean(findPublicTableHold(publicTableHolds, mapDate, [table.id]));
             const tableOrders = activeOrdersByTable.get(table.id) || [];
@@ -2955,19 +2991,29 @@ function ReservationOperationsMap({
               isMoveMode &&
               !isMoveUnavailable;
             const zone = mapZones.find((item) => item.id === table.area) || mapZones[0];
-            const worldPosition = localPercentToWorld(zone, table);
+            const placement = cofeinSpatial ? projectCofeinTable(table) : null;
+            const worldPosition = placement || localPercentToWorld(zone, table);
+            const spatialStatus = isMoveUnavailable ? "unavailable"
+              : isAdminBlocked ? "blocked"
+              : reservation?.isArrived ? "arrived"
+              : isLate ? "late"
+              : reservation ? "reserved"
+              : hasTableOrders ? "arrived" : "available";
 
             return (
               <div
                 key={`${table.area}-${table.id}`}
                 className={`absolute -translate-x-1/2 -translate-y-1/2 ${isSelectedTable ? "z-[220]" : "z-10"}`}
                 style={{
-                  left: mapViewMode === "section" ? `${table.x}%` : worldPosition.x,
-                  top: mapViewMode === "section" ? `${table.y}%` : worldPosition.y,
+                  left: legacySection ? `${table.x}%` : worldPosition.x,
+                  top: legacySection ? `${table.y}%` : worldPosition.y,
                 }}
               >
                 <button
                   type="button"
+                  aria-label={cofeinSpatial ? `${text.table} ${table.id}, ${table.seats} ${text.seats}` : undefined}
+                  aria-pressed={cofeinSpatial ? Boolean(isSelectedTable || isMoveSelected) : undefined}
+                  style={placement ? { width: placement.width, height: placement.height, position: "relative" } : undefined}
                   data-admin-blocked={isAdminBlocked ? "true" : "false"}
                   title={isAdminBlocked ? adminLocalText(language, "Блокирана от администратор", "Blocked by admin", "Заблокирован администратором") : undefined}
                   data-reserved={reservation ? "true" : "false"}
@@ -2991,12 +3037,12 @@ function ReservationOperationsMap({
                     setTableReservationDraft(null);
                     setSelectedTableId((current) => (current === table.id ? null : table.id));
                   }}
-                  className={`admin-map-table-node flex items-center justify-center rounded-2xl border font-semibold shadow-2xl transition hover:scale-[1.04] ${
+                  className={cofeinSpatial ? "cofein-map-table-button" : `admin-map-table-node flex items-center justify-center rounded-2xl border font-semibold shadow-2xl transition hover:scale-[1.04] ${
                     isGroupTable
-                      ? mapViewMode === "section"
+                      ? legacySection
                         ? "h-9 min-w-[50px] px-2 text-xs sm:h-10 sm:min-w-[58px] sm:px-3 md:h-12 md:min-w-[68px] lg:h-16 lg:min-w-[88px]"
                         : "h-9 min-w-[50px] px-2 text-xs sm:h-10 sm:min-w-[58px] sm:px-3 md:h-14 md:min-w-[80px] lg:h-16 lg:min-w-[88px]"
-                      : mapViewMode === "section"
+                      : legacySection
                         ? "h-8 w-8 text-xs sm:h-9 sm:w-9 md:h-11 md:w-11 lg:h-14 lg:w-14 lg:text-sm"
                         : "h-8 w-8 text-xs sm:h-9 sm:w-9 md:h-14 md:w-14 md:text-sm"
                   } ${
@@ -3021,7 +3067,7 @@ function ReservationOperationsMap({
                       : "border-[#c9a56a]/35 bg-[linear-gradient(145deg,#5a4332,#2a1f18)] text-white/85"
                   } ${isSelectedTable ? "ring-2 ring-[#f2d39a]/35" : ""}`}
                 >
-                  {table.id}
+                  {cofeinSpatial ? <CofeinTableVisual table={table} placement={placement} status={spatialStatus} selected={isSelectedTable || isMoveSelected || isMoveBest || isMoveSuggested} /> : table.id}
                 </button>
 
                 {isSelectedTable && !isReservationFormOpen && !walkInDraft && !showConsumption && (

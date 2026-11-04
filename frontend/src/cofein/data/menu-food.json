@@ -1,0 +1,1105 @@
+[
+  {
+    "id": "salads",
+    "label": "Салати",
+    "items": [
+      {
+        "id": "shopska",
+        "name": "Шопска салата",
+        "description": "домати, краставици, чушки, лук и сирене",
+        "portion": "450 г",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "greek",
+        "name": "Гръцка салата",
+        "description": "домати, краставици, чушки, лук, маслини, сирене, босилеково песто",
+        "portion": "450 г",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "green",
+        "name": "Зелена салата",
+        "description": "зелена салата, краставици, моркови, авокадо, царевица, орехи, дресинг нар",
+        "portion": "450 г",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "harvest",
+        "name": "Жътварска салата",
+        "description": "домати, краставици, царевица, чушки, лук, сирене и маслини",
+        "portion": "450 г",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "shepherd",
+        "name": "Овчарска салата",
+        "description": "домати, краставици, чушки, лук, гъби, шунка, кашкавал, яйце и сирене",
+        "portion": "450 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "four-cheese-salad",
+        "name": "Салата 4 сирена",
+        "description": "зелена салата, домати, краставици, лук, сирене, кашкавал, топено сирене, синьо сирене и орехи",
+        "portion": "450 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "caprese",
+        "name": "Капрезе",
+        "description": "домати, моцарела, песто, зехтин, дресинг нар, брускети",
+        "portion": "400 г",
+        "priceEur": 8.5,
+        "priceBgn": 16.62,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "paris",
+        "name": "Салата Париж",
+        "description": "зелена салата, авокадо, краставици, чери домати, пармезан, крутони, дресинг нар",
+        "portion": "450 г",
+        "priceEur": 8.5,
+        "priceBgn": 16.62,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "italia",
+        "name": "Салата Италия",
+        "description": "авокадо, домати, краставици, лук, моцарела, маслини, дресинг, брускети",
+        "portion": "450 г",
+        "priceEur": 8.5,
+        "priceBgn": 16.62,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "caesar",
+        "name": "Салата Цезар",
+        "description": "зелена салата, чери домати, краставици, пилешко филе, кашкавал, пармезан, крутони, дресинг",
+        "portion": "450 г",
+        "priceEur": 8.5,
+        "priceBgn": 16.62,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "tuna",
+        "name": "Салата риба тон",
+        "description": "риба тон, зелена салата, краставици, чери домати, кашкавал, царевица, лук, дресинг нар",
+        "portion": "450 г",
+        "priceEur": 9.5,
+        "priceBgn": 18.58,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "president",
+        "name": "Салата Президент",
+        "description": "домати, краставици, зелена салата, лук, пилешко филе, кашкавал, крутони от пържени картофи и дресинг",
+        "portion": "450 г",
+        "priceEur": 9.5,
+        "priceBgn": 18.58,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "royal-salad",
+        "name": "Царска салата",
+        "description": "зелена салата, пилешко филе, моркови, домати, краставици, лук, сирене, кашкавал, дресинг",
+        "portion": "600 г",
+        "priceEur": 9.5,
+        "priceBgn": 18.58,
+        "source": "20260907_170129.jpg"
+      }
+    ]
+  },
+  {
+    "id": "spreads",
+    "label": "Разядки",
+    "items": [
+      {
+        "id": "three-spreads",
+        "name": "Селекция от 3 разядки с препечен хляб",
+        "description": "Средиземноморска разядка с печен патладжан, печени чушки, тахан, зехтин и подправки; Арабска разядка - хумус; Родопски кътък с печени чушки",
+        "portion": "300 г",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170129.jpg"
+      }
+    ]
+  },
+  {
+    "id": "spaghetti",
+    "label": "Спагети",
+    "items": [
+      {
+        "id": "carbonara",
+        "name": "Спагети Карбонара",
+        "description": "бекон, гъби, кашкавал, топено сирене, сметана",
+        "portion": "450 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "bolognese",
+        "name": "Спагети Болонезе",
+        "description": "кайма, домати, кашкавал, песто",
+        "portion": "450 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "milano",
+        "name": "Спагети Милано с 4 вида сирена",
+        "description": "сирене, кашкавал, синьо сирене, топено сирене, сметана, пресни домати, песто",
+        "portion": "450 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "palermo",
+        "name": "Спагети Палермо",
+        "description": "бекон, луканков салам, топено сирене, кашкавал, маслини",
+        "portion": "500 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "genovese",
+        "name": "Спагети Дженовезе",
+        "description": "с панирано пилешко филе, бекон, топено сирене, кашкавал, песто",
+        "portion": "500 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "garlic-spaghetti",
+        "name": "Спагети с чесън",
+        "description": "прошуто, кашкавал, пармезан, пържен хрупкав лук, чесън, чери домати, песто",
+        "portion": "500 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170129.jpg"
+      }
+    ]
+  },
+  {
+    "id": "starters",
+    "label": "Предястия и Аламинути",
+    "items": [
+      {
+        "id": "fries",
+        "name": "Пържени картофи",
+        "description": "",
+        "portion": "200 г",
+        "priceEur": 4.5,
+        "priceBgn": 8.8,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "fries-cheese",
+        "name": "Пържени картофи със сирене",
+        "description": "",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "spicy-potatoes-garlic",
+        "name": "Пикантни картофи с чеснов сос",
+        "description": "",
+        "portion": "200 г",
+        "priceEur": 5.5,
+        "priceBgn": 10.76,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "spicy-potatoes-cheeses",
+        "name": "Пикантни картофи с пармезан, кашкавал и чеснов сос",
+        "description": "",
+        "portion": "220 г",
+        "priceEur": 6.5,
+        "priceBgn": 12.71,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "fries-bacon",
+        "name": "Пържени картофи с бекон, кашкавал, пържен хрупкав лук, чедър сос",
+        "description": "",
+        "portion": "300 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "omelet-cheese",
+        "name": "Омлет с кашкавал и сирене",
+        "description": "",
+        "portion": "250 г",
+        "priceEur": 6.5,
+        "priceBgn": 12.71,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "omelet-ham",
+        "name": "Омлет с шунка и кашкавал",
+        "description": "",
+        "portion": "250 г",
+        "priceEur": 6.5,
+        "priceBgn": 12.71,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "omelet-supreme",
+        "name": "Омлет сюприйм",
+        "description": "с шунка, кашкавал, сирене, домати, кисели краставички",
+        "portion": "300 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "breaded-kashkaval",
+        "name": "Панирани кашкавалени хапки с чеснов сос",
+        "description": "",
+        "portion": "200 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "breaded-cheese",
+        "name": "Панирани хапки от сирене със сладко от боровинки",
+        "description": "",
+        "portion": "200 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "breaded-chicken-bites",
+        "name": "Панирани пилешки хапки от филе с чеснов сос",
+        "description": "",
+        "portion": "200 г",
+        "priceEur": 8.5,
+        "priceBgn": 16.62,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "breaded-chicken-tenderloin",
+        "name": "Панирано пилешко бонфиле с чеснов сос",
+        "description": "",
+        "portion": "200 г",
+        "priceEur": 8.5,
+        "priceBgn": 16.62,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "breaded-chicken-cream",
+        "name": "Панирано пилешко бонфиле със сметана, пикантни картофи, домати и краставици",
+        "description": "",
+        "portion": "450 г",
+        "priceEur": 10,
+        "priceBgn": 19.56,
+        "source": "20260907_170129.jpg"
+      }
+    ]
+  },
+  {
+    "id": "grill",
+    "label": "Скара",
+    "items": [
+      {
+        "id": "mixed-grill-chicken",
+        "name": "Мешена скара с пилешко филе",
+        "description": "2 кебапчета, 1 кюфте и гарнитура",
+        "portion": "750 г",
+        "priceEur": 13.5,
+        "priceBgn": 26.4,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "mixed-grill-pork",
+        "name": "Мешена скара с свински врат",
+        "description": "2 кебапчета, 1 кюфте и гарнитура",
+        "portion": "750 г",
+        "priceEur": 13.5,
+        "priceBgn": 26.4,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "kebapcheta",
+        "name": "Кебапчета с гарнитура",
+        "description": "",
+        "portion": "450 г · 3 бр.",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "kyufteta",
+        "name": "Кюфтета с гарнитура",
+        "description": "",
+        "portion": "450 г · 3 бр.",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "chicken-fillet",
+        "name": "Пилешко филе с гарнитура",
+        "description": "",
+        "portion": "450 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "pork-neck",
+        "name": "Свински врат с гарнитура",
+        "description": "",
+        "portion": "450 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "steak-with-sauce",
+        "name": "Пилешка пържола или свински врат",
+        "description": "с бербекю или чедър сос, печен лук, пържени картофи и салата",
+        "portion": "450 г",
+        "priceEur": 10,
+        "priceBgn": 19.56,
+        "source": "20260907_170129.jpg"
+      }
+    ]
+  },
+  {
+    "id": "flatbreads",
+    "label": "Пърленка",
+    "items": [
+      {
+        "id": "flatbread-garlic",
+        "name": "Пърленка",
+        "description": "с кашкавал, сирене и чесново масло",
+        "portion": "150 г",
+        "priceEur": 4,
+        "priceBgn": 7.82,
+        "source": "20260907_170129.jpg"
+      },
+      {
+        "id": "flatbread-cheeses",
+        "name": "Пърленка",
+        "description": "с кашкавал, моцарела, пармезан",
+        "portion": "150 г",
+        "priceEur": 4,
+        "priceBgn": 7.82,
+        "source": "20260907_170129.jpg"
+      }
+    ]
+  },
+  {
+    "id": "club-sandwiches",
+    "label": "Клуб сандвичи",
+    "items": [
+      {
+        "id": "club-cheese",
+        "name": "Клуб сандвич",
+        "description": "кашкавал, сирене, пържени картофи, гарнитура, сос",
+        "portion": "550 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "club-ham",
+        "name": "Клуб сандвич",
+        "description": "шунка, кашкавал, пържени картофи, гарнитура, сос",
+        "portion": "550 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "club-lukankov-salami",
+        "name": "Клуб сандвич",
+        "description": "луканков салам, кашкавал, пържени картофи, гарнитура, сос",
+        "portion": "550 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "club-turkey",
+        "name": "Клуб сандвич",
+        "description": "пуешка шунка, кашкавал, пържени картофи, гарнитура, сос",
+        "portion": "550 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "club-bacon",
+        "name": "Клуб сандвич",
+        "description": "бекон, кашкавал, пържени картофи, гарнитура, сос",
+        "portion": "550 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "club-turkey-pork",
+        "name": "Клуб сандвич",
+        "description": "пуешка и свинска шунка, моцарела, кашкавал, песто, пържени картофи, гарнитура, сос по избор",
+        "portion": "600 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "club-bacon-salami",
+        "name": "Клуб сандвич",
+        "description": "бекон, луканков салам, сирене чедър, кашкавал, пържени картофи, гарнитура, сос по избор",
+        "portion": "600 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "club-turkey-bacon",
+        "name": "Клуб сандвич",
+        "description": "пуешка шунка, бекон, сирене чедър, кашкавал, пържени картофи, гарнитура, сос по избор",
+        "portion": "600 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170112.jpg"
+      }
+    ]
+  },
+  {
+    "id": "burgers",
+    "label": "Бургер меню",
+    "items": [
+      {
+        "id": "cheeseburger",
+        "name": "Чийз бургер",
+        "description": "телешко кюфте, чедър, домати, бургер сос, пържени картофи, лук, сос по избор",
+        "portion": "550 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "chicken-cheeseburger",
+        "name": "Пилешки чийз бургер",
+        "description": "панирано пилешко филе, чедър, домати, бургер сос, пържени картофи, лук, сос по избор",
+        "portion": "550 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "texas",
+        "name": "Бургер Тексас",
+        "description": "телешко кюфте, хрупкав бекон, чедър, пържен хрупкав лук, домати, бургер сос, пържени картофи, сос по избор",
+        "portion": "600 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "americano",
+        "name": "Бургер Американо",
+        "description": "телешко кюфте, пържено яйце, чедър, пържен хрупкав лук, домати, бургер сос, пържени картофи, сос по избор",
+        "portion": "600 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170112.jpg"
+      }
+    ]
+  },
+  {
+    "id": "bruschetta",
+    "label": "Брускети",
+    "items": [
+      {
+        "id": "bruschetta-prosciutto",
+        "name": "Брускети",
+        "description": "прошуто, моцарела, чери домати, хрупкав пържен лук, бургер сос",
+        "portion": "300 г",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "bruschetta-tuna",
+        "name": "Брускети",
+        "description": "риба тон, варено яйце, авокадо, крема сирене, маслини",
+        "portion": "300 г",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "bruschetta-blue-cheese",
+        "name": "Брускети",
+        "description": "синьо сирене, моцарела, конфитюр от смокини, крема сирене, орехи",
+        "portion": "300 г",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "bruschetta-bacon",
+        "name": "Брускети",
+        "description": "бекон, кашкавал, домати, сирене крема, чедър сос",
+        "portion": "300 г",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "bruschetta-mozzarella",
+        "name": "Брускети",
+        "description": "моцарела, топено сирене, пармезан, чери домати, маслини, песто",
+        "portion": "300 г",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170112.jpg"
+      }
+    ]
+  },
+  {
+    "id": "savory-pancakes",
+    "label": "Палачинки /солени/",
+    "items": [
+      {
+        "id": "pancake-royal",
+        "name": "Палачинка Роял",
+        "description": "пуешка шунка, кашкавал, домати, пържени картофи, кисели краставички, чеснов сос",
+        "portion": "400 г",
+        "priceEur": 6.5,
+        "priceBgn": 12.71,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "pancake-neapolitana",
+        "name": "Палачинка Неаполитана",
+        "description": "топено сирене, пуешка шунка, кашкавал, моцарела, кисели краставички, чедър сос",
+        "portion": "400 г",
+        "priceEur": 6.5,
+        "priceBgn": 12.71,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "pancake-mexicana",
+        "name": "Палачинка Мексикана",
+        "description": "бекон, домати, чушки, царевица, лук, кашкавал, зелена салата",
+        "portion": "400 г",
+        "priceEur": 6.5,
+        "priceBgn": 12.71,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "pancake-siciliana",
+        "name": "Палачинка Сицилиана",
+        "description": "панирано пилешко филе, пържени картофи, кашкавал, пържен лук, домати, бургер сос",
+        "portion": "450 г",
+        "priceEur": 7.5,
+        "priceBgn": 14.67,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "pancake-italiana",
+        "name": "Палачинка Италиана",
+        "description": "панирано пилешко филе, топено сирене, кашкавал, моцарела, маслини, домати, песто",
+        "portion": "450 г",
+        "priceEur": 7.5,
+        "priceBgn": 14.67,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "pancake-venice",
+        "name": "Палачинка Венеция",
+        "description": "панирано пилешко филе, топено сирене, кашкавал, моцарела, зелена салата, пресни краставици, кисели краставички",
+        "portion": "450 г",
+        "priceEur": 7.5,
+        "priceBgn": 14.67,
+        "source": "20260907_170112.jpg"
+      },
+      {
+        "id": "pancake-four-cheese",
+        "name": "Палачинка 4 Сирена",
+        "description": "топено сирене, кашкавал, бяло сирене, моцарела, домати, маслини",
+        "portion": "400 г",
+        "priceEur": 6.5,
+        "priceBgn": 12.71,
+        "source": "20260907_170112.jpg"
+      }
+    ]
+  },
+  {
+    "id": "mixed-platters",
+    "label": "Комбинирани плата",
+    "items": [
+      {
+        "id": "breaded-platter",
+        "name": "Плато от панирани хапки и пържени картофи",
+        "description": "",
+        "portion": "900 г",
+        "priceEur": 22,
+        "priceBgn": 43.03,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "grill-platter",
+        "name": "Плато от специалитети на скара и пържени картофи",
+        "description": "",
+        "portion": "1000 г",
+        "priceEur": 25,
+        "priceBgn": 48.9,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "mixed-platter",
+        "name": "Плато от панирани хапки, специалитети на скара и пържени картофи",
+        "description": "",
+        "portion": "1200 г",
+        "priceEur": 30,
+        "priceBgn": 58.67,
+        "source": "20260907_170137.jpg"
+      }
+    ]
+  },
+  {
+    "id": "breakfast",
+    "label": "Закуски и принцеси",
+    "items": [
+      {
+        "id": "english-breakfast",
+        "name": "Английска закуска",
+        "description": "бекон, пържени яйца, кашкавал, гарнитура, препечени филийки с масло",
+        "portion": "500 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "assorted-breakfast",
+        "name": "Закуска асорти",
+        "description": "сирене, кашкавал, варени яйца, бекон, препечени филийки с масло, гарнитура, чеснов сос",
+        "portion": "500 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "grandma-breakfast",
+        "name": "Бабина закуска",
+        "description": "запечени филийки със сирене и яйце, бекон, кашкавал, маслини, чеснов сос, гарнитура",
+        "portion": "500 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "french-toast",
+        "name": "Пържени филийки",
+        "description": "с конфитюр и сирене",
+        "portion": "4 бр.",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "princess-cheese",
+        "name": "Принцеси",
+        "description": "кашкавал и сирене",
+        "portion": "200 г",
+        "priceEur": 4,
+        "priceBgn": 7.82,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "princess-ham",
+        "name": "Принцеси",
+        "description": "шунка и кашкавал",
+        "portion": "200 г",
+        "priceEur": 4,
+        "priceBgn": 7.82,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "princess-mince",
+        "name": "Принцеси",
+        "description": "кайма и кашкавал",
+        "portion": "200 г",
+        "priceEur": 4,
+        "priceBgn": 7.82,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "princess-salami",
+        "name": "Принцеси",
+        "description": "луканков салам и кашкавал",
+        "portion": "200 г",
+        "priceEur": 4,
+        "priceBgn": 7.82,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "princess-turkey",
+        "name": "Принцеси",
+        "description": "пуешка шунка и кашкавал",
+        "portion": "200 г",
+        "priceEur": 4,
+        "priceBgn": 7.82,
+        "source": "20260907_170137.jpg"
+      }
+    ]
+  },
+  {
+    "id": "desserts",
+    "label": "Десерти",
+    "items": [
+      {
+        "id": "cheesecake-berries",
+        "name": "Чийзкейк",
+        "description": "с ягоди или боровинки",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "cheesecake-chocolate-banana",
+        "name": "Чийзкейк",
+        "description": "с шоколад и банан",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "cheesecake-white-chocolate",
+        "name": "Чийзкейк",
+        "description": "с бял шоколад и карамел",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "cheesecake-figs",
+        "name": "Чийзкейк",
+        "description": "със смокини",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "french-biscuit-cake",
+        "name": "Френска бисквитена торта с маскарпоне, боровинки и орехи",
+        "description": "",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "italian-walnut-cake",
+        "name": "Италианска орехова торта с мед",
+        "description": "",
+        "portion": "200 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "tiramisu",
+        "name": "Тирамису",
+        "description": "",
+        "portion": "200 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "garash",
+        "name": "Торта гараш",
+        "description": "",
+        "portion": "200 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "pancakes-chocolate-coconut",
+        "name": "Палачинки",
+        "description": "с бял и кафяв шоколад, бисквити, кокос, сметана",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "pancakes-chocolate-banana",
+        "name": "Палачинки",
+        "description": "с шоколад, банан, бисквити, карамел",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "pancakes-chocolate-raspberry",
+        "name": "Палачинки",
+        "description": "млечен шоколад, бял шоколад, банан, малина, бисквити",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "pancakes-honey-walnut",
+        "name": "Палачинки",
+        "description": "с мед и орехи",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "pancakes-blueberry-jam",
+        "name": "Палачинки",
+        "description": "с конфитюр от боровинки",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "melba",
+        "name": "Мелба",
+        "description": "със сладолед и плодове, бисквити, сметана и орехи",
+        "portion": "250 г",
+        "priceEur": 5,
+        "priceBgn": 9.78,
+        "source": "20260907_170137.jpg"
+      },
+      {
+        "id": "ice-cream-three-scoops",
+        "name": "Сладолед 3 топки",
+        "description": "",
+        "portion": "200 г",
+        "priceEur": 4,
+        "priceBgn": 7.82,
+        "source": "20260907_170137.jpg"
+      }
+    ]
+  },
+  {
+    "id": "pizzas",
+    "label": "Пици",
+    "items": [
+      {
+        "id": "margherita",
+        "name": "Маргарита",
+        "description": "домати, моцарела, кашкавал, риган",
+        "portion": "420 г",
+        "priceEur": 7,
+        "priceBgn": 13.69,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "four-cheese-pizza",
+        "name": "Четири сирена",
+        "description": "сметанов сос, топено сирене, моцарела, кашкавал, чедър, маслини, риган",
+        "portion": "450 г",
+        "priceEur": 7.5,
+        "priceBgn": 14.67,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "capricciosa",
+        "name": "Капричоза",
+        "description": "домати, шунка, гъби, моцарела, кашкавал, риган",
+        "portion": "450 г",
+        "priceEur": 7.5,
+        "priceBgn": 14.67,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "neapolitana",
+        "name": "Неаполитана",
+        "description": "домати, бекон, шунка, моцарела, кашкавал, маслини, риган",
+        "portion": "450 г",
+        "priceEur": 7.5,
+        "priceBgn": 14.67,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "toscana",
+        "name": "Тоскана",
+        "description": "домати, бекон, луканков салам, кашкавал, моцарела, гъби, риган",
+        "portion": "450 г",
+        "priceEur": 7.5,
+        "priceBgn": 14.67,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "bellissima",
+        "name": "Белисима",
+        "description": "сметанов сос, пуешко филе, шунка, топено сирене, моцарела, кашкавал, риган",
+        "portion": "450 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "grazioso",
+        "name": "Грациозо",
+        "description": "сметанов сос, пуешко филе, шунка, моцарела, кашкавал, яйце, маслини, риган",
+        "portion": "450 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "provence",
+        "name": "Прованс",
+        "description": "домати, прошуто, пуешка шунка, моцарела, кашкавал, гъби, чесън, хрупкав пържен лук, сос чедър",
+        "portion": "450 г",
+        "priceEur": 8,
+        "priceBgn": 15.65,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "marinara-barbecue",
+        "name": "Маринара барбекю",
+        "description": "пресни домати, бекон, шунка, моцарела, кашкавал, гъби, лук, барбекю сос",
+        "portion": "450 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "mexicana",
+        "name": "Мексикана",
+        "description": "домати, бекон, луканков салам, кашкавал, маслини, халапеньо, царевица, риган",
+        "portion": "500 г",
+        "priceEur": 9,
+        "priceBgn": 17.6,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "supreme",
+        "name": "Сюприйм",
+        "description": "домати, бекон, шунка, луканков салам, моцарела, чедър, кашкавал, маслини, гъби, риган",
+        "portion": "500 г",
+        "priceEur": 10,
+        "priceBgn": 19.56,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "raffaello",
+        "name": "Рафаело",
+        "description": "сметанов сос, бекон, шунка, моцарела, синьо сирене, кашкавал, чедър, гъби, риган",
+        "portion": "500 г",
+        "priceEur": 10,
+        "priceBgn": 19.56,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      },
+      {
+        "id": "felice",
+        "name": "Феличе",
+        "description": "домати, шунка, пуешко филе, моцарела, кашкавал, чушки, гъби, маслини, лук, риган",
+        "portion": "500 г",
+        "priceEur": 10,
+        "priceBgn": 19.56,
+        "source": "20260907_170157.jpg",
+        "allergenIds": [
+          1,
+          3,
+          7
+        ]
+      }
+    ]
+  }
+]
