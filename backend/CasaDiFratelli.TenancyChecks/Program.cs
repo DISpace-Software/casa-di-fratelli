@@ -51,6 +51,10 @@ Check((await Request(options, "shared-api.example.test", "beta", "https://alpha.
 options.Tenants[0].FrontendOrigins.Clear();
 Check((await Request(options, "shared-api.example.test", "beta", "https://alpha.example.test")).Status == 404, "Implicit HTTPS domain origin also enforces tenant consistency");
 Check((await Request(options, "shared-api.example.test", "beta")).TenantId == "beta", "Shared backend accepts explicit tenant selector");
+Check((await Request(options, "shared-api.example.test", "alpha", "https://admin.example.test")).TenantId == "alpha", "Common admin origin can explicitly select the first restaurant");
+Check((await Request(options, "shared-api.example.test", "beta", "https://admin.example.test")).TenantId == "beta", "Common admin origin can explicitly select the second restaurant");
+Check((await Request(options, "shared-api.example.test", null, "https://admin.example.test")).Status == 404, "Common admin origin alone does not select a restaurant under strict routing");
+Check((await Request(options, "shared-api.example.test", "unknown", "https://admin.example.test")).Status == 404, "Common admin origin does not permit an unknown restaurant selector");
 Check((await Request(Tenants(false), "shared-api.example.test")).TenantId == "alpha", "Existing non-strict default routing is preserved");
 
 var validator = new TenantOptionsValidator();

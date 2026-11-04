@@ -1,4 +1,6 @@
 using System.Net;
+using System.Text.Json;
+using SeatMap.Api.Controllers;
 using SeatMap.Api.Data;
 using SeatMap.Api.Models;
 using SeatMap.Api.Services;
@@ -8,6 +10,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 internal static class TenantNotificationChecks
 {
@@ -92,7 +96,54 @@ internal static class TenantNotificationChecks
         var birthday = await marketing.SendBirthdayAsync(42);
         Check(!birthday.Sent && !await db.MarketingMessageLogs.AnyAsync(), "Disabled marketing must not record birthday or campaign deliveries");
         Check(capture.Calls == 0 && !await db.AppSettings.AnyAsync(), "Disabled tenant workflows must remain free of notification transport and side effects");
+        await CheckAdminPushAsync(db, brand, push, config);
         Console.WriteLine("PASS: tenant policy defaults/config validation; all email/push transports and feedback/marketing queues suppressed for Cofein without network requests.");
+    }
+
+    private static async Task CheckAdminPushAsync(AppDbContext db, TenantBrandingService brand,
+        PushNotificationService push, IConfiguration config)
+    {
+        db.AdminUsers.Add(new AdminUser { Id = 1, Name = "Owner", Email = "owner@example.test", Role = AdminRoleAccess.Owner });
+        await db.SaveChangesAsync();
+        var context = new ControllerContext { HttpContext = new DefaultHttpContext() };
+        context.HttpContext.Items["AdminUser"] = new AdminPrincipal(1, "Owner", "owner@example.test", AdminRoleAccess.Owner);
+        var controller = new AdminPushController(db, push, new AuditService(db), brand) { ControllerContext = context };
+        var result = (OkObjectResult)await controller.GetConfig();
+        var payload = JsonSerializer.SerializeToElement(result.Value);
+        Check(!payload.GetProperty("enabled").GetBoolean() && payload.GetProperty("publicKey").ValueKind == JsonValueKind.Null,
+            "Disabled push configuration must explicitly tell the shared admin not to request browser permission");
+        var request = new AdminPushSubscriptionRequest
+        {
+            Endpoint = "https://push.example.test/tenant-policy-test",
+            Keys = new() { P256Dh = "test-public-key", Auth = "test-auth" }
+        };
+        Check(await controller.SaveSubscription(request) is ConflictObjectResult,
+            "Disabled notifications must reject subscription creation");
+        Check(!await db.AppSettings.AnyAsync() && !await db.AdminPushSubscriptions.AnyAsync() && !await db.AuditLogs.AnyAsync(),
+            "Disabled admin push requests must not create keys, subscriptions or success audit entries");
+
+        // A tenant that disabled notifications can still remove a previously registered device.
+        db.AdminPushSubscriptions.Add(new AdminPushSubscription
+        {
+            AdminUserId = 1, Endpoint = request.Endpoint, P256Dh = request.Keys.P256Dh, Auth = request.Keys.Auth, IsActive = true
+        });
+        await db.SaveChangesAsync();
+        Check(await controller.SaveSubscription(request) is ConflictObjectResult,
+            "Disabled notifications must not refresh an existing subscription");
+        Check(await controller.DeleteSubscription(new() { Endpoint = request.Endpoint }) is NoContentResult &&
+              !(await db.AdminPushSubscriptions.SingleAsync()).IsActive,
+            "Disabling notifications must not prevent unsubscribing an existing device");
+
+        var casa = new CurrentTenant(); casa.Resolve(new TenantDefinition());
+        var casaBrand = new TenantBrandingService(db, casa, config, NullLogger<TenantBrandingService>.Instance);
+        var casaPush = new PushNotificationService(db, config, NullLogger<PushNotificationService>.Instance, casaBrand);
+        var enabledController = new AdminPushController(db, casaPush, new AuditService(db), casaBrand) { ControllerContext = context };
+        var enabledPayload = JsonSerializer.SerializeToElement(((OkObjectResult)await enabledController.GetConfig()).Value);
+        Check(enabledPayload.GetProperty("enabled").GetBoolean() && !string.IsNullOrWhiteSpace(enabledPayload.GetProperty("publicKey").GetString()),
+            "Casa must retain enabled push configuration and its existing publicKey contract");
+        Check(await enabledController.SaveSubscription(request) is OkObjectResult && (await db.AdminPushSubscriptions.SingleAsync()).IsActive,
+            "Casa must retain subscription creation/reactivation");
+        Console.WriteLine("PASS: disabled push config/subscription side effects blocked; unsubscribe and Casa enabled push contract preserved.");
     }
 
     private sealed class CaptureTransport : HttpMessageHandler

@@ -3,6 +3,7 @@ using SeatMap.Api.Data;
 using SeatMap.Api.Filters;
 using SeatMap.Api.Models;
 using SeatMap.Api.Services;
+using SeatMap.Api.Services.Tenancy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,19 +17,24 @@ public class AdminPushController : ControllerBase
     private readonly AppDbContext _db;
     private readonly PushNotificationService _push;
     private readonly AuditService _audit;
+    private readonly TenantBrandingService _branding;
 
-    public AdminPushController(AppDbContext db, PushNotificationService push, AuditService audit)
+    public AdminPushController(AppDbContext db, PushNotificationService push, AuditService audit, TenantBrandingService branding)
     {
         _db = db;
         _push = push;
         _audit = audit;
+        _branding = branding;
     }
 
     [HttpGet("config")]
     public async Task<IActionResult> GetConfig()
     {
+        if (!_branding.NotificationsEnabled)
+            return Ok(new { enabled = false, publicKey = (string?)null });
+
         var publicKey = await _push.GetPublicKeyAsync();
-        return Ok(new { publicKey });
+        return Ok(new { enabled = true, publicKey });
     }
 
     [HttpPost("subscriptions")]
@@ -37,6 +43,9 @@ public class AdminPushController : ControllerBase
         var admin = AdminAuthService.Current(HttpContext);
         if (admin == null)
             return Unauthorized();
+
+        if (!_branding.NotificationsEnabled)
+            return Conflict(new { code = "NOTIFICATIONS_DISABLED", message = "Notifications are disabled for this restaurant." });
 
         if (string.IsNullOrWhiteSpace(request.Endpoint) ||
             string.IsNullOrWhiteSpace(request.Keys?.P256Dh) ||

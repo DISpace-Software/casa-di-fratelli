@@ -228,6 +228,10 @@ public class MenuController : ControllerBase
     [AdminAuthorize(AdminRoleAccess.Administrator, AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
     public async Task<IActionResult> Seed()
     {
+        // This catalogue belongs to Casa. Other restaurants manage their own menu.
+        if (!_branding.IsCasa)
+            return Conflict(new { code = "DEFAULT_MENU_UNAVAILABLE", message = "No default menu is configured for this restaurant." });
+
         try
         {
             await EnsureMenuStorageAsync();

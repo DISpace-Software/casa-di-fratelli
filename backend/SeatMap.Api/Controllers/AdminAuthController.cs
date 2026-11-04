@@ -49,6 +49,22 @@ public class AdminAuthController : ControllerBase
     public sealed record DeviceLoginRequest(string CredentialToken);
     public sealed record DeviceRegisterRequest(string Label, string CredentialToken);
 
+    [HttpGet("context")]
+    public IActionResult GetContext()
+    {
+        if (!_currentTenant.IsResolved)
+            return NotFound(new { code = "TENANT_NOT_FOUND", message = "No active restaurant is selected." });
+
+        // Bootstrap the shared login without publishing unlisted restaurants in the catalogue.
+        return Ok(new
+        {
+            tenantId = _currentTenant.TenantId,
+            name = _currentTenant.TenantName,
+            frontendUrl = _currentTenant.FrontendUrl,
+            notificationsEnabled = _currentTenant.NotificationsEnabled
+        });
+    }
+
     private string GetAdminUrl()
     {
         if (!string.IsNullOrWhiteSpace(_currentTenant.FrontendUrl))

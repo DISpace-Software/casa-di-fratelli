@@ -16,6 +16,7 @@ static void Check(bool result, string message) { if (!result) throw new Exceptio
 await MenuStartupChecks.RunAsync();
 await FloorPlanChecks.RunAsync();
 await TenantNotificationChecks.RunAsync();
+await AdminSessionIsolationChecks.RunAsync();
 await RestaurantClosureChecks.RunAsync();
 Check(CasaDrinkPhotos.Resolve("", true, "Bar", "Кока-Кола", "250 мл").StartsWith("/drinks/"), "Casa drink must have a catalogue photo");
 Check(CasaDrinkPhotos.Resolve("/custom.png", true, "Bar", "Кока-Кола", "250 мл") == "/custom.png", "Admin photo must take precedence over the catalogue");

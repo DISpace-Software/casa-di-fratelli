@@ -40,6 +40,7 @@ public class PushNotificationService
             title = $"Нова резервация · {branding.Name}",
             body = $"{reservation.GuestName} · {reservation.ReservedDate:dd.MM.yyyy} {reservation.ReservedTime} · {reservation.GuestCount} гости",
             url = "/admin",
+            tenantId = _branding.TenantId,
             tag = $"reservation-{reservation.Id}",
             reservationId = reservation.Id,
             tableLabel
