@@ -43,8 +43,10 @@ inventing a new bookable terrace or garden furniture.
 - `frontend/src/pages/AdminPage.jsx`
 
 The previously untracked Cofein public-site source/assets were carried into
-this isolated branch without changing the landing page, photographs, menu or
-motion. The retired standalone Cofein admin is not part of this build.
+this isolated branch. Landing-page composition, photographs, menu and motion
+are preserved. The booking modal now has a sticky toolbar so its close button
+does not overlap the section controls on phones. The retired standalone Cofein
+admin is not part of this build.
 
 ## Local preview
 
@@ -80,11 +82,37 @@ Both share the fixture origin; the production website is unchanged.
 
 `scripts/check-cofein-spatial-map.mjs` accepts happy-dom/esbuild module paths,
 the private local-fixture state path, an output report path and an optional
-baseline checkout path (defaults to the sibling shared-admin checkout). Its simulated
-DOM checks are not visual browser tests. Chrome automation currently fails to
-navigate or capture screenshots. Actual desktop/mobile browser verification
-remains pending; an SVG component render is available separately and must not
-be represented as a screenshot of the website.
+baseline checkout path (defaults to the sibling shared-admin checkout). Its
+simulated DOM checks are not visual browser tests.
+
+After the owner authorized a separate Playwright browser, actual Chromium
+verification passed 26 public-map checks at 1440 × 1050, 390 × 844 and
+844 × 390. These cover all four fragments, selection/list/contact flow,
+continuous touch pan, two-finger pinch, immediate taps after panning,
+preserving zoom during resize, visible keyboard focus, reduced motion,
+availability failure/retry and modal closing. A real public-form POST created
+an Approved reservation in the disposable local database; it was then cancelled.
+Menu, gallery, space tabs and mobile navigation were checked separately.
+
+Seven shared-admin browser scenarios also passed: the 30-table desktop map,
+table blocking/unblocking through the API, saving/reloading a position and
+capacity change, phone navigation/table dialogs, unchanged Casa header and
+41-table plan, no browser runtime errors, and native touch dragging in the
+phone editor without changing the saved plan before Save. Fixture edits and
+blocks were restored after checking.
+
+Browser verification found and fixed a touch-capture bug that stopped panning
+after the first movement, off-screen keyboard focus, resize resetting the
+camera and an untranslated admin seat-count accessibility label. The fixes
+are scoped to Cofein; the shared admin shell remains unchanged.
+
+`scripts/check-cofein-spatial-browser.cjs` is the repeatable public regression
+check. It accepts an installed Playwright module path, a Chromium executable,
+an output directory and an optional local preview origin. It does not install
+dependencies or access production. Screenshots and browser reports are under
+`output/cofein-map-qa/browser-public/` and `browser-admin/` in the original
+workspace. The separate SVG component render remains a static illustration,
+not a website screenshot.
 
 Release packages retain the existing shared-admin paths and legacy Cofein
 admin redirects. They contain no credentials or local fixture state. Publishing

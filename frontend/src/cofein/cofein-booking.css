@@ -1,5 +1,7 @@
-.booking-modal { width: min(1240px, calc(100vw - 32px)); background: #211b18; scrollbar-gutter: stable; }
-.booking-modal .close-modal { position: sticky; float: right; top: 14px; margin: 14px 14px -58px 0; }
+.booking-modal { width: min(1240px, calc(100vw - 32px)); background: #211b18; scrollbar-gutter: stable; scroll-padding-block: 76px 20px; }
+.cofein-booking-toolbar { position: sticky; top: 0; z-index: 6; display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 66px; padding: 10px 16px 10px 28px; background: #211b18; border-bottom: 1px solid #cfb18130; }
+.cofein-booking-toolbar > span { color: #cfb181; font: 600 10px/1.4 'Manrope', Arial, sans-serif; letter-spacing: .16em; }
+.booking-modal .close-modal { position: static; flex: 0 0 44px; margin: 0; }
 .cofein-booking { color: #f4ecde; font-family: 'Manrope', Arial, sans-serif; max-width: 1220px; margin-inline: auto; padding: 48px 42px; text-align: left; }
 .cofein-booking * { box-sizing: border-box; }
 .cofein-booking h2 { font-size: clamp(32px, 4.2vw, 54px); line-height: 1.12; font-weight: 550; letter-spacing: -.045em; margin: 16px 0 22px; }

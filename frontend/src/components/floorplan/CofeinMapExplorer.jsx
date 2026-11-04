@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import CofeinArchitecture from './CofeinArchitecture.jsx';
 import CofeinTableVisual from './CofeinTableVisual.jsx';
 import { COFEIN_MAP_VIEWS, COFEIN_MAP_WORLD, projectCofeinTable, unprojectCofeinPoint } from '../../domain/floorPlans/cofeinGeometry.js';
-import { clampCamera, fitBounds, pinchCamera, zoomCameraAt } from '../../domain/adminMap/mapCamera.js';
+import { clampCamera, fitBounds, pinchCamera, preserveWorldCenter, zoomCameraAt } from '../../domain/adminMap/mapCamera.js';
 import './cofein-explorer.css';
 
 const MIN_SCALE = 0.12;
@@ -22,6 +22,7 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
   const worldRef = useRef(null);
   const cameraRef = useRef({ x: 0, y: 0, scale: 1 });
   const sizeRef = useRef({ width: 1, height: 1 });
+  const hasMeasuredViewport = useRef(false);
   const boundsRef = useRef(COFEIN_MAP_VIEWS.all);
   const pointersRef = useRef(new Map());
   const gestureRef = useRef(null);
@@ -57,14 +58,22 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
     const resize = () => {
       const rect = viewport.getBoundingClientRect();
       if (!rect.width || !rect.height) return;
-      sizeRef.current = { width: rect.width, height: rect.height };
-      fit();
+      const previous = sizeRef.current;
+      const next = { width: rect.width, height: rect.height };
+      if (hasMeasuredViewport.current && Math.abs(previous.width - next.width) < 0.5 && Math.abs(previous.height - next.height) < 0.5) return;
+      sizeRef.current = next;
+      if (!hasMeasuredViewport.current) {
+        hasMeasuredViewport.current = true;
+        fit();
+      } else {
+        applyCamera(preserveWorldCenter(cameraRef.current, previous, next), true);
+      }
     };
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [fit]);
+  }, [fit, applyCamera]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -95,6 +104,8 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
 
   function pointerDown(event) {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
+    // Block the click synthesized by a drag, but never the next deliberate tap.
+    if (pointersRef.current.size === 0) suppressClickUntil.current = 0;
     pointersRef.current.set(event.pointerId, point(event));
     startGesture();
     const tableId = event.target.closest?.('[data-table-id]')?.dataset.tableId;
@@ -155,6 +166,21 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
     applyCamera(zoomCameraAt(cameraRef.current, { x: sizeRef.current.width / 2, y: sizeRef.current.height / 2 }, cameraRef.current.scale * multiplier, MIN_SCALE, MAX_SCALE), true);
   }
 
+  function ensureTableVisible(table) {
+    const placement = projectCofeinTable(table);
+    if (!placement) return;
+    const viewport = sizeRef.current;
+    const camera = cameraRef.current;
+    const padding = 28;
+    const left = camera.x + (placement.x - placement.width / 2) * camera.scale;
+    const top = camera.y + (placement.y - placement.height / 2) * camera.scale;
+    const right = left + placement.width * camera.scale;
+    const bottom = top + placement.height * camera.scale;
+    if (left >= padding && top >= padding && right <= viewport.width - padding && bottom <= viewport.height - padding) return;
+    const scale = Math.max(MIN_SCALE, Math.min(camera.scale, (viewport.width - padding * 2) / placement.width, (viewport.height - padding * 2) / placement.height));
+    applyCamera({ x: viewport.width / 2 - placement.x * scale, y: viewport.height / 2 - placement.y * scale, scale }, true);
+  }
+
   function keyDown(event) {
     if (event.target !== event.currentTarget) return;
     const directions = { ArrowLeft: [48, 0], ArrowRight: [-48, 0], ArrowUp: [0, 48], ArrowDown: [0, -48] };
@@ -180,7 +206,12 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
         <button type="button" onClick={fit} aria-label={text.fit}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M7 3H3v4m10-4h4v4M3 13v4h4m10-4v4h-4" stroke="currentColor" strokeWidth="1.6" /></svg></button>
       </div>
       <div ref={viewportRef} className={`cofein-map-viewport${isDragging ? ' is-dragging' : ''}`} role="region" tabIndex={0} aria-label={text.map} aria-describedby={instructionsId}
-        onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd} onLostPointerCapture={pointerEnd}
+        onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerEnd} onPointerCancel={pointerEnd}
+        onLostPointerCapture={(event) => {
+          // Touch starts with implicit capture on a child. Transferring capture
+          // to the viewport emits a bubbling loss from that child, not an end.
+          if (event.target === event.currentTarget) pointerEnd(event);
+        }}
         onClickCapture={(event) => { if (Date.now() < suppressClickUntil.current) { event.preventDefault(); event.stopPropagation(); } }} onKeyDown={keyDown}>
         <div ref={worldRef} className="cofein-map-world" style={{ width: COFEIN_MAP_WORLD.width, height: COFEIN_MAP_WORLD.height }}>
           <CofeinArchitecture language={language} />
@@ -193,11 +224,14 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
               aria-label={`${text.table} ${table.id}, ${table.seats} ${text.seats}${state.label ? `, ${state.label}` : ''}`} title={`${text.table} ${table.id} · ${table.seats} ${text.seats}${state.label ? ` · ${state.label}` : ''}`}
               data-table-id={table.id} data-status={state.status} data-map-status={state.status} style={{ left: placement.x, top: placement.y, width: placement.width, height: placement.height }}
               onClick={() => { if (state.selectable) onTableSelect?.(table); }}
+              onFocus={(event) => { if (event.currentTarget.matches(':focus-visible')) ensureTableVisible(table); }}
               onKeyDown={(event) => {
                 if (!onTableMove || !state.selectable || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
                 event.preventDefault(); event.stopPropagation();
                 const step = event.shiftKey ? 2 : 0.5;
-                onTableMove(table, { x: Math.max(5, Math.min(95, table.x + (event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0))), y: Math.max(5, Math.min(95, table.y + (event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0))) });
+                const next = { x: Math.max(5, Math.min(95, table.x + (event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0))), y: Math.max(5, Math.min(95, table.y + (event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0))) };
+                onTableMove(table, next);
+                ensureTableVisible({ ...table, ...next });
               }}>
               <CofeinTableVisual table={table} placement={placement} status={state.status} selected={selected} />
             </button>;

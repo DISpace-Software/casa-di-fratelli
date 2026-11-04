@@ -4,7 +4,8 @@
 .cofein-map-views button[aria-pressed='true'] { background: #cfb181; border-color: #cfb181; color: #20170f; }
 .cofein-map-views button:hover { border-color: #cfb181; }
 .cofein-map-surface { position: relative; overflow: hidden; border: 1px solid #cfb18145; border-radius: 12px; background: #eee5d6; isolation: isolate; }
-.cofein-map-viewport { position: relative; overflow: hidden; height: clamp(500px, 70dvh, 760px); touch-action: none; cursor: grab; outline-offset: -4px; }
+.cofein-map-viewport { position: relative; overflow: hidden; overflow: clip; height: clamp(500px, 70svh, 760px); touch-action: none; cursor: grab; outline-offset: -4px; }
+.cofein-map-viewport:focus-visible { outline: 2px solid #493522; outline-offset: -4px; }
 .cofein-map-viewport.is-dragging { cursor: grabbing; }
 .cofein-map-world { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; user-select: none; }
 .cofein-map-world .cofein-map-table-button { position: absolute; transform: translate(-50%, -50%); margin: 0; padding: 0; border: 0; border-radius: 8px; background: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -22,8 +23,10 @@
   .cofein-map-views { gap: 6px; }
   .cofein-map-views button { flex: 1 1 auto; font-size: 10px; padding-inline: 10px; }
   .cofein-map-views button:first-child { flex-basis: 100%; }
-  .cofein-map-viewport { height: min(570px, 66dvh); min-height: 360px; }
   .cofein-map-tools { top: 10px; right: 10px; }
+}
+@media (max-width: 580px), (max-height: 520px) {
+  .cofein-map-viewport { height: min(570px, 66svh); min-height: min(360px, 55svh); }
 }
 @media (prefers-reduced-motion: reduce) {
   .cofein-map-explorer *, .cofein-map-explorer *::before { transition: none !important; animation: none !important; }

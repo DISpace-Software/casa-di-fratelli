@@ -48,6 +48,7 @@ function CofeinDialog({ modal, onClose, onPhotoChange, returnFocus }) {
     };
   }, [returnFocus]);
   const photo = modal.type === 'photo' ? photographs[modal.index] : null;
+  const closeButton = <button ref={closeRef} type="button" className="close-modal icon-button" aria-label="Затвори прозореца" onClick={onClose}><span aria-hidden="true">×</span></button>;
   return (
     <dialog ref={dialogRef} className={`modal ${photo ? 'photo-modal' : modal.type === 'menu' ? 'menu-modal' : 'booking-modal'}`} aria-labelledby="dialog-title" aria-describedby={photo ? undefined : 'dialog-description'}
       onCancel={event => { event.preventDefault(); onClose(); }}
@@ -61,7 +62,7 @@ function CofeinDialog({ modal, onClose, onPhotoChange, returnFocus }) {
         event.preventDefault();
         onPhotoChange(event.key === 'ArrowRight' ? 1 : -1);
       }}>
-      <button ref={closeRef} type="button" className="close-modal icon-button" aria-label="Затвори прозореца" onClick={onClose}><span aria-hidden="true">×</span></button>
+      {modal.type === 'booking' ? <div className="cofein-booking-toolbar"><span aria-hidden="true">COFEIN · РЕЗЕРВАЦИИ</span>{closeButton}</div> : closeButton}
       {photo ? <>
         <div className="modal-image"><Photo key={photo.id} id={photo.id} alt={photo.alt} eager /></div>
         <div className="modal-caption"><div aria-live="polite"><p className="eyebrow">COFEIN · {String(modal.index + 1).padStart(2, '0')} / 05</p><h2 id="dialog-title">{photo.label}</h2></div><div className="gallery-controls"><button type="button" className="icon-button" aria-label="Предишна снимка" onClick={() => onPhotoChange(-1)}><Arrow direction="left" /></button><button type="button" className="icon-button" aria-label="Следваща снимка" onClick={() => onPhotoChange(1)}><Arrow direction="right" /></button></div></div>

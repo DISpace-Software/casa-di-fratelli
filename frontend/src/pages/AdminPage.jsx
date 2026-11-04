@@ -3011,7 +3011,7 @@ function ReservationOperationsMap({
               >
                 <button
                   type="button"
-                  aria-label={cofeinSpatial ? `${text.table} ${table.id}, ${table.seats} ${text.seats}` : undefined}
+                  aria-label={cofeinSpatial ? `${text.table} ${table.id}, ${table.seats} ${adminLocalText(language, 'места', 'seats', 'мест')}` : undefined}
                   aria-pressed={cofeinSpatial ? Boolean(isSelectedTable || isMoveSelected) : undefined}
                   style={placement ? { width: placement.width, height: placement.height, position: "relative" } : undefined}
                   data-admin-blocked={isAdminBlocked ? "true" : "false"}
