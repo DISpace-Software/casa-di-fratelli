@@ -1,3 +1,10 @@
+import { restaurantAssetUrl } from "../domain/adminMap/restaurantAssets";
+import { getTenantPushRegistration } from "../domain/adminMap/pushRegistration";
+import { getZoneName } from "../domain/reservations/floorPlanNames";
+import { FloorPlanContext, useFloorPlan } from "../context/FloorPlanContext";
+import { getAdminSessionPlan } from "../domain/adminMap/adminSessionPlan";
+import { tenantCategoryLabel, tenantCategoryOptions } from "../domain/adminMap/tenantMenuCategories";
+import { tenantContext, tenantStorageKey } from "../config/tenantRuntime";
 import { useSeasonalZones } from "../context/SeasonalZonesContext";
 import { createLayoutSession } from "../domain/adminMap/layoutSession";
 import MarketingHistory from "../components/admin/MarketingHistory";
@@ -8,27 +15,19 @@ import TenantBrandingSettings from "../components/admin/TenantBrandingSettings";
 import { useTenantBranding } from "../context/TenantBrandingContext";
 import React from "react";
 import { flushSync } from "react-dom";
-import { API_BASE_URL } from "../config/api";
-import {
-  defaultGardenTables,
-  gardenGroups,
-  indoorGroups,
-  openTerraceGroups,
-  adminReservationTimes,
-  tableIdsByArea,
-  tablesByArea,
-} from "../domain/reservations/tableConfig";
+import { API_BASE_URL, apiFetch as fetch } from "../config/api";
+import { adminReservationTimes } from "../domain/reservations/tableConfig";
 import {
   canUseAdminTableSelection as canUseAdminTableSelectionRule,
   getAreaTablesCapacity,
-} from "../domain/reservations/tableRules";
+} from "../domain/reservations/adminPlanRules";
 import {
   getUnavailableSelectedTableIds,
   getUnavailableTableIdsForSlot,
 } from "../domain/reservations/availability";
 import { getAvailableReservationTimesForDate, isPastTimeForDate } from "../domain/reservations/dateTimeRules";
 import UnifiedMapViewport from "../components/admin/UnifiedMapViewport";
-import { ADMIN_MAP_ZONES } from "../domain/adminMap/mapConfig";
+import { buildMapGeometry } from "../domain/adminMap/mapConfig";
 import {
   localPercentToWorld,
   rotatePercentPointClockwise,
@@ -40,10 +39,11 @@ import {
 } from "../domain/adminMap/mapInteraction";
 import { formatBirthdayEmailSentAt, daysUntilBirthday, getCustomerBirthDate, searchCustomers, sortCustomers } from "../domain/customers/customerDirectory";
 import { findPublicTableHold } from "../domain/reservations/publicTableHolds";
-import { getActiveLayoutTables } from "../domain/reservations/layoutTables";
+import { getActiveLayoutTables } from "../domain/reservations/adminPlanRules";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
 
-const ADMIN_MAP_VIEW_STORAGE_KEY = "casa-admin-map-view-mode";
+const isCasaTenant = tenantContext.tenantId === "casa-di-fratelli";
+const adminMapViewStorageKey = () => tenantStorageKey("casa-admin-map-view-mode");
 
 const emptyMenuItem = {
   nameBg: "",
@@ -56,7 +56,7 @@ const emptyMenuItem = {
   weight: "",
   price: "",
   department: "Kitchen",
-  category: "Main",
+  category: isCasaTenant ? "Main" : tenantCategoryOptions(tenantContext.tenantId, "Kitchen")[0] || "",
   isActive: true,
   notifySubscribers: false,
 };
@@ -139,18 +139,18 @@ async function compressEventImage(file) {
   return compressMenuImage(file);
 }
 
-function showBrowserNotification(title, body) {
+function showBrowserNotification(title, body, icon) {
   if (typeof window === "undefined" || !("Notification" in window)) return;
 
   if (Notification.permission === "granted") {
-    new Notification(title, { body, icon: "/casa-fratelli-icon-192.png" });
+    new Notification(title, { body, icon });
     return;
   }
 
   if (Notification.permission === "default") {
     Notification.requestPermission().then((permission) => {
       if (permission === "granted") {
-        new Notification(title, { body, icon: "/casa-fratelli-icon-192.png" });
+        new Notification(title, { body, icon });
       }
     });
   }
@@ -169,15 +169,8 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-async function getReadyAdminPushRegistration() {
-  await navigator.serviceWorker.register("/admin-push-sw.js", { scope: "/" });
-  const registration = await navigator.serviceWorker.ready;
-
-  if (!registration.active) {
-    throw new Error("Service worker is not active yet.");
-  }
-
-  return registration;
+function getReadyAdminPushRegistration() {
+  return getTenantPushRegistration(navigator.serviceWorker, tenantContext);
 }
 
 function toLocalDateTimeInputValue(value) {
@@ -783,6 +776,21 @@ function adminLocalText(language, bg, en, ru = bg) {
   return bg;
 }
 
+// Retain the published Casa wording; other restaurants use their plan names.
+function getAdminZoneLabel(zone, language, usage = "seasonal") {
+  if (!isCasaTenant || !zone?.presentation?.startsWith("casa-")) return getZoneName(zone, language);
+  if (usage === "selection") {
+    const labels = {
+      indoor: ["Зала / непушачи", "Hall / non-smoking"],
+      garden: ["Покрита тераса / пушачи", "Covered terrace / smoking"],
+      openTerrace: ["Открита тераса / пушачи", "Open terrace / smoking"],
+    };
+    return labels[zone.id]?.[language === "bg" ? 0 : 1] || getZoneName(zone, language);
+  }
+  if (zone.id === "indoor") return adminLocalText(language, "Зала / Непушачи", "Indoor / Non-smoking", usage === "block" ? "Зал / Для некурящих" : "Зал / Некурящие");
+  return getZoneName(zone, language);
+}
+
 function getCustomerProfileKey(profile) {
   const email = String(profile.email ?? profile.Email ?? "").trim().toLowerCase();
   const phone = String(profile.phone ?? profile.Phone ?? "").trim().toLowerCase();
@@ -834,7 +842,7 @@ const emptyAdminReservation = {
   phone: "",
   email: "",
   guestCount: 2,
-  area: "indoor",
+  area: "",
   reservedDate: "",
   reservedTime: "",
   tableIds: "",
@@ -851,7 +859,7 @@ const emptyManualCustomer = {
 };
 
 const emptyHallBlock = {
-  area: "indoor",
+  area: "",
   reservedDate: "",
   startTime: "10:00",
   endTime: "22:00",
@@ -867,9 +875,7 @@ const defaultRestaurantClosure = {
   isActive: true,
 };
 
-const indoorTableIds = tableIdsByArea.indoor;
-const areaTableIds = tableIdsByArea;
-const gardenSpecialIds = defaultGardenTables.filter((table) => table.special).map((table) => table.id);
+
 
 const categoryDisplayNames = {
   bg: {
@@ -1001,7 +1007,7 @@ function normalizeCategory(value) {
 
 function getCategoryLabel(category, language) {
   const normalized = normalizeCategory(category);
-  return categoryDisplayNames[language]?.[normalized] || normalized;
+  return tenantCategoryLabel(tenantContext.tenantId, normalized) || categoryDisplayNames[language]?.[normalized] || normalized;
 }
 
 function getMenuItemName(item, language = "bg") {
@@ -1032,30 +1038,7 @@ function getMenuCategoryGroups(items, language = "bg") {
   );
 }
 
-function canUseAdminTableSelection(area, tableIds, options = {}) {
-  return canUseAdminTableSelectionRule(area, tableIds, { gardenSpecialIds, ...options });
-}
-
-function getContiguousSlices(group) {
-  const slices = [];
-
-  for (let start = 0; start < group.length; start += 1) {
-    for (let end = start + 1; end <= group.length; end += 1) {
-      slices.push(group.slice(start, end));
-    }
-  }
-
-  return slices;
-}
-
-function getAreaCandidateGroups(area) {
-  if (area === "garden") return gardenGroups.flatMap(getContiguousSlices);
-  if (area === "openTerrace") return openTerraceGroups.flatMap(getContiguousSlices);
-  if (area === "indoor") return indoorGroups.flatMap(getContiguousSlices);
-  return [];
-}
-
-function getMoveCandidateOptions(area, guestCount, unavailableTableIds, areaTables = tablesByArea[area] || []) {
+function getMoveCandidateOptions(area, guestCount, unavailableTableIds, areaTables = [], combinations = []) {
   const requiredSeats = Number(guestCount || 0);
   const activeTables = areaTables.filter((table) => table.isActive !== false);
   const activeIds = new Set(activeTables.map((table) => table.id));
@@ -1063,7 +1046,8 @@ function getMoveCandidateOptions(area, guestCount, unavailableTableIds, areaTabl
   const seen = new Set();
   const candidates = [];
   const addCandidate = (ids) => {
-    const tableIds = [...new Set(ids)].filter((id) => activeIds.has(id) && !unavailableTableIds.has(id));
+    if (ids.some(id => !activeIds.has(id) || unavailableTableIds.has(id))) return;
+    const tableIds = [...new Set(ids)];
     if (tableIds.length === 0) return;
 
     const key = tableIds.join("|");
@@ -1074,7 +1058,7 @@ function getMoveCandidateOptions(area, guestCount, unavailableTableIds, areaTabl
     if (capacity < requiredSeats) return;
     if (!canUseAdminTableSelectionRule(area, tableIds, {
       areaTables: activeTables,
-      gardenSpecialIds,
+      combinations,
       requiredSeats,
       allowPartial: false,
     })) {
@@ -1090,7 +1074,7 @@ function getMoveCandidateOptions(area, guestCount, unavailableTableIds, areaTabl
   };
 
   activeTables.forEach((table) => addCandidate([table.id]));
-  getAreaCandidateGroups(area).forEach(addCandidate);
+  combinations.forEach(addCandidate);
 
   return candidates.sort((first, second) =>
     first.overage - second.overage ||
@@ -1187,11 +1171,9 @@ function TableChipSelector({
   bestTableIds = new Set(),
   unrestrictedSelection = false,
 }) {
-  const tableIds = tableIdsOverride || areaTables?.map((table) => table.id) || areaTableIds[area] || indoorTableIds;
-  const selectionGardenSpecialIds =
-    area === "garden" && areaTables
-      ? areaTables.filter((table) => table.special).map((table) => table.id)
-      : null;
+  const { plan } = useFloorPlan();
+  areaTables = areaTables || getActiveLayoutTables(plan.tables, area);
+  const tableIds = tableIdsOverride || areaTables.map((table) => table.id);
   const visibleTableIds = hideUnavailable
     ? tableIds.filter((tableId) => selectedTableIds.includes(tableId) || !unavailableTableIds.has(tableId))
     : tableIds;
@@ -1207,11 +1189,11 @@ function TableChipSelector({
           !unavailable &&
           (unrestrictedSelection ||
           (selected ||
-            canUseAdminTableSelection(area, [...selectedTableIds, tableId], {
+            canUseAdminTableSelectionRule(area, [...selectedTableIds, tableId], {
+              combinations: plan.combinations,
               requiredSeats,
               allowPartial: true,
               ...(areaTables ? { areaTables } : {}),
-              ...(selectionGardenSpecialIds ? { gardenSpecialIds: selectionGardenSpecialIds } : {}),
             })));
 
         return (
@@ -1251,7 +1233,7 @@ function TableChipSelector({
 function normalizeLayoutItem(item) {
   return {
     id: String(item.id || item.Id || "").trim(),
-    area: item.area || item.Area || "indoor",
+    area: item.area || item.Area || "",
     x: Number(item.x ?? item.X ?? 50),
     y: Number(item.y ?? item.Y ?? 50),
     seats: Number(item.seats ?? item.Seats ?? 4),
@@ -1261,7 +1243,8 @@ function normalizeLayoutItem(item) {
   };
 }
 
-function orientTableForMap(table) {
+function orientTableForMap(table, presentation = "plain") {
+  if (!presentation.startsWith("casa-")) return table;
   if (table.area === "openTerrace") return { ...table, ...rotatePercentPointHalfTurn(table) };
   if (table.area === "garden") return { ...table, ...rotatePercentPointClockwise(table) };
   if (table.area === "indoor") return { ...table, ...rotatePercentPointCounterClockwise(table) };
@@ -1356,7 +1339,8 @@ function AdminMapWindow({ className = "", label, vertical = false }) {
   );
 }
 
-function AdminMapDecor({ area }) {
+function AdminMapDecor({ area, presentation }) {
+  if (!presentation?.startsWith("casa-")) return null;
   if (area === "garden") {
     return (
       <>
@@ -1422,7 +1406,8 @@ function AdminMapDecor({ area }) {
   );
 }
 
-function LegacyAdminMapDecor({ area }) {
+function LegacyAdminMapDecor({ area, presentation }) {
+  if (!presentation?.startsWith("casa-")) return null;
   if (area === "garden") {
     return (
       <>
@@ -1490,6 +1475,8 @@ function LegacyAdminMapDecor({ area }) {
 }
 
 function TableLayoutEditor({
+  zones,
+  language,
   text,
   layout,
   selectedArea,
@@ -1505,11 +1492,8 @@ function TableLayoutEditor({
   const mapRef = React.useRef(null);
   const [draggingId, setDraggingId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState("");
-  const areas = [
-    ["indoor", "Зала / Непушачи"],
-    ["garden", "Покрита тераса"],
-    ["openTerrace", "Открита тераса"],
-  ];
+  const areas = zones.map(zone => [zone.id, getZoneName(zone, zone.presentation?.startsWith("casa-") ? "bg" : language)]);
+  const presentation = zones.find(zone => zone.id === selectedArea)?.presentation || "plain";
   const areaTables = layout.filter((item) => item.area === selectedArea);
   const activeAreaTables = areaTables.filter((item) => item.isActive);
   const selectedTable = areaTables.find((item) => item.id === selectedTableId) || areaTables[0];
@@ -1526,11 +1510,11 @@ function TableLayoutEditor({
       x: Math.min(94, Math.max(6, ((clientX - box.left) / box.width) * 100)),
       y: Math.min(94, Math.max(6, ((clientY - box.top) / box.height) * 100)),
     };
-    const storedPoint = selectedArea === "garden"
+    const storedPoint = presentation === "casa-garden"
       ? rotatePercentPointCounterClockwise(displayPoint)
-      : selectedArea === "indoor"
+      : presentation === "casa-indoor"
       ? rotatePercentPointClockwise(displayPoint)
-      : selectedArea === "openTerrace"
+      : presentation === "casa-terrace"
       ? rotatePercentPointHalfTurn(displayPoint)
       : displayPoint;
     const current = layout.find((item) => item.id === tableId);
@@ -1605,9 +1589,9 @@ function TableLayoutEditor({
           <div
             ref={mapRef}
             className={`relative min-h-[560px] overflow-hidden rounded-[26px] border border-white/10 ${
-              selectedArea === "garden"
+              presentation === "casa-garden"
                 ? "bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] sm:aspect-[1.6/1] sm:min-h-0"
-                : selectedArea === "openTerrace"
+                : presentation === "casa-terrace"
                 ? "bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))]"
                 : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] sm:aspect-[1.6/1] sm:min-h-0"
             }`}
@@ -1619,14 +1603,14 @@ function TableLayoutEditor({
             onPointerCancel={() => setDraggingId(null)}
           >
             <div className="absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
-            <AdminMapDecor area={selectedArea} />
+            <AdminMapDecor area={selectedArea} presentation={presentation} />
 
             {activeAreaTables.map((table) => {
-              const displayPoint = selectedArea === "garden"
+              const displayPoint = presentation === "casa-garden"
                 ? rotatePercentPointClockwise(table)
-                : selectedArea === "indoor"
+                : presentation === "casa-indoor"
                 ? rotatePercentPointCounterClockwise(table)
-                : selectedArea === "openTerrace"
+                : presentation === "casa-terrace"
                 ? rotatePercentPointHalfTurn(table)
                 : table;
 
@@ -1732,7 +1716,7 @@ function TableLayoutEditor({
                     <input
                       type="number"
                       min="1"
-                      max="20"
+                      max="500"
                       value={selectedTable.seats}
                       onChange={(event) => onUpdate(selectedTable.id, { ...selectedTable, seats: Number(event.target.value) })}
                       className="mt-1 w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white"
@@ -1761,6 +1745,7 @@ function TableLayoutEditor({
 
 function SectionMapViewport({
   children,
+  geometry,
   zones,
   activeZone,
   onZoneChange,
@@ -1769,6 +1754,7 @@ function SectionMapViewport({
   hud,
   text,
 }) {
+  const presentation = geometry?.zones.find(zone => zone.id === activeZone)?.presentation;
   return (
     <>
       <div className="mb-5 grid gap-2 sm:grid-cols-3">
@@ -1793,9 +1779,9 @@ function SectionMapViewport({
       <div
         data-admin-swipe-lock="true"
         className={`admin-reservation-map-surface relative min-w-0 min-h-[600px] overflow-hidden rounded-[26px] border border-white/10 ${
-          activeZone === "garden"
+          presentation === "casa-garden"
             ? "bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.96),rgba(16,18,13,0.96))] md:min-h-[820px]"
-            : activeZone === "openTerrace"
+            : presentation === "casa-terrace"
             ? "min-h-[720px] bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),radial-gradient(circle_at_50%_100%,rgba(201,165,106,0.13),transparent_38%),linear-gradient(180deg,rgba(30,34,25,0.96),rgba(14,16,11,0.96))] sm:min-h-[760px]"
             : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),radial-gradient(circle_at_18%_60%,rgba(125,211,252,0.08),transparent_25%),linear-gradient(180deg,rgba(39,27,21,0.96),rgba(16,12,10,0.96))] md:min-h-[850px]"
         }`}
@@ -1849,12 +1835,16 @@ function ReservationOperationsMap({
   onExitMap,
   mapViewMode = "scroll",
 }) {
+  const { plan } = useFloorPlan();
+  const { branding } = useTenantBranding();
+  const geometry = React.useMemo(() => buildMapGeometry(plan.zones.filter(z => z.isActive)), [plan]);
+  const mapZones = geometry.zones;
   const { closedAreas, loaded: zonesLoaded } = useSeasonalZones();
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState(null);
   const [mapFocusRequestId, setMapFocusRequestId] = React.useState(0);
   const [moveReservationId, setMoveReservationId] = React.useState(null);
-  const [moveDraft, setMoveDraft] = React.useState({ area: "indoor", tableIds: [], guestCount: 0 });
+  const [moveDraft, setMoveDraft] = React.useState({ area: "", tableIds: [], guestCount: 0 });
   const [showConsumption, setShowConsumption] = React.useState(false);
   const [consumptionSearch, setConsumptionSearch] = React.useState("");
   const [consumptionCategory, setConsumptionCategory] = React.useState("all");
@@ -1869,32 +1859,28 @@ function ReservationOperationsMap({
   const todayDate = formatLocalDate(now);
   const mapDate = selectedDate || todayDate;
   const isMapToday = mapDate === todayDate;
-  const areas = [
-    ["indoor", text.indoor],
-    ["garden", text.garden],
-    ["openTerrace", text.openTerrace],
-  ].filter(([area]) => !closedAreas.includes(area));
+  const areas = React.useMemo(() => plan.zones.filter(zone => zone.isActive && !closedAreas.includes(zone.id)).map(zone => [zone.id, zone.presentation?.startsWith("casa-") ? text[zone.id] : getZoneName(zone, language)]), [plan, closedAreas, language, text]);
   React.useEffect(() => {
-    if (!selectedArea || closedAreas.includes(selectedArea)) {
+    if (!areas.some(([id]) => id === selectedArea)) {
       onAreaChange(areas[0]?.[0] || "");
       setSelectedReservationId(null);
       setSelectedTableId(null);
       setTableReservationDraft(null);
       setWalkInDraft(null);
     }
-  }, [closedAreas, selectedArea, onAreaChange]);
+  }, [closedAreas, selectedArea, onAreaChange, areas]);
   const getAreaTableCount = (area) =>
-    getActiveLayoutTables(layout, area, tablesByArea[area] || []).length;
+    getActiveLayoutTables(layout, area).length;
   const getActiveTablesForArea = React.useCallback(
-    (area) => (closedAreas.includes(area) ? [] : getActiveLayoutTables(layout, area, tablesByArea[area] || []))
-      .map((table) => mapViewMode === "section" && table.area !== "openTerrace" ? table : orientTableForMap(table)),
-    [layout, mapViewMode, closedAreas]
+    (area) => (closedAreas.includes(area) ? [] : getActiveLayoutTables(layout, area))
+      .map((table) => mapViewMode === "section" && table.area !== "openTerrace" ? table : orientTableForMap(table, plan.zones.find(zone => zone.id === table.area)?.presentation)),
+    [layout, mapViewMode, closedAreas, plan]
   );
   const areaTables = React.useMemo(
-    () => ["indoor", "garden", "openTerrace"]
+    () => plan.zones.filter(zone => zone.isActive).map(zone => zone.id)
       .flatMap((area) => getActiveTablesForArea(area))
       .sort((first, second) => first.id.localeCompare(second.id, undefined, { numeric: true })),
-    [getActiveTablesForArea]
+    [getActiveTablesForArea, plan]
   );
   const occupancy = React.useMemo(
     () => getRestaurantOccupancy(areaTables, reservations, now),
@@ -1908,7 +1894,7 @@ function ReservationOperationsMap({
   );
   const getReservationTables = React.useCallback(
     (reservation) => areaTables.filter((table) =>
-      table.area === (reservation.area || "indoor") && reservation.tableIds.includes(table.id)
+      table.area === reservation.area && reservation.tableIds.includes(table.id)
     ),
     [areaTables]
   );
@@ -1966,7 +1952,7 @@ function ReservationOperationsMap({
     if (selectedTableId) {
       const table = areaTables.find((item) => item.id === selectedTableId && item.area === selectedArea);
       if (table) {
-        const zone = ADMIN_MAP_ZONES.find((item) => item.id === table.area) || ADMIN_MAP_ZONES[0];
+        const zone = mapZones.find((item) => item.id === table.area) || mapZones[0];
         const point = localPercentToWorld(zone, table);
         return { ...point, key: `table-${table.area}-${table.id}-${mapFocusRequestId}` };
       }
@@ -1975,7 +1961,7 @@ function ReservationOperationsMap({
     if (selectedReservation) {
       const bounds = getReservationBounds(selectedReservation);
       if (bounds) {
-        const zone = ADMIN_MAP_ZONES.find((item) => item.id === bounds.area) || ADMIN_MAP_ZONES[0];
+        const zone = mapZones.find((item) => item.id === bounds.area) || mapZones[0];
         return {
           x: zone.x + (bounds.centerX / 100) * zone.width,
           y: zone.y + (bounds.centerY / 100) * zone.height,
@@ -1985,7 +1971,7 @@ function ReservationOperationsMap({
     }
 
     return null;
-  }, [areaTables, getReservationBounds, mapFocusRequestId, selectedArea, selectedReservation, selectedTableId]);
+  }, [areaTables, getReservationBounds, mapFocusRequestId, selectedArea, selectedReservation, selectedTableId, mapZones]);
   const activeOrdersByReservationId = React.useMemo(() => {
     const grouped = new Map();
 
@@ -2136,9 +2122,9 @@ function ReservationOperationsMap({
       moveDraft.area,
       Number(moveDraft.guestCount || selectedReservation?.guestCount || 0),
       moveUnavailableTableIds,
-      moveAreaTables
+      moveAreaTables, plan.combinations
     ),
-    [moveDraft.area, moveDraft.guestCount, moveUnavailableTableIds, moveAreaTables, selectedReservation?.guestCount]
+    [moveDraft.area, moveDraft.guestCount, moveUnavailableTableIds, moveAreaTables, selectedReservation?.guestCount, plan.combinations]
   );
   const moveSuggestedTableIds = React.useMemo(
     () => new Set(moveCandidateOptions.flatMap((option) => option.tableIds)),
@@ -2171,10 +2157,10 @@ function ReservationOperationsMap({
 
   function openMovePanel(reservation) {
     setSelectedReservationId(reservation.id);
-    onAreaChange(["garden", "openTerrace"].includes(reservation.area) ? reservation.area : "indoor");
+    onAreaChange(reservation.area);
     setMoveReservationId(reservation.id);
     setMoveDraft({
-      area: ["garden", "openTerrace"].includes(reservation.area) ? reservation.area : "indoor",
+      area: reservation.area,
       tableIds: [],
       guestCount: Number(reservation.guestCount || 1),
     });
@@ -2591,6 +2577,7 @@ function ReservationOperationsMap({
       <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(0,0.75fr)]">
         <div className="relative min-w-0">
         <MapViewport
+          geometry={geometry}
           zones={areas.map(([id, name]) => ({ id, name: `${name} · ${getAreaTableCount(id)} ${text.tables}` }))}
           activeZone={selectedArea}
           onZoneChange={handleMapZoneChange}
@@ -2674,7 +2661,7 @@ function ReservationOperationsMap({
           viewMode={mapViewMode}
           text={text}
         >
-          {ADMIN_MAP_ZONES.filter((zone) => !closedAreas.includes(zone.id) && (mapViewMode === "scroll" || zone.id === selectedArea)).map((zone) => {
+          {mapZones.filter((zone) => !closedAreas.includes(zone.id) && (mapViewMode === "scroll" || zone.id === selectedArea)).map((zone) => {
             const label = areas.find(([area]) => area === zone.id)?.[1] || zone.id;
             return (
               <section
@@ -2682,9 +2669,9 @@ function ReservationOperationsMap({
                 className={mapViewMode === "section" ? "absolute inset-0 overflow-hidden" : `absolute overflow-hidden rounded-[34px] border ${
                   selectedArea === zone.id ? "border-[#f2d39a]/55 shadow-[0_0_55px_rgba(201,165,106,0.18)]" : "border-white/12"
                 } ${
-                  zone.id === "garden"
+                  zone.presentation === "casa-garden"
                     ? "bg-[radial-gradient(circle_at_top,_rgba(60,169,126,0.13),_transparent_34%),linear-gradient(180deg,rgba(34,40,28,0.98),rgba(16,18,13,0.98))]"
-                    : zone.id === "openTerrace"
+                    : zone.presentation === "casa-terrace"
                     ? "bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),linear-gradient(180deg,rgba(30,34,25,0.98),rgba(14,16,11,0.98))]"
                     : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),linear-gradient(180deg,rgba(39,27,21,0.98),rgba(16,12,10,0.98))]"
                 }`}
@@ -2698,8 +2685,8 @@ function ReservationOperationsMap({
                   </div>
                 )}
                 {mapViewMode === "section"
-                  ? <LegacyAdminMapDecor area={zone.id} />
-                  : <AdminMapDecor area={zone.id} />}
+                  ? <LegacyAdminMapDecor area={zone.id} presentation={zone.presentation} />
+                  : <AdminMapDecor area={zone.id} presentation={zone.presentation} />}
               </section>
             );
           })}
@@ -2721,7 +2708,7 @@ function ReservationOperationsMap({
               requireTableClaim &&
               reservation.isArrived &&
               !reservationOrders.some((order) => Boolean(order.assignedWaiterId));
-            const zone = ADMIN_MAP_ZONES.find((item) => item.id === bounds.area) || ADMIN_MAP_ZONES[0];
+            const zone = mapZones.find((item) => item.id === bounds.area) || mapZones[0];
 
             return (
               <div
@@ -2967,7 +2954,7 @@ function ReservationOperationsMap({
             const isMoveAllowed =
               isMoveMode &&
               !isMoveUnavailable;
-            const zone = ADMIN_MAP_ZONES.find((item) => item.id === table.area) || ADMIN_MAP_ZONES[0];
+            const zone = mapZones.find((item) => item.id === table.area) || mapZones[0];
             const worldPosition = localPercentToWorld(zone, table);
 
             return (
@@ -3439,10 +3426,10 @@ function ReservationOperationsMap({
                                   >
                                     <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-black/25 sm:h-14 sm:w-14">
                                       {imageUrl ? (
-                                        <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+                                        <img src={restaurantAssetUrl(imageUrl, branding.assetBaseUrl)} alt="" className="h-full w-full object-cover" />
                                       ) : (
                                         <div className="flex h-full w-full items-center justify-center text-[9px] font-semibold uppercase tracking-[0.18em] text-[#f2d39a]/70">
-                                          Casa
+                                          {isCasaTenant ? "Casa" : branding.name}
                                         </div>
                                       )}
                                     </div>
@@ -5671,7 +5658,17 @@ function Panel({ title, subtitle, children, right, bare = false }) {
   );
 }
 
-export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenuChanged, onEventsChanged, theme, onToggleTheme }) {
+export default function AdminPage(props) {
+  const [layoutSession] = React.useState(createLayoutSession);
+  const layoutSync = React.useSyncExternalStore(layoutSession.subscribe, layoutSession.getSnapshot);
+  const { savedPlan, savedTables, loaded } = layoutSync;
+  const plan = React.useMemo(() => getAdminSessionPlan({ savedPlan, savedTables, loaded }, { isCasa: isCasaTenant }), [savedPlan, savedTables, loaded]);
+  const context = React.useMemo(() => ({ plan }), [plan]);
+  return <FloorPlanContext.Provider value={context}><AdminPageContent {...props} layoutSession={layoutSession} layoutSync={layoutSync} /></FloorPlanContext.Provider>;
+}
+
+function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged, onEventsChanged, theme, onToggleTheme, layoutSession, layoutSync }) {
+  const { plan } = useFloorPlan();
   const { closedAreas, loaded: zonesLoaded, error: zonesError, updateZones, reloadZones } = useSeasonalZones();
   const [savingSeasonalArea, setSavingSeasonalArea] = React.useState("");
 
@@ -5724,21 +5721,23 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   const [editingEventId, setEditingEventId] = React.useState(null);
   const [adminReservation, setAdminReservation] = React.useState(emptyAdminReservation);
   React.useEffect(() => {
-    if (zonesLoaded && (!adminReservation.area || closedAreas.includes(adminReservation.area))) {
-      setAdminReservation((current) => ({ ...current, area: ["indoor", "garden", "openTerrace"].find((area) => !closedAreas.includes(area)) || "", tableIds: "" }));
+    if (zonesLoaded && (!plan.zones.some(zone => zone.isActive && zone.id === adminReservation.area) || closedAreas.includes(adminReservation.area))) {
+      setAdminReservation((current) => ({ ...current, area: plan.zones.find(zone => zone.isActive && !closedAreas.includes(zone.id))?.id || "", tableIds: "" }));
     }
-  }, [closedAreas, zonesLoaded, adminReservation.area]);
+  }, [closedAreas, zonesLoaded, adminReservation.area, plan.zones]);
 
   const [tableEdits, setTableEdits] = React.useState({});
-  const [layoutSession] = React.useState(createLayoutSession);
-  const layoutSync = React.useSyncExternalStore(layoutSession.subscribe, layoutSession.getSnapshot);
   const tableLayout = activeTab === "layout" ? layoutSync.tables : layoutSync.savedTables;
   const setTableLayout = layoutSession.edit;
-  const [layoutArea, setLayoutArea] = React.useState("indoor");
-  const [reservationMapArea, setReservationMapArea] = React.useState("indoor");
+  const [layoutArea, setLayoutArea] = React.useState("");
+  const [reservationMapArea, setReservationMapArea] = React.useState("");
+  const layoutZones = layoutSync.plan?.zones || plan.zones;
+  React.useEffect(() => {
+    if (!layoutZones.some(zone => zone.id === layoutArea)) setLayoutArea(layoutZones[0]?.id || "");
+  }, [layoutZones, layoutArea]);
   const [adminMapViewMode, setAdminMapViewMode] = React.useState(() => {
     if (typeof window === "undefined") return "scroll";
-    return window.localStorage.getItem(ADMIN_MAP_VIEW_STORAGE_KEY) === "section" ? "section" : "scroll";
+    return window.localStorage.getItem(adminMapViewStorageKey()) === "section" ? "section" : "scroll";
   });
   const [reservationMapDate, setReservationMapDate] = React.useState(() => formatLocalDate(new Date()));
   const [noteEdits, setNoteEdits] = React.useState({});
@@ -5753,6 +5752,10 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return Notification.permission;
   });
   const [pushEnabled, setPushEnabled] = React.useState(false);
+  const [notificationsAllowed, setNotificationsAllowed] = React.useState(false);
+  const showTenantNotification = React.useCallback((title, body) => {
+    if (notificationsAllowed) showBrowserNotification(title, body, isCasaTenant ? "/casa-fratelli-icon-192.png" : branding.faviconUrl);
+  }, [notificationsAllowed, branding.faviconUrl]);
   const [statsPeriod, setStatsPeriod] = React.useState("today");
   const [reportsPeriod, setReportsPeriod] = React.useState("all");
   const adminSwipeStartRef = React.useRef(null);
@@ -5810,24 +5813,19 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return currentAdminRole === "Developer" || role.value !== "Developer" || !hasDeveloperAdmin;
   });
   const activeTablesByArea = React.useMemo(() => {
-    const areas = ["indoor", "garden", "openTerrace"];
+    const areas = plan.zones.filter(zone => zone.isActive).map(zone => zone.id);
     const next = {};
 
     areas.forEach((area) => {
-      next[area] = getActiveLayoutTables(tableLayout, area, tablesByArea[area] || [])
+      next[area] = getActiveLayoutTables(plan.tables, area)
         .sort((first, second) => first.id.localeCompare(second.id, undefined, { numeric: true }));
     });
 
     next.all = areas.flatMap((area) => next[area]);
     return next;
-  }, [tableLayout]);
+  }, [plan]);
   const activeTableIdsByArea = React.useMemo(
-    () => ({
-      indoor: activeTablesByArea.indoor.map((table) => table.id),
-      garden: activeTablesByArea.garden.map((table) => table.id),
-      openTerrace: activeTablesByArea.openTerrace.map((table) => table.id),
-      all: activeTablesByArea.all.map((table) => table.id),
-    }),
+    () => Object.fromEntries(Object.entries(activeTablesByArea).map(([area, tables]) => [area, tables.map(table => table.id)])),
     [activeTablesByArea]
   );
 
@@ -5863,11 +5861,18 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     let isMounted = true;
 
     async function checkPushSubscription() {
-      if (typeof window === "undefined" || !adminToken || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
-        return;
-      }
+      if (typeof window === "undefined" || !adminToken || !("Notification" in window)) return;
 
       try {
+        const response = await adminFetch(`${API_BASE_URL}/api/admin/push/config`);
+        const config = response.ok ? await response.json() : null;
+        const allowed = config?.enabled === true || (isCasaTenant && config?.enabled == null && Boolean(config?.publicKey));
+        if (!isMounted) return;
+        setNotificationsAllowed(allowed);
+        if (!allowed || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+          setPushEnabled(false);
+          return;
+        }
         const registration = await navigator.serviceWorker.getRegistration();
         const subscription = await registration?.pushManager.getSubscription();
         if (isMounted) {
@@ -5876,6 +5881,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         }
       } catch {
         if (isMounted) {
+          setNotificationsAllowed(false);
           setPushEnabled(false);
         }
       }
@@ -5886,7 +5892,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     return () => {
       isMounted = false;
     };
-  }, [adminToken]);
+  }, [adminToken, adminFetch]);
 
   const loadReservations = React.useCallback(async ({ silent = false } = {}) => {
     if (!silent) {
@@ -6077,7 +6083,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
 
   const loadTableLayout = React.useCallback(async () => {
     try {
-      await layoutSession.load({ request: adminFetch, baseUrl: API_BASE_URL, normalize: normalizeLayoutItem });
+      await layoutSession.load({ request: adminFetch, baseUrl: API_BASE_URL, normalize: normalizeLayoutItem, allowLegacy: isCasaTenant });
     } catch (error) {
       console.error("Failed to load table layout", error);
       setAdminError(error?.message || "Failed to load table layout.");
@@ -6278,6 +6284,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   }
 
   function addTableLayoutItem() {
+    if (!layoutArea) return;
     const areaItems = tableLayout.filter((item) => item.area === layoutArea);
     const nextNumber = Math.max(
       0,
@@ -6290,7 +6297,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
       y: Math.min(90, 18 + areaItems.length * 8),
       seats: 4,
       special: false,
-      wide: layoutArea === "indoor",
+      wide: layoutZones.find(zone => zone.id === layoutArea)?.presentation === "casa-indoor",
       isActive: true,
     };
 
@@ -6305,7 +6312,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     setAdminNotice("");
     setAdminError("");
     try {
-      if (await layoutSession.save({ request: adminFetch, baseUrl: API_BASE_URL, normalize: normalizeLayoutItem })) {
+      if (await layoutSession.save({ request: adminFetch, baseUrl: API_BASE_URL, normalize: normalizeLayoutItem, allowLegacy: isCasaTenant })) {
         setAdminNotice("Table layout saved.");
       }
     } catch (error) {
@@ -6326,7 +6333,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     setAdminError("");
     setAdminNotice("");
     try {
-      await layoutSession.load({ request: adminFetch, baseUrl: API_BASE_URL, normalize: normalizeLayoutItem, discard: true });
+      await layoutSession.load({ request: adminFetch, baseUrl: API_BASE_URL, normalize: normalizeLayoutItem, discard: true, allowLegacy: isCasaTenant });
     } catch (error) {
       setAdminError(error?.message || "Failed to load table layout.");
     }
@@ -6795,7 +6802,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   function getTableEdit(reservation) {
     return (
       tableEdits[reservation.id] || {
-        area: ["garden", "openTerrace"].includes(reservation.area) ? reservation.area : "indoor",
+        area: reservation.area,
         tableIds: reservation.tableIds,
         guestCount: reservation.guestCount,
         reservedDate: reservation.reservedDate,
@@ -7344,7 +7351,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         reservedDate: hallBlock.reservedDate,
         area: hallBlock.area,
         times,
-        tableIds: activeTableIdsByArea[hallBlock.area] || activeTableIdsByArea.indoor,
+        tableIds: activeTableIdsByArea[hallBlock.area] || [],
         note: hallBlock.note,
       }),
     });
@@ -7717,7 +7724,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         return;
       }
 
-      window.localStorage.setItem("admin-device-token", credentialToken);
+      window.localStorage.setItem(tenantStorageKey("admin-device-token"), credentialToken);
       setAdminNotice(adminLanguage === "bg" ? "Бързият вход е активиран на това устройство." : "Quick login is enabled on this device.");
       await loadAuditLogs();
     } catch {
@@ -7739,21 +7746,27 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     }
 
     try {
-      const permission = await Notification.requestPermission();
-      setPushPermission(permission);
-
-      if (permission !== "granted") {
-        setAdminError(adminLanguage === "bg" ? "Разрешете известията за Casa di Fratelli." : "Allow notifications for Casa di Fratelli.");
-        return;
-      }
-
       const configResponse = await adminFetch(`${API_BASE_URL}/api/admin/push/config`);
       if (!configResponse.ok) {
         setAdminError(await readErrorMessage(configResponse, "Failed to load push configuration."));
         return;
       }
 
-      const { publicKey } = await configResponse.json();
+      const config = await configResponse.json();
+      const allowed = config.enabled === true || (isCasaTenant && config.enabled == null && Boolean(config.publicKey));
+      setNotificationsAllowed(allowed);
+      if (!allowed) {
+        setPushEnabled(false);
+        setAdminNotice(adminLocalText(adminLanguage, "Известията са изключени за този ресторант.", "Notifications are disabled for this restaurant.", "Уведомления отключены для этого ресторана."));
+        return;
+      }
+      const { publicKey } = config;
+      const permission = await Notification.requestPermission();
+      setPushPermission(permission);
+      if (permission !== "granted") {
+        setAdminError(adminLanguage === "bg" ? `Разрешете известията за ${branding.name}.` : `Allow notifications for ${branding.name}.`);
+        return;
+      }
       const registration = await getReadyAdminPushRegistration();
       const existingSubscription = await registration.pushManager.getSubscription();
       const subscription = existingSubscription || await registration.pushManager.subscribe({
@@ -7778,8 +7791,8 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           ? "Push известията са включени за това устройство."
           : "Push notifications are enabled for this device."
       );
-      showBrowserNotification(
-        adminLanguage === "bg" ? "Casa di Fratelli" : "Casa di Fratelli",
+      showTenantNotification(
+        branding.name,
         adminLanguage === "bg" ? "Известията са активни на това устройство." : "Notifications are active on this device."
       );
     } catch (error) {
@@ -8278,26 +8291,31 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
     adminReservation.reservedDate,
     adminReservation.reservedTime
   );
-  const reservationAreaOptions = [
+  const casaReservationAreaOptions = [
     {
       value: "indoor",
       title: adminLanguage === "bg" ? "Зала / непушачи" : "Hall / non-smoking",
       subtitle: adminLanguage === "bg" ? "Тиха вътрешна зала" : "Quiet indoor hall",
-      meta: `${activeTableIdsByArea.indoor.length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
+      meta: `${(activeTableIdsByArea.indoor || []).length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
     },
     {
       value: "garden",
       title: adminLanguage === "bg" ? "Покрита тераса" : "Covered terrace",
       subtitle: adminLanguage === "bg" ? "Зона за пушачи" : "Smoking area",
-      meta: `${activeTableIdsByArea.garden.length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
+      meta: `${(activeTableIdsByArea.garden || []).length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
     },
     {
       value: "openTerrace",
       title: adminLanguage === "bg" ? "Открита тераса" : "Open terrace",
       subtitle: adminLanguage === "bg" ? "Навън, компактна зона" : "Outdoor compact area",
-      meta: `${activeTableIdsByArea.openTerrace.length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
+      meta: `${(activeTableIdsByArea.openTerrace || []).length} ${adminLanguage === "bg" ? "маси" : "tables"}`,
     },
   ].filter((option) => !closedAreas.includes(option.value));
+  const reservationAreaOptions = plan.zones.filter(zone => zone.isActive && !closedAreas.includes(zone.id)).map(zone =>
+    zone.presentation?.startsWith("casa-")
+      ? casaReservationAreaOptions.find(option => option.value === zone.id)
+      : { value: zone.id, title: getZoneName(zone, adminLanguage), subtitle: "", meta: `${(activeTableIdsByArea[zone.id] || []).length} ${adminLanguage === "bg" ? "маси" : "tables"}` }
+  ).filter(Boolean);
   const hallBlockAreaOptions = [
     {
       value: "all",
@@ -8309,7 +8327,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
   ];
   const categoryOptions = menuCategories.length
     ? menuCategories
-    : Object.keys(categoryDisplayNames[adminLanguage]).map((category) => ({
+    : (isCasaTenant ? Object.keys(categoryDisplayNames[adminLanguage]) : tenantCategoryOptions(tenantContext.tenantId, selectedMenuDepartment)).map((category) => ({
         id: category,
         label: getCategoryLabel(category, adminLanguage),
         count: 0,
@@ -8532,7 +8550,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           ? `${adminLanguage === "bg" ? "Маса" : "Table"} ${firstOrder.tableLabel} · #${firstOrder.id}`
           : title;
         setAdminNotice(`${title}${firstOrder ? ` · ${body}` : "."}`);
-        showBrowserNotification(title, body);
+        showTenantNotification(title, body);
       }
 
       const newKitchenItems = diningOrders.flatMap((order) =>
@@ -8549,7 +8567,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
         const title = adminLanguage === "bg" ? `Нова позиция за ${productionLabel}` : `New ${productionLabel} item`;
         const body = `${first.name} · ${adminLanguage === "bg" ? "маса" : "table"} ${first.tableLabel}`;
         setAdminNotice(`${title} · ${body}`);
-        showBrowserNotification(title, body);
+        showTenantNotification(title, body);
       }
     }
 
@@ -8574,7 +8592,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
           ? `${first.name} · ${adminLanguage === "bg" ? "маса" : "table"} ${first.tableLabel}`
           : `${adminLanguage === "bg" ? "маса" : "table"} ${first.tableLabel}`;
         setAdminNotice(`${title} · ${body}`);
-        showBrowserNotification(title, body);
+        showTenantNotification(title, body);
       }
 
       const readyItems = diningOrders.flatMap((order) =>
@@ -8593,13 +8611,13 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
             ? `Готово блюдо: ${first.name} · маса ${first.tableLabel}`
             : `Ready dish: ${first.name} · table ${first.tableLabel}`
         );
-        showBrowserNotification(
+        showTenantNotification(
           adminLanguage === "bg" ? "Готово блюдо" : "Dish ready",
           `${first.name} · ${adminLanguage === "bg" ? "маса" : "table"} ${first.tableLabel}`
         );
       }
     }
-  }, [adminLanguage, diningOrders, isBarRole, isProductionRole, isWaiterRole]);
+  }, [adminLanguage, diningOrders, isBarRole, isProductionRole, isWaiterRole, showTenantNotification]);
 
   const isDashboard = activeTab === "home";
   const activeTabLabel =
@@ -9284,7 +9302,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
               <ReservationOperationsMap
                 text={a.liveMap}
                 language={adminLanguage}
-                layout={tableLayout}
+                layout={plan.tables}
                 reservations={reservations.filter((reservation) => !isHallBlock(reservation))}
                 diningOrders={diningOrders}
                 menuItems={menuItems}
@@ -9726,9 +9744,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   disabled={r.status === "Cancelled"}
                                   className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-amber-300 disabled:opacity-40"
                                 >
-                                  {(!closedAreas.includes("indoor") || tableEdit.area === "indoor") && (<option value="indoor">{adminLanguage === "bg" ? "Зала / непушачи" : "Hall / non-smoking"}</option>)}
-                                  {(!closedAreas.includes("garden") || tableEdit.area === "garden") && (<option value="garden">{adminLanguage === "bg" ? "Покрита тераса / пушачи" : "Covered terrace / smoking"}</option>)}
-                                  {(!closedAreas.includes("openTerrace") || tableEdit.area === "openTerrace") && (<option value="openTerrace">{adminLanguage === "bg" ? "Открита тераса / пушачи" : "Open terrace / smoking"}</option>)}
+                                  {plan.zones.filter(zone => zone.isActive && (!closedAreas.includes(zone.id) || tableEdit.area === zone.id)).map(zone => <option key={zone.id} value={zone.id}>{getAdminZoneLabel(zone, adminLanguage, "selection")}</option>)}
                                 </select>
                                 <button
                                   type="button"
@@ -9961,9 +9977,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                           disabled={r.status === "Cancelled"}
                                           className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-amber-300 disabled:opacity-40"
                                         >
-                                          {(!closedAreas.includes("indoor") || tableEdit.area === "indoor") && (<option value="indoor">{adminLanguage === "bg" ? "Зала / непушачи" : "Hall / non-smoking"}</option>)}
-                                          {(!closedAreas.includes("garden") || tableEdit.area === "garden") && (<option value="garden">{adminLanguage === "bg" ? "Покрита тераса / пушачи" : "Covered terrace / smoking"}</option>)}
-                                          {(!closedAreas.includes("openTerrace") || tableEdit.area === "openTerrace") && (<option value="openTerrace">{adminLanguage === "bg" ? "Открита тераса / пушачи" : "Open terrace / smoking"}</option>)}
+                                          {plan.zones.filter(zone => zone.isActive && (!closedAreas.includes(zone.id) || tableEdit.area === zone.id)).map(zone => <option key={zone.id} value={zone.id}>{getAdminZoneLabel(zone, adminLanguage, "selection")}</option>)}
                                         </select>
 
                                         <button
@@ -10356,11 +10370,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-white/65">{adminLocalText(adminLanguage, "Затворената зона изчезва от сайта и картата с резервации, докато не я отворите отново. Съществуващите резервации остават в списъка; масите и разположението им се запазват.", "A closed area disappears from the website and reservation map until you reopen it. Existing bookings remain in the list; tables and layout are preserved.", "Закрытая зона исчезает с сайта и карты резерваций, пока вы её не откроете. Существующие брони остаются в списке; столы и расстановка сохраняются.")}</p>
                   {zonesError && <p role="alert" className="mt-3 text-red-200">{adminLocalText(adminLanguage, "Неуспешно зареждане на зоните.", "Failed to load areas.", "Не удалось загрузить зоны.")} <button type="button" onClick={reloadZones} className="underline">{adminLocalText(adminLanguage, "Опитай отново", "Retry", "Повторить")}</button></p>}
                   <div className="mt-5 grid gap-3 lg:grid-cols-3">
-                    {[
-                      ["indoor", adminLocalText(adminLanguage, "Зала / Непушачи", "Indoor / Non-smoking", "Зал / Некурящие")],
-                      ["garden", adminLocalText(adminLanguage, "Покрита тераса", "Covered terrace", "Крытая терраса")],
-                      ["openTerrace", adminLocalText(adminLanguage, "Открита тераса", "Open terrace", "Открытая терраса")],
-                    ].map(([area, name]) => {
+                    {plan.zones.map(zone => [zone.id, getAdminZoneLabel(zone, adminLanguage)]).map(([area, name]) => {
                       const closed = closedAreas.includes(area);
                       return <article key={area} className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-black/25 p-4">
                         <div><h4 className="font-semibold text-[#fff4df]">{name}</h4><p role="status" className={`mt-2 text-sm ${closed ? "text-amber-200" : "text-emerald-200"}`}>{!zonesLoaded ? "…" : closed ? adminLocalText(adminLanguage, "Затворена за сезона · скрита", "Seasonally closed · hidden", "Закрыта на сезон · скрыта") : adminLocalText(adminLanguage, "Отворена · видима", "Open · visible", "Открыта · видна")}</p></div>
@@ -10608,7 +10618,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                       <div className="text-stone-500">{adminLanguage === "bg" ? "Маси" : "Tables"}</div>
                       <div className="mt-1 text-lg font-semibold text-[#fff4df]">
-                        {(activeTableIdsByArea[hallBlock.area] || activeTableIdsByArea.indoor).length}
+                        {(activeTableIdsByArea[hallBlock.area] || []).length}
                       </div>
                     </div>
                     <div className="rounded-2xl border border-[#c9a56a]/20 bg-[#c9a56a]/10 p-4">
@@ -10631,7 +10641,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                     {reservations.filter((item) => item.createdByAdmin && item.phone === "admin" && item.guestName === "Admin block" && item.status === "Approved").sort((a, b) => `${b.reservedDate} ${b.reservedTime}`.localeCompare(`${a.reservedDate} ${a.reservedTime}`)).map((block) => (
                       <div key={block.id} className="flex flex-col gap-4 rounded-2xl border border-[#c9a56a]/25 bg-black/20 p-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <div className="font-semibold text-[#fff4df]">{block.area === "all" ? adminLocalText(adminLanguage, "Цял ресторант", "Whole restaurant", "Весь ресторан") : block.area === "garden" ? adminLocalText(adminLanguage, "Покрита тераса", "Covered terrace", "Крытая терраса") : block.area === "openTerrace" ? adminLocalText(adminLanguage, "Открита тераса", "Open terrace", "Открытая терраса") : adminLocalText(adminLanguage, "Зала / Непушачи", "Indoor / Non-smoking", "Зал / Для некурящих")}</div>
+                          <div className="font-semibold text-[#fff4df]">{block.area === "all" ? adminLocalText(adminLanguage, "Цял ресторант", "Whole restaurant", "Весь ресторан") : getAdminZoneLabel(plan.zones.find(zone => zone.id === block.area), adminLanguage, "block") || block.area}</div>
                           <div className="mt-1 text-sm text-white/65">{block.reservedDate} · {block.reservedTime}</div>
                           <div className="mt-1 text-xs text-white/45">{adminLocalText(adminLanguage, "Маси", "Tables", "Столы")}: {block.tableIds.join(", ")}</div>
                           {block.notes && <p className="mt-2 text-sm text-white/55">{block.notes}</p>}
@@ -10800,7 +10810,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/20">
                           {menuForm.imageUrl ? (
                             <img
-                              src={menuForm.imageUrl}
+                              src={restaurantAssetUrl(menuForm.imageUrl, branding.assetBaseUrl)}
                               alt={menuForm.nameBg || a.menu.imageUrl}
                               className="h-36 w-full object-cover"
                             />
@@ -10832,7 +10842,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                                   setMenuForm((prev) => ({
                                     ...prev,
                                     department: department.value,
-                                    category: department.value === "Bar" ? "cold-drinks" : "Main",
+                                    category: isCasaTenant ? (department.value === "Bar" ? "cold-drinks" : "Main") : tenantCategoryOptions(tenantContext.tenantId, department.value)[0] || "",
                                   }));
                                 }}
                                 className={`rounded-2xl border p-4 text-left transition ${
@@ -11087,7 +11097,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                         {(item.imageUrl || item.ImageUrl) && (
                           <div className="-mx-1 mb-4 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
                             <img
-                              src={item.imageUrl || item.ImageUrl}
+                              src={restaurantAssetUrl(item.imageUrl || item.ImageUrl, branding.assetBaseUrl)}
                               alt={item.nameBg || item.NameBg || ""}
                               loading="lazy"
                               className="h-40 w-full object-cover"
@@ -11316,7 +11326,7 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                           {eventForm.imageUrls.map((imageUrl, index) => (
                             <div key={`${imageUrl}-${index}`} className="overflow-hidden rounded-3xl border border-white/10 bg-black/20">
                               <img
-                                src={imageUrl}
+                                src={restaurantAssetUrl(imageUrl, branding.assetBaseUrl)}
                                 alt={`${eventForm.titleBg || a.events.photos} ${index + 1}`}
                                 className="h-44 w-full object-cover"
                               />
@@ -11393,14 +11403,14 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                               <div className="relative min-h-[210px] bg-black/25">
                                 {photos[0] ? (
                                   <img
-                                    src={photos[0]}
+                                    src={restaurantAssetUrl(photos[0], branding.assetBaseUrl)}
                                     alt={title}
                                     loading="lazy"
                                     className="absolute inset-0 h-full w-full object-cover"
                                   />
                                 ) : (
                                   <div className="absolute inset-0 flex items-center justify-center text-xs uppercase tracking-[0.35em] text-[#f2d39a]">
-                                    Casa
+                                    {isCasaTenant ? "Casa" : branding.name}
                                   </div>
                                 )}
                                 <div className="absolute left-4 top-4 rounded-full border border-white/10 bg-black/55 px-3 py-1 text-xs font-semibold text-white">
@@ -11477,13 +11487,15 @@ export default function AdminPage({ adminToken, adminUser, onAdminLogout, onMenu
                 </div>
                 <fieldset disabled={layoutSync.busy || !layoutSync.loaded} className="min-w-0 border-0 p-0" aria-busy={layoutSync.busy}>
               <TableLayoutEditor
+                zones={layoutZones}
+                language={adminLanguage}
                 text={a.layout}
                 layout={tableLayout}
                 selectedArea={layoutArea}
                 mapViewMode={adminMapViewMode}
                 onMapViewModeChange={(mode) => {
                   setAdminMapViewMode(mode);
-                  window.localStorage.setItem(ADMIN_MAP_VIEW_STORAGE_KEY, mode);
+                  window.localStorage.setItem(adminMapViewStorageKey(), mode);
                 }}
                 onAreaChange={setLayoutArea}
                 onUpdate={updateTableLayoutItem}

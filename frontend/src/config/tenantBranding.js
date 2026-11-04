@@ -8,9 +8,9 @@ export const CASA_BRANDING = Object.freeze({
   facebookUrl: "https://www.facebook.com/CassadiFratelli", instagramUrl: "https://www.instagram.com/casadifratelli.plovdiv/",
 });
 
-export function normalizeTenantBranding(value) {
+export function normalizeTenantBranding(value, options = {}) {
   const valid = value && typeof value === "object" && !Array.isArray(value);
-  const isCasa = !valid || !value.name || value.name.trim() === CASA_BRANDING.name;
+  const isCasa = options.isCasa ?? (!valid || !value.name || value.name.trim() === CASA_BRANDING.name);
   const result = Object.fromEntries(Object.entries(CASA_BRANDING).map(([key, fallback]) => [key,
     typeof fallback === "number" ? valid && Number.isFinite(value[key]) && value[key] >= (key === "publicMaxReservationDaysAhead" ? 1 : 0) && value[key] <= (key === "publicMaxReservationDaysAhead" ? 365 : 1440) ? value[key] : fallback
       : valid && typeof value[key] === "string" ? value[key].trim() : isCasa || key.endsWith("Time") || key === "timeZoneId" ? fallback : "",

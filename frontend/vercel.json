@@ -1,4 +1,11 @@
 {
+  "redirects": [
+    {
+      "source": "/admin/:path*",
+      "destination": "https://seatmap-admin-eight.vercel.app/r/casa-di-fratelli/admin",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

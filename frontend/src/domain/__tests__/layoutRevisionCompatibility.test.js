@@ -4,7 +4,7 @@ import test from "node:test";
 import { createLayoutSession } from "../adminMap/layoutSession.js";
 
 async function fixture(t, mode = "current") {
-  const backend = { mode, revision: "r1", tables: [{ id: "1", seats: 4 }], calls: [], saveStatus: 0, readStatus: 0, pauseSave: null };
+  const backend = { mode, revision: "r1", tables: [{ id: "1", area: "indoor", x: 50, y: 50, seats: 4 }], calls: [], saveStatus: 0, readStatus: 0, pauseSave: null };
   const server = createServer(async (request, response) => {
     let body = "";
     for await (const chunk of request) body += chunk;
@@ -23,7 +23,7 @@ async function fixture(t, mode = "current") {
     }
     if (backend.readStatus) return send(backend.readStatus, { message: "Unavailable" });
     if (request.url === "/api/floor-plan") {
-      return backend.mode === "legacy" ? send(404, {}) : send(200, { schemaVersion: 1, revision: backend.revision, tables: backend.tables });
+      return backend.mode === "legacy" ? send(404, {}) : send(200, { schemaVersion: 1, revision: backend.revision, zones: [{ id: "indoor", name: "Hall", isActive: true }], combinations: [], tables: backend.tables.map(table => ({ area: "indoor", x: 50, y: 50, ...table })) });
     }
     return send(200, backend.tables);
   });
@@ -167,4 +167,39 @@ test("validation rejection can be corrected with the same original revision", as
   backend.saveStatus = 0;
   await editor.save(options);
   assert.equal(backend.tables[0].seats, 6);
+});
+
+test("non-Casa admin never falls back to a legacy map on 404", async t => {
+  const { backend, options } = await fixture(t, "legacy");
+  const editor = createLayoutSession();
+  await assert.rejects(editor.load({ ...options, allowLegacy: false }), error => error.status === 404);
+  assert.deepEqual(backend.calls.map(call => call.path), ["/api/floor-plan"]);
+  assert.equal(editor.getSnapshot().loaded, false);
+});
+
+test("saved map metadata refreshes independently without rebasing an editor draft", async t => {
+  const { backend, options } = await fixture(t);
+  const editor = createLayoutSession();
+  await editor.load(options);
+  const original = editor.getSnapshot().plan;
+  editor.edit(tables => tables.map(table => ({ ...table, seats: 6 })));
+  backend.revision = "r2";
+  backend.tables = [{ id: "1", seats: 8 }];
+  await editor.load(options);
+  assert.equal(editor.getSnapshot().plan, original);
+  assert.equal(editor.getSnapshot().plan.revision, "r1");
+  assert.equal(editor.getSnapshot().savedPlan.revision, "r2");
+  assert.equal(editor.getSnapshot().savedTables[0].seats, 8);
+  assert.equal(editor.getSnapshot().tables[0].seats, 6);
+  await assert.rejects(editor.save(options), error => error.status === 409);
+});
+
+test("unchanged background map retains stable geometry data", async t => {
+  const { options } = await fixture(t);
+  const editor = createLayoutSession();
+  await editor.load(options);
+  const original = editor.getSnapshot();
+  await editor.load(options);
+  assert.equal(editor.getSnapshot().savedPlan, original.savedPlan);
+  assert.equal(editor.getSnapshot().savedTables, original.savedTables);
 });

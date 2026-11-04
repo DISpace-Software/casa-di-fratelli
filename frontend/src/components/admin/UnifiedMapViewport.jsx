@@ -1,3 +1,4 @@
+import { tenantStorageKey } from "../../config/tenantRuntime";
 import React from "react";
 import {
   ADMIN_MAP_CAMERA,
@@ -17,13 +18,13 @@ import {
   shouldUseNativeMapFullscreen,
 } from "../../domain/adminMap/mapInteraction";
 
-const CAMERA_STORAGE_KEY = "casa-admin-unified-map-camera";
+const cameraStorageKey = () => tenantStorageKey("casa-admin-unified-map-camera");
 const INTERACTIVE_MAP_SELECTOR = "button, a, input, select, textarea, [role='button'], [data-map-keep-open='true']";
 
 function readSavedCamera() {
   if (!ADMIN_MAP_CAMERA.persistCamera || typeof window === "undefined") return null;
   try {
-    const value = JSON.parse(window.localStorage.getItem(CAMERA_STORAGE_KEY) || "null");
+    const value = JSON.parse(window.localStorage.getItem(cameraStorageKey()) || "null");
     return Number.isFinite(value?.x) && Number.isFinite(value?.y) && Number.isFinite(value?.scale)
       ? value
       : null;
@@ -34,6 +35,7 @@ function readSavedCamera() {
 
 export default function UnifiedMapViewport({
   children,
+  geometry,
   zones,
   activeZone,
   onZoneChange,
@@ -47,6 +49,8 @@ export default function UnifiedMapViewport({
   language = "bg",
   viewMode = "scroll",
 }) {
+  const world = geometry?.world || ADMIN_MAP_WORLD;
+  const getZone = React.useCallback(id => geometry?.zones.find(zone => zone.id === id) || geometry?.zones[0] || (!geometry ? getAdminMapZone(id) : { x: 0, y: 0, ...world }), [geometry, world]);
   const shellRef = React.useRef(null);
   const viewportRef = React.useRef(null);
   const worldRef = React.useRef(null);
@@ -86,7 +90,7 @@ export default function UnifiedMapViewport({
     const camera = clampCamera(
       { ...nextCamera, scale: Math.min(ADMIN_MAP_CAMERA.maxScale, Math.max(ADMIN_MAP_CAMERA.minScale, nextCamera.scale)) },
       viewportSizeRef.current,
-      ADMIN_MAP_WORLD,
+      world,
       ADMIN_MAP_CAMERA.panOverscan
     );
     cameraRef.current = camera;
@@ -98,9 +102,9 @@ export default function UnifiedMapViewport({
     }
     if (animate || persist) setScaleLabel(camera.scale);
     if (persist && ADMIN_MAP_CAMERA.persistCamera) {
-      window.localStorage.setItem(CAMERA_STORAGE_KEY, JSON.stringify(camera));
+      window.localStorage.setItem(cameraStorageKey(), JSON.stringify(camera));
     }
-  }, []);
+  }, [world]);
 
   const fitToBounds = React.useCallback((bounds, animate = true) => {
     const viewport = viewportSizeRef.current;
@@ -119,22 +123,22 @@ export default function UnifiedMapViewport({
   }, [applyCamera]);
 
   const fitToMap = React.useCallback((animate = true) => {
-    fitToBounds({ x: 0, y: 0, width: ADMIN_MAP_WORLD.width, height: ADMIN_MAP_WORLD.height }, animate);
-  }, [fitToBounds]);
+    fitToBounds({ x: 0, y: 0, width: world.width, height: world.height }, animate);
+  }, [fitToBounds, world.width, world.height]);
 
   const fitToCurrentView = React.useCallback((animate = true) => {
     if (viewMode === "section") {
-      fitToBounds(getAdminMapZone(activeZone), animate);
+      fitToBounds(getZone(activeZone), animate);
       return;
     }
     fitToMap(animate);
-  }, [activeZone, fitToBounds, fitToMap, viewMode]);
+  }, [activeZone, fitToBounds, fitToMap, viewMode, getZone]);
 
   const focusZone = React.useCallback((zoneId) => {
-    const zone = getAdminMapZone(zoneId);
+    const zone = getZone(zoneId);
     onZoneChange?.(zone.id);
     fitToBounds(zone, true);
-  }, [fitToBounds, onZoneChange]);
+  }, [fitToBounds, onZoneChange, getZone]);
 
   React.useEffect(() => {
     if (!focusKey || !Number.isFinite(focusX) || !Number.isFinite(focusY)) return;
@@ -193,8 +197,8 @@ export default function UnifiedMapViewport({
 
   React.useEffect(() => {
     if (!initializedRef.current || viewMode !== "section") return;
-    fitToBounds(getAdminMapZone(activeZone), true);
-  }, [activeZone, fitToBounds, viewMode]);
+    fitToBounds(getZone(activeZone), true);
+  }, [activeZone, fitToBounds, viewMode, getZone]);
 
   React.useEffect(() => () => {
     window.cancelAnimationFrame(animationRef.current);
@@ -432,7 +436,7 @@ export default function UnifiedMapViewport({
           <span className="hidden min-w-[58px] text-center text-xs font-semibold text-white/50 sm:block">{Math.round(scaleLabel * 100)}%</span>
           <button type="button" onClick={() => zoomAtCenter(1)} aria-label={labels.in} title={labels.in} className="ghost-button h-11 w-11 rounded-xl text-xl">+</button>
           <button type="button" onClick={() => fitToCurrentView(true)} aria-label={labels.fit} title={labels.fit} className="ghost-button min-h-[44px] rounded-xl px-3 text-xs font-semibold">Fit</button>
-          <button type="button" onClick={() => { window.localStorage.removeItem(CAMERA_STORAGE_KEY); fitToCurrentView(true); }} aria-label={labels.reset} title={labels.reset} className="ghost-button hidden min-h-[44px] rounded-xl px-3 text-xs font-semibold sm:block">Reset</button>
+          <button type="button" onClick={() => { window.localStorage.removeItem(cameraStorageKey()); fitToCurrentView(true); }} aria-label={labels.reset} title={labels.reset} className="ghost-button hidden min-h-[44px] rounded-xl px-3 text-xs font-semibold sm:block">Reset</button>
           <button
             type="button"
             onClick={toggleFullscreen}
@@ -494,8 +498,8 @@ export default function UnifiedMapViewport({
           className="absolute left-0 top-0 will-change-transform"
           style={{
             contain: "layout style",
-            width: ADMIN_MAP_WORLD.width,
-            height: ADMIN_MAP_WORLD.height,
+            width: world.width,
+            height: world.height,
             transformOrigin: "0 0",
           }}
         >

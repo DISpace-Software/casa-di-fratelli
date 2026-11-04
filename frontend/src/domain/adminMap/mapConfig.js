@@ -23,3 +23,14 @@ export const ADMIN_MAP_ZONES = Object.freeze([
 export function getAdminMapZone(area) {
   return ADMIN_MAP_ZONES.find((zone) => zone.id === area) || ADMIN_MAP_ZONES[0];
 }
+
+// Geometry is presentation only; booking rules never depend on coordinates or table numbers.
+export function buildMapGeometry(zones) {
+  const casa = zones.length === 3 && zones.every(z => z.presentation?.startsWith("casa-") && ADMIN_MAP_ZONES.some(preset => preset.id === z.id));
+  const geometry = zones.map((zone, index) => ({
+    ...zone,
+    ...(casa ? ADMIN_MAP_ZONES.find(z => z.id === zone.id) : null),
+    ...(!casa ? { x: 80 + (index % 2) * 1070, y: 70 + Math.floor(index / 2) * 720, width: 992, height: 650 } : {}),
+  }));
+  return { zones: geometry, world: casa ? ADMIN_MAP_WORLD : { width: 2242, height: Math.max(800, Math.ceil(zones.length / 2) * 720 + 70) } };
+}

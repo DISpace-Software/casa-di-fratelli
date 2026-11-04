@@ -1,5 +1,5 @@
 import React from "react";
-import { API_BASE_URL } from "../config/api";
+import { API_BASE_URL, apiFetch as fetch } from "../config/api";
 
 import { SeasonalZonesContext } from "./SeasonalZonesContext";
 
