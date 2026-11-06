@@ -39,7 +39,7 @@ import {
 } from "../domain/adminMap/mapInteraction";
 import { formatBirthdayEmailSentAt, daysUntilBirthday, getCustomerBirthDate, searchCustomers, sortCustomers } from "../domain/customers/customerDirectory";
 import { findPublicTableHold } from "../domain/reservations/publicTableHolds";
-import { getActiveLayoutTables } from "../domain/reservations/adminPlanRules";
+import { getActiveLayoutTables, getMoveCandidateOptions } from "../domain/reservations/adminPlanRules";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
 
 const isCasaTenant = tenantContext.tenantId === "casa-di-fratelli";
@@ -1038,50 +1038,6 @@ function getMenuCategoryGroups(items, language = "bg") {
   );
 }
 
-function getMoveCandidateOptions(area, guestCount, unavailableTableIds, areaTables = [], combinations = []) {
-  const requiredSeats = Number(guestCount || 0);
-  const activeTables = areaTables.filter((table) => table.isActive !== false);
-  const activeIds = new Set(activeTables.map((table) => table.id));
-  const tableById = new Map(activeTables.map((table) => [table.id, table]));
-  const seen = new Set();
-  const candidates = [];
-  const addCandidate = (ids) => {
-    if (ids.some(id => !activeIds.has(id) || unavailableTableIds.has(id))) return;
-    const tableIds = [...new Set(ids)];
-    if (tableIds.length === 0) return;
-
-    const key = tableIds.join("|");
-    if (seen.has(key)) return;
-    seen.add(key);
-
-    const capacity = getAreaTablesCapacity(area, tableIds, activeTables);
-    if (capacity < requiredSeats) return;
-    if (!canUseAdminTableSelectionRule(area, tableIds, {
-      areaTables: activeTables,
-      combinations,
-      requiredSeats,
-      allowPartial: false,
-    })) {
-      return;
-    }
-
-    candidates.push({
-      tableIds,
-      capacity,
-      overage: capacity - requiredSeats,
-      seatsLabel: tableIds.map((id) => tableById.get(id)?.seats || 0).join(" + "),
-    });
-  };
-
-  activeTables.forEach((table) => addCandidate([table.id]));
-  combinations.forEach(addCandidate);
-
-  return candidates.sort((first, second) =>
-    first.overage - second.overage ||
-    first.tableIds.length - second.tableIds.length ||
-    first.tableIds.join(",").localeCompare(second.tableIds.join(","), undefined, { numeric: true })
-  );
-}
 
 async function readErrorMessage(response, fallback) {
   const rawText = await response.text();
@@ -1169,7 +1125,7 @@ function TableChipSelector({
   areaTables,
   suggestedTableIds = new Set(),
   bestTableIds = new Set(),
-  unrestrictedSelection = false,
+  staffSelection = false,
 }) {
   const { plan } = useFloorPlan();
   areaTables = areaTables || getActiveLayoutTables(plan.tables, area);
@@ -1187,14 +1143,15 @@ function TableChipSelector({
         const best = bestTableIds.has(tableId);
         const allowed =
           !unavailable &&
-          (unrestrictedSelection ||
           (selected ||
             canUseAdminTableSelectionRule(area, [...selectedTableIds, tableId], {
               combinations: plan.combinations,
+              staffCombinationMode: staffSelection ? plan.staffCombinationMode : "configured",
+              allowCapacityOverride: staffSelection,
               requiredSeats,
               allowPartial: true,
               ...(areaTables ? { areaTables } : {}),
-            })));
+            }));
 
         return (
           <button
@@ -1845,6 +1802,8 @@ function ReservationOperationsMap({
   const [mapFocusRequestId, setMapFocusRequestId] = React.useState(0);
   const [moveReservationId, setMoveReservationId] = React.useState(null);
   const [moveDraft, setMoveDraft] = React.useState({ area: "", tableIds: [], guestCount: 0 });
+  const [moveBusy, setMoveBusy] = React.useState(false);
+  const [moveError, setMoveError] = React.useState("");
   const [showConsumption, setShowConsumption] = React.useState(false);
   const [consumptionSearch, setConsumptionSearch] = React.useState("");
   const [consumptionCategory, setConsumptionCategory] = React.useState("all");
@@ -2122,9 +2081,9 @@ function ReservationOperationsMap({
       moveDraft.area,
       Number(moveDraft.guestCount || selectedReservation?.guestCount || 0),
       moveUnavailableTableIds,
-      moveAreaTables, plan.combinations
+      moveAreaTables, plan.combinations, plan.staffCombinationMode
     ),
-    [moveDraft.area, moveDraft.guestCount, moveUnavailableTableIds, moveAreaTables, selectedReservation?.guestCount, plan.combinations]
+    [moveDraft.area, moveDraft.guestCount, moveUnavailableTableIds, moveAreaTables, selectedReservation?.guestCount, plan.combinations, plan.staffCombinationMode]
   );
   const moveSuggestedTableIds = React.useMemo(
     () => new Set(moveCandidateOptions.flatMap((option) => option.tableIds)),
@@ -2144,7 +2103,13 @@ function ReservationOperationsMap({
       : null,
     [getReservationBounds, moveDraft.area, moveDraft.tableIds, moveReservationId]
   );
-  const canSaveMove = moveDraft.tableIds.length > 0;
+  const canSaveMove = !moveBusy && canUseAdminTableSelectionRule(moveDraft.area, moveDraft.tableIds, {
+    areaTables: moveAreaTables,
+    combinations: plan.combinations,
+    staffCombinationMode: plan.staffCombinationMode,
+    allowCapacityOverride: true,
+    allowPartial: false,
+  }) && !moveDraft.tableIds.some(id => moveUnavailableTableIds.has(id));
   const selectedPublicTableHold = selectedReservation
     ? findPublicTableHold(publicTableHolds, selectedReservation.reservedDate, selectedReservation.tableIds)
     : null;
@@ -2156,6 +2121,7 @@ function ReservationOperationsMap({
   }
 
   function openMovePanel(reservation) {
+    setMoveError("");
     setSelectedReservationId(reservation.id);
     onAreaChange(reservation.area);
     setMoveReservationId(reservation.id);
@@ -2169,6 +2135,7 @@ function ReservationOperationsMap({
   }
 
   function updateMoveGuestCount(value) {
+    if (moveBusy) return;
     const nextGuestCount = Math.max(1, Math.min(40, Number(value || 1)));
 
     setMoveDraft((prev) => {
@@ -2180,33 +2147,51 @@ function ReservationOperationsMap({
   }
 
   function toggleMoveTable(tableId) {
-    if (!selectedReservation || moveUnavailableTableIds.has(tableId)) return;
+    if (!selectedReservation || moveBusy || moveUnavailableTableIds.has(tableId)) return;
 
     const exists = moveDraft.tableIds.includes(tableId);
     const nextTableIds = exists
       ? moveDraft.tableIds.filter((id) => id !== tableId)
       : [...moveDraft.tableIds, tableId];
 
+    if (!exists && !canUseAdminTableSelectionRule(moveDraft.area, nextTableIds, {
+      areaTables: moveAreaTables,
+      combinations: plan.combinations,
+      staffCombinationMode: plan.staffCombinationMode,
+      allowCapacityOverride: true,
+    })) return;
+    setMoveError("");
     setMoveDraft((prev) => ({ ...prev, tableIds: nextTableIds }));
   }
 
   async function saveMove() {
-    if (!selectedReservation) return;
-
-    const saved = await onMove(
-      selectedReservation,
-      moveDraft.area,
-      moveDraft.tableIds,
-      Number(moveDraft.guestCount || selectedReservation.guestCount || 0)
-    );
-    if (saved) {
+    if (!selectedReservation || !canSaveMove) return;
+    setMoveBusy(true);
+    setMoveError("");
+    try {
+      const saved = await onMove(
+        selectedReservation,
+        moveDraft.area,
+        moveDraft.tableIds,
+        Number(moveDraft.guestCount || selectedReservation.guestCount || 0)
+      );
+      if (saved !== true) {
+        setMoveError(localizeReservationSaveError(saved?.message, language));
+        return;
+      }
       setMoveReservationId(null);
       setSelectedReservationId(null);
       setSelectedTableId(null);
+    } catch {
+      setMoveError(adminLocalText(language, "Няма връзка със сървъра. Опитайте отново.", "Could not reach the server. Try again.", "Нет связи с сервером. Повторите попытку."));
+    } finally {
+      setMoveBusy(false);
     }
   }
 
   function cancelMove() {
+    if (moveBusy) return;
+    setMoveError("");
     setMoveReservationId(null);
     setMoveDraft({ area: selectedArea, tableIds: [], guestCount: 0 });
     setSelectedReservationId(null);
@@ -2214,6 +2199,8 @@ function ReservationOperationsMap({
   }
 
   function handleMapZoneChange(area) {
+    if (moveBusy) return;
+    setMoveError("");
     onAreaChange(area);
     if (!moveReservationId) return;
     setMoveDraft((current) =>
@@ -2924,9 +2911,11 @@ function ReservationOperationsMap({
                     +
                   </button>
                 </div>
+                {moveError && <p role="alert" className="mt-3 text-xs text-red-200">{moveError}</p>}
                 <button
                   type="button"
                   disabled={!canSaveMove}
+                  aria-busy={moveBusy}
                   onClick={saveMove}
                   className="luxury-button mt-3 w-full rounded-xl px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -2953,7 +2942,15 @@ function ReservationOperationsMap({
             const isMoveBest = isMoveMode && moveDraft.area === table.area && moveBestTableIds.has(table.id);
             const isMoveAllowed =
               isMoveMode &&
-              !isMoveUnavailable;
+              !moveBusy &&
+              !isMoveUnavailable &&
+              (isMoveSelected || canUseAdminTableSelectionRule(table.area,
+                moveDraft.area === table.area ? [...moveDraft.tableIds, table.id] : [table.id], {
+                  areaTables: getActiveTablesForArea(table.area),
+                  combinations: plan.combinations,
+                  staffCombinationMode: plan.staffCombinationMode,
+                  allowCapacityOverride: true,
+                }));
             const zone = mapZones.find((item) => item.id === table.area) || mapZones[0];
             const worldPosition = localPercentToWorld(zone, table);
 
@@ -2968,6 +2965,7 @@ function ReservationOperationsMap({
               >
                 <button
                   type="button"
+                  disabled={isMoveMode && !isMoveAllowed}
                   data-admin-blocked={isAdminBlocked ? "true" : "false"}
                   title={isAdminBlocked ? adminLocalText(language, "Блокирана от администратор", "Blocked by admin", "Заблокирован администратором") : undefined}
                   data-reserved={reservation ? "true" : "false"}
@@ -2975,11 +2973,13 @@ function ReservationOperationsMap({
                   data-selected={isSelectedTable || isMoveSelected ? "true" : "false"}
                   data-orders={hasTableOrders ? "true" : "false"}
                   onClick={() => {
+                    if (isMoveMode && !isMoveAllowed) return;
                     if (selectedArea !== table.area) onAreaChange(table.area);
                     if (isMoveMode && isMoveAllowed) {
                       if (moveDraft.area === table.area) {
                         toggleMoveTable(table.id);
                       } else {
+                        setMoveError("");
                         setMoveDraft((current) => ({ ...current, area: table.area, tableIds: [table.id] }));
                       }
                       setSelectedTableId(null);
@@ -6413,6 +6413,36 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     }
   }
 
+  async function processAllReservationTrash(restore) {
+    if (reservationTrashBusy || !deletedReservations.length) return;
+    const question = restore
+      ? adminLocalText(adminLanguage, "Да възстановим ли всички резервации от кошчето? Резервациите с конфликти ще останат в него.", "Restore all reservations in the trash? Conflicting reservations will remain there.", "Восстановить все брони из корзины? Брони с конфликтами останутся в ней.")
+      : adminLocalText(adminLanguage, "Да изчистим ли всички резервации от кошчето завинаги? Възстановяване няма да е възможно. Свързаните поръчки ще се запазят в архива.", "Permanently empty the reservation trash? This cannot be undone. Linked orders will be preserved in the archive.", "Очистить всю корзину броней навсегда? Восстановление невозможно. Связанные заказы сохранятся в архиве.");
+    if (!window.confirm(question)) return;
+    setReservationTrashBusy(true);
+    setReservationTrashError("");
+    setAdminNotice("");
+    try {
+      const response = await adminFetch(`${API_BASE_URL}/api/maintenance/reservations/deleted/${restore ? "restore" : "permanent"}`, { method: restore ? "POST" : "DELETE" });
+      if (!response.ok) {
+        setReservationTrashError(await readErrorMessage(response, "Could not process reservation trash."));
+        return;
+      }
+      const result = await response.json();
+      const summary = adminLocalText(adminLanguage,
+        `${restore ? "Възстановени" : "Изтрити завинаги"}: ${result.succeeded}. Останали необработени: ${result.failed}.`,
+        `${restore ? "Restored" : "Permanently deleted"}: ${result.succeeded}. Not processed: ${result.failed}.`,
+        `${restore ? "Восстановлено" : "Удалено навсегда"}: ${result.succeeded}. Не обработано: ${result.failed}.`);
+      setAdminNotice(summary);
+      if (result.failed) setReservationTrashError(summary);
+    } catch {
+      setReservationTrashError(adminLocalText(adminLanguage, "Няма връзка със сървъра. Проверете кошчето преди повторен опит.", "Connection failed. Check the trash before trying again.", "Нет связи с сервером. Проверьте корзину перед повторной попыткой."));
+    } finally {
+      await Promise.all([loadReservations({ silent: true }), loadDeletedReservations({ silent: true }), loadDiningOrders()]);
+      setReservationTrashBusy(false);
+    }
+  }
+
   async function permanentlyDeleteReservationFromTrash(id) {
     if (!window.confirm(adminLocalText(adminLanguage,
       "Да изтрием ли окончателно тази резервация? Възстановяване няма да е възможно. Свързаните поръчки ще се запазят в архива.",
@@ -6764,12 +6794,11 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     const unavailableSelectedTableIds = getUnavailableSelectedTableIds(tableIds, unavailableTableIds);
 
     if (unavailableSelectedTableIds.length > 0) {
-      setAdminError(
-        adminLanguage === "bg"
-          ? `Маса ${unavailableSelectedTableIds.join(", ")} вече е заета около този час.`
-          : `Table ${unavailableSelectedTableIds.join(", ")} is already reserved around this time.`
-      );
-      return false;
+      const message = adminLanguage === "bg"
+        ? `Маса ${unavailableSelectedTableIds.join(", ")} вече е заета около този час.`
+        : `Table ${unavailableSelectedTableIds.join(", ")} is already reserved around this time.`;
+      setAdminError(message);
+      return { ok: false, message };
     }
 
     const response = await adminFetch(`${API_BASE_URL}/api/reservations/${reservation.id}/tables`, {
@@ -6783,8 +6812,9 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     });
 
     if (!response.ok) {
-      setAdminError(await readErrorMessage(response, "Selected table is not available."));
-      return false;
+      const message = await readErrorMessage(response, "Selected table is not available.");
+      setAdminError(localizeReservationSaveError(message, adminLanguage));
+      return { ok: false, message };
     }
 
     setAdminNotice(adminLanguage === "bg" ? "Резервацията е преместена." : "Reservation moved.");
@@ -8688,17 +8718,17 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
               <div>
                 <div className="section-kicker text-[10px]">{title}</div>
                 <div className="mt-1 text-xs text-white/45">
-                  {deletedReservations.length} {adminLanguage === "bg" ? "записа" : "records"}
+                  {deletedReservations.length >= 300 ? "300+" : deletedReservations.length} {adminLanguage === "bg" ? "записа" : "records"}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => loadDeletedReservations()}
-                disabled={reservationTrashBusy}
-                className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-[#f2d39a] transition hover:border-[#f2d39a]/35 disabled:opacity-50"
-              >
-                {reservationTrashBusy ? "..." : adminLanguage === "bg" ? "Обнови" : "Refresh"}
-              </button>
+              <div className="flex shrink-0 flex-col gap-2">
+                <button type="button" onClick={() => processAllReservationTrash(true)} disabled={reservationTrashBusy || deletedReservations.length === 0} className="rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-3 py-2 text-xs font-semibold text-emerald-100 disabled:opacity-50">
+                  {adminLocalText(adminLanguage, "Възстанови всички", "Restore all", "Восстановить все")}
+                </button>
+                <button type="button" onClick={() => processAllReservationTrash(false)} disabled={reservationTrashBusy || deletedReservations.length === 0} className="rounded-xl border border-red-300/25 bg-red-500/15 px-3 py-2 text-xs font-semibold text-red-100 disabled:opacity-50">
+                  {adminLocalText(adminLanguage, "Изчисти всички", "Empty trash", "Очистить всё")}
+                </button>
+              </div>
             </div>
 
             <div className="max-h-[min(520px,calc(100svh-9rem))] overflow-y-auto p-3">
@@ -9532,7 +9562,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                             onToggle={toggleAdminReservationTable}
                             unavailableTableIds={adminReservationUnavailableTableIds}
                             requiredSeats={Number(adminReservation.guestCount || 0)}
-                            unrestrictedSelection
+                            staffSelection
                             tableIdsOverride={activeTableIdsByArea[adminReservation.area]}
                             areaTables={activeTablesByArea[adminReservation.area]}
                             hideUnavailable={Boolean(adminReservation.reservedDate && adminReservation.reservedTime)}
@@ -9761,7 +9791,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                   selectedTableIds={tableEdit.tableIds}
                                   onToggle={(tableId) => toggleTableEdit(r, tableId)}
                                   requiredSeats={Number(tableEdit.guestCount || r.guestCount || 0)}
-                                  unrestrictedSelection
+                                  staffSelection
                                   tableIdsOverride={activeTableIdsByArea[tableEdit.area]}
                                   areaTables={activeTablesByArea[tableEdit.area]}
                                   unavailableTableIds={getUnavailableTableIdsForSlot(
@@ -9997,7 +10027,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                         selectedTableIds={tableEdit.tableIds}
                                         onToggle={(tableId) => toggleTableEdit(r, tableId)}
                                         requiredSeats={Number(tableEdit.guestCount || r.guestCount || 0)}
-                                        unrestrictedSelection
+                                        staffSelection
                                         tableIdsOverride={activeTableIdsByArea[tableEdit.area]}
                                         areaTables={activeTablesByArea[tableEdit.area]}
                                         unavailableTableIds={getUnavailableTableIdsForSlot(

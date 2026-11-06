@@ -97,7 +97,9 @@ public class ReservationConflictService
         int? excludeReservationId = null,
         bool includeHallBlocks = true)
     {
-        var canonicalIds = tableIds.Select(id => id.ToUpperInvariant()).ToList();
+        // Keep the exact configured ID as well as its case-folded form. Some
+        // database collations do not uppercase Cyrillic suffixes such as 29а.
+        var canonicalIds = tableIds.Concat(tableIds.Select(id => id.ToUpperInvariant())).Distinct(StringComparer.Ordinal).ToList();
         var candidates = await _db.Reservations
             .Include(x => x.Tables)
             .Where(x =>

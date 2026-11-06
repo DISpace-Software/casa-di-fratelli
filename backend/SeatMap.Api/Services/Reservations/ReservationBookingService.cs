@@ -103,7 +103,8 @@ public sealed class ReservationBookingService(
 
         var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, request.GuestCount,
             publicBooking: !request.CreatedByAdmin,
-            allowCapacityOverride: request.CreatedByAdmin && administrator != null);
+            allowCapacityOverride: request.CreatedByAdmin && administrator != null,
+            allowStaffCombinations: request.CreatedByAdmin && administrator != null);
         if (selection.Error != null) return ReservationBookingResult.Invalid(request.CreatedByAdmin ? selection.Error : $"{selection.Error} Please call {brand.Phone} for assistance.");
         tableIds = selection.TableIds;
 

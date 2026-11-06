@@ -88,7 +88,7 @@ public class MaintenanceController : ControllerBase
         if (nextStatus is "Approved" or "Pending")
         {
             var selection = await _plans.SelectAsync(reservation.Tables.Select(t => t.TableCode), reservation.Area, reservation.GuestCount,
-                block: reservation.GuestCount == 0, allowCapacityOverride: true);
+                block: reservation.GuestCount == 0, allowCapacityOverride: true, allowStaffCombinations: true);
             if (selection.Error != null) return BadRequest(new { message = selection.Error });
             var conflict = await _conflicts.FindTableConflictAsync(reservation.ReservedDate,
                 reservation.ReservedTime, reservation.Tables.Select(x => x.TableCode).ToList(), reservation.Id, includeHallBlocks: false);
@@ -141,6 +141,44 @@ public class MaintenanceController : ControllerBase
         await _db.SaveChangesAsync();
         await transaction.CommitAsync();
         return NoContent();
+    }
+
+    [HttpPost("reservations/deleted/restore")]
+    public async Task<IActionResult> RestoreAllDeletedReservations()
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanRestoreReservations(admin?.Role)) return Forbid();
+        var ids = await _db.Reservations.IgnoreQueryFilters()
+            .Where(x => x.IsDeleted || x.Status == "Cancelled").OrderBy(x => x.Id)
+            .Select(x => x.Id).ToListAsync();
+        return await ProcessReservationTrashAsync(ids, RestoreReservation);
+    }
+
+    [HttpDelete("reservations/deleted/permanent")]
+    public async Task<IActionResult> PermanentlyDeleteAllDeletedReservations()
+    {
+        var admin = AdminAuthService.Current(HttpContext);
+        if (!AdminRoleAccess.CanDeleteReservations(admin?.Role)) return Forbid();
+        var ids = await _db.Reservations.IgnoreQueryFilters()
+            .Where(x => x.IsDeleted || x.Status == "Cancelled").OrderBy(x => x.Id)
+            .Select(x => x.Id).ToListAsync();
+        return await ProcessReservationTrashAsync(ids, PermanentlyDeleteReservation);
+    }
+
+    private static async Task<IActionResult> ProcessReservationTrashAsync(List<int> ids, Func<int, Task<IActionResult>> action)
+    {
+        var succeeded = 0;
+        var errors = new List<object>();
+        foreach (var id in ids)
+        {
+            // Each record uses the existing authorization, transaction, conflict
+            // checks, order archival and audit behavior. Conflicts stay in trash.
+            var result = await action(id);
+            if (result is OkObjectResult or NoContentResult) succeeded++;
+            else if (errors.Count < 10)
+                errors.Add(new { id, detail = (result as ObjectResult)?.Value ?? "Reservation could not be processed." });
+        }
+        return new OkObjectResult(new { succeeded, failed = ids.Count - succeeded, errors });
     }
 
     [HttpGet("reservations/deleted")]

@@ -1,6 +1,6 @@
 import { gardenGroups, indoorGroups, openTerraceGroups } from "../reservations/tableConfig.js";
 
-export const EMPTY_ADMIN_PLAN = Object.freeze({ schemaVersion: 1, revision: "", zones: [], tables: [], combinations: [] });
+export const EMPTY_ADMIN_PLAN = Object.freeze({ schemaVersion: 1, revision: "", zones: [], tables: [], combinations: [], staffCombinationMode: "configured" });
 const CASA_ZONES = [
   { id: "indoor", name: "Зала / Непушачи", presentation: "casa-indoor", isActive: true, names: { bg: "Зала / Непушачи", en: "Hall / Non-smoking", ru: "Зал / Некурящие" } },
   { id: "garden", name: "Покрита тераса", presentation: "casa-garden", isActive: true, names: { bg: "Покрита тераса", en: "Covered terrace", ru: "Крытая терраса" } },
@@ -26,14 +26,19 @@ function legacyCasaCombinations() {
 // Legacy presets are allowed only for a confirmed old Casa API response. A
 // failed request or a loaded empty plan must never invent another tenant's data.
 export function getAdminSessionPlan(snapshot, { isCasa = false } = {}) {
-  if (snapshot.savedPlan) return { ...snapshot.savedPlan, tables: snapshot.savedTables };
+  if (snapshot.savedPlan) return {
+    ...snapshot.savedPlan,
+    tables: snapshot.savedTables,
+    staffCombinationMode: snapshot.savedPlan.staffCombinationMode || (isCasa ? "same-zone" : "configured"),
+  };
   if (!snapshot.loaded || !isCasa) return EMPTY_ADMIN_PLAN;
-  return { schemaVersion: 1, revision: "", zones: CASA_ZONES, tables: snapshot.savedTables, combinations: legacyCasaCombinations() };
+  return { schemaVersion: 1, revision: "", zones: CASA_ZONES, tables: snapshot.savedTables, combinations: legacyCasaCombinations(), staffCombinationMode: "same-zone" };
 }
 
 export function validAdminPlan(plan) {
   if (plan?.schemaVersion !== 1 || typeof plan.revision !== "string" || !plan.revision ||
       !Array.isArray(plan.zones) || !Array.isArray(plan.tables) || !Array.isArray(plan.combinations)) return false;
+  if (plan.staffCombinationMode !== undefined && !["same-zone", "configured"].includes(plan.staffCombinationMode)) return false;
   if (plan.zones.some(zone => !zone || typeof zone.id !== "string" || !zone.id || zone.id === "all" || typeof zone.name !== "string" || typeof zone.isActive !== "boolean")) return false;
   const zones = new Set(plan.zones.map(zone => zone.id));
   if (zones.size !== plan.zones.length) return false;

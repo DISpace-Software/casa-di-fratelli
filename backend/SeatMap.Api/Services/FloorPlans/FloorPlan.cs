@@ -12,6 +12,9 @@ public sealed record FloorPlan
     public List<TableLayoutItem> Tables { get; init; } = [];
     // Each entry is an exact permitted set. Single tables are always eligible.
     public List<List<string>> Combinations { get; init; } = [];
+    // Null is a legacy document; FloorPlanService resolves the restaurant's
+    // compatibility policy before exposing it. Public booking never uses it.
+    public string? StaffCombinationMode { get; init; }
     public int PublicMaxGuests { get; init; } = 8;
     public int PublicMaxTables { get; init; } = 1;
 }

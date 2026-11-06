@@ -15,6 +15,7 @@ using Microsoft.Data.Sqlite;
 static void Check(bool result, string message) { if (!result) throw new Exception(message); }
 await MenuStartupChecks.RunAsync();
 await FloorPlanChecks.RunAsync();
+await CasaStaffParityChecks.RunAsync();
 await TenantNotificationChecks.RunAsync();
 await AdminSessionIsolationChecks.RunAsync();
 await RestaurantClosureChecks.RunAsync();
@@ -98,8 +99,32 @@ Check(preservedOrder.Items.Single().Name == "Test dish" && preservedOrder.Items.
 Check(alreadyArchived.ReservationId == null && alreadyArchived.DeleteReason == "Earlier archive", "Existing archive metadata changed");
 Check(await db.Reservations.AnyAsync(x => x.Id == 2), "Purging linked booking changed unrelated reservation");
 Console.WriteLine("PASS: reservation purge detaches and archives linked orders, preserves amounts/items/status and existing archive metadata.");
+db.Reservations.AddRange(Booking(1000, "Cancelled", "2"), Booking(1001, "Cancelled", "6"));
+await db.SaveChangesAsync();
+var bulkRestore = (OkObjectResult)await controller.RestoreAllDeletedReservations();
+var bulkJson = System.Text.Json.JsonSerializer.SerializeToElement(bulkRestore.Value);
+Check(bulkJson.GetProperty("succeeded").GetInt32() == 1 && bulkJson.GetProperty("failed").GetInt32() == 1,
+    "Bulk restore must restore free seating and retain conflicting bookings");
+Check((await db.Reservations.SingleAsync(x => x.Id == 1000)).Status == "Cancelled" &&
+    (await db.Reservations.SingleAsync(x => x.Id == 1001)).Status == "Approved", "Bulk restore changed conflicting seating");
+var bulkLinkedOrder = new DiningOrder { ReservationId = 1000, GuestName = "Bulk test", TableLabel = "2", TotalPrice = 10m, Status = "Done" };
+db.DiningOrders.Add(bulkLinkedOrder);
+for (var index = 0; index < 301; index++) db.Reservations.Add(Booking(1100 + index, "Cancelled", "1"));
+await db.SaveChangesAsync();
+var bulkDelete = (OkObjectResult)await controller.PermanentlyDeleteAllDeletedReservations();
+bulkJson = System.Text.Json.JsonSerializer.SerializeToElement(bulkDelete.Value);
+Check(bulkJson.GetProperty("succeeded").GetInt32() == 302 && bulkJson.GetProperty("failed").GetInt32() == 0,
+    "Empty trash must include records beyond the displayed page limit");
+Check(!await db.Reservations.IgnoreQueryFilters().AnyAsync(x => x.IsDeleted || x.Status == "Cancelled"), "Empty trash left cancelled records");
+Check(await db.Reservations.AnyAsync(x => x.Id == 2) && await db.Reservations.AnyAsync(x => x.Id == 1001), "Empty trash deleted active/restored bookings");
+Check(bulkLinkedOrder.ReservationId == null && bulkLinkedOrder.IsDeleted && bulkLinkedOrder.TotalPrice == 10m,
+    "Bulk purge must archive linked orders without losing their amounts");
+Check(((OkObjectResult)await controller.PermanentlyDeleteAllDeletedReservations()).Value != null, "Empty trash must allow a harmless retry");
+Console.WriteLine("PASS: bulk trash restore retains conflicts; purge covers 302 rows beyond display limits, preserves active bookings and archives orders.");
 controller.HttpContext.Items["AdminUser"] = new AdminPrincipal(2, "Waiter", "waiter@example.com", "Waiter");
 Check(await controller.PermanentlyDeleteReservation(3) is ForbidResult && await controller.RestoreReservation(3) is ForbidResult, "Waiter must not restore or delete trash");
+Check(await controller.RestoreAllDeletedReservations() is ForbidResult && await controller.PermanentlyDeleteAllDeletedReservations() is ForbidResult,
+    "Waiter must not run bulk trash actions");
 Console.WriteLine("PASS: trash contents, walk-ins, restore, conflicts, purge, linked orders, unrelated bookings, role restrictions.");
 
 var marketing = new MarketingController(db, null!, null!) { ControllerContext = controller.ControllerContext };

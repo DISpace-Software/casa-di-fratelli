@@ -216,11 +216,11 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         // Retain the legacy staff walk-in ceiling while selection still rejects
         // non-positive counts and invalid tables/zones.
         var guestCount = Math.Min(request.GuestCount, 40);
-        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, guestCount, allowCapacityOverride: true);
+        var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, guestCount, allowCapacityOverride: true, allowStaffCombinations: true);
         if (selection.Error != null) return BadRequest(new { message = selection.Error });
         tableIds = selection.TableIds;
 
-        var canonicalIds = tableIds.Select(id => id.ToUpperInvariant()).ToList();
+        var canonicalIds = tableIds.Concat(tableIds.Select(id => id.ToUpperInvariant())).Distinct(StringComparer.Ordinal).ToList();
         var now = GetRestaurantNow();
         var openingTime = TimeOnly.Parse(_brand.WalkInOpeningTime);
         var latestWalkInTime = TimeOnly.Parse(_brand.WalkInLatestTime);
@@ -368,7 +368,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
 
         var tableIds = reservation.Tables.Select(t => t.TableCode).ToList();
         var selection = await _seasonalZones.Plans.SelectAsync(tableIds, reservation.Area, reservation.GuestCount,
-            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null);
+            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null,
+            allowStaffCombinations: AdminAuthService.Current(HttpContext) != null);
         if (selection.Error != null) return BadRequest(new { message = selection.Error });
 
         var conflict = await _reservationConflictService.FindTableConflictAsync(
@@ -431,7 +432,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             return BadRequest("Cancelled reservations cannot be marked as arrived.");
 
         var selection = await _seasonalZones.Plans.SelectAsync(reservation.Tables.Select(t => t.TableCode), reservation.Area, reservation.GuestCount,
-            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null);
+            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null,
+            allowStaffCombinations: AdminAuthService.Current(HttpContext) != null);
         if (selection.Error != null) return BadRequest(new { message = selection.Error });
         var conflict = await _reservationConflictService.FindTableConflictAsync(reservation.ReservedDate, reservation.ReservedTime, selection.TableIds, id, includeHallBlocks: false);
         if (conflict != null) return Conflict(ReservationConflictService.ToConflictResponse(conflict));
@@ -535,7 +537,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             return BadRequest("Invalid guests.");
 
         var selection = await _seasonalZones.Plans.SelectAsync(tableIds, request.Area, nextGuestCount,
-            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null);
+            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null,
+            allowStaffCombinations: AdminAuthService.Current(HttpContext) != null);
         if (selection.Error != null) return BadRequest(new { message = selection.Error });
         tableIds = selection.TableIds;
 
@@ -650,7 +653,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
         if (!IsReservationTimeAllowed(reservedTime, createdByAdmin: true))
             return BadRequest("Admin reservations are available until 23:00.");
         var selection = await _seasonalZones.Plans.SelectAsync(tableIds, area, request.GuestCount,
-            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null);
+            allowCapacityOverride: AdminAuthService.Current(HttpContext) != null,
+            allowStaffCombinations: AdminAuthService.Current(HttpContext) != null);
         if (selection.Error != null) return BadRequest(new { message = selection.Error });
         tableIds = selection.TableIds;
         area = selection.Area;

@@ -19,6 +19,11 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
     public const string StorageKey = "seatmap:floor-plan:v1";
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    private FloorPlan ResolveStaffPolicy(FloorPlan plan) => plan with {
+        StaffCombinationMode = plan.StaffCombinationMode ??
+            (tenant.TenantId.Equals("casa-di-fratelli", StringComparison.OrdinalIgnoreCase) ? "same-zone" : "configured")
+    };
+
     public async Task<FloorPlan> GetAsync()
     {
         var stored = await db.AppSettings.AsNoTracking().Where(x => x.Key == StorageKey).Select(x => x.Value).SingleOrDefaultAsync();
@@ -27,7 +32,7 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
             var saved = JsonSerializer.Deserialize<FloorPlan>(stored, Json)
                 ?? throw new InvalidOperationException("The restaurant floor plan is invalid.");
             if (Validate(saved) is { } error) throw new InvalidOperationException($"The restaurant floor plan is invalid: {error}");
-            return saved;
+            return ResolveStaffPolicy(saved);
         }
 
         // Compatibility import, only until this restaurant explicitly saves its plan.
@@ -59,11 +64,12 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
             Combinations = plan.Combinations.Where(group => group.All(tableIds.Contains) && plan.Tables.Where(t => group.Contains(t.Id)).Select(t => t.Area).Distinct().Count() == 1).ToList()
         };
         if (Validate(plan) is { } legacyError) throw new InvalidOperationException($"The legacy floor plan is invalid: {legacyError}");
-        return plan with { Revision = "legacy-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(plan, Json)))) };
+        return ResolveStaffPolicy(plan with { Revision = "legacy-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(plan, Json)))) });
     }
 
     public async Task<FloorPlan> SaveAsync(FloorPlan plan)
     {
+        plan = ResolveStaffPolicy(plan);
         var error = Validate(plan);
         if (error != null) throw new ArgumentException(error);
         await using var transaction = await RestaurantWriteTransaction.BeginAsync(db);
@@ -80,8 +86,20 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
         {
             var ids = booking.Tables.Select(t => t.TableCode).ToList();
             // Legacy bookings may already violate current rules. Only block newly introduced breakage.
-            var previous = Select(before, ids, null, booking.GuestCount, booking.GuestCount == 0, allowCapacityOverride: booking.CreatedByAdmin);
-            var next = Select(plan, ids, null, booking.GuestCount, booking.GuestCount == 0, allowCapacityOverride: booking.CreatedByAdmin);
+            var capacityOverride = booking.CreatedByAdmin;
+            var previous = Select(before, ids, null, booking.GuestCount, booking.GuestCount == 0,
+                allowCapacityOverride: capacityOverride, allowStaffCombinations: true);
+            // Editing a public booking does not change its original attribution.
+            // Preserve a staff-arranged over-capacity selection, but still reject
+            // a new capacity reduction for a previously valid public booking.
+            if (previous.Error != null && !capacityOverride)
+            {
+                var staffPrevious = Select(before, ids, null, booking.GuestCount, booking.GuestCount == 0,
+                    allowCapacityOverride: true, allowStaffCombinations: true);
+                if (staffPrevious.Error == null) { previous = staffPrevious; capacityOverride = true; }
+            }
+            var next = Select(plan, ids, null, booking.GuestCount, booking.GuestCount == 0,
+                allowCapacityOverride: capacityOverride, allowStaffCombinations: true);
             if (previous.Error == null && next.Error != null)
                 throw new ArgumentException($"Move or cancel reservation #{booking.Id} before changing its tables: {next.Error}");
             if (previous.Error == null && previous.Area != next.Area)
@@ -117,12 +135,12 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
         return saved;
     }
 
-    public async Task<TableSelection> SelectAsync(IEnumerable<string>? ids, string? area, int guests, bool block = false, bool publicBooking = false, bool allowCapacityOverride = false)
+    public async Task<TableSelection> SelectAsync(IEnumerable<string>? ids, string? area, int guests, bool block = false, bool publicBooking = false, bool allowCapacityOverride = false, bool allowStaffCombinations = false)
     {
         var plan = await GetAsync();
         // Nominal capacity can be overridden only by an explicitly trusted staff
         // workflow. Public calls and every existing caller stay strict by default.
-        var result = Select(plan, ids, area, guests, block, allowCapacityOverride && !publicBooking);
+        var result = Select(plan, ids, area, guests, block, allowCapacityOverride && !publicBooking, allowStaffCombinations && !publicBooking);
         if (result.Error != null || block) return result;
         if (publicBooking && (guests > plan.PublicMaxGuests || result.TableIds.Count > plan.PublicMaxTables))
             return result with { Error = "This party size or table combination requires contacting the restaurant." };
@@ -132,7 +150,7 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
         return result;
     }
 
-    public static TableSelection Select(FloorPlan plan, IEnumerable<string>? ids, string? area, int guests, bool block = false, bool allowCapacityOverride = false)
+    public static TableSelection Select(FloorPlan plan, IEnumerable<string>? ids, string? area, int guests, bool block = false, bool allowCapacityOverride = false, bool allowStaffCombinations = false)
     {
         var requested = ReservationConflictService.NormalizeTableIds(ids);
         TableSelection Fail(string message) => new(message, [], "", 0);
@@ -146,7 +164,8 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
         var realArea = areas.Length == 1 ? areas[0] : "all";
         if (!string.IsNullOrWhiteSpace(area) && area != "all" && area != realArea) return Fail("The selected tables do not belong to the requested zone.");
         var codes = tables.Select(t => t.Id).ToList();
-        if (!block && codes.Count > 1 && !plan.Combinations.Any(g => g.Count == codes.Count && g.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(codes)))
+        if (!block && codes.Count > 1 && !(allowStaffCombinations && plan.StaffCombinationMode == "same-zone") &&
+            !plan.Combinations.Any(g => g.Count == codes.Count && g.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(codes)))
             return Fail("This table combination is not allowed by the restaurant.");
         var capacity = tables.Sum(t => t.Seats);
         if (!block && (guests <= 0 || (!allowCapacityOverride && capacity < guests))) return Fail("The selected tables do not have enough seats.");
@@ -156,6 +175,7 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
     public static string? Validate(FloorPlan plan)
     {
         if (plan.SchemaVersion != 1) return "Unsupported floor plan version.";
+        if (plan.StaffCombinationMode is not (null or "configured" or "same-zone")) return "Unsupported staff combination policy.";
         if (plan.Zones == null || plan.Tables == null || plan.Combinations == null) return "Zones, tables and combinations are required.";
         if (plan.Zones.Count > 50 || plan.Tables.Count > 500 || plan.Combinations.Count > 2000) return "The floor plan is too large.";
         if (plan.PublicMaxGuests is < 1 or > 500 || plan.PublicMaxTables is < 1 or > 50) return "Invalid public booking limits.";
