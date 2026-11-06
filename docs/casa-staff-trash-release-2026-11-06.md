@@ -26,6 +26,6 @@ Production release completed on 6 November 2026. Source commit: `43ac1f6a718ea80
 - Render: `dep-dbn0e3ei0phs73d14bd0`, live at 16:58:43 UTC (18:58:43 Europe/Sofia), exact source commit verified.
 - Vercel: `dpl_2VLvzMTrxUPZwUkEeb2UH7ordEcB`, Ready, static build 2 seconds, promoted to `https://seatmap-admin-eight.vercel.app`.
 - Eight read-only production API checks passed: exact table/zone/combination preservation, correct staff policy, unchanged tenant/notification context and closures, unauthorized bulk action denial and shared-origin DELETE preflight.
-- Both live restaurant routes and every packaged file match the tested local artifact by SHA256. Published code contains both bulk basket actions.
+- Both live restaurant routes and all packaged public assets match the tested local artifact by SHA256. Published code contains both bulk basket actions.
 - Render error-level log query since backend launch returned no records. This is a short post-deploy observation window, not a full authenticated production workflow test.
 - No production reservation, trash or floor-plan data was modified during verification.
