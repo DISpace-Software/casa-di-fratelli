@@ -5782,6 +5782,15 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     newPassword: false,
   });
   const [reservationTrashOpen, setReservationTrashOpen] = React.useState(false);
+  const reservationTrashRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!reservationTrashOpen) return;
+    const closeOutsideTrash = (event) => {
+      if (!reservationTrashRef.current?.contains(event.target)) setReservationTrashOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutsideTrash, true);
+    return () => document.removeEventListener("pointerdown", closeOutsideTrash, true);
+  }, [reservationTrashOpen]);
   const [deletedReservations, setDeletedReservations] = React.useState([]);
   const [reservationTrashBusy, setReservationTrashBusy] = React.useState(false);
   const [reservationTrashError, setReservationTrashError] = React.useState("");
@@ -8711,7 +8720,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     const emptyText = adminLocalText(adminLanguage, "Няма отменени или изтрити резервации.", "No cancelled or deleted reservations.", "Нет отменённых или удалённых броней.");
 
     return (
-      <div className="fixed bottom-4 right-4 z-[10020] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+      <div ref={reservationTrashRef} className="fixed bottom-4 right-4 z-[10020] flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
         {reservationTrashOpen && (
           <div className="w-[min(380px,calc(100vw-2rem))] overflow-hidden rounded-[22px] border border-[#f2d39a]/24 bg-[#15110e]/96 text-left shadow-[0_28px_90px_rgba(0,0,0,0.72)] backdrop-blur-xl">
             <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
