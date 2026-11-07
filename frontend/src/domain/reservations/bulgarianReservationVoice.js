@@ -12,14 +12,14 @@ const ordinalDays = { първи: 1, втори: 2, трети: 3, четвър�
 const weekdays = { неделя: 0, понеделник: 1, вторник: 2, сряда: 3, четвъртък: 4, петък: 5, събота: 6 };
 const collective = '(?:двама|трима|четирима|петима|шестима|седмина|осмина|деветима)';
 const phoneCue = '(?:телефонче(?:то)?|телефон(?:ът|а)?|номерче(?:то)?|мобил(?:ният|ния|ен)\\s+(?:(?:ми|ви)\\s+)?(?:номер|телефон)|номер(?:ът)?(?:\\s+(?:ми|ви))?\\s+за\\s+връзка|телефон(?:ният|ния|ен)\\s+(?:(?:ми|ви)\\s+)?номер)';
-const dialogGap = '[\\s.,;:—!?-]*(?:(?:да|добре|ами|значи|моля|секунда|секундичка|момент|изчакайте|изчакай|ето(?:\\s+го)?)(?!\\p{L})[\\s.,;:—!?-]*)*';
+const dialogGap = '[\\s.,;:—!?-]*(?:(?:да|добре|ами|значи|моля|секунда|секундичка|момент|изчакайте|изчакай|само|слушам(?:е)?(?:\\s+ви)?|кажете(?:\\s+ми)?|давайте|диктувайте|ето(?:\\s+го)?)(?!\\p{L})[\\s.,;:—!?-]*)*';
 
 function normalizeDialogue(text) {
   // A question supplies a field label; the answer still has to pass the normal
   // value parser. Never derive names or numbers from the question itself.
-  text = text.replace(new RegExp(`(?<!\\p{L})(?:на\\s+чие\\s+име(?:\\s+(?:да\\s+(?:бъде|е|запиша)|е|ще\\s+бъде))?|как(?:во|\\s+ви)\\s+е\\s+името)${endWord}${dialogGap}`, 'giu'), 'име ')
+  text = text.replace(new RegExp(`(?<!\\p{L})(?:на\\s+(?:чие|кое)(?:\\s+име)?\\s+(?:да\\s+(?:бъде|е)|ще\\s+(?:бъде|е)|е)\\s+(?:резервацията|масата)|на\\s+(?:чие|кое)\\s+име(?:\\s+(?:да\\s+(?:бъде|е|запиша)|е|ще\\s+бъде))?|как(?:во|\\s+ви)\\s+е\\s+името)${endWord}${dialogGap}`, 'giu'), 'име ')
     .replace(new RegExp(`(?<!\\p{L})(?:за\\s+коя\\s+дата|коя\\s+дата|кой\\s+ден|за\\s+кога)(?:\\s+(?:да\\s+(?:бъде|е)|ще\\s+бъде))?${endWord}${dialogGap}`, 'giu'), 'дата ')
-    .replace(new RegExp(`(?<!\\p{L})(?:за\\s+колко\\s+часа|в\\s+колко(?:\\s+часа)?|кой\\s+час)(?:\\s+(?:да\\s+(?:бъде|е)|ще\\s+дойдете))?${endWord}${dialogGap}(?:в\\s+)?`, 'giu'), 'час ')
+    .replace(new RegExp(`(?<!\\p{L})(?:за\\s+колко\\s+часа|в\\s+колко(?:\\s+часа)?|кой\\s+час)(?:\\s+(?:да\\s+(?:бъде|е)|ще\\s+дойдете))?${endWord}${dialogGap}(?:(?:в|за|от)\\s+)?`, 'giu'), 'час ')
     .replace(new RegExp(`(?<!\\p{L})(?:(?:за\\s+)?колко\\s+(?:души|човека|хора|гости)(?:\\s+(?:ще\\s+(?:бъдете|сте|дойдете)|сте|да\\s+запиша))?|колко\\s+ще\\s+(?:бъдете|сте))${endWord}${dialogGap}`, 'giu'), 'гости ')
     .replace(/(?<!\p{L})(?:запиши|запишете|запазете|запази)\s+(?:(?:резервацията|масата)\s+)?на\s+(?:името\s+на\s+)?/giu, 'име ');
   return text;
@@ -87,7 +87,7 @@ function readNumber(source) {
 }
 
 function safeTail(source) {
-  const tail = source.trimStart();
+  const tail = source.trimStart().replace(/^(?:да(?:\s+|$))+/iu, '');
   if (/^(?:$|[,.;!?]|(?:телефон|име|дата|датата|час|часът|гости|брой|на името|утре|днес|вдругиден|ще (?:бъдем|сме)|моля|благодаря)(?!\p{L}))/iu.test(tail)) return true;
   const nextField = /^(?:в|от|за)\s+/iu.exec(tail);
   const number = readNumber(tail.slice(nextField?.[0].length || 0));
@@ -97,9 +97,9 @@ function safeTail(source) {
 }
 
 function normalizePhones(text) {
-  return text.replace(new RegExp(`(?<!\\p{L})${phoneCue}${endWord}\\s*(?:(?:ми|ви|за\\s+връзка)\\s*)?(?:(?:ми\\s+)?(?:е|дайте|кажете)\\s*)?${dialogGap}`, 'giu'), (label, index) => {
+  return text.replace(new RegExp(`(?<!\\p{L})(?:(?:може\\s+ли)\\s+)?(?:(?:един|едно)\\s+)?${phoneCue}${endWord}\\s*(?:(?:ми|ви|за\\s+връзка)\\s*)?(?:(?:ми\\s+)?(?:е|дайте|кажете)\\s*)?${dialogGap}`, 'giu'), (label, index) => {
     const after = text.slice(index + label.length);
-    return !after || /^(?:\+|плюс\s+|не\s+)/iu.test(after) || readNumber(after) ? 'телефон ' : label;
+    return /^(?:\+|плюс\s+|не\s+)/iu.test(after) || readNumber(after) ? 'телефон ' : 'разговор ';
   });
 }
 
@@ -112,13 +112,16 @@ function normalizePhoneNumbers(text) {
     while (cursor < source.length) {
       // Recognition often ends a phone fragment with a period or comma. Only
       // a following number without a guest/time/date suffix can continue it.
-      const separator = /^[\s,;().-]*/u.exec(source.slice(cursor))[0];
+      const separator = /^[\s,;().-]*(?:(?:да|добре|окей)(?!\p{L})[\s,;().-]*)*/iu.exec(source.slice(cursor))[0];
       if (new RegExp(`^${collective}${endWord}`, 'iu').test(source.slice(cursor + separator.length))) break;
       const number = readNumber(source.slice(cursor + separator.length));
       if (!number) break;
       const tail = source.slice(cursor + separator.length + number.length);
       if (digits && (new RegExp(`^\\s+${guestUnit}${endWord}`, 'iu').test(tail) || /^[:./]\d/u.test(tail) || new RegExp(`^\\s+(?:${monthNames.join('|')})${endWord}`, 'iu').test(tail))) break;
-      digits += number.digits;
+      // A complete phone repeated back in a separate group confirms the
+      // same number. Equal short groups (for example “88 88”) still concatenate.
+      const readBack = digits.length >= 7 && number.digits === digits;
+      if (!readBack) digits += number.digits;
       cursor += separator.length + number.length;
       if (digits.length > 15) break;
     }
@@ -208,10 +211,16 @@ function normalizeGuests(text) {
     if (!/^(?:гости|брой|гостите)/iu.test(cue[0]) && !bookingContext(text, cue.index)) continue;
     const count = readNumber(source);
     if (!count) continue;
-    const unit = new RegExp(`^\\s+${guestUnit}${endWord}`, 'iu').exec(source.slice(count.length));
+    let countLength = count.length;
+    // A repeated answer (“трима, трима човека”) is confirmation, not two
+    // separate party sizes. Only collapse equal values within a guest field.
+    const echoGap = /^[\s,]+/u.exec(source.slice(countLength));
+    const echo = echoGap && readNumber(source.slice(countLength + echoGap[0].length));
+    if (echo && echo.value === count.value) countLength += echoGap[0].length + echo.length;
+    const unit = new RegExp(`^\\s+${guestUnit}${endWord}`, 'iu').exec(source.slice(countLength));
     const collective = /(?:двама|трима|четирима|петима|шестима|седмина|осмина|деветима)$/iu.test(source.slice(0, count.length));
     if (/^за\s/iu.test(cue[0]) && !unit && !collective) continue;
-    let length = count.length + (unit?.[0].length || 0), value = count.value;
+    let length = countLength + (unit?.[0].length || 0), value = count.value;
     if (unit && /(?:възрастни|възрастен|деца|дете)$/iu.test(unit[0])) {
       const join = /^\s+и\s+/iu.exec(source.slice(length));
       const second = join && readNumber(source.slice(length + join[0].length));
@@ -225,7 +234,11 @@ function normalizeGuests(text) {
 }
 
 export function normalizeBulgarianReservationTranscript(transcript, now = new Date()) {
-  let text = normalizeDialogue(String(transcript || '').replace(/\s+/g, ' ').trim());
+  // Recognition may omit every punctuation mark. Standalone acknowledgements
+  // still end an answer; suffixes in names such as Добрев remain untouched.
+  let text = String(transcript || '').replace(/\s+/g, ' ').trim()
+    .replace(/(?<!\p{L})(?:добре|окей|ок)(?!\p{L})/giu, ';');
+  text = normalizeDialogue(text);
   text = text.replace(/(?<!\p{L})(?:резервацията\s+(?:е\s+)?на\s+името(?:\s+на)?|(?:на\s+)?името(?:\s+ми)?(?:\s+е|\s+на)?)(?!\p{L})\s*/giu, 'име ')
     .replace(/(?<!\p{L})(?:бих(?:ме)?\s+(?:искал[аи]?|искали|желал[аи]?|желали)|искам(?:е)?)\s+(?:(?:да\s+(?:направя|направим|запазя|запазим))\s+)?(?:една\s+)?(?:резервация|маса)(?!\p{L})/giu, 'резервация')
     .replace(/(?<!\p{L})маса(?=\s+за\s)/giu, 'резервация')

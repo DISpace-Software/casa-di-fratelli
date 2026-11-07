@@ -15,6 +15,10 @@ let currentPage;
 const tomorrow = new Date(new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sofia', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()) + 'T12:00:00Z');
 tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
 const tomorrowDate = tomorrow.toISOString().slice(0, 10);
+const nextWednesday = new Date(tomorrow);
+nextWednesday.setUTCDate(nextWednesday.getUTCDate() - 1);
+nextWednesday.setUTCDate(nextWednesday.getUTCDate() + ((3 - nextWednesday.getUTCDay() + 7) % 7 || 7));
+const nextWednesdayDate = nextWednesday.toISOString().slice(0, 10);
 async function api(path) {
   const response = await fetch(state.apiUrl + path, { headers: { 'X-Tenant-Id': 'casa-di-fratelli', 'X-Admin-Token': state.tenants['casa-di-fratelli'].auth.token } });
   assert.equal(response.status, 200);
@@ -298,6 +302,67 @@ try {
   assert.deepEqual(await api('/api/reservations'), before);
   checks.push({ name: 'Later Bulgarian uncertainty retracts an earlier voice-filled phone; an explicit confirmation restores it, while a subsequent manual phone correction survives new uncertainty without autosaving', passed: true });
   await retraction.context.close();
+
+  // Synthetic contact with the same spoken grouping as the reported dialogue.
+  // Both variants contain identical punctuation-free text; the second changes
+  // only recognition event boundaries and introduces actual session restarts.
+  const dialogueChunks = [
+    'здравейте здравейте да слушам слушаме Окей',
+    'на чие да е резервацията',
+    'Иван Петров Добре добре',
+    'за кога',
+    'следващата сряда Окей Окей',
+    'За колко човека',
+    'трима трима човека добре',
+    'може ли един телефон само',
+    'да слушам Ви',
+    '089 12 34 56 78 благодаря',
+    'За колко часа',
+    'за 10:00 Окей Всичко е добре чао чао',
+  ];
+  for (const fragmented of [false, true]) {
+    const dialogue = await open(false, true);
+    const booking = await mapForm(dialogue.page);
+    await booking.voice.getByRole('button', { name: 'Диктувай резервация', exact: true }).click();
+    if (fragmented) {
+      for (const [index, chunk] of dialogueChunks.entries()) {
+        await emit(dialogue.page, chunk);
+        if ([1, 3, 8, 10].includes(index)) await restartAfterEnd(dialogue.page);
+        if (index === 2) await fieldEquals(booking.form, 'Име', 'Иван Петров');
+        if (index === 4) await fieldEquals(booking.form, 'Дата', nextWednesdayDate);
+        if (index === 6) await fieldEquals(booking.form, 'Гости', '3');
+        if (index === 9) await fieldEquals(booking.form, 'Телефон', '08912345678');
+      }
+    } else {
+      await emit(dialogue.page, dialogueChunks.join(' '));
+    }
+    await fieldEquals(booking.form, 'Име', 'Иван Петров');
+    await fieldEquals(booking.form, 'Телефон', '08912345678');
+    await fieldEquals(booking.form, 'Дата', nextWednesdayDate);
+    await fieldEquals(booking.form, 'Гости', '3');
+    const times = await booking.form.getByLabel('Час', { exact: true }).locator('option').evaluateAll(options => options.map(option => option.value));
+    if (times.includes('10:00')) {
+      await fieldEquals(booking.form, 'Час', '10:00');
+      assert.equal(await booking.voice.getByRole('alert').count(), 0);
+    } else {
+      assert.notEqual(await booking.form.getByLabel('Час', { exact: true }).inputValue(), '10:00');
+      assert.match(await booking.voice.getByRole('alert').innerText(), /Час/);
+      await booking.voice.locator('summary').click();
+      await fieldEquals(booking.voice, 'Провери и поправи полетата: Час', '10:00');
+      await booking.voice.locator('summary').click();
+    }
+    await dialogue.page.screenshot({ path: root + `/10-bulgarian-punctuation-free-${fragmented ? 'fragmented' : 'single'}-dialogue.png`, fullPage: true });
+    await emit(dialogue.page, 'Часът е 19:30.');
+    await fieldEquals(booking.form, 'Час', '19:30');
+    await fieldEquals(booking.form, 'Име', 'Иван Петров');
+    await fieldEquals(booking.form, 'Телефон', '08912345678');
+    await fieldEquals(booking.form, 'Дата', nextWednesdayDate);
+    await fieldEquals(booking.form, 'Гости', '3');
+    await stopWithoutRestart(dialogue.page, booking.voice);
+    assert.deepEqual(await api('/api/reservations'), before);
+    checks.push({ name: `Bulgarian punctuation-free Q/A ${fragmented ? 'in fragmented results across pauses' : 'in one final result'} tolerates repeated greetings/answers and grouped phone digits, fills five actual fields, respects available times and accepts an explicit time correction without saving`, passed: true });
+    await dialogue.context.close();
+  }
 
   for (const regression of [
     { language: 'ru-RU', name: 'Анна Иванова', transcript: 'Имя Анна Иванова. Телефон +359888123456. Завтра в 20:00 четыре человека.' },

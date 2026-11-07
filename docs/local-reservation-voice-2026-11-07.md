@@ -42,6 +42,14 @@ node scripts/check-bulgarian-voice-corpus.mjs /path/to/evidence-directory
 
 This produces `corpus-report.json` and the full `corpus-scenarios.json`. Latest evidence is in the original workspace at output/casa-voice-1000-20261107/.
 
+## Follow-up: uninterrupted administrator/customer dialogue
+
+A real conversation example exposed a gap that the earlier generated corpus missed. On commit 38689bf, an uninterrupted exchange beginning with “на чие да е резервацията” extracted only the party size and flagged the phone; the name, weekday and time were missing. Repeated “окей”/“добре”, the phone prompt “само да слушам Ви”, and the answer “за 10:00” were not handled as question/answer boundaries.
+
+The Bulgarian normalization now handles these prompt forms and spoken acknowledgements without requiring punctuation. A repeated party answer such as “трима трима човека” remains three guests. The original user text is checked locally with its exact digits preserved; committed regression cases use synthetic contacts. The map form is tested with both the entire conversation and separate final fragments across recognition pauses. For a future booking, 10:00 is an available admin slot. Latest follow-up evidence: output/casa-voice-natural-dialogue-20261107/.
+
+Twenty-four independently written natural dialogues additionally cover acknowledgements between phone groups, phone readbacks, reordered questions, unanswered prompts, spoken dates/times, corrections and ambiguity. Short phone groups can continue across “да”/“добре”; repeating the complete number confirms it rather than doubling it. Adjacent guest counts, clocks and dates are not appended to the phone. All 24 cases pass alongside the original generated corpus.
+
 ## Running
 
 Keep the disposable API fixture on 127.0.0.1:8878 and run the shared admin with Node 22:
@@ -54,10 +62,10 @@ Voice UI requires both Vite DEV and VITE_RESERVATION_VOICE_PREVIEW=true. A produ
 
 ## Evidence
 
-150 frontend tests pass, including the 1000-conversation corpus and focused Bulgarian regressions. All 1000 conversations and 750 intermediate states pass. Targeted ESLint passes. A production guard build excludes the voice UI even when VITE_RESERVATION_VOICE_PREVIEW=true. Browser test script: scripts/check-local-voice-browser.mjs <private-state.json> <output-directory> <playwright-module> <chromium-executable>.
+177 frontend tests pass, including the 1000-conversation corpus, 24 independently written natural dialogues and focused Bulgarian regressions. All 1000 conversations and 750 intermediate states pass. Targeted ESLint passes. A production guard build excludes the voice UI even when VITE_RESERVATION_VOICE_PREVIEW=true. Browser test script: scripts/check-local-voice-browser.mjs <private-state.json> <output-directory> <playwright-module> <chromium-executable>.
 
-All 16 Chromium checks pass using simulated speech events: desktop/mobile action ordering and keyboard navigation, five-field filling across pauses, unrelated/interim speech exclusion, manual edit preservation, corrections, Stop/error/timeout/unmount lifecycle behavior, diminutive question/answer exchanges, ambiguity prompts and progressive retraction, and Russian/English regression cases. The local API confirms unchanged reservation records; no JavaScript errors were reported. Browser evidence: output/casa-voice-1000-20261107/browser/report.json and screenshots 05–09.
+All 18 Chromium checks pass using simulated speech events: desktop/mobile action ordering and keyboard navigation, five-field filling across pauses, unrelated/interim speech exclusion, manual edit preservation, corrections, Stop/error/timeout/unmount lifecycle behavior, diminutive question/answer exchanges, ambiguity prompts and progressive retraction, Russian/English regression cases, and the unpunctuated dialogue both as one final result and as 12 separate fragments. The local API confirms unchanged reservation records; no JavaScript errors were reported. Latest browser evidence: output/casa-voice-natural-dialogue-20261107/browser/report.json and screenshot 10.
 
 Actual microphone recognition and recognition accuracy have NOT been verified automatically. Headed Chrome exposes SpeechRecognition and is ready for the user to try it. No microphone recording was started by the agent. Browser support and server-based recognition behavior: https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition .
 
-Latest screenshots/reports: original workspace output/casa-voice-1000-20261107/. Earlier evidence: output/casa-voice-bulgarian-20261107/, output/casa-voice-continued-20261107/ and output/casa-voice-20261107/. Occupancy real-browser evidence: output/casa-occupancy-20261107/browser.json (closing/reopening a 40-seat terrace, capacity 232 -> 192 -> 232, free seats 140 -> 100 -> 140 with 92 arrived guests).
+Latest screenshots/reports: original workspace output/casa-voice-natural-dialogue-20261107/. Earlier evidence: output/casa-voice-1000-20261107/, output/casa-voice-bulgarian-20261107/, output/casa-voice-continued-20261107/ and output/casa-voice-20261107/. Occupancy real-browser evidence: output/casa-occupancy-20261107/browser.json (closing/reopening a 40-seat terrace, capacity 232 -> 192 -> 232, free seats 140 -> 100 -> 140 with 92 arrived guests).

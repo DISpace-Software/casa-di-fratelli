@@ -157,3 +157,47 @@ test('unanswered name questions and reservation prepositions do not become guest
   assert.deepEqual(parse('За утре. Донеси две кафета.').fields, { reservedDate: '2026-11-08' });
   assert.deepEqual(parse('Датата е петък. Корекция: За понеделник.').fields, { reservedDate: '2026-11-09' });
 });
+
+test('unpunctuated administrator dialogue fills five fields and preserves eleven spoken phone digits', () => {
+  // Synthetic contact data; only the conversational structure reproduces the report.
+  const text = 'здравейте здравейте да слушам слушаме Окей на чие да е резервацията Иван Петров Добре добре за кога следващата сряда Окей Окей За колко човека трима трима човека добре може ли един телефон само да слушам Ви 089 12 34 56 78 благодаря За колко часа за 10:00 Окей Всичко е добре чао чао';
+  assert.deepEqual(parse(text), { fields: { guestName: 'Иван Петров', phone: '08912345678', reservedDate: '2026-11-11', reservedTime: '10:00', guestCount: '3' }, issues: [], missing: [] });
+});
+
+test('unpunctuated question fragments never become an answer before the actual value arrives', () => {
+  const chunks = [
+    ['здравейте здравейте да слушам слушаме Окей', {}],
+    ['на чие да е резервацията', {}],
+    ['Иван Петров Добре добре', { guestName: 'Иван Петров' }],
+    ['за кога', {}],
+    ['следващата сряда Окей Окей', { reservedDate: '2026-11-11' }],
+    ['За колко човека', {}],
+    ['трима', { guestCount: '3' }],
+    ['трима човека добре може ли един телефон само да слушам Ви', {}],
+    ['089 12', {}],
+    ['34 56 78 благодаря', { phone: '08912345678' }],
+    ['За колко часа', {}],
+    ['за 10:00 Окей Всичко е добре чао чао', { reservedTime: '10:00' }],
+  ];
+  const fields = {};
+  let transcript = '';
+  for (const [chunk, patch] of chunks) {
+    transcript += ' ' + chunk;
+    Object.assign(fields, patch);
+    assert.deepEqual(parse(transcript).fields, fields, chunk);
+  }
+});
+
+test('phone acknowledgements join groups without appending a readback, guest count or clock', () => {
+  assert.equal(parse('Телефонче 0888 да 12 добре 34 да 56.').fields.phone, '0888123456');
+  for (const acknowledgment of ['да', 'добре', 'окей']) {
+    assert.equal(parse(`Телефон 0888123456 ${acknowledgment} 0888123456 точно така.`).fields.phone, '0888123456');
+    assert.equal(parse(`Телефон 0888123456 ${acknowledgment} трима човека.`).fields.phone, '0888123456');
+    assert.equal(parse(`Телефон 0888123456 ${acknowledgment} 10:00.`).fields.phone, '0888123456');
+    assert.equal(parse(`Телефон 0888123456 ${acknowledgment} 12 ноември.`).fields.phone, '0888123456');
+  }
+  assert.deepEqual(parse('Може ли един телефон само да слушам Ви секунда ще проверя.').fields, {});
+  assert.deepEqual(parse('Може ли един телефон само да слушам Ви секунда ще проверя.').issues, []);
+  assert.deepEqual(parse('Телефонче 0888.').issues, ['phone']);
+  assert.equal(parse('На чие име Иван Добрев добре един телефон 0888123456.').fields.guestName, 'Иван Добрев');
+});
