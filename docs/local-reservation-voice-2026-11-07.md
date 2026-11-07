@@ -26,6 +26,22 @@ Context guards exclude unrelated phrases such as “Купих билети за
 
 Browser evidence: output/casa-voice-bulgarian-20261107/ (11 simulated-speech scenarios including all prior lifecycle checks, natural Bulgarian five-field map entry, phone fragments across restart, and RU/EN language selection). No reservations are saved by dictation, and fixture API records remained unchanged. This update is local only.
 
+## Bulgarian conversations and table action order
+
+The map table popup now orders its actions as create reservation, seat without reservation, then block the table for the day. The block/unblock control is separated at the bottom; the booking date remains above the reservation list. Both desktop and mobile layouts use this order.
+
+Bulgarian dictation recognizes diminutives such as “телефонче”, “телефончето”, “номерче” and “номерчето”, question/answer exchanges such as “На чие име?” and “За колко часа?”, and pauses containing “секунда”, “изчакайте” or “ето го”. Explicit corrections are limited to the intended field so a corrected phone does not erase the preceding name. Unanswered questions do not invent a guest name. Alternatives such as “седем или осем” and “номер A или B” flag the relevant field for clarification. If an ambiguity arrives after a final speech fragment already populated a value, the form retracts that value only while it still matches the voice entry; a different manual edit is retained. These retractions are limited to Bulgarian dictation.
+
+The regression corpus has 1000 unique synthetic text conversations: 300 complete bookings, 150 incremental conversations, 100 corrections, 150 unrelated/interrupted conversations, 100 invalid or ambiguous cases, 100 partial bookings and 100 calendar/value boundary cases. The incremental conversations also check 750 intermediate states. Expected fields, issues and missing values are declared independently of the parser. The fixture covers different field orders, names, phone formats, dates, spoken times and guest counts; it is not a measurement of live microphone accuracy or a guarantee for every possible conversation.
+
+Run the corpus from the repository root with Node 22:
+
+```sh
+node scripts/check-bulgarian-voice-corpus.mjs /path/to/evidence-directory
+```
+
+This produces `corpus-report.json` and the full `corpus-scenarios.json`. Latest evidence is in the original workspace at output/casa-voice-1000-20261107/.
+
 ## Running
 
 Keep the disposable API fixture on 127.0.0.1:8878 and run the shared admin with Node 22:
@@ -38,8 +54,10 @@ Voice UI requires both Vite DEV and VITE_RESERVATION_VOICE_PREVIEW=true. A produ
 
 ## Evidence
 
-137 frontend tests pass, including 12 focused Bulgarian tests. Targeted ESLint passes. A production guard build excludes the voice UI even when VITE_RESERVATION_VOICE_PREVIEW=true. Eleven real Chromium scenarios pass with simulated speech: desktop/mobile map buttons, final chunks -> actual five fields across pauses, interim/noise exclusion, manual edit preservation, corrected guest count after restarting, Stop/no-speech/permission/network handling, 90-second limit, unmount/late events, list fallback and invalid-value blocking. The real local API confirms unchanged booking data. No JavaScript errors were reported. Test script: scripts/check-local-voice-browser.mjs <private-state.json> <output-directory> <playwright-module> <chromium-executable>.
+150 frontend tests pass, including the 1000-conversation corpus and focused Bulgarian regressions. All 1000 conversations and 750 intermediate states pass. Targeted ESLint passes. A production guard build excludes the voice UI even when VITE_RESERVATION_VOICE_PREVIEW=true. Browser test script: scripts/check-local-voice-browser.mjs <private-state.json> <output-directory> <playwright-module> <chromium-executable>.
+
+All 16 Chromium checks pass using simulated speech events: desktop/mobile action ordering and keyboard navigation, five-field filling across pauses, unrelated/interim speech exclusion, manual edit preservation, corrections, Stop/error/timeout/unmount lifecycle behavior, diminutive question/answer exchanges, ambiguity prompts and progressive retraction, and Russian/English regression cases. The local API confirms unchanged reservation records; no JavaScript errors were reported. Browser evidence: output/casa-voice-1000-20261107/browser/report.json and screenshots 05–09.
 
 Actual microphone recognition and recognition accuracy have NOT been verified automatically. Headed Chrome exposes SpeechRecognition and is ready for the user to try it. No microphone recording was started by the agent. Browser support and server-based recognition behavior: https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition .
 
-Latest screenshots/reports: original workspace output/casa-voice-bulgarian-20261107/. Earlier evidence: output/casa-voice-continued-20261107/ and output/casa-voice-20261107/. Occupancy real-browser evidence: output/casa-occupancy-20261107/browser.json (closing/reopening a 40-seat terrace, capacity 232 -> 192 -> 232, free seats 140 -> 100 -> 140 with 92 arrived guests).
+Latest screenshots/reports: original workspace output/casa-voice-1000-20261107/. Earlier evidence: output/casa-voice-bulgarian-20261107/, output/casa-voice-continued-20261107/ and output/casa-voice-20261107/. Occupancy real-browser evidence: output/casa-occupancy-20261107/browser.json (closing/reopening a 40-seat terrace, capacity 232 -> 192 -> 232, free seats 140 -> 100 -> 140 with 92 arrived guests).

@@ -113,3 +113,47 @@ test('Bulgarian normalization is opt-in and leaves Russian and English modes int
   assert.equal(parseVoiceReservation(text, now, { language: 'bg' }).fields.guestCount, '6');
   assert.equal(typeof normalizeBulgarianReservationTranscript(undefined, now), 'string');
 });
+
+test('Bulgarian diminutives and administrator questions retain the field across pauses', () => {
+  for (const label of ['Телефонче', 'Телефончето', 'Номерче', 'Номерчето', 'Телефон за връзка']) {
+    assert.equal(parse(`${label} 0888123456.`).fields.phone, '0888123456', label);
+  }
+  const text = 'На чие име да запиша? Секундичка. Да, Иван Петров. Може ли едно телефонче? Секунда. Ето го: нула осем осем осем. Дванадесет тридесет и четири петдесет и шест. Кой ден? Утре. За колко часа? В седем и половина вечерта. Колко души ще бъдете? Шестима.';
+  assert.deepEqual(parse(text).fields, { guestName: 'Иван Петров', phone: '0888123456', reservedDate: '2026-11-08', reservedTime: '19:30', guestCount: '6' });
+  for (const prompt of ['На чие име?', 'Може ли едно телефонче?', 'За коя дата?', 'За колко часа?', 'Колко души ще бъдете?']) assert.deepEqual(parse(prompt).fields, {}, prompt);
+});
+
+test('Bulgarian explicit correction scope replaces only the intended reservation field', () => {
+  assert.equal(parse('Часът не е седем, а осем вечерта.').fields.reservedTime, '20:00');
+  assert.equal(parse('Име не Иван, а Петър Иванов.').fields.guestName, 'Петър Иванов');
+  assert.equal(parse('Телефон не 0888123456, а 0899123456.').fields.phone, '0899123456');
+  assert.equal(parse('Гости шест. Не шестима, а осем души.').fields.guestCount, '8');
+  assert.equal(parse('Гости шест. Не, осем.').fields.guestCount, '6');
+  assert.equal(parse('Запишете резервацията на името на Мария Николова.').fields.guestName, 'Мария Николова');
+});
+
+test('a correction cannot consume a neighboring labeled field', () => {
+  assert.deepEqual(parse('Име Иван Петров, телефон 0888123456, не, 0898123456.').fields, { guestName: 'Иван Петров', phone: '0898123456' });
+  assert.deepEqual(parse('Име Иван Петров, час седем, не, осем вечерта.').fields, { guestName: 'Иван Петров', reservedTime: '20:00' });
+  assert.deepEqual(parse('Име Иван Петров, телефон не 0888123456, а 0898123456.').fields, { guestName: 'Иван Петров', phone: '0898123456' });
+});
+
+test('alternatives require review instead of silently selecting a booking value', () => {
+  for (const [text, issue] of [
+    ['Телефонче 0888123456 или 0898123456, не съм сигурен.', 'phone'],
+    ['Час седем или осем вечерта, още уточняваме.', 'time'],
+    ['Дата петък или събота, още не знаем.', 'date'],
+    ['Ще бъдем шестима или осмина, още уточняваме.', 'guests'],
+  ]) {
+    assert.deepEqual(parse(text).fields, {}, text);
+    assert.deepEqual(parse(text).issues, [issue], text);
+  }
+  assert.deepEqual(parse('Телефон 0888123456. Телефонче 0898123456 или 0877123456, не съм сигурен.').fields, {});
+  assert.deepEqual(parse('Име Иван Петров, дата петък или събота, още не знаем. Гости шест.').fields, { guestName: 'Иван Петров', guestCount: '6' });
+});
+
+test('unanswered name questions and reservation prepositions do not become guest names', () => {
+  for (const answer of ['Още не знам.', 'Трябва да попитам.', 'Нека първо уточним.', 'Трябва да проверя.', 'Нека помисля.', 'Нямам идея.', 'Забравих фамилията.']) assert.deepEqual(parse(`На чие име да бъде? ${answer}`).fields, {}, answer);
+  assert.deepEqual(parse('За утре. Донеси две кафета.').fields, { reservedDate: '2026-11-08' });
+  assert.deepEqual(parse('Датата е петък. Корекция: За понеделник.').fields, { reservedDate: '2026-11-09' });
+});

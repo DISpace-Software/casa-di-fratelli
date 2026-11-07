@@ -51,9 +51,37 @@ async function open(mobile, supported) {
   await page.getByText('Restaurant CRM', { exact: true }).waitFor();
   return { page, context };
 }
-async function mapForm(page) {
+async function mapForm(page, actionScreenshot) {
   await page.getByRole('button', { name: /^Карта на резервациите/ }).click();
   await page.locator('.admin-map-table-node').filter({ hasText: /^23$/ }).click();
+  if (actionScreenshot) {
+    const panel = page.getByRole('dialog', { name: 'Маса 23', exact: true });
+    const names = ['Създай резервация', 'Настани без резервация', 'Блокирай маса за деня'];
+    const buttons = names.map(name => panel.getByRole('button', { name, exact: true }));
+    const viewport = page.viewportSize();
+    let previousBottom = 0;
+    for (const button of buttons) {
+      assert.equal(await button.isVisible(), true);
+      assert.equal(await button.isEnabled(), true);
+      const bounds = await button.boundingBox();
+      assert.ok(bounds && bounds.y >= previousBottom, 'Table actions must appear in Create / Walk-in / Block order');
+      assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= viewport.width && bounds.y + bounds.height <= viewport.height,
+        'Every table action must be fully inside the viewport');
+      previousBottom = bounds.y + bounds.height;
+    }
+    await buttons[0].focus();
+    await page.keyboard.press('Tab');
+    assert.equal(await buttons[1].evaluate(element => document.activeElement === element), true);
+    await page.keyboard.press('Tab');
+    assert.equal(await buttons[2].evaluate(element => document.activeElement === element), true);
+    await page.screenshot({ path: root + '/' + actionScreenshot, fullPage: true });
+    await buttons[1].click();
+    const walkIn = page.getByRole('dialog', { name: 'Настаняване', exact: true });
+    await walkIn.waitFor();
+    await walkIn.getByRole('button', { name: 'Close map window', exact: true }).click();
+    await panel.waitFor();
+    checks.push({ name: `${viewport.width}px empty map table: Create, Walk-in and Block are visible, enabled, in visual and keyboard order; Walk-in opens and closes without saving`, passed: true });
+  }
   await page.getByRole('button', { name: 'Създай резервация', exact: true }).click();
   const form = page.getByRole('form', { name: 'Резервация', exact: true });
   return { form, voice: form.locator('[data-voice-reservation]') };
@@ -89,7 +117,7 @@ async function stopWithoutRestart(page, voice) {
 try {
   const before = await api('/api/reservations');
   const desktop = await open(false, true); const { page } = desktop;
-  const { form, voice } = await mapForm(page);
+  const { form, voice } = await mapForm(page, '05-desktop-table-action-order.png');
   assert.equal(await voice.getByRole('button', { name: 'Диктувай резервация', exact: true }).isVisible(), true);
   assert.equal(await voice.locator('details').getAttribute('open'), null);
   assert.equal(await page.evaluate(() => window.qaVoiceStarts || 0), 0);
@@ -200,6 +228,77 @@ try {
   checks.push({ name: 'Bulgarian map speech handles natural booking phrases, grouped phone digits across a recognition pause, half-past and quarter-to evening times, collective guest numbers, and unrelated chatter without saving', passed: true });
   await bulgarian.context.close();
 
+  const conversation = await open(false, true);
+  const colloquial = await mapForm(conversation.page);
+  await colloquial.voice.getByRole('button', { name: 'Диктувай резервация', exact: true }).click();
+  await emit(conversation.page, 'Резервацията е на името на Елена Димитрова.');
+  await fieldEquals(colloquial.form, 'Име', 'Елена Димитрова');
+  await emit(conversation.page, 'Телефонче за връзка?');
+  await fieldEquals(colloquial.form, 'Телефон', '');
+  await restartAfterEnd(conversation.page);
+  await emit(conversation.page, 'Нула осем осем осем дванадесет тридесет и четири петдесет и шест.');
+  await fieldEquals(colloquial.form, 'Телефон', '0888123456');
+  await emit(conversation.page, 'За утре в седем и половина вечерта, ще бъдем шестима.');
+  await fieldEquals(colloquial.form, 'Дата', tomorrowDate);
+  await fieldEquals(colloquial.form, 'Час', '19:30');
+  await fieldEquals(colloquial.form, 'Гости', '6');
+  await colloquial.form.getByLabel('Име', { exact: true }).fill('Елена Димитрова проверена');
+  await restartAfterEnd(conversation.page);
+  await emit(conversation.page, 'Поправка, номерчето е 0899123456.');
+  await fieldEquals(colloquial.form, 'Телефон', '0899123456');
+  await emit(conversation.page, 'Не шестима, а осем души.');
+  await fieldEquals(colloquial.form, 'Гости', '8');
+  await emit(conversation.page, 'Петър, донеси две кафета. Затвори вратата. Благодаря, приятна вечер.');
+  await fieldEquals(colloquial.form, 'Име', 'Елена Димитрова проверена');
+  await fieldEquals(colloquial.form, 'Телефон', '0899123456');
+  await fieldEquals(colloquial.form, 'Дата', tomorrowDate);
+  await fieldEquals(colloquial.form, 'Час', '19:30');
+  await fieldEquals(colloquial.form, 'Гости', '8');
+  await stopWithoutRestart(conversation.page, colloquial.voice);
+  assert.deepEqual(await api('/api/reservations'), before);
+  await conversation.page.screenshot({ path: root + '/07-bulgarian-colloquial-dialogue-corrections.png', fullPage: true });
+  checks.push({ name: 'Bulgarian telephone diminutives accept question/answer across a pause; номерчето corrects the phone and не шестима, а осем corrects guests; chatter and manual name edits survive without autosaving', passed: true });
+  await conversation.context.close();
+
+  const ambiguity = await open(false, true);
+  const uncertain = await mapForm(ambiguity.page);
+  await uncertain.voice.getByRole('button', { name: 'Диктувай резервация', exact: true }).click();
+  await emit(ambiguity.page, 'Телефонче 0888123456 или 0898123456, не съм сигурен.');
+  const phoneAlert = uncertain.voice.getByRole('alert');
+  await phoneAlert.waitFor();
+  assert.match(await phoneAlert.innerText(), /Телефон/);
+  assert.match(await phoneAlert.innerText(), /Повтори/);
+  await fieldEquals(uncertain.form, 'Телефон', '');
+  await ambiguity.page.screenshot({ path: root + '/08-bulgarian-uncertain-phone.png', fullPage: true });
+  await emit(ambiguity.page, 'Телефонче 0888123456.');
+  await fieldEquals(uncertain.form, 'Телефон', '0888123456');
+  await phoneAlert.waitFor({ state: 'hidden' });
+  await stopWithoutRestart(ambiguity.page, uncertain.voice);
+  assert.deepEqual(await api('/api/reservations'), before);
+  checks.push({ name: 'Bulgarian ambiguous phone alternatives leave the actual phone input blank and show a phone-specific repeat prompt; explicit clarification fills the number and clears the alert without saving', passed: true });
+  await ambiguity.context.close();
+
+  const retraction = await open(false, true);
+  const revised = await mapForm(retraction.page);
+  await revised.voice.getByRole('button', { name: 'Диктувай резервация', exact: true }).click();
+  await emit(retraction.page, 'Телефонче 0888123456');
+  await fieldEquals(revised.form, 'Телефон', '0888123456');
+  await emit(retraction.page, 'или 0898123456, не съм сигурен.');
+  await revised.voice.getByRole('alert').waitFor();
+  await fieldEquals(revised.form, 'Телефон', '');
+  await retraction.page.screenshot({ path: root + '/09-bulgarian-later-ambiguity-clears-voice-phone.png', fullPage: true });
+  await emit(retraction.page, 'Телефонче 0888123456');
+  await fieldEquals(revised.form, 'Телефон', '0888123456');
+  await revised.voice.getByRole('alert').waitFor({ state: 'hidden' });
+  await revised.form.getByLabel('Телефон', { exact: true }).fill('0877123456');
+  await emit(retraction.page, 'или 0898123456, не съм сигурен.');
+  await revised.voice.getByRole('alert').waitFor();
+  await fieldEquals(revised.form, 'Телефон', '0877123456');
+  await stopWithoutRestart(retraction.page, revised.voice);
+  assert.deepEqual(await api('/api/reservations'), before);
+  checks.push({ name: 'Later Bulgarian uncertainty retracts an earlier voice-filled phone; an explicit confirmation restores it, while a subsequent manual phone correction survives new uncertainty without autosaving', passed: true });
+  await retraction.context.close();
+
   for (const regression of [
     { language: 'ru-RU', name: 'Анна Иванова', transcript: 'Имя Анна Иванова. Телефон +359888123456. Завтра в 20:00 четыре человека.' },
     { language: 'en-GB', name: 'Anna Ivanova', transcript: 'Name Anna Ivanova. Phone +359888123456. Tomorrow at 20:00 four guests.' },
@@ -222,7 +321,7 @@ try {
   }
 
   const mobileMap = await open(true, true);
-  const mobileForm = await mapForm(mobileMap.page);
+  const mobileForm = await mapForm(mobileMap.page, '06-mobile-table-action-order.png');
   assert.equal(await mobileForm.voice.getByRole('button', { name: 'Диктувай резервация', exact: true }).isVisible(), true);
   await mobileForm.voice.getByRole('button', { name: 'Диктувай резервация', exact: true }).click();
   await emit(mobileMap.page, 'Име Мария Иванова. Телефон 0888123456. Утре в 20:00 четири души.');

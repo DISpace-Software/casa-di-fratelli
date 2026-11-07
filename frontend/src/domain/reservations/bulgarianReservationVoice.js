@@ -11,6 +11,53 @@ const monthNames = ['януари', 'февруари', 'март', 'април'
 const ordinalDays = { първи: 1, втори: 2, трети: 3, четвърти: 4, пети: 5, шести: 6, седми: 7, осми: 8, девети: 9, десети: 10, единадесети: 11, единайсети: 11, дванадесети: 12, дванайсети: 12, тринадесети: 13, тринайсети: 13, четиринадесети: 14, четиринайсети: 14, петнадесети: 15, петнайсети: 15, шестнадесети: 16, шестнайсети: 16, седемнадесети: 17, седемнайсети: 17, осемнадесети: 18, осемнайсети: 18, деветнадесети: 19, деветнайсети: 19, двадесети: 20, двайсети: 20, тридесети: 30, трийсети: 30 };
 const weekdays = { неделя: 0, понеделник: 1, вторник: 2, сряда: 3, четвъртък: 4, петък: 5, събота: 6 };
 const collective = '(?:двама|трима|четирима|петима|шестима|седмина|осмина|деветима)';
+const phoneCue = '(?:телефонче(?:то)?|телефон(?:ът|а)?|номерче(?:то)?|мобил(?:ният|ния|ен)\\s+(?:(?:ми|ви)\\s+)?(?:номер|телефон)|номер(?:ът)?(?:\\s+(?:ми|ви))?\\s+за\\s+връзка|телефон(?:ният|ния|ен)\\s+(?:(?:ми|ви)\\s+)?номер)';
+const dialogGap = '[\\s.,;:—!?-]*(?:(?:да|добре|ами|значи|моля|секунда|секундичка|момент|изчакайте|изчакай|ето(?:\\s+го)?)(?!\\p{L})[\\s.,;:—!?-]*)*';
+
+function normalizeDialogue(text) {
+  // A question supplies a field label; the answer still has to pass the normal
+  // value parser. Never derive names or numbers from the question itself.
+  text = text.replace(new RegExp(`(?<!\\p{L})(?:на\\s+чие\\s+име(?:\\s+(?:да\\s+(?:бъде|е|запиша)|е|ще\\s+бъде))?|как(?:во|\\s+ви)\\s+е\\s+името)${endWord}${dialogGap}`, 'giu'), 'име ')
+    .replace(new RegExp(`(?<!\\p{L})(?:за\\s+коя\\s+дата|коя\\s+дата|кой\\s+ден|за\\s+кога)(?:\\s+(?:да\\s+(?:бъде|е)|ще\\s+бъде))?${endWord}${dialogGap}`, 'giu'), 'дата ')
+    .replace(new RegExp(`(?<!\\p{L})(?:за\\s+колко\\s+часа|в\\s+колко(?:\\s+часа)?|кой\\s+час)(?:\\s+(?:да\\s+(?:бъде|е)|ще\\s+дойдете))?${endWord}${dialogGap}(?:в\\s+)?`, 'giu'), 'час ')
+    .replace(new RegExp(`(?<!\\p{L})(?:(?:за\\s+)?колко\\s+(?:души|човека|хора|гости)(?:\\s+(?:ще\\s+(?:бъдете|сте|дойдете)|сте|да\\s+запиша))?|колко\\s+ще\\s+(?:бъдете|сте))${endWord}${dialogGap}`, 'giu'), 'гости ')
+    .replace(/(?<!\p{L})(?:запиши|запишете|запазете|запази)\s+(?:(?:резервацията|масата)\s+)?на\s+(?:името\s+на\s+)?/giu, 'име ');
+  return text;
+}
+
+function normalizeCorrections(text) {
+  // Corrections cannot cross another field label. In “име Иван, телефон X,
+  // не, Y” only the phone changes; the guest identity remains intact.
+  text = text.replace(/(?<!\p{L})(часът|датата)(?=\s+не\s)/giu, word => word.toLowerCase().startsWith('час') ? 'час' : 'дата');
+  const label = '(?:име|телефон|дата|час|гости)';
+  const value = `(?:(?!(?<!\\p{L})${label}${endWord})[^.;!?])+?`;
+  text = text.replace(new RegExp(`(?<!\\p{L})(${label})\\s+не\\s+(?:е\\s+)?${value},?\\s+а\\s+(?:е\\s+)?`, 'giu'), '$1 ');
+  text = text.replace(new RegExp(`(?<!\\p{L})(${label})\\s+${value},\\s*не\\s*[,—-]\\s*`, 'giu'), '$1 ');
+  const numberWords = `(?:\\d+|${Object.keys(values).sort((a, b) => b.length - a.length).join('|')})`;
+  text = text.replace(new RegExp(`(?<!\\p{L})не\\s+${numberWords}(?:\\s+${guestUnit})?\\s*,?\\s+а\\s+(${numberWords}(?:\\s+и\\s+${numberWords})?\\s+${guestUnit})${endWord}`, 'giu'), 'гости $1');
+  return text;
+}
+
+function maskAmbiguousChoices(text) {
+  const labels = [...text.matchAll(/(?<!\p{L})(име|телефон|дата(?:та)?|час(?:ът)?|гости|брой\s+(?:на\s+)?(?:гости|хора)|ще\s+(?:бъдем|сме))(?!\p{L})\s*/giu)];
+  for (let index = labels.length - 1; index >= 0; index--) {
+    const label = labels[index], start = label.index + label[0].length;
+    const end = labels[index + 1]?.index ?? text.length;
+    const source = text.slice(start, end);
+    const boundary = source.search(/[;!?]|(?<!\d)\.|\.(?!\d)/u);
+    const length = boundary < 0 ? source.length : boundary;
+    if (!/(?<!\p{L})или(?!\p{L})/iu.test(source.slice(0, length))) continue;
+    const field = label[1].toLowerCase();
+    if (field === 'име') continue;
+    // Feed the shared validator a deliberately invalid value instead of
+    // silently choosing one alternative. The original transcript stays visible.
+    const invalid = field.startsWith('телефон') ? 'телефон 0'
+      : field.startsWith('дата') ? 'дата 0000-00-00'
+        : field.startsWith('час') ? 'час 99:99' : 'гости 0';
+    text = text.slice(0, label.index) + invalid + '; ' + text.slice(start + length);
+  }
+  return text;
+}
 
 function bookingContext(text, index) {
   const before = text.slice(0, index).split(/[.!?;,]/u).at(-1).trim();
@@ -41,7 +88,7 @@ function readNumber(source) {
 
 function safeTail(source) {
   const tail = source.trimStart();
-  if (/^(?:$|[,.;!?]|(?:телефон|име|дата|час|часът|гости|на името|утре|днес|вдругиден|ще (?:бъдем|сме)|моля|благодаря)(?!\p{L}))/iu.test(tail)) return true;
+  if (/^(?:$|[,.;!?]|(?:телефон|име|дата|датата|час|часът|гости|брой|на името|утре|днес|вдругиден|ще (?:бъдем|сме)|моля|благодаря)(?!\p{L}))/iu.test(tail)) return true;
   const nextField = /^(?:в|от|за)\s+/iu.exec(tail);
   const number = readNumber(tail.slice(nextField?.[0].length || 0));
   if (nextField && number) return true;
@@ -50,9 +97,9 @@ function safeTail(source) {
 }
 
 function normalizePhones(text) {
-  return text.replace(/(?<!\p{L})(?:телефон(?:ът|а)?(?:\s+ми)?|мобил(?:ният|ния|ен)\s+(?:ми\s+)?(?:номер|телефон)|номер(?:ът)?(?:\s+ми)?\s+за\s+връзка|телефон(?:ният|ния|ен)\s+(?:ми\s+)?номер)(?!\p{L})\s*(?:(?:ми\s+)?е\s*)?[:—-]?\s*/giu, (label, index) => {
+  return text.replace(new RegExp(`(?<!\\p{L})${phoneCue}${endWord}\\s*(?:(?:ми|ви|за\\s+връзка)\\s*)?(?:(?:ми\\s+)?(?:е|дайте|кажете)\\s*)?${dialogGap}`, 'giu'), (label, index) => {
     const after = text.slice(index + label.length);
-    return !after || /^(?:\+|плюс\s+)/iu.test(after) || readNumber(after) ? 'телефон ' : label;
+    return !after || /^(?:\+|плюс\s+|не\s+)/iu.test(after) || readNumber(after) ? 'телефон ' : label;
   });
 }
 
@@ -88,7 +135,7 @@ function normalizeDates(text, now) {
   const currentDate = new Date(today + 'T12:00:00Z');
   // A bare weekday means its next occurrence, including today. "Следващия"
   // explicitly means a later occurrence: today -> seven days, not zero.
-  const weekday = new RegExp(`(?<!\\p{L})(дата\\s*(?:е\\s*)?[:—-]?\\s*|за\\s+|на\\s+|в(?:ъв)?\\s+)(?:(следващ(?:ия|ият|ата|ото)|този|тази)\\s+)?(${Object.keys(weekdays).join('|')})${endWord}`, 'giu');
+  const weekday = new RegExp(`(?<!\\p{L})(дата(?:та)?\\s*(?:е\\s*)?[:—-]?\\s*|за\\s+|на\\s+|в(?:ъв)?\\s+)(?:(следващ(?:ия|ият|ата|ото)|този|тази)\\s+)?(${Object.keys(weekdays).join('|')})${endWord}`, 'giu');
   text = text.replace(weekday, (whole, cue, next, day, index) => {
     if (!safeTail(text.slice(index + whole.length))) return whole;
     const explicit = /^дата/iu.test(cue);
@@ -155,7 +202,7 @@ function normalizeTimes(text) {
 
 function normalizeGuests(text) {
   text = text.replace(new RegExp(`(^|[.!?;]\\s*)(${collective})${endWord}`, 'giu'), (whole, prefix, count, index) => safeTail(text.slice(index + whole.length)) ? `${prefix}гости ${units[count.toLowerCase()]}` : whole);
-  const candidates = [...text.matchAll(/(?<!\p{L})(?:брой\s+(?:на\s+)?(?:гости|хора)|гостите\s+(?:ще\s+)?са|ще\s+(?:бъдем|сме|дойдем)|(?:ние\s+)?сме|гости|за)(?!\p{L})\s*[:—-]?\s*/giu)];
+  const candidates = [...text.matchAll(/(?<!\p{L})(?:брой\s+(?:на\s+)?(?:гости|хора)|гостите\s+(?:ще\s+)?са|ще\s+(?:бъдем|сме|дойдем)(?:\s+общо)?|(?:ние\s+)?сме(?:\s+общо)?|общо\s+(?:сме|ще\s+(?:сме|бъдем))|гости|за)(?!\p{L})\s*[:—-]?\s*/giu)];
   for (const cue of candidates.reverse()) {
     const start = cue.index + cue[0].length, source = text.slice(start);
     if (!/^(?:гости|брой|гостите)/iu.test(cue[0]) && !bookingContext(text, cue.index)) continue;
@@ -178,13 +225,17 @@ function normalizeGuests(text) {
 }
 
 export function normalizeBulgarianReservationTranscript(transcript, now = new Date()) {
-  let text = String(transcript || '').replace(/\s+/g, ' ').trim();
+  let text = normalizeDialogue(String(transcript || '').replace(/\s+/g, ' ').trim());
   text = text.replace(/(?<!\p{L})(?:резервацията\s+(?:е\s+)?на\s+името(?:\s+на)?|(?:на\s+)?името(?:\s+ми)?(?:\s+е|\s+на)?)(?!\p{L})\s*/giu, 'име ')
     .replace(/(?<!\p{L})(?:бих(?:ме)?\s+(?:искал[аи]?|искали|желал[аи]?|желали)|искам(?:е)?)\s+(?:(?:да\s+(?:направя|направим|запазя|запазим))\s+)?(?:една\s+)?(?:резервация|маса)(?!\p{L})/giu, 'резервация')
     .replace(/(?<!\p{L})маса(?=\s+за\s)/giu, 'резервация')
-    .replace(/^(?:Аз|Ние|Той|Тя|Те|Вие)(?!\p{L})/u, pronoun => pronoun.toLowerCase())
+    .replace(/(?<!\p{L})(?:поправка|корекция)\s*[:—-]\s*/giu, '')
+    .replace(/(?<!\p{L})име\s+(?=(?:още|трябва|нека|няма|нямам|нямаме|забравих|изчакайте|момент|секунда)(?!\p{L}))/giu, 'разговор ')
+    .replace(/^(?:Аз|Ние|Той|Тя|Те|Вие|За|На|В|От)(?!\p{L})/u, pronoun => pronoun.toLowerCase())
     .replace(/(?<!\p{L})(?:моля|значи|ами|ъъ|ъъъ)\s*[,;]\s*/giu, '');
-  text = normalizePhoneNumbers(normalizePhones(text));
+  text = normalizeCorrections(normalizePhones(text));
+  text = maskAmbiguousChoices(text);
+  text = normalizePhoneNumbers(text);
   text = normalizeDates(text, now);
   text = normalizeTimes(text);
   text = text.replace(/(?<!\p{L})(утре|днес|вдругиден)(?!\p{L})/giu, (word, _day, index) => {

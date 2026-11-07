@@ -1,4 +1,5 @@
 import VoiceReservationInput from "../components/admin/VoiceReservationInput";
+import { applyVoiceReservationDraft } from "../domain/reservations/voiceReservationDraft";
 import { restaurantAssetUrl } from "../domain/adminMap/restaurantAssets";
 import { getTenantPushRegistration } from "../domain/adminMap/pushRegistration";
 import { getZoneName } from "../domain/reservations/floorPlanNames";
@@ -2351,10 +2352,8 @@ function ReservationOperationsMap({
     const hold = findPublicTableHold(publicTableHolds, mapDate, [table.id]);
     const heldIds = hold?.tableIds || hold?.TableIds || [];
     return (
-      <div className="mt-3 space-y-2">
-        <p className="text-xs text-white/55">
-          {mapDate}{hold ? ` · ${text.table} ${heldIds.join(", ")}` : ""}
-        </p>
+      <div className="mt-4 space-y-2 border-t border-white/10 pt-3">
+        {hold && <p className="text-xs text-white/55">{text.table} {heldIds.join(", ")}</p>}
         <button
           type="button"
           disabled={hold ? !onRemovePublicTableHold : mapDate < todayDate}
@@ -2436,7 +2435,7 @@ function ReservationOperationsMap({
           {import.meta.env.DEV && import.meta.env.VITE_RESERVATION_VOICE_PREVIEW === "true" && (
             <VoiceReservationInput language={language} currentDate={tableReservationDraft.reservedDate}
               availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
-              onApply={(patch) => setTableReservationDraft(previous => ({ ...previous, ...patch }))} />
+              onApply={(patch, options) => setTableReservationDraft(previous => applyVoiceReservationDraft(previous, patch, options))} />
           )}
           <div className="mt-4 grid gap-3">
             <input
@@ -3056,7 +3055,7 @@ function ReservationOperationsMap({
                       </button>
                     </div>
 
-                    {renderPublicTableHoldControl(table)}
+                    {!ordersOnly && <p className="mt-3 text-xs text-white/55">{mapDate}</p>}
                     {ordersOnly ? (
                       tableOrders.length === 0 ? (
                         <p className="mt-3 text-sm leading-6 text-white/55">{text.ordersEmpty || text.tableTodayEmpty}</p>
@@ -3145,6 +3144,7 @@ function ReservationOperationsMap({
                         )}
                       </div>
                     )}
+                    {renderPublicTableHoldControl(table)}
                   </div>
                   </MapOverlay>
                 )}
@@ -9457,7 +9457,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                         <div className="lg:col-span-3">
                           <VoiceReservationInput language={adminLanguage} currentDate={adminReservation.reservedDate}
                             availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
-                            onApply={(patch) => setAdminReservation(previous => ({ ...previous, ...patch, ...((patch.reservedDate || patch.reservedTime) ? { tableIds: "" } : {}) }))} />
+                            onApply={(patch, options) => setAdminReservation(previous => applyVoiceReservationDraft(previous, patch, { ...options, resetTables: true }))} />
                         </div>
                       )}
                       {[
