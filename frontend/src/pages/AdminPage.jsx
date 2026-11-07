@@ -1842,8 +1842,11 @@ function ReservationOperationsMap({
     [getActiveTablesForArea, plan]
   );
   const occupancy = React.useMemo(
-    () => getRestaurantOccupancy(areaTables, reservations, now),
-    [areaTables, now, reservations]
+    () => getRestaurantOccupancy(layout, reservations, now, {
+      closedAreas,
+      activeZoneIds: plan.zones.filter(zone => zone.isActive).map(zone => zone.id),
+    }),
+    [layout, now, reservations, closedAreas, plan.zones]
   );
   const liveByTable = React.useMemo(
     () => isMapToday
@@ -2640,6 +2643,9 @@ function ReservationOperationsMap({
                 </div>
                 <div className="text-base font-black tabular-nums text-emerald-200 sm:text-lg">
                   {occupancy.freeSeats}
+                </div>
+                <div className="text-[7px] tabular-nums text-emerald-100/55 sm:text-[8px]">
+                  {adminLocalText(language, "Капацитет", "Capacity", "Вместимость")}: {occupancy.totalSeats}
                 </div>
               </div>
             </div>

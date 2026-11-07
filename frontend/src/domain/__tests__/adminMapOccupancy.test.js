@@ -48,3 +48,26 @@ test("guests delayed by more than 15 minutes reduce free seats", () => {
 
   assert.deepEqual(result, { currentVisitors: 2, delayedVisitors: 4, freeSeats: 14, totalSeats: 20 });
 });
+
+
+test("seasonal closure removes only closed capacity and reopening restores it", () => {
+  const now = new Date(2026, 10, 7, 19);
+  const tables = [
+    { id: "1", area: "indoor", seats: 108 },
+    { id: "2", area: "garden", seats: 84 },
+    { id: "3", area: "openTerrace", seats: 40 },
+  ];
+  const bookings = [{ guestCount: 92, reservedDate: "2026-11-07", isArrived: true, status: "Approved" }];
+  const closed = getRestaurantOccupancy(tables, bookings, now, { closedAreas: ["openTerrace"] });
+  assert.deepEqual(closed, { currentVisitors: 92, delayedVisitors: 0, freeSeats: 100, totalSeats: 192 });
+  const reopened = getRestaurantOccupancy(tables, bookings, now, { closedAreas: [] });
+  assert.equal(reopened.totalSeats, 232);
+  assert.equal(reopened.freeSeats, 140);
+  assert.equal(getRestaurantOccupancy(tables, bookings, now, { closedAreas: ["indoor", "garden", "openTerrace"] }).freeSeats, 0);
+});
+
+test("inactive zones and orphan tables never add restaurant capacity", () => {
+  const tables = [{ area: "hall", seats: 10 }, { area: "retired", seats: 20 }, { area: "hall", seats: 30, isActive: false }];
+  assert.equal(getRestaurantOccupancy(tables, [], new Date(), { activeZoneIds: ["hall"] }).totalSeats, 10);
+  assert.equal(getRestaurantOccupancy(tables, [], new Date(), { activeZoneIds: [] }).totalSeats, 0);
+});

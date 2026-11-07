@@ -14,9 +14,11 @@ function getMinutesAfterReservation(reservation, now) {
   return Math.floor((now.getTime() - reservationTime.getTime()) / 60000);
 }
 
-export function getRestaurantOccupancy(layoutTables, reservations, now = new Date()) {
+export function getRestaurantOccupancy(layoutTables, reservations, now = new Date(), { closedAreas = [], activeZoneIds } = {}) {
   const totalSeats = (layoutTables || [])
-    .filter((table) => table?.isActive !== false)
+    .filter((table) => table && table.isActive !== false &&
+      !closedAreas.includes(table.area) &&
+      (!activeZoneIds || activeZoneIds.includes(table.area)))
     .reduce((sum, table) => sum + Math.max(0, Number(table?.seats || 0)), 0);
 
   const today = getLocalDateValue(now);
