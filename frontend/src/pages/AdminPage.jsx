@@ -1,3 +1,4 @@
+import VoiceReservationInput from "../components/admin/VoiceReservationInput";
 import { restaurantAssetUrl } from "../domain/adminMap/restaurantAssets";
 import { getTenantPushRegistration } from "../domain/adminMap/pushRegistration";
 import { getZoneName } from "../domain/reservations/floorPlanNames";
@@ -2432,6 +2433,11 @@ function ReservationOperationsMap({
             </button>
           </div>
 
+          {import.meta.env.DEV && import.meta.env.VITE_RESERVATION_VOICE_PREVIEW === "true" && (
+            <VoiceReservationInput language={language} currentDate={tableReservationDraft.reservedDate}
+              availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
+              onApply={(patch) => setTableReservationDraft(previous => ({ ...previous, ...patch }))} />
+          )}
           <div className="mt-4 grid gap-3">
             <input
               aria-label={adminLocalText(language, "Име", "Name", "Имя")}
@@ -9447,6 +9453,13 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     </div>
 
                     <form onSubmit={createAdminReservation} className="grid gap-4 lg:grid-cols-3">
+                      {import.meta.env.DEV && import.meta.env.VITE_RESERVATION_VOICE_PREVIEW === "true" && (
+                        <div className="lg:col-span-3">
+                          <VoiceReservationInput language={adminLanguage} currentDate={adminReservation.reservedDate}
+                            availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
+                            onApply={(patch) => setAdminReservation(previous => ({ ...previous, ...patch, ...((patch.reservedDate || patch.reservedTime) ? { tableIds: "" } : {}) }))} />
+                        </div>
+                      )}
                       {[
                         ["guestName", adminLanguage === "bg" ? "Име на гост" : "Guest name"],
                         ["phone", adminLanguage === "bg" ? "Телефон" : "Phone"],
