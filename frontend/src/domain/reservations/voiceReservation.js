@@ -1,5 +1,7 @@
 // Extract booking facts from a reviewed transcript. This is a text parser, not a
 // speaker filter: unsupported or ambiguous speech stays available for review.
+import { normalizeBulgarianReservationTranscript } from './bulgarianReservationVoice.js';
+
 const numbers = {
   нула: 0, ноль: 0, нуль: 0, zero: 0, oh: 0, едно: 1, един: 1, один: 1, одна: 1, one: 1,
   две: 2, два: 2, двама: 2, двое: 2, two: 2, три: 3, трима: 3, трое: 3, three: 3,
@@ -89,8 +91,10 @@ function readTime(source) {
   return { hour, minute, length };
 }
 
-export function parseVoiceReservation(transcript, now = new Date()) {
-  const text = String(transcript || '').replace(/\s+/g, ' ').trim();
+export function parseVoiceReservation(transcript, now = new Date(), { language } = {}) {
+  const source = language === 'bg' || language === 'bg-BG'
+    ? normalizeBulgarianReservationTranscript(transcript, now) : transcript;
+  const text = String(source || '').replace(/\s+/g, ' ').trim();
   const fields = {}, issues = new Set(), spans = [];
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Sofia', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
   function assign(key, value, issue) {

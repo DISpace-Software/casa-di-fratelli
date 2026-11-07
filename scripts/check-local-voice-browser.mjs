@@ -171,6 +171,56 @@ try {
   checks.push({ name: 'Closing the map form aborts recognition; stale result/end events cannot reopen or update it', passed: true });
   await desktop.context.close();
 
+  const bulgarian = await open(false, true);
+  const bg = await mapForm(bulgarian.page);
+  assert.equal(await bg.voice.getByLabel('Език на диктовката', { exact: true }).inputValue(), 'bg-BG');
+  await bg.voice.getByRole('button', { name: 'Диктувай резервация', exact: true }).click();
+  assert.equal(await bulgarian.page.evaluate(() => window.qaVoice.lang), 'bg-BG');
+  await emit(bulgarian.page, 'Здравейте, бих искал резервация на името на Иван Петров.');
+  await fieldEquals(bg.form, 'Име', 'Иван Петров');
+  await emit(bulgarian.page, 'Телефонът ми е нула осем осем осем.');
+  await fieldEquals(bg.form, 'Телефон', '');
+  await restartAfterEnd(bulgarian.page);
+  await emit(bulgarian.page, 'Дванадесет тридесет и четири петдесет и шест.');
+  await fieldEquals(bg.form, 'Телефон', '0888123456');
+  await emit(bulgarian.page, 'За утре в седем и половина вечерта. Ще бъдем шестима.');
+  await fieldEquals(bg.form, 'Дата', tomorrowDate);
+  await fieldEquals(bg.form, 'Час', '19:30');
+  await fieldEquals(bg.form, 'Гости', '6');
+  await emit(bulgarian.page, 'Часът е осем без четвърт вечерта.');
+  await fieldEquals(bg.form, 'Час', '19:45');
+  await fieldEquals(bg.form, 'Телефон', '0888123456');
+  await emit(bulgarian.page, 'Петър, утре ще се чуем. Донеси две кафета. Благодаря, приятна вечер.');
+  await fieldEquals(bg.form, 'Име', 'Иван Петров');
+  await fieldEquals(bg.form, 'Гости', '6');
+  await fieldEquals(bg.form, 'Час', '19:45');
+  await stopWithoutRestart(bulgarian.page, bg.voice);
+  assert.deepEqual(await api('/api/reservations'), before);
+  await bulgarian.page.screenshot({ path: root + '/04-bulgarian-map-natural-speech.png', fullPage: true });
+  checks.push({ name: 'Bulgarian map speech handles natural booking phrases, grouped phone digits across a recognition pause, half-past and quarter-to evening times, collective guest numbers, and unrelated chatter without saving', passed: true });
+  await bulgarian.context.close();
+
+  for (const regression of [
+    { language: 'ru-RU', name: 'Анна Иванова', transcript: 'Имя Анна Иванова. Телефон +359888123456. Завтра в 20:00 четыре человека.' },
+    { language: 'en-GB', name: 'Anna Ivanova', transcript: 'Name Anna Ivanova. Phone +359888123456. Tomorrow at 20:00 four guests.' },
+  ]) {
+    const other = await open(false, true);
+    const localized = await mapForm(other.page);
+    await localized.voice.getByLabel('Език на диктовката', { exact: true }).selectOption(regression.language);
+    await localized.voice.getByRole('button', { name: 'Диктувай резервация', exact: true }).click();
+    assert.equal(await other.page.evaluate(() => window.qaVoice.lang), regression.language);
+    await emit(other.page, regression.transcript);
+    await fieldEquals(localized.form, 'Име', regression.name);
+    await fieldEquals(localized.form, 'Телефон', '+359888123456');
+    await fieldEquals(localized.form, 'Дата', tomorrowDate);
+    await fieldEquals(localized.form, 'Час', '20:00');
+    await fieldEquals(localized.form, 'Гости', '4');
+    await stopWithoutRestart(other.page, localized.voice);
+    assert.deepEqual(await api('/api/reservations'), before);
+    checks.push({ name: `${regression.language} recognition and existing five-field booking phrase remain unchanged and never save automatically`, passed: true });
+    await other.context.close();
+  }
+
   const mobileMap = await open(true, true);
   const mobileForm = await mapForm(mobileMap.page);
   assert.equal(await mobileForm.voice.getByRole('button', { name: 'Диктувай резервация', exact: true }).isVisible(), true);
