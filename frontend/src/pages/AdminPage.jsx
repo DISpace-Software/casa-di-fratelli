@@ -1,4 +1,4 @@
-import VoiceReservationInput from "../components/admin/VoiceReservationInput";
+import LocalReservationFieldDictation, { ReservationVoiceField as LocalReservationVoiceField, ReservationFieldVoiceStatus as LocalReservationFieldVoiceStatus } from "../components/admin/ReservationFieldDictation";
 import { applyVoiceReservationDraft } from "../domain/reservations/voiceReservationDraft";
 import { restaurantAssetUrl } from "../domain/adminMap/restaurantAssets";
 import { getTenantPushRegistration } from "../domain/adminMap/pushRegistration";
@@ -43,6 +43,13 @@ import { formatBirthdayEmailSentAt, daysUntilBirthday, getCustomerBirthDate, sea
 import { findPublicTableHold } from "../domain/reservations/publicTableHolds";
 import { getActiveLayoutTables, getMoveCandidateOptions } from "../domain/reservations/adminPlanRules";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
+
+// Keep local microphone controls and recognition code out of production builds.
+const reservationFieldVoiceEnabled = import.meta.env.DEV && import.meta.env.VITE_RESERVATION_VOICE_PREVIEW === "true";
+function VoicePreviewPassthrough({ children }) { return children; }
+const ReservationFieldDictation = reservationFieldVoiceEnabled ? LocalReservationFieldDictation : VoicePreviewPassthrough;
+const ReservationVoiceField = reservationFieldVoiceEnabled ? LocalReservationVoiceField : VoicePreviewPassthrough;
+const ReservationFieldVoiceStatus = reservationFieldVoiceEnabled ? LocalReservationFieldVoiceStatus : () => null;
 
 const isCasaTenant = tenantContext.tenantId === "casa-di-fratelli";
 const adminMapViewStorageKey = () => tenantStorageKey("casa-admin-map-view-mode");
@@ -2405,6 +2412,12 @@ function ReservationOperationsMap({
         onPointerDown={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
+        <ReservationFieldDictation
+          enabled={reservationFieldVoiceEnabled}
+          language={language} currentDate={tableReservationDraft.reservedDate}
+          availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
+          onApply={(patch) => setTableReservationDraft(previous => applyVoiceReservationDraft(previous, patch))}
+        >
         <form
           ref={reservationFormRef}
           onSubmit={submitTableReservation}
@@ -2432,70 +2445,77 @@ function ReservationOperationsMap({
             </button>
           </div>
 
-          {import.meta.env.DEV && import.meta.env.VITE_RESERVATION_VOICE_PREVIEW === "true" && (
-            <VoiceReservationInput language={language} currentDate={tableReservationDraft.reservedDate}
-              availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
-              onApply={(patch, options) => setTableReservationDraft(previous => applyVoiceReservationDraft(previous, patch, options))} />
-          )}
           <div className="mt-4 grid gap-3">
-            <input
-              aria-label={adminLocalText(language, "Име", "Name", "Имя")}
-              value={tableReservationDraft.guestName}
-              onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestName: event.target.value }))}
-              required
-              placeholder={language === "bg" ? "Име" : "Name"}
-              className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
-            />
-            <input
-              aria-label={adminLocalText(language, "Телефон", "Phone", "Телефон")}
-              value={tableReservationDraft.phone}
-              onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, phone: event.target.value }))}
-              required
-              placeholder={language === "bg" ? "Телефон" : "Phone"}
-              className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
-            />
-            <div className="grid grid-cols-2 gap-2">
+            <ReservationVoiceField field="guestName" label={adminLocalText(language, "Име", "Name", "Имя")}>
               <input
-                type="date"
-                aria-label={adminLocalText(language, "Дата", "Date", "Дата")}
-                value={tableReservationDraft.reservedDate}
-                min={tableReservationDraft.id ? undefined : formatLocalDate(new Date())}
-                onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedDate: event.target.value }))}
+                aria-label={adminLocalText(language, "Име", "Name", "Имя")}
+                value={tableReservationDraft.guestName}
+                onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestName: event.target.value }))}
                 required
-                className="w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
-              />
-              <select
-                aria-label={adminLocalText(language, "Час", "Time", "Время")}
-                value={tableReservationDraft.reservedTime}
-                onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedTime: event.target.value }))}
-                required
-                className="w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
-              >
-                {[...new Set([
-                  ...(tableReservationDraft.id ? [tableReservationDraft.reservedTime] : []),
-                  ...getAvailableReservationTimesForDate(adminReservationTimes, tableReservationDraft.reservedDate),
-                ])].sort().map((time) => (
-                  <option key={time} value={time}>{time}</option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-[0.75fr_1fr] gap-2">
-              <input
-                type="number"
-                min="1"
-                aria-label={adminLocalText(language, "Гости", "Guests", "Гости")}
-                value={tableReservationDraft.guestCount}
-                onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestCount: event.target.value }))}
-                required
-                className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
-              />
-              <input
-                aria-label={adminLocalText(language, "Имейл", "Email", "Email")}
-                value={tableReservationDraft.email}
-                onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, email: event.target.value }))}
-                placeholder="Email"
+                placeholder={language === "bg" ? "Име" : "Name"}
                 className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
               />
+            </ReservationVoiceField>
+            <ReservationVoiceField field="phone" label={adminLocalText(language, "Телефон", "Phone", "Телефон")}>
+              <input
+                aria-label={adminLocalText(language, "Телефон", "Phone", "Телефон")}
+                value={tableReservationDraft.phone}
+                onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, phone: event.target.value }))}
+                required
+                placeholder={language === "bg" ? "Телефон" : "Phone"}
+                className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
+              />
+            </ReservationVoiceField>
+            <div className={reservationFieldVoiceEnabled ? "grid grid-cols-1 gap-2 min-[420px]:grid-cols-2" : "grid grid-cols-2 gap-2"}>
+              <ReservationVoiceField field="reservedDate" label={adminLocalText(language, "Дата", "Date", "Дата")}>
+                <input
+                  type="date"
+                  aria-label={adminLocalText(language, "Дата", "Date", "Дата")}
+                  value={tableReservationDraft.reservedDate}
+                  min={tableReservationDraft.id ? undefined : formatLocalDate(new Date())}
+                  onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedDate: event.target.value }))}
+                  required
+                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
+                />
+              </ReservationVoiceField>
+              <ReservationVoiceField field="reservedTime" label={adminLocalText(language, "Час", "Time", "Время")}>
+                <select
+                  aria-label={adminLocalText(language, "Час", "Time", "Время")}
+                  value={tableReservationDraft.reservedTime}
+                  onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedTime: event.target.value }))}
+                  required
+                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
+                >
+                  {[...new Set([
+                    ...(tableReservationDraft.id ? [tableReservationDraft.reservedTime] : []),
+                    ...getAvailableReservationTimesForDate(adminReservationTimes, tableReservationDraft.reservedDate),
+                  ])].sort().map((time) => (
+                    <option key={time} value={time}>{time}</option>
+                  ))}
+                </select>
+              </ReservationVoiceField>
+            </div>
+            <div className={reservationFieldVoiceEnabled ? "grid grid-cols-1 gap-2 min-[420px]:grid-cols-[0.75fr_1fr]" : "grid grid-cols-[0.75fr_1fr] gap-2"}>
+              <ReservationVoiceField field="guestCount" label={adminLocalText(language, "Гости", "Guests", "Гости")}>
+                <input
+                  type="number"
+                  min="1"
+                  aria-label={adminLocalText(language, "Гости", "Guests", "Гости")}
+                  value={tableReservationDraft.guestCount}
+                  onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestCount: event.target.value }))}
+                  required
+                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
+                />
+              </ReservationVoiceField>
+              <ReservationVoiceField field="email" label={adminLocalText(language, "Имейл", "Email", "Email")}>
+                <input
+                  aria-label={adminLocalText(language, "Имейл", "Email", "Email")}
+                  value={tableReservationDraft.email}
+                  onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, email: event.target.value }))}
+                  placeholder="Email"
+                  className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
+                />
+              </ReservationVoiceField>
             </div>
             {tableReservationDraft.id && (
               <>
@@ -2509,6 +2529,7 @@ function ReservationOperationsMap({
                 </label>
               </>
             )}
+            <ReservationFieldVoiceStatus />
             {reservationFormError && <p role="alert" className="text-sm text-red-200">{reservationFormError}</p>}
             <div className="grid grid-cols-2 gap-2 pt-1">
               <button type="submit" disabled={reservationFormBusy} aria-busy={reservationFormBusy} className="luxury-button rounded-2xl px-4 py-3 text-sm font-semibold disabled:opacity-50">
@@ -2524,6 +2545,7 @@ function ReservationOperationsMap({
             </div>
           </div>
         </form>
+        </ReservationFieldDictation>
       </div>
       </MapOverlay>
     );
@@ -9452,14 +9474,13 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       </button>
                     </div>
 
+                    <ReservationFieldDictation
+                      enabled={reservationFieldVoiceEnabled}
+                      language={adminLanguage} currentDate={adminReservation.reservedDate}
+                      availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
+                      onApply={(patch) => setAdminReservation(previous => applyVoiceReservationDraft(previous, patch, { resetTables: true }))}
+                    >
                     <form onSubmit={createAdminReservation} className="grid gap-4 lg:grid-cols-3">
-                      {import.meta.env.DEV && import.meta.env.VITE_RESERVATION_VOICE_PREVIEW === "true" && (
-                        <div className="lg:col-span-3">
-                          <VoiceReservationInput language={adminLanguage} currentDate={adminReservation.reservedDate}
-                            availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
-                            onApply={(patch, options) => setAdminReservation(previous => applyVoiceReservationDraft(previous, patch, { ...options, resetTables: true }))} />
-                        </div>
-                      )}
                       {[
                         ["guestName", adminLanguage === "bg" ? "Име на гост" : "Guest name"],
                         ["phone", adminLanguage === "bg" ? "Телефон" : "Phone"],
@@ -9470,8 +9491,10 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       ].map(([key, label]) => (
                         <div key={key}>
                           <label className="mb-2 block text-sm text-stone-400">{label}</label>
+                          <ReservationVoiceField field={key} label={label}>
                           {key === "reservedTime" ? (
                             <select
+                              aria-label={label}
                               value={adminReservation.reservedTime}
                               onChange={(e) =>
                                 setAdminReservation((prev) => ({
@@ -9492,6 +9515,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                             </select>
                           ) : (
                             <input
+                              aria-label={label}
                               type={key === "reservedDate" ? "date" : key === "guestCount" ? "number" : "text"}
                               value={adminReservation[key]}
                               onChange={(e) =>
@@ -9506,8 +9530,10 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                               className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
                             />
                           )}
+                          </ReservationVoiceField>
                         </div>
                       ))}
+                      {reservationFieldVoiceEnabled && <div className="lg:col-span-3"><ReservationFieldVoiceStatus /></div>}
 
                       <div className="lg:col-span-3">
                         <label className="mb-3 block text-sm text-stone-400">
@@ -9624,6 +9650,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                         {adminLanguage === "bg" ? "Създай резервация" : "Create reservation"}
                       </button>
                     </form>
+                    </ReservationFieldDictation>
                   </div>
                 )}
 

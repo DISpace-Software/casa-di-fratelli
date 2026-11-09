@@ -1,8 +1,18 @@
 # Local reservation dictation prototype — 2026-11-07
 
-Local-only branch: feat/local-reservation-voice-20261107 in /private/tmp/casa-admin-parity-20261104. Not pushed or deployed. Production occupancy change is separate: commit 2052214, Vercel dpl_8zNxm4vD6Gsbi2Gg6fZ9svCAXfsb.
+Current local-only branch: feat/reservation-field-voice-20261109 in /Users/macbookpro/casa-worktrees/reservation-field-voice-20261109, based on ff214af. Not pushed or deployed. The original /private/tmp/casa-admin-parity-20261104 source files were removed by temporary-directory cleanup on November 9; its running Vite process returned HTTP 404. The development server has been restarted on the same port from the permanent worktree. The original dirty workspace remains untouched. Production occupancy change is separate: commit 2052214, Vercel dpl_8zNxm4vD6Gsbi2Gg6fZ9svCAXfsb.
 
-## Interaction
+## Current interaction — individual fields, November 9
+
+The map reservation form and list create form now have a small microphone beside each of six inputs: name, phone, date, time, guests and optional email. This replaces the large conversation widget in those forms. Press a field's microphone and say only its value; final recognized results immediately update that selected input. Bulgarian is the default for the Bulgarian interface, with Russian and English still selectable. Examples: name “Георги Иванов”, phone “0888 12 34 56”, date “следващата сряда”, time “десет”, guests “трима”, email “support at example dot com”.
+
+There is one active recorder per form. Switching fields aborts the preceding session and ignores late events. Clicking the active microphone stops it while allowing the final speech result to arrive. Manual edits cancel dictation for that field. Complete results stop after a short pause; incomplete results have a longer pause allowance, with an overall 20-second cap. Interim text is visible but does not overwrite the input. Incomplete mobile-number fragments, unavailable times and unclear answers leave the current value intact and display a field-specific message. Failed sessions retain the recognized text so a user can see what was heard. Unsupported recognition, denied permission and service/network failures have visible feedback; ordinary typing remains available. Dictation never saves a reservation automatically.
+
+Controls have 44-pixel touch targets with small SVG icons. Mobile date/time and guest/email rows stack to avoid covering native controls. The production build still excludes microphone controls and recognition code even with the preview flag set. The old conversation parser and regression corpus remain available as domain tests, but the new field flow does not require an entire dialogue to be interpreted.
+
+Validation: 284 domain tests pass, including the original corpus plus 95 field-parser and 12 short-session tests. Targeted ESLint and the admin production build pass. Fifteen Chromium checks pass against the local API, covering map/list entry, all six fields, partial/final speech, switching, Stop flushing, manual edits, unavailable time, permission/network errors, unsupported recognition, unmount and 390-pixel layouts. No JavaScript errors or reservation mutations occurred. Speech events were simulated; real microphone recognition accuracy was not measured. Evidence: output/casa-field-voice-20261109/ in the original workspace. Browser script: scripts/check-reservation-field-voice-browser.mjs with the same four arguments as the earlier browser script.
+
+## Original interaction — conversation prototype
 
 One dictation for the whole booking. The microphone button is visible immediately in the map reservation modal and list create form. Final speech results automatically populate the draft name, phone, date, time and guest count; interim hypotheses only update the transcript preview. Transcript/manual review is in a secondary disclosure, with an explicit apply button for typed corrections. Bulgarian, Russian and English recognition language options. Missing fields leave existing values unchanged; list slot changes reset table selection. Applying a transcript never submits a booking or selects tables.
 
