@@ -13,7 +13,10 @@
     "preview": "vite preview",
     "test": "node --test src/domain/__tests__/*.test.js",
     "dev:admin": "vite --config vite.admin.config.js",
-    "build:admin": "vite build --config vite.admin.config.js"
+    "build:admin": "vite build --config vite.admin.config.js",
+    "dev:cofein": "vite --config vite.cofein.config.js --host 127.0.0.1 --port 5175 --strictPort",
+    "build:cofein": "vite build --config vite.cofein.config.js",
+    "test:cofein": "node --test src/cofein/*.test.js"
   },
   "dependencies": {
     "react": "^19.2.4",

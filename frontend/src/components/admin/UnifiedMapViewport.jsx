@@ -21,10 +21,10 @@ import {
 const cameraStorageKey = () => tenantStorageKey("casa-admin-unified-map-camera");
 const INTERACTIVE_MAP_SELECTOR = "button, a, input, select, textarea, [role='button'], [data-map-keep-open='true']";
 
-function readSavedCamera() {
+function readSavedCamera(storageKey = cameraStorageKey()) {
   if (!ADMIN_MAP_CAMERA.persistCamera || typeof window === "undefined") return null;
   try {
-    const value = JSON.parse(window.localStorage.getItem(cameraStorageKey()) || "null");
+    const value = JSON.parse(window.localStorage.getItem(storageKey) || "null");
     return Number.isFinite(value?.x) && Number.isFinite(value?.y) && Number.isFinite(value?.scale)
       ? value
       : null;
@@ -48,13 +48,18 @@ export default function UnifiedMapViewport({
   onExitExpanded,
   language = "bg",
   viewMode = "scroll",
+  storageNamespace,
+  surfaceClassName = "",
+  minimumScale,
 }) {
   const world = geometry?.world || ADMIN_MAP_WORLD;
+  const minScale = minimumScale ?? ADMIN_MAP_CAMERA.minScale;
+  const storageKey = storageNamespace ? tenantStorageKey(`admin-map-camera:${storageNamespace}`) : cameraStorageKey();
   const getZone = React.useCallback(id => geometry?.zones.find(zone => zone.id === id) || geometry?.zones[0] || (!geometry ? getAdminMapZone(id) : { x: 0, y: 0, ...world }), [geometry, world]);
   const shellRef = React.useRef(null);
   const viewportRef = React.useRef(null);
   const worldRef = React.useRef(null);
-  const [initialCamera] = React.useState(() => readSavedCamera() || { x: 0, y: 0, scale: 1 });
+  const [initialCamera] = React.useState(() => readSavedCamera(storageKey) || { x: 0, y: 0, scale: 1 });
   const cameraRef = React.useRef(initialCamera);
   const viewportSizeRef = React.useRef({ width: 1, height: 1 });
   const pointersRef = React.useRef(new Map());
@@ -88,7 +93,7 @@ export default function UnifiedMapViewport({
 
   const applyCamera = React.useCallback((nextCamera, { animate = false, persist = true } = {}) => {
     const camera = clampCamera(
-      { ...nextCamera, scale: Math.min(ADMIN_MAP_CAMERA.maxScale, Math.max(ADMIN_MAP_CAMERA.minScale, nextCamera.scale)) },
+      { ...nextCamera, scale: Math.min(ADMIN_MAP_CAMERA.maxScale, Math.max(minScale, nextCamera.scale)) },
       viewportSizeRef.current,
       world,
       ADMIN_MAP_CAMERA.panOverscan
@@ -102,9 +107,9 @@ export default function UnifiedMapViewport({
     }
     if (animate || persist) setScaleLabel(camera.scale);
     if (persist && ADMIN_MAP_CAMERA.persistCamera) {
-      window.localStorage.setItem(cameraStorageKey(), JSON.stringify(camera));
+      window.localStorage.setItem(storageKey, JSON.stringify(camera));
     }
-  }, [world]);
+  }, [world, minScale, storageKey]);
 
   const fitToBounds = React.useCallback((bounds, animate = true) => {
     const viewport = viewportSizeRef.current;
@@ -113,14 +118,14 @@ export default function UnifiedMapViewport({
     const availableHeight = Math.max(1, viewport.height - padding * 2);
     const scale = Math.min(
       ADMIN_MAP_CAMERA.maxScale,
-      Math.max(ADMIN_MAP_CAMERA.minScale, Math.min(availableWidth / bounds.width, availableHeight / bounds.height))
+      Math.max(minScale, Math.min(availableWidth / bounds.width, availableHeight / bounds.height))
     );
     applyCamera({
       x: (viewport.width - bounds.width * scale) / 2 - bounds.x * scale,
       y: (viewport.height - bounds.height * scale) / 2 - bounds.y * scale,
       scale,
     }, { animate });
-  }, [applyCamera]);
+  }, [applyCamera, minScale]);
 
   const fitToMap = React.useCallback((animate = true) => {
     fitToBounds({ x: 0, y: 0, width: world.width, height: world.height }, animate);
@@ -150,19 +155,19 @@ export default function UnifiedMapViewport({
       : viewport.width < 700 ? 0.65 : 0.7;
     const scale = Math.min(
       ADMIN_MAP_CAMERA.maxScale,
-      Math.max(ADMIN_MAP_CAMERA.minScale, focusScale || preferredScale)
+      Math.max(minScale, focusScale || preferredScale)
     );
     applyCamera(
       focusCameraOnWorldPoint(
         { x: focusX, y: focusY },
         viewport,
         scale,
-        ADMIN_MAP_CAMERA.minScale,
+        minScale,
         ADMIN_MAP_CAMERA.maxScale
       ),
       { animate: true }
     );
-  }, [applyCamera, focusKey, focusScale, focusX, focusY]);
+  }, [applyCamera, focusKey, focusScale, focusX, focusY, minScale]);
 
   const zoomAtCenter = React.useCallback((direction) => {
     const viewport = viewportSizeRef.current;
@@ -170,10 +175,10 @@ export default function UnifiedMapViewport({
       cameraRef.current,
       { x: viewport.width / 2, y: viewport.height / 2 },
       cameraRef.current.scale + direction * ADMIN_MAP_CAMERA.zoomStep,
-      ADMIN_MAP_CAMERA.minScale,
+      minScale,
       ADMIN_MAP_CAMERA.maxScale
     ), { animate: true });
-  }, [applyCamera]);
+  }, [applyCamera, minScale]);
 
   React.useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -185,7 +190,7 @@ export default function UnifiedMapViewport({
       viewportSizeRef.current = next;
       if (!initializedRef.current) {
         initializedRef.current = true;
-        if (readSavedCamera()) applyCamera(cameraRef.current, { persist: false });
+        if (readSavedCamera(storageKey)) applyCamera(cameraRef.current, { persist: false });
         else fitToCurrentView(false);
       } else {
         applyCamera(preserveWorldCenter(cameraRef.current, previous, next), { persist: false });
@@ -193,7 +198,7 @@ export default function UnifiedMapViewport({
     });
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [applyCamera, fitToCurrentView]);
+  }, [applyCamera, fitToCurrentView, storageKey]);
 
   React.useEffect(() => {
     if (!initializedRef.current || viewMode !== "section") return;
@@ -290,7 +295,7 @@ export default function UnifiedMapViewport({
           cameraRef.current,
           { x: event.clientX - rect.left, y: event.clientY - rect.top },
           cameraRef.current.scale * factor,
-          ADMIN_MAP_CAMERA.minScale,
+          minScale,
           ADMIN_MAP_CAMERA.maxScale
         );
       }
@@ -302,7 +307,7 @@ export default function UnifiedMapViewport({
 
     viewport.addEventListener("wheel", handleNativeWheel, { passive: false });
     return () => viewport.removeEventListener("wheel", handleNativeWheel);
-  }, [applyCamera, scheduleCamera]);
+  }, [applyCamera, scheduleCamera, minScale]);
 
   const handlePointerDown = (event) => {
     const continuingTouchGesture = event.pointerType !== "mouse" && pointersRef.current.size > 0;
@@ -362,7 +367,7 @@ export default function UnifiedMapViewport({
         { x: base.center.x - rect.left, y: base.center.y - rect.top },
         { x: center.x - rect.left, y: center.y - rect.top },
         distance / Math.max(1, base.distance),
-        ADMIN_MAP_CAMERA.minScale,
+        minScale,
         ADMIN_MAP_CAMERA.maxScale
       ));
     }
@@ -436,7 +441,7 @@ export default function UnifiedMapViewport({
           <span className="hidden min-w-[58px] text-center text-xs font-semibold text-white/50 sm:block">{Math.round(scaleLabel * 100)}%</span>
           <button type="button" onClick={() => zoomAtCenter(1)} aria-label={labels.in} title={labels.in} className="ghost-button h-11 w-11 rounded-xl text-xl">+</button>
           <button type="button" onClick={() => fitToCurrentView(true)} aria-label={labels.fit} title={labels.fit} className="ghost-button min-h-[44px] rounded-xl px-3 text-xs font-semibold">Fit</button>
-          <button type="button" onClick={() => { window.localStorage.removeItem(cameraStorageKey()); fitToCurrentView(true); }} aria-label={labels.reset} title={labels.reset} className="ghost-button hidden min-h-[44px] rounded-xl px-3 text-xs font-semibold sm:block">Reset</button>
+          <button type="button" onClick={() => { window.localStorage.removeItem(storageKey); fitToCurrentView(true); }} aria-label={labels.reset} title={labels.reset} className="ghost-button hidden min-h-[44px] rounded-xl px-3 text-xs font-semibold sm:block">Reset</button>
           <button
             type="button"
             onClick={toggleFullscreen}
@@ -458,7 +463,7 @@ export default function UnifiedMapViewport({
       <div
         ref={viewportRef}
         data-admin-swipe-lock="true"
-        className={`admin-unified-map-viewport relative min-w-0 overflow-hidden rounded-[26px] border border-white/10 bg-[#0d0b09] shadow-inner shadow-black/60 ${
+        className={`admin-unified-map-viewport relative min-w-0 overflow-hidden rounded-[26px] border border-white/10 bg-[#0d0b09] shadow-inner shadow-black/60 ${surfaceClassName} ${
           isExpanded ? "min-h-0 flex-1" : "h-[clamp(560px,72vh,920px)]"
         }`}
         style={{
@@ -477,7 +482,7 @@ export default function UnifiedMapViewport({
             cameraRef.current,
             { x: event.clientX - rect.left, y: event.clientY - rect.top },
             cameraRef.current.scale + ADMIN_MAP_CAMERA.zoomStep * 2,
-            ADMIN_MAP_CAMERA.minScale,
+            minScale,
             ADMIN_MAP_CAMERA.maxScale
           ), { animate: true });
         }}

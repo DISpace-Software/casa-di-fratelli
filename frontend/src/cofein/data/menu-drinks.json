@@ -1,0 +1,1805 @@
+[
+  {
+    "id": "hot-drinks",
+    "label": "Топли напитки",
+    "items": [
+      {
+        "id": "hot-drinks-espresso",
+        "name": "КАФЕ ESPRESO",
+        "description": "",
+        "portion": "60 ml",
+        "priceEur": 1.5,
+        "priceBgn": 2.93,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-espresso-decaf",
+        "name": "КАФЕ ESPRESO без кофеин",
+        "description": "",
+        "portion": "60 ml",
+        "priceEur": 1.8,
+        "priceBgn": 3.52,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-macchiato",
+        "name": "КАФЕ ЕСПРЕСО МАКИАТО",
+        "description": "",
+        "portion": "60 ml",
+        "priceEur": 1.6,
+        "priceBgn": 3.13,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-arabica",
+        "name": "КАФЕ ЕСПРЕСО 100% АРАБИКА",
+        "description": "",
+        "portion": "60 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-cappuccino",
+        "name": "КАПУЧИНО",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-latte",
+        "name": "КАФЕ LATE",
+        "description": "топло мляко с ароматно еспресо",
+        "portion": "250 ml",
+        "priceEur": 2.3,
+        "priceBgn": 4.5,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-latte-flavoured",
+        "name": "КАФЕ LATE С ВКУС",
+        "description": "шоколад, лешник, карамел",
+        "portion": "250 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-mochaccino",
+        "name": "МОКАЧИНО",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 2.3,
+        "priceBgn": 4.5,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-vienna-coffee",
+        "name": "ВИЕНСКО КАФЕ",
+        "description": "",
+        "portion": "120 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-coffee-3-in-1",
+        "name": "КАФЕ 3 в 1",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 1.8,
+        "priceBgn": 3.52,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-nescafe",
+        "name": "КАФЕ NESCAFE",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 1.6,
+        "priceBgn": 3.13,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-irish-coffee",
+        "name": "ИРЛАНДСКО КАФЕ",
+        "description": "уиски, еспресо, сметана",
+        "portion": "100 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.09,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-baileys-coffee",
+        "name": "БЕЙЛИС КАФЕ",
+        "description": "бейлис, кафе",
+        "portion": "100 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-hot-chocolate",
+        "name": "ТОПЪЛ ШОКОЛАД",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.09,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-milk-nescafe",
+        "name": "МЛЯКО С NESCAFE",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-milk-cocoa",
+        "name": "МЛЯКО С КАКАО",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-milk-honey-cinnamon",
+        "name": "МЛЯКО С МЕД И КАНЕЛА",
+        "description": "",
+        "portion": "250 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-milk-flavoured",
+        "name": "МЛЯКО С ВКУС",
+        "description": "карамел, бадем, шоколад, кокос, ягода, банан",
+        "portion": "250 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-warm-milk",
+        "name": "ТОПЛО МЛЯКО",
+        "description": "",
+        "portion": "250 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-shake-venice",
+        "name": "ГОРЕЩ ШЕЙК „ВЕНЕЦИЯ“",
+        "description": "топло мляко, банан, кокос, течен шоколад",
+        "portion": "350 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.87,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-shake-casablanca",
+        "name": "ГОРЕЩ ШЕЙК „КАЗАБЛАНКА“",
+        "description": "топло мляко, бисквити, карамел, кокос, сметана",
+        "portion": "350 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.87,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-shake-monte-carlo",
+        "name": "ГОРЕЩ ШЕЙК „МОНТЕ КАРЛО“",
+        "description": "топло мляко, ягоди, кокос, мед, орехи",
+        "portion": "350 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.87,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-shake-london-city",
+        "name": "ГОРЕЩ ШЕЙК „ЛОНДОН СИТИ“",
+        "description": "топло мляко, вкус лешник, какао, бита сметана, кафява захар",
+        "portion": "350 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.87,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-herbal-tea",
+        "name": "ЧАЙ БИЛКОВ",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 1.2,
+        "priceBgn": 2.35,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "hot-drinks-lipton-tea",
+        "name": "ЧАЙ LIPTON",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 1.5,
+        "priceBgn": 2.93,
+        "source": "20260907_170018.jpg"
+      }
+    ]
+  },
+  {
+    "id": "cold-drinks",
+    "label": "Студени освежителни напитки",
+    "items": [
+      {
+        "id": "cold-drinks-frappuccino",
+        "name": "ФРАПУЧИНО",
+        "description": "кафе, мляко, сметана, лед",
+        "portion": "350 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-latte",
+        "name": "СТУДЕНО LATE",
+        "description": "",
+        "portion": "250 ml",
+        "priceEur": 2.3,
+        "priceBgn": 4.5,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-latte-flavoured",
+        "name": "СТУДЕНО LATE С ВКУС",
+        "description": "карамел, бадем, лешник, шоколад, кокос",
+        "portion": "250 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-white-frappe",
+        "name": "ФРАПЕ БЯЛО",
+        "description": "",
+        "portion": "350 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-black-frappe",
+        "name": "ФРАПЕ ЧЕРНО",
+        "description": "",
+        "portion": "350 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-fruit-frappe",
+        "name": "ФРАПЕ ПЛОДОВО",
+        "description": "с различни плодови вкусове",
+        "portion": "350 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-chocofreddo",
+        "name": "ЧОКОФРЕДО",
+        "description": "",
+        "portion": "350 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.09,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-ice-coffee",
+        "name": "АЙС КАФЕ",
+        "description": "",
+        "portion": "350 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-ice-cola",
+        "name": "АЙС КОЛА",
+        "description": "",
+        "portion": "350 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-ice-nectar",
+        "name": "АЙС НЕКТАР",
+        "description": "",
+        "portion": "350 ml",
+        "priceEur": 2.4,
+        "priceBgn": 4.69,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-ice-frappe",
+        "name": "АЙС ФРАПЕ",
+        "description": "",
+        "portion": "350 ml",
+        "priceEur": null,
+        "priceBgn": 4.89,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-shake-flavours",
+        "name": "ШЕЙК С РАЗЛИЧНИ ВКУСОВЕ",
+        "description": "",
+        "portion": "350 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.4,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-shake-venice",
+        "name": "СТУДЕН ШЕЙК „ВЕНЕЦИЯ“",
+        "description": "студено мляко, банан, кокос, течен шоколад, лед",
+        "portion": "350 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.4,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-shake-casablanca",
+        "name": "СТУДЕН ШЕЙК „КАЗАБЛАНКА“",
+        "description": "студено мляко, бисквити, карамел, кокос, сметана, лед",
+        "portion": "200 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.4,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-shake-monte-carlo",
+        "name": "СТУДЕН ШЕЙК „МОНТЕ КАРЛО“",
+        "description": "студено мляко, ягоди, кокос, мед, орехи, лед",
+        "portion": "200 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.4,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-shake-london-city",
+        "name": "СТУДЕН ШЕЙК „ЛОНДОН СИТИ“",
+        "description": "студено мляко, вкус лешник, какао, бита сметана, кафява захар, лед",
+        "portion": "200 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.4,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-citronade",
+        "name": "ЦИТРОНАДА С РАЗЛИЧНИ ВКУСОВЕ",
+        "description": "",
+        "portion": "450 ml",
+        "priceEur": 3.2,
+        "priceBgn": 5.8,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-orangeade",
+        "name": "ОРАНЖАДА",
+        "description": "",
+        "portion": "450 ml",
+        "priceEur": 3.2,
+        "priceBgn": 5.8,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-homemade-lemonade",
+        "name": "ДОМАШНА ЛИМОНАДА С РАЗЛИЧНИ ВКУСОВЕ",
+        "description": "",
+        "portion": "450 ml",
+        "priceEur": 3.2,
+        "priceBgn": 5.8,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "cold-drinks-yogurt-fresh",
+        "name": "ЙОГУРТ ФРЕШ",
+        "description": "напитка от кисело мляко с различни вкусове",
+        "portion": "450 ml",
+        "priceEur": 3.2,
+        "priceBgn": 5.8,
+        "source": "20260907_170018.jpg"
+      }
+    ]
+  },
+  {
+    "id": "soft-drinks",
+    "label": "Безалкохолни напитки",
+    "items": [
+      {
+        "id": "soft-drinks-cola-fanta-sprite",
+        "name": "КОКА КОЛА, ФАНТА, СПРАЙТ",
+        "description": "",
+        "portion": "250 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "soft-drinks-schweppes",
+        "name": "ШВЕПС",
+        "description": "мандарина, битер лимон, тоник",
+        "portion": "250 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "soft-drinks-soda",
+        "name": "СОДА",
+        "description": "",
+        "portion": "250 ml",
+        "priceEur": 1.4,
+        "priceBgn": 2.74,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "soft-drinks-mineral-water",
+        "name": "МИНЕРАЛНА ВОДА",
+        "description": "",
+        "portion": "330 ml",
+        "priceEur": 1.4,
+        "priceBgn": 2.74,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "soft-drinks-cappy",
+        "name": "СОК КАПИ",
+        "description": "портокал, ананас, праскова, кайсия, вишна, ябълка, грейпфрут, червен портокал",
+        "portion": "250 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "soft-drinks-iced-tea",
+        "name": "СТУДЕН ЧАЙ",
+        "description": "лимон, праскова",
+        "portion": "250 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170018.jpg"
+      },
+      {
+        "id": "soft-drinks-san-benedetto",
+        "name": "СТУДЕН ЧАЙ „САН БЕНЕДЕТО“",
+        "description": "праскова, лимон, зелен чай",
+        "portion": "500 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.09,
+        "source": "20260907_170018.jpg"
+      }
+    ]
+  },
+  {
+    "id": "fresh-bar",
+    "label": "Fresh bar",
+    "items": [
+      {
+        "id": "fresh-bar-orange",
+        "name": "ПОРТОКАЛ",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "fresh-bar-grapefruit",
+        "name": "ГРЕЙПФРУТ",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "fresh-bar-lemon",
+        "name": "ЛИМОН",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 3.6,
+        "priceBgn": 7.04,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "fresh-bar-mix",
+        "name": "МИКС",
+        "description": "",
+        "portion": "200 ml",
+        "priceEur": 3.6,
+        "priceBgn": 7.04,
+        "source": "20260907_170027.jpg"
+      }
+    ]
+  },
+  {
+    "id": "mocktails",
+    "label": "Безалкохолни коктейли",
+    "items": [
+      {
+        "id": "mocktails-exotic",
+        "name": "ЕКЗОТИК",
+        "description": "сок манго, сок ананас, сок маракуя, фреш лимон",
+        "portion": "350 ml",
+        "priceEur": 4.4,
+        "priceBgn": 8.61,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "mocktails-peacock-feather",
+        "name": "ПАУНОВО ПЕРО",
+        "description": "сок ананас, сок грейпфрут, сок портокал, сок маракуя, сироп кокос, гренадин, синьо кюрасо",
+        "portion": "350 ml",
+        "priceEur": 4.4,
+        "priceBgn": 8.61,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "mocktails-passion",
+        "name": "ПАШЪН КОКТЕЙЛ",
+        "description": "банан, сладолед, сок портокал, сок банан, сметана",
+        "portion": "350 ml",
+        "priceEur": 4.4,
+        "priceBgn": 8.61,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "mocktails-fruit-fantasy",
+        "name": "ПЛОДОВА ФАНТАЗИЯ",
+        "description": "ягоди, банан, сок портокал, ягодов сироп, сок ананас",
+        "portion": "350 ml",
+        "priceEur": 4.4,
+        "priceBgn": 8.61,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "mocktails-sea-breeze",
+        "name": "МОРСКИ БРИЗ",
+        "description": "ананас, портокал, манго, маракуя и гренадин",
+        "portion": "350 ml",
+        "priceEur": 4.4,
+        "priceBgn": 8.61,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "mocktails-blue-lagoon",
+        "name": "СИНЯ ЛАГУНА",
+        "description": "фреш лимон, спрайт, кюрасо и натрошен лед",
+        "portion": "350 ml",
+        "priceEur": 4.4,
+        "priceBgn": 8.61,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "mocktails-tropic-fresh",
+        "name": "ТРОПИК ФРЕШ",
+        "description": "праскова, манго, пъпеш, портокал и лед",
+        "portion": "350 ml",
+        "priceEur": 4.4,
+        "priceBgn": 8.61,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "mocktails-hawaiian-sunrise",
+        "name": "ХАВАЙСКИ ИЗГРЕВ",
+        "description": "касис, фреш портокал и лимон, горски плодове",
+        "portion": "350 ml",
+        "priceEur": 4.4,
+        "priceBgn": 8.61,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "mocktails-sunny-impression",
+        "name": "СЛЪНЧЕВА ИМПРЕСИЯ",
+        "description": "пъпеш, ананас, фреш портокал, гренадин",
+        "portion": "350 ml",
+        "priceEur": 4.4,
+        "priceBgn": 8.61,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "mocktails-cofein-energy",
+        "name": "КОФЕИН ЕНЕРДЖИ",
+        "description": "фреш портокал, фреш лимон, ананас, гренадин и лед",
+        "portion": "350 ml",
+        "priceEur": 4.4,
+        "priceBgn": 8.61,
+        "source": "20260907_170027.jpg"
+      }
+    ]
+  },
+  {
+    "id": "wine-sangria",
+    "label": "Вино и сангрия",
+    "items": [
+      {
+        "id": "wine-sangria-sangria-500",
+        "name": "САНГРИЯ",
+        "description": "С БЯЛО И ЧЕРВЕНО ВИНО И СЕЗОННИ ПЛОДОВЕ",
+        "portion": "500 ml",
+        "priceEur": 7.0,
+        "priceBgn": 13.69,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "wine-sangria-sangria-1000",
+        "name": "САНГРИЯ",
+        "description": "С БЯЛО И ЧЕРВЕНО ВИНО И СЕЗОННИ ПЛОДОВЕ",
+        "portion": "1000 ml",
+        "priceEur": 13.0,
+        "priceBgn": 25.43,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "wine-sangria-glass-wine",
+        "name": "ЧАША ВИНО",
+        "description": "ЧЕРВЕНО, БЯЛО, РОЗЕ - РАЗЛИЧНИ ВИДОВЕ",
+        "portion": "200 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "wine-sangria-dessert-wine",
+        "name": "ДЕСЕРТНО ВИНО",
+        "description": "С ВКУС НА МАЛИНА, СМОКИНЯ И БОРОВИНКА",
+        "portion": "200 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170027.jpg"
+      }
+    ]
+  },
+  {
+    "id": "energy-drinks",
+    "label": "Енергийни напитки",
+    "items": [
+      {
+        "id": "energy-drinks-red-bull-shark",
+        "name": "RED BULL / SHARK",
+        "description": "",
+        "portion": "250 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170027.jpg"
+      }
+    ]
+  },
+  {
+    "id": "protein-bar",
+    "label": "Протеинов бар",
+    "items": [
+      {
+        "id": "protein-bar-protein-shake",
+        "name": "ПРОТЕИНОВ ШЕЙК",
+        "description": "протеин и мляко",
+        "portion": "250 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "protein-bar-iron-men",
+        "name": "IRON MEN",
+        "description": "протеин, мляко, банан, шоколад и кокос",
+        "portion": "250 ml",
+        "priceEur": 3.6,
+        "priceBgn": 7.04,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "protein-bar-extreme-max",
+        "name": "EXTREME MAX",
+        "description": "протеин, мляко, бисквита, банан и кокос",
+        "portion": "250 ml",
+        "priceEur": 3.6,
+        "priceBgn": 7.04,
+        "source": "20260907_170027.jpg"
+      }
+    ]
+  },
+  {
+    "id": "beer-cider",
+    "label": "Бира и сайдер",
+    "items": [
+      {
+        "id": "beer-cider-burgasko",
+        "name": "БУРГАСКО",
+        "description": "",
+        "portion": "500 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "beer-cider-kamenitsa",
+        "name": "КАМЕНИЦА",
+        "description": "",
+        "portion": "500 ml",
+        "priceEur": 2.3,
+        "priceBgn": 4.5,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "beer-cider-madri",
+        "name": "MADRI",
+        "description": "",
+        "portion": "500 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "beer-cider-stella-500",
+        "name": "STELLA ARTOIS",
+        "description": "",
+        "portion": "500 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.08,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "beer-cider-stella-330",
+        "name": "STELLA ARTOIS",
+        "description": "",
+        "portion": "330 ml",
+        "priceEur": 2.8,
+        "priceBgn": 5.48,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "beer-cider-stella-zero",
+        "name": "STELLA ARTOIS 0%",
+        "description": "",
+        "portion": "330 ml",
+        "priceEur": 2.8,
+        "priceBgn": 5.48,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "beer-cider-becks",
+        "name": "BECK’S",
+        "description": "",
+        "portion": "500 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "beer-cider-staropramen",
+        "name": "STAROPRAMEN",
+        "description": "",
+        "portion": "500 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "beer-cider-staropramen-zero",
+        "name": "STAROPRAMEN 0%",
+        "description": "",
+        "portion": "330 ml",
+        "priceEur": 2.8,
+        "priceBgn": 5.48,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "beer-cider-corona",
+        "name": "CORONA",
+        "description": "",
+        "portion": "370 ml",
+        "priceEur": 3.5,
+        "priceBgn": 6.85,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "beer-cider-cider",
+        "name": "CIDER",
+        "description": "",
+        "portion": "330 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170027.jpg"
+      }
+    ]
+  },
+  {
+    "id": "cocktails",
+    "label": "Алкохолни коктейли",
+    "items": [
+      {
+        "id": "cocktails-mojito",
+        "name": "МОХИТО",
+        "description": "ром Bacardi, лайм, листенца мента, сода, кафява захар",
+        "portion": "250 ml",
+        "priceEur": 5.0,
+        "priceBgn": 9.78,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-cosmopolitan",
+        "name": "КОСМОПОЛИТЪН",
+        "description": "Водка, сок касис, фреш лимон",
+        "portion": "150 ml",
+        "priceEur": 5.0,
+        "priceBgn": 9.78,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-blue-lagoon",
+        "name": "СИНЯ ЛАГУНА",
+        "description": "Водка, спрайт, фреш лимон, шнапс и кюрасо",
+        "portion": "250 ml",
+        "priceEur": 5.0,
+        "priceBgn": 9.78,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-margarita",
+        "name": "МАРГАРИТА",
+        "description": "текила, фреш лимон, сол",
+        "portion": "150 ml",
+        "priceEur": 5.0,
+        "priceBgn": 9.78,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-bloody-mary",
+        "name": "БЛЪДИ МЕРИ",
+        "description": "Водка, доматен сок, сол, черен пипер, табаско",
+        "portion": "250 ml",
+        "priceEur": 5.0,
+        "priceBgn": 9.78,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-tequila-sunrise",
+        "name": "ТЕКИЛА СЪНРАЙЗ",
+        "description": "текила, гренадин, ананас, портокал",
+        "portion": "150 ml",
+        "priceEur": 5.0,
+        "priceBgn": 9.78,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-aperol-spritz",
+        "name": "АПЕРОЛ ШПРИЦ",
+        "description": "Аперол, пенливо вино, сода, парченца портокал, лед",
+        "portion": "200 ml",
+        "priceEur": 5.0,
+        "priceBgn": 9.78,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-orgasm",
+        "name": "ОРГАЗЪМ",
+        "description": "Бейлис, Галиано, мляко, сметана, лед",
+        "portion": "150 ml",
+        "priceEur": 5.0,
+        "priceBgn": 9.78,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-strawberry-daiquiri",
+        "name": "ЯГОДОВО ДАЙКИРИ",
+        "description": "ром, фреш лимон, ягоди",
+        "portion": "150 ml",
+        "priceEur": 5.0,
+        "priceBgn": 9.78,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-sex-on-the-beach",
+        "name": "СЕКС НА ПЛАЖА",
+        "description": "Водка, шнапс праскова, сок ананас, сок портокал, гренадин",
+        "portion": "250 ml",
+        "priceEur": 5.5,
+        "priceBgn": 10.76,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-dry-martini",
+        "name": "ДРАЙ МАРТИНИ",
+        "description": "мартини, джин, фреш лимон, лимонова кора, маслина",
+        "portion": "150 ml",
+        "priceEur": 5.5,
+        "priceBgn": 10.76,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-espresso-martini",
+        "name": "ЕСПРЕСО МАРТИНИ",
+        "description": "Водка, калуа, кафе еспресо, сметана",
+        "portion": "150 ml",
+        "priceEur": 5.5,
+        "priceBgn": 10.76,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-manhattan",
+        "name": "МАНХАТЪН",
+        "description": "уиски, сок нар, лед",
+        "portion": "250 ml",
+        "priceEur": 6.0,
+        "priceBgn": 11.73,
+        "source": "20260907_170027.jpg"
+      },
+      {
+        "id": "cocktails-long-island",
+        "name": "ЛОНГ АЙЛЪНД",
+        "description": "Водка, ром, текила, джин, фреш лимон, трипъл сек, кока кола",
+        "portion": "250 ml",
+        "priceEur": 6.0,
+        "priceBgn": 11.73,
+        "source": "20260907_170027.jpg"
+      }
+    ]
+  },
+  {
+    "id": "whisky",
+    "label": "Уиски",
+    "items": [
+      {
+        "id": "whisky-bg",
+        "name": "УИСКИ БГ",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170036.jpg"
+      }
+    ]
+  },
+  {
+    "id": "irish-whisky",
+    "label": "Ирландско уиски",
+    "items": [
+      {
+        "id": "irish-whisky-jameson",
+        "name": "JAMESON",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "irish-whisky-bushmills",
+        "name": "BUSHMILLS",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "irish-whisky-tullamore-dew",
+        "name": "TULLAMORE DEW",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "irish-whisky-paddy",
+        "name": "PADDY",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "irish-whisky-black-bush",
+        "name": "BLACK BUSH",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 4.5,
+        "priceBgn": 8.8,
+        "source": "20260907_170036.jpg"
+      }
+    ]
+  },
+  {
+    "id": "bourbon",
+    "label": "Бърбън",
+    "items": [
+      {
+        "id": "bourbon-jim-beam",
+        "name": "JIM BEAM",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "bourbon-four-roses",
+        "name": "FOUR ROSES",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "bourbon-jack-daniels-honey",
+        "name": "JACK DANIELS HONEY",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.6,
+        "priceBgn": 7.04,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "bourbon-jack-daniels",
+        "name": "JACK DANIELS",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.6,
+        "priceBgn": 7.04,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "bourbon-makers-mark",
+        "name": "MAKERS MARK",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 4.6,
+        "priceBgn": 9.0,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "bourbon-gentleman-jack",
+        "name": "GENTLEMAN JACK",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 4.6,
+        "priceBgn": 9.0,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "bourbon-jack-daniels-single-barel",
+        "name": "JACK DANIELS SINGLE BAREL",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 6.5,
+        "priceBgn": 12.71,
+        "source": "20260907_170036.jpg"
+      }
+    ]
+  },
+  {
+    "id": "scotch-whisky",
+    "label": "Скоч уиски",
+    "items": [
+      {
+        "id": "scotch-whisky-johnnie-walker",
+        "name": "JOHNNIE WALKER",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "scotch-whisky-ballantines",
+        "name": "BALLANTINE’S",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "scotch-whisky-jb",
+        "name": "J&B",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "scotch-whisky-monkey-shoulder",
+        "name": "MONKEY SHOULDER",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 5.5,
+        "priceBgn": 10.76,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "scotch-whisky-chivas-regal-12",
+        "name": "CHIVAS REGAL 12",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 5.5,
+        "priceBgn": 10.76,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "scotch-whisky-cardhu-12",
+        "name": "CARDHU 12",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 5.5,
+        "priceBgn": 10.76,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "scotch-whisky-laphroaig",
+        "name": "LAPHROAIG",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 6.2,
+        "priceBgn": 12.13,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "scotch-whisky-dumple-15",
+        "name": "DUMPLE 15",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 6.5,
+        "priceBgn": 12.71,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "scotch-whisky-johnnie-black-12",
+        "name": "JOHNNIE BLACK 12",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 6.5,
+        "priceBgn": 12.71,
+        "source": "20260907_170036.jpg"
+      }
+    ]
+  },
+  {
+    "id": "gin",
+    "label": "Джин",
+    "items": [
+      {
+        "id": "gin-dry-gin-bg",
+        "name": "DRY GIN BG",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "gin-beefeater",
+        "name": "BEEFEATER",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.09,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "gin-gordons",
+        "name": "GORDON’S",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.09,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "gin-bombay",
+        "name": "BOMBAY",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 4.5,
+        "priceBgn": 8.8,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "gin-hendricks",
+        "name": "HENDRICK’S",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 5.5,
+        "priceBgn": 10.76,
+        "source": "20260907_170036.jpg"
+      }
+    ]
+  },
+  {
+    "id": "vodka",
+    "label": "Водка",
+    "items": [
+      {
+        "id": "vodka-bg",
+        "name": "ВОДКА БГ",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "vodka-zubrowka",
+        "name": "ZUBROWKA",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.08,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "vodka-zytnia",
+        "name": "ZYTNIA",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.08,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "vodka-stolichnaia",
+        "name": "STOLICHNAIA",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.08,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "vodka-sobieski",
+        "name": "SOBIESKI",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.08,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "vodka-smirnoff",
+        "name": "SMIRNOFF",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.08,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "vodka-absolut",
+        "name": "ABSOLUT",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.08,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "vodka-finlandia",
+        "name": "FINLANDIA",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.08,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "vodka-russian-standard",
+        "name": "RUSSIAN STANDARD",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.08,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "vodka-reyka",
+        "name": "REYKA",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 4.5,
+        "priceBgn": 8.8,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "vodka-beluga",
+        "name": "BELUGA",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 5.5,
+        "priceBgn": 10.76,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "vodka-gray-goose",
+        "name": "GRAY GOOSE",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 5.5,
+        "priceBgn": 10.76,
+        "source": "20260907_170036.jpg"
+      }
+    ]
+  },
+  {
+    "id": "liqueurs",
+    "label": "Ликьори",
+    "items": [
+      {
+        "id": "liqueurs-mint",
+        "name": "МЕНТА",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "liqueurs-martini",
+        "name": "MARTINI",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "liqueurs-campari",
+        "name": "CAMPARI",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "liqueurs-aperol",
+        "name": "APEROL",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "liqueurs-amaretto",
+        "name": "AMARETTO",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "liqueurs-baileys",
+        "name": "BAILEYS",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.2,
+        "priceBgn": 6.26,
+        "source": "20260907_170036.jpg"
+      }
+    ]
+  },
+  {
+    "id": "mastika-digestifs",
+    "label": "Мастика и диджестиви",
+    "items": [
+      {
+        "id": "mastika-digestifs-mastika",
+        "name": "МАСТИКА",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "mastika-digestifs-ouzo-paralia",
+        "name": "OUZO PARALIA",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "mastika-digestifs-ouzo-12",
+        "name": "OUZO 12",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "mastika-digestifs-ouzo-jivaeri",
+        "name": "OUZO JIVAERI",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "mastika-digestifs-ouzo-plomari",
+        "name": "OUZO PLOMARI",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.08,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "mastika-digestifs-pernod",
+        "name": "PERNOD",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.6,
+        "priceBgn": 5.08,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "mastika-digestifs-jagermeister",
+        "name": "JAGERMEISTER",
+        "description": "",
+        "portion": "25 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "mastika-digestifs-absent",
+        "name": "ABSENT",
+        "description": "",
+        "portion": "25 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170036.jpg"
+      }
+    ]
+  },
+  {
+    "id": "shots",
+    "label": "Шотове — 25 ml",
+    "items": [
+      {
+        "id": "shots-svirka",
+        "name": "СВИРКА",
+        "description": "",
+        "portion": "1 бр.",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "shots-b52",
+        "name": "Б-52",
+        "description": "",
+        "portion": "1 бр.",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "shots-cocaine",
+        "name": "КОКАИН",
+        "description": "",
+        "portion": "1 бр.",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "shots-cucaracha",
+        "name": "КОКАРАЧА",
+        "description": "",
+        "portion": "1 бр.",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "shots-apocalypse",
+        "name": "АПОКАЛИПСИС",
+        "description": "",
+        "portion": "1 бр.",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "shots-kamikaze",
+        "name": "КАМИКАДЗЕ",
+        "description": "",
+        "portion": "1 бр.",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "shots-russian-roulette",
+        "name": "РУСКА РОЛЕТКА",
+        "description": "",
+        "portion": "8 бр.",
+        "priceEur": 8.4,
+        "priceBgn": 16.43,
+        "source": "20260907_170036.jpg"
+      },
+      {
+        "id": "shots-rose-ashes",
+        "name": "ПЕПЕЛ ОТ РОЗИ",
+        "description": "",
+        "portion": "12 бр.",
+        "priceEur": 12.0,
+        "priceBgn": 23.47,
+        "source": "20260907_170036.jpg"
+      }
+    ]
+  },
+  {
+    "id": "cognac-brandy",
+    "label": "Коняк и бренди",
+    "items": [
+      {
+        "id": "cognac-brandy-sunny-beach",
+        "name": "СЛЪНЧЕВ БРЯГ",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "cognac-brandy-napoleon",
+        "name": "NAPOLEON",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 5.2,
+        "priceBgn": 10.17,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "cognac-brandy-metaxa",
+        "name": "METAXA",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 5.2,
+        "priceBgn": 10.17,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "cognac-brandy-henessy",
+        "name": "HENESSY",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 5.2,
+        "priceBgn": 10.17,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "cognac-brandy-courvoisier",
+        "name": "COURVOISIER",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 5.5,
+        "priceBgn": 10.76,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "cognac-brandy-henessy-vsop",
+        "name": "HENESSY V.S.O.P",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 9.5,
+        "priceBgn": 18.58,
+        "source": "20260907_170054.jpg"
+      }
+    ]
+  },
+  {
+    "id": "rum",
+    "label": "Ром",
+    "items": [
+      {
+        "id": "rum-rum",
+        "name": "РОМ",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.2,
+        "priceBgn": 4.3,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rum-captain-morgan",
+        "name": "CAPTAIN MORGAN",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rum-malibu-caribbean",
+        "name": "MALIBU CARIBBEAN",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rum-havana-club-3",
+        "name": "HAVANA CLUB 3",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rum-bacardi",
+        "name": "BACARDI",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rum-sailor-jerry",
+        "name": "SAILOR JERRY",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      }
+    ]
+  },
+  {
+    "id": "tequila",
+    "label": "Текила",
+    "items": [
+      {
+        "id": "tequila-tequila",
+        "name": "ТЕКИЛА",
+        "description": "",
+        "portion": "25 ml",
+        "priceEur": 2.0,
+        "priceBgn": 3.91,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "tequila-pepe-lopez",
+        "name": "PEPE LOPEZ",
+        "description": "",
+        "portion": "25 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "tequila-sausa",
+        "name": "SAUSA",
+        "description": "",
+        "portion": "25 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "tequila-olmeca",
+        "name": "OLMECA",
+        "description": "",
+        "portion": "25 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "tequila-hose-quervo",
+        "name": "HOSE QUERVO",
+        "description": "",
+        "portion": "25 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      }
+    ]
+  },
+  {
+    "id": "rakia",
+    "label": "Ракии",
+    "items": [
+      {
+        "id": "rakia-karnobatska",
+        "name": "КАРНОБАТСКА",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rakia-pomoriyska",
+        "name": "ПОМОРИЙСКА",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rakia-peshterska-grozdova",
+        "name": "ПЕЩЕРСКА ГРОЗДОВА",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 2.5,
+        "priceBgn": 4.89,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rakia-peshterska-otlezhala",
+        "name": "ПЕЩЕРСКА ОТЛЕЖАЛА",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.4,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rakia-troyanska-slivova",
+        "name": "ТРОЯНСКА СЛИВОВА",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.4,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rakia-kehlibar",
+        "name": "КЕХЛИБАР",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.4,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rakia-burgas-63",
+        "name": "БУРГАС 63",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.4,
+        "source": "20260907_170054.jpg"
+      },
+      {
+        "id": "rakia-slivenska-perla",
+        "name": "СЛИВЕНСКА ПЕРЛА",
+        "description": "",
+        "portion": "50 ml",
+        "priceEur": 3.0,
+        "priceBgn": 5.4,
+        "source": "20260907_170054.jpg"
+      }
+    ]
+  }
+]
