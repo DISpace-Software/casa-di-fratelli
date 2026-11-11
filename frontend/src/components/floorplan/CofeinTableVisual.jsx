@@ -19,6 +19,11 @@ export default function CofeinTableVisual({ table, placement, status = "availabl
   const booth = p.kind === "booth" || p.kind === "u-booth";
   const uBooth = p.kind === "u-booth";
   const tableWidth = compact ? 29 : paired ? 62 : booth ? 62 : 40;
+  const label = String(table.id);
+  const labelWidth = compact ? 36 : p.width - 12;
+  const baseFontSize = compact ? 11 : 15;
+  const fittedLabel = label.length * baseFontSize * 0.7 > labelWidth;
+  const labelFontSize = Math.min(baseFontSize, labelWidth / Math.max(1, label.length * 0.7));
   const tableHeight = compact ? 28 : paired ? 34 : booth ? 38 : 40;
   const effectiveStatus = selected ? "selected" : status;
   const upholstery = `url(#${uid}-upholstery)`;
@@ -64,7 +69,7 @@ export default function CofeinTableVisual({ table, placement, status = "availabl
       <rect className="cofein-map-table-status-ring" x={-tableWidth / 2 - 2.5} y={-tableHeight / 2 - 2.5} width={tableWidth + 5} height={tableHeight + 5} rx="5" fill="none" strokeWidth="2.5" />
     </g>
     <g className="cofein-map-table-type">
-      <text className="cofein-map-table-id" y={compact ? 0 : -2} fontSize={compact ? 11 : 15} textAnchor="middle">{table.id}</text>
+      <text className="cofein-map-table-id" y={compact ? 0 : -2} fontSize={labelFontSize} textLength={fittedLabel ? labelWidth : undefined} lengthAdjust="spacingAndGlyphs" textAnchor="middle">{label}</text>
       <g transform={`translate(0 ${compact ? 10 : 11})`}>
         <circle cx="-7" cy="-3.5" r="1.6" fill="currentColor" />
         <path d="M-10 1C-10-3-4-3-4 1Z" fill="currentColor" />

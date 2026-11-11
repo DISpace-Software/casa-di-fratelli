@@ -51,11 +51,16 @@ export default function UnifiedMapViewport({
   storageNamespace,
   surfaceClassName = "",
   minimumScale,
+  detailViews,
 }) {
   const world = geometry?.world || ADMIN_MAP_WORLD;
   const minScale = minimumScale ?? ADMIN_MAP_CAMERA.minScale;
   const storageKey = storageNamespace ? tenantStorageKey(`admin-map-camera:${storageNamespace}`) : cameraStorageKey();
-  const getZone = React.useCallback(id => geometry?.zones.find(zone => zone.id === id) || geometry?.zones[0] || (!geometry ? getAdminMapZone(id) : { x: 0, y: 0, ...world }), [geometry, world]);
+  const getZone = React.useCallback(id => {
+    const zone = geometry?.zones.find(item => item.id === id) || geometry?.zones[0];
+    if (zone) return { ...zone, ...geometry.views?.[zone.viewId], id: zone.id };
+    return !geometry ? getAdminMapZone(id) : { x: 0, y: 0, ...world };
+  }, [geometry, world]);
   const shellRef = React.useRef(null);
   const viewportRef = React.useRef(null);
   const worldRef = React.useRef(null);
@@ -71,6 +76,7 @@ export default function UnifiedMapViewport({
   const initializedRef = React.useRef(false);
   const exitNotifiedRef = React.useRef(false);
   const onExitExpandedRef = React.useRef(onExitExpanded);
+  const [selectedDetailId, setSelectedDetailId] = React.useState("all");
   const [scaleLabel, setScaleLabel] = React.useState(initialCamera.scale);
   const [isExpanded, setIsExpanded] = React.useState(() => Boolean(autoExpand));
   const useNativeFullscreen = typeof window !== "undefined"
@@ -142,6 +148,7 @@ export default function UnifiedMapViewport({
   const focusZone = React.useCallback((zoneId) => {
     const zone = getZone(zoneId);
     onZoneChange?.(zone.id);
+    setSelectedDetailId("");
     fitToBounds(zone, true);
   }, [fitToBounds, onZoneChange, getZone]);
 
@@ -455,6 +462,14 @@ export default function UnifiedMapViewport({
           </button>
         </div>
       </div>
+      {detailViews?.length > 0 && <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" role="group" aria-label={language === "bg" ? "Изгледи на картата" : "Map views"}>
+        {detailViews.map(view => <button key={view.id} type="button" className="ghost-button min-h-[44px] shrink-0 rounded-xl px-3 text-xs font-semibold aria-pressed:border-[#c9a56a] aria-pressed:bg-[#c9a56a]/20"
+          aria-pressed={selectedDetailId === view.id} onClick={() => {
+            setSelectedDetailId(view.id);
+            if (view.zoneId) onZoneChange?.(view.zoneId);
+            fitToBounds(view, true);
+          }}>{view.label}</button>)}
+      </div>}
       {isExpanded && expandedControls ? (
         <div className="mb-3 shrink-0">
           {expandedControls}

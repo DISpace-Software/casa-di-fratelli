@@ -22,6 +22,13 @@ async function readSnapshot(request, baseUrl, allowLegacy) {
   return { tables: plan.tables, revision: plan.revision, plan };
 }
 
+function normalizedSnapshot(snapshot, normalize) {
+  // Table normalizers know today's editable fields. Preserve additive API
+  // metadata as well, so an older editor does not strip a newer map feature.
+  const tables = snapshot.tables.map(table => ({ ...table, ...normalize(table) }));
+  return { ...snapshot, tables, plan: snapshot.plan ? { ...snapshot.plan, tables } : null };
+}
+
 // One editor session owns the revision that accompanied its draft. Background
 // reads never replace edits; saving never refreshes that revision before PUT.
 export function createLayoutSession() {
@@ -36,9 +43,25 @@ export function createLayoutSession() {
     getSnapshot: () => state,
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     edit(updater) {
-      if (state.busy || !state.loaded) return;
+      if (state.busy || !state.loaded) return false;
+      const proposed = typeof updater === "function" ? updater(structuredClone(state.tables)) : updater;
+      if (!Array.isArray(proposed)) return false;
+      const previous = new Map(state.tables.map(table => [table.id, table]));
+      const tables = structuredClone(proposed.map(table => ({ ...previous.get(table.id), ...table })));
       sequence += 1;
-      update({ tables: typeof updater === "function" ? updater(state.tables) : updater, dirty: true });
+      update({ tables, plan: state.plan ? { ...state.plan, tables } : null, dirty: true });
+      return true;
+    },
+    updatePlan(updater) {
+      // A legacy table-only response cannot safely invent zone or policy data.
+      if (state.busy || !state.loaded || !state.plan) return false;
+      const proposed = typeof updater === "function" ? updater(structuredClone(state.plan)) : updater;
+      if (!proposed || typeof proposed !== "object" || Array.isArray(proposed)) return false;
+      const plan = structuredClone({ ...state.plan, ...proposed, revision: state.revision });
+      if (!Array.isArray(plan.tables)) return false;
+      sequence += 1;
+      update({ plan, tables: plan.tables, dirty: true });
+      return true;
     },
     async load({ request, baseUrl, normalize, discard = false, allowLegacy = true }) {
       if (state.busy) return false;
@@ -46,11 +69,13 @@ export function createLayoutSession() {
       const current = ++sequence;
       update({ busy: true });
       try {
-        const snapshot = await readSnapshot(request, baseUrl, allowLegacy);
+        let snapshot = await readSnapshot(request, baseUrl, allowLegacy && !state.savedPlan && !state.plan);
         if (current !== sequence) return false;
         const unchanged = snapshot.plan && snapshot.revision === state.savedPlan?.revision;
-        if (unchanged) snapshot.plan = state.savedPlan;
-        const tables = unchanged ? state.savedTables : snapshot.tables.map(normalize);
+        snapshot = unchanged
+          ? { ...snapshot, tables: state.savedTables, plan: state.savedPlan }
+          : normalizedSnapshot(snapshot, normalize);
+        const tables = snapshot.tables;
         // Other operational screens can refresh saved table data without
         // displaying a local editor draft or changing that draft's revision.
         update(preserveDraft ? { savedTables: tables, savedPlan: snapshot.plan } : {
@@ -68,13 +93,15 @@ export function createLayoutSession() {
       update({ busy: true });
       let acknowledged = false;
       try {
-        const response = await request(`${baseUrl}/api/table-layouts`, {
+        const response = await request(`${baseUrl}/api/${draft.plan ? "floor-plan" : "table-layouts"}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             ...(draft.revision ? { "If-Match": `"${draft.revision}"` } : {}),
           },
-          body: JSON.stringify(draft.tables),
+          body: JSON.stringify(draft.plan
+            ? { ...draft.plan, revision: draft.revision, tables: draft.tables }
+            : draft.tables),
         });
         if (!response.ok) {
           const body = await response.text();
@@ -85,8 +112,8 @@ export function createLayoutSession() {
         acknowledged = true;
         // A successful save may advance the revision. Read afterwards while
         // editing is disabled; never reuse the revision from before the write.
-        const snapshot = await readSnapshot(request, baseUrl, allowLegacy);
-        const tables = snapshot.tables.map(normalize);
+        const snapshot = normalizedSnapshot(await readSnapshot(request, baseUrl, allowLegacy && !draft.plan), normalize);
+        const tables = snapshot.tables;
         update({ ...snapshot, tables, savedTables: tables, savedPlan: snapshot.plan, dirty: false, requiresReload: false });
         return true;
       } catch (error) {

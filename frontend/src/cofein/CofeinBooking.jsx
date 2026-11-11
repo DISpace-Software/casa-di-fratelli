@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { BookingError, bookingErrorMessage, bookingTimes, createCofeinBookingApi, restaurantClock, validBookingSearch } from './bookingApi.js';
 import CofeinMapExplorer from '../components/floorplan/CofeinMapExplorer.jsx';
+import { getCofeinMapGeometry, cofeinZoneViewId } from '../domain/floorPlans/cofeinGeometry.js';
 import './cofein-booking.css';
 
 const choiceLabel = (option) => `${option.tableIds.length === 1 ? 'Маса' : 'Маси'} ${option.tableIds.join(' + ')}`;
@@ -95,6 +96,7 @@ export default function CofeinBooking({ onClose }) {
   const selected = current?.options.find((option) => option.key === selectedKey);
   const displayPlan = current?.plan || plan;
   const mapZones = displayPlan?.zones.filter((zone) => zone.isActive) || [];
+  const mapGeometry = getCofeinMapGeometry(displayPlan?.zones || [], displayPlan?.tables || []);
   const activeArea = mapZones.some((zone) => zone.id === area) ? area : '';
   const mapTables = displayPlan?.tables.filter((table) => table.isActive && mapZones.some((zone) => zone.id === table.area)) || [];
   const zoneName = (areaId) => mapZones.find((zone) => zone.id === areaId)?.names?.bg || mapZones.find((zone) => zone.id === areaId)?.name || '';
@@ -118,7 +120,7 @@ export default function CofeinBooking({ onClose }) {
 
   function changeMapView(value) {
     setMapView(value);
-    setArea(value.startsWith('exterior') ? 'exterior' : value.startsWith('interior') ? 'interior' : '');
+    setArea(mapGeometry.views[value]?.zoneId || '');
   }
 
   function changeSearch(field, value) {
@@ -244,10 +246,10 @@ export default function CofeinBooking({ onClose }) {
       </div>
       {isSearchValid && <button className="cofein-booking-refresh" type="button" disabled={submitting || availability.status === 'loading'} onClick={() => setRefresh((value) => value + 1)}>Обнови наличността ↻</button>}
       {!details && <div className="cofein-booking-tables">
-        <div className="cofein-booking-map-heading"><div><p className="cofein-booking-kicker">ПРОСТРАНСТВАТА НА COFEIN</p><h3>Изберете своята маса</h3></div><span>Вътре и отвън</span></div>
+        <div className="cofein-booking-map-heading"><div><p className="cofein-booking-kicker">ПРОСТРАНСТВАТА НА COFEIN</p><h3>Изберете своята маса</h3></div><span>{mapZones.length} {mapZones.length === 1 ? 'пространство' : 'пространства'}</span></div>
         <div className="cofein-booking-map-layout">
           <div className="cofein-booking-map-column">
-            <CofeinMapExplorer tables={mapTables} states={tableStates} selectedIds={fresh ? selected?.tableIds || [] : []} viewId={mapView} onViewChange={changeMapView}
+            <CofeinMapExplorer zones={displayPlan?.zones || []} geometryTables={displayPlan?.tables || []} tables={mapTables} states={tableStates} selectedIds={fresh ? selected?.tableIds || [] : []} viewId={mapView} onViewChange={changeMapView}
               onTableSelect={(table) => selectOption(current?.options.find((item) => item.tableIds.length === 1 && item.tableIds[0] === table.id))} />
             <div className="cofein-booking-legend" aria-label="Легенда"><span>Свободна</span><span>Избрана</span><span>Недостъпна</span><span>Без проверка</span></div>
           </div>
@@ -261,7 +263,7 @@ export default function CofeinBooking({ onClose }) {
         </div>
         <details className="cofein-booking-list">
           <summary>Избор от списък{fresh && <span>{options.length} {options.length === 1 ? 'възможност' : 'възможности'}</span>}</summary>
-          <label className="cofein-booking-zone" htmlFor={`${id}-zone`}>Пространство<select id={`${id}-zone`} value={activeArea} onChange={(event) => { setArea(event.target.value); setMapView(['interior', 'exterior'].includes(event.target.value) ? event.target.value : 'all'); }}>
+          <label className="cofein-booking-zone" htmlFor={`${id}-zone`}>Пространство<select id={`${id}-zone`} value={activeArea} onChange={(event) => { setArea(event.target.value); setMapView(event.target.value ? cofeinZoneViewId(event.target.value) : 'all'); }}>
             <option value="">Всички пространства</option>{mapZones.map((zone) => <option key={zone.id} value={zone.id}>{zone.names?.bg || zone.name}</option>)}
           </select></label>
           <div className="cofein-booking-options" role="group" aria-label="Свободни маси и комбинации">

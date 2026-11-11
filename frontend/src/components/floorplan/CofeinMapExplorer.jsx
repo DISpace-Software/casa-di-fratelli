@@ -1,29 +1,32 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import CofeinArchitecture from './CofeinArchitecture.jsx';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import CofeinFloorPlanDecor from './CofeinFloorPlanDecor.jsx';
 import CofeinTableVisual from './CofeinTableVisual.jsx';
-import { COFEIN_MAP_VIEWS, COFEIN_MAP_WORLD, projectCofeinTable, unprojectCofeinPoint } from '../../domain/floorPlans/cofeinGeometry.js';
+import { getCofeinMapGeometry, cofeinViewLabel, projectCofeinTable, unprojectCofeinPoint } from '../../domain/floorPlans/cofeinGeometry.js';
 import { clampCamera, fitBounds, pinchCamera, preserveWorldCenter, zoomCameraAt } from '../../domain/adminMap/mapCamera.js';
 import './cofein-explorer.css';
 
-const MIN_SCALE = 0.12;
 const MAX_SCALE = 3;
-const FRAGMENTS = ['all', 'exterior-upper', 'exterior-lower', 'interior-main', 'interior-angled'];
 const COPY = {
-  bg: { views: ['Цялата карта', 'Външна · горна', 'Външна · долна', 'Вътрешна · основна', 'Вътрешна · ъглова'], sections: 'Разгледайте част от заведението', zoom: 'Мащаб на картата', increase: 'Увеличи картата', decrease: 'Намали картата', fit: 'Покажи целия избран изглед', map: 'Интерактивна карта на Cofein', table: 'Маса', seats: 'места', unknown: 'Изберете дата и час за проверка', instructions: 'Изберете част за по-близък изглед. Плъзнете картата или увеличете с два пръста. С клавиатура: стрелки, + / − и 0.', editInstructions: 'Плъзнете маса, за да промените позицията ѝ. При фокус върху маса използвайте стрелките. Плъзнете свободна част на картата за преглед.' },
-  en: { views: ['Whole map', 'Exterior · upper', 'Exterior · lower', 'Interior · main', 'Interior · angled'], sections: 'Explore a part of the restaurant', zoom: 'Map zoom', increase: 'Zoom in', decrease: 'Zoom out', fit: 'Fit selected view', map: 'Interactive Cofein floor plan', table: 'Table', seats: 'seats', unknown: 'Choose a date and time to check availability', instructions: 'Choose an area for a closer view. Drag the map or pinch to zoom. Keyboard: arrows, + / − and 0.', editInstructions: 'Drag a table to change its position, or focus it and use the arrow keys. Drag an empty part of the map to explore.' },
-  ru: { views: ['Вся карта', 'Внешняя · верхняя', 'Внешняя · нижняя', 'Внутренняя · основная', 'Внутренняя · угловая'], sections: 'Выберите часть ресторана', zoom: 'Масштаб карты', increase: 'Увеличить карту', decrease: 'Уменьшить карту', fit: 'Показать выбранную часть целиком', map: 'Интерактивная карта Cofein', table: 'Стол', seats: 'мест', unknown: 'Выберите дату и время для проверки', instructions: 'Выберите часть для подробного просмотра. Перемещайте карту или увеличивайте двумя пальцами. Клавиатура: стрелки, + / − и 0.', editInstructions: 'Перетащите стол, чтобы изменить его положение, или выделите его и используйте стрелки. Перемещайте карту за свободный участок.' },
+  bg: { sections: 'Разгледайте част от заведението', zoom: 'Мащаб на картата', increase: 'Увеличи картата', decrease: 'Намали картата', fit: 'Покажи целия избран изглед', map: 'Интерактивна карта на Cofein', table: 'Маса', seats: 'места', unknown: 'Изберете дата и час за проверка', instructions: 'Изберете част за по-близък изглед. Плъзнете картата или увеличете с два пръста. С клавиатура: стрелки, + / − и 0.', editInstructions: 'Плъзнете маса, за да промените позицията ѝ. При фокус върху маса използвайте стрелките. Плъзнете свободна част на картата за преглед.' },
+  en: { sections: 'Explore a part of the restaurant', zoom: 'Map zoom', increase: 'Zoom in', decrease: 'Zoom out', fit: 'Fit selected view', map: 'Interactive Cofein floor plan', table: 'Table', seats: 'seats', unknown: 'Choose a date and time to check availability', instructions: 'Choose an area for a closer view. Drag the map or pinch to zoom. Keyboard: arrows, + / − and 0.', editInstructions: 'Drag a table to change its position, or focus it and use the arrow keys. Drag an empty part of the map to explore.' },
+  ru: { sections: 'Выберите часть ресторана', zoom: 'Масштаб карты', increase: 'Увеличить карту', decrease: 'Уменьшить карту', fit: 'Показать выбранную часть целиком', map: 'Интерактивная карта Cofein', table: 'Стол', seats: 'мест', unknown: 'Выберите дату и время для проверки', instructions: 'Выберите часть для подробного просмотра. Перемещайте карту или увеличивайте двумя пальцами. Клавиатура: стрелки, + / − и 0.', editInstructions: 'Перетащите стол, чтобы изменить его положение, или выделите его и используйте стрелки. Перемещайте карту за свободный участок.' },
 };
 const centered = (points) => ({ x: (points[0].x + points[1].x) / 2, y: (points[0].y + points[1].y) / 2 });
 const distance = (points) => Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
 
 /** Architecture is presentation; availability and selectable IDs always come from the caller. */
-export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [], onTableSelect, onTableMove, viewId = 'all', onViewChange, language = 'bg' }) {
+export default function CofeinMapExplorer({ tables, zones, geometryTables = tables, states = {}, selectedIds = [], onTableSelect, onTableMove, viewId = 'all', onViewChange, language = 'bg' }) {
+  const geometry = useMemo(() => getCofeinMapGeometry(zones ?? [...new Set(tables.map(table => table.area))].map(id => ({ id, name: id, isActive: true })), geometryTables), [zones, tables, geometryTables]);
+  const { width: worldWidth, height: worldHeight } = geometry.world;
+  const minScale = geometry.minScale;
+  const viewBounds = geometry.views[viewId] || geometry.views.all;
+  const activeViewId = geometry.views[viewId] ? viewId : 'all';
   const viewportRef = useRef(null);
   const worldRef = useRef(null);
   const cameraRef = useRef({ x: 0, y: 0, scale: 1 });
   const sizeRef = useRef({ width: 1, height: 1 });
   const hasMeasuredViewport = useRef(false);
-  const boundsRef = useRef(COFEIN_MAP_VIEWS.all);
+  const boundsRef = useRef(viewBounds);
   const pointersRef = useRef(new Map());
   const gestureRef = useRef(null);
   const frameRef = useRef(0);
@@ -38,20 +41,25 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
   const text = COPY[language] || COPY.bg;
 
   const applyCamera = useCallback((value, announce = false) => {
-    const next = clampCamera(value, sizeRef.current, COFEIN_MAP_WORLD, 32);
+    const next = clampCamera(value, sizeRef.current, { width: worldWidth, height: worldHeight }, 32);
     cameraRef.current = next;
     if (worldRef.current) worldRef.current.style.transform = `translate3d(${next.x}px, ${next.y}px, 0) scale(${next.scale})`;
     if (announce) setScaleLabel(Math.round(next.scale * 100));
-  }, []);
+  }, [worldWidth, worldHeight]);
 
   const fit = useCallback(() => {
-    applyCamera(fitBounds(boundsRef.current, sizeRef.current, 24, MIN_SCALE, MAX_SCALE), true);
-  }, [applyCamera]);
+    applyCamera(fitBounds(boundsRef.current, sizeRef.current, 24, minScale, MAX_SCALE), true);
+  }, [applyCamera, minScale]);
 
   useLayoutEffect(() => {
-    boundsRef.current = COFEIN_MAP_VIEWS[viewId] || COFEIN_MAP_VIEWS.all;
+    boundsRef.current = { x: viewBounds.x, y: viewBounds.y, width: viewBounds.width, height: viewBounds.height };
+  }, [viewBounds.x, viewBounds.y, viewBounds.width, viewBounds.height]);
+
+  // Moving furniture updates the next explicit Fit target, without moving the
+  // camera under the pointer or keyboard while the administrator edits a table.
+  useLayoutEffect(() => {
     fit();
-  }, [viewId, fit]);
+  }, [activeViewId, fit]);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -83,14 +91,14 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
       event.preventDefault();
       const rect = viewport.getBoundingClientRect();
       applyCamera(zoomCameraAt(cameraRef.current, { x: event.clientX - rect.left, y: event.clientY - rect.top },
-        cameraRef.current.scale * Math.exp(-event.deltaY * 0.008), MIN_SCALE, MAX_SCALE), true);
+        cameraRef.current.scale * Math.exp(-event.deltaY * 0.008), minScale, MAX_SCALE), true);
     };
     viewport.addEventListener('wheel', wheel, { passive: false });
     return () => {
       viewport.removeEventListener('wheel', wheel);
       cancelAnimationFrame(frameRef.current);
     };
-  }, [applyCamera]);
+  }, [applyCamera, minScale]);
 
   const point = (event) => {
     const rect = viewportRef.current.getBoundingClientRect();
@@ -110,7 +118,7 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
     startGesture();
     const tableId = event.target.closest?.('[data-table-id]')?.dataset.tableId;
     const table = onTableMove && tables.find((item) => item.id === tableId);
-    const placement = table && projectCofeinTable(table);
+    const placement = table && projectCofeinTable(table, geometry);
     editingTableRef.current = placement && pointersRef.current.size === 1 ? { table, placement } : null;
     if (pointersRef.current.size > 1) {
       suppressClickUntil.current = Date.now() + 600;
@@ -132,11 +140,11 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
     event.currentTarget.setPointerCapture?.(event.pointerId);
     if (editingTableRef.current && points.length === 1) {
       const { table, placement } = editingTableRef.current;
-      const next = unprojectCofeinPoint(table.area, { x: placement.x + delta.x / gesture.camera.scale, y: placement.y + delta.y / gesture.camera.scale });
+      const next = unprojectCofeinPoint(table.area, { x: placement.x + delta.x / gesture.camera.scale, y: placement.y + delta.y / gesture.camera.scale }, geometry);
       if (next) pendingEdit.current = { table, point: next };
     } else {
       pendingCamera.current = points.length > 1
-        ? pinchCamera(gesture.camera, centered(gesture.points), centered(points), distance(points) / Math.max(1, distance(gesture.points)), MIN_SCALE, MAX_SCALE)
+        ? pinchCamera(gesture.camera, centered(gesture.points), centered(points), distance(points) / Math.max(1, distance(gesture.points)), minScale, MAX_SCALE)
         : { ...gesture.camera, x: gesture.camera.x + delta.x, y: gesture.camera.y + delta.y };
     }
     if (!frameRef.current) frameRef.current = requestAnimationFrame(() => {
@@ -163,11 +171,11 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
   }
 
   function zoom(multiplier) {
-    applyCamera(zoomCameraAt(cameraRef.current, { x: sizeRef.current.width / 2, y: sizeRef.current.height / 2 }, cameraRef.current.scale * multiplier, MIN_SCALE, MAX_SCALE), true);
+    applyCamera(zoomCameraAt(cameraRef.current, { x: sizeRef.current.width / 2, y: sizeRef.current.height / 2 }, cameraRef.current.scale * multiplier, minScale, MAX_SCALE), true);
   }
 
   function ensureTableVisible(table) {
-    const placement = projectCofeinTable(table);
+    const placement = projectCofeinTable(table, geometry);
     if (!placement) return;
     const viewport = sizeRef.current;
     const camera = cameraRef.current;
@@ -177,7 +185,7 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
     const right = left + placement.width * camera.scale;
     const bottom = top + placement.height * camera.scale;
     if (left >= padding && top >= padding && right <= viewport.width - padding && bottom <= viewport.height - padding) return;
-    const scale = Math.max(MIN_SCALE, Math.min(camera.scale, (viewport.width - padding * 2) / placement.width, (viewport.height - padding * 2) / placement.height));
+    const scale = Math.max(minScale, Math.min(camera.scale, (viewport.width - padding * 2) / placement.width, (viewport.height - padding * 2) / placement.height));
     applyCamera({ x: viewport.width / 2 - placement.x * scale, y: viewport.height / 2 - placement.y * scale, scale }, true);
   }
 
@@ -197,7 +205,7 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
 
   return <div className="cofein-map-explorer">
     <div className="cofein-map-views" role="group" aria-label={text.sections}>
-      {FRAGMENTS.map((key, index) => <button type="button" key={key} aria-pressed={viewId === key} onClick={() => onViewChange?.(key)}>{text.views[index]}</button>)}
+      {geometry.detailViews.map(key => <button type="button" key={key} aria-pressed={activeViewId === key} onClick={() => onViewChange?.(key)}>{cofeinViewLabel(geometry.views[key], language)}</button>)}
     </div>
     <div className="cofein-map-surface">
       <div className="cofein-map-tools" role="group" aria-label={text.zoom}>
@@ -213,10 +221,10 @@ export default function CofeinMapExplorer({ tables, states = {}, selectedIds = [
           if (event.target === event.currentTarget) pointerEnd(event);
         }}
         onClickCapture={(event) => { if (Date.now() < suppressClickUntil.current) { event.preventDefault(); event.stopPropagation(); } }} onKeyDown={keyDown}>
-        <div ref={worldRef} className="cofein-map-world" style={{ width: COFEIN_MAP_WORLD.width, height: COFEIN_MAP_WORLD.height }}>
-          <CofeinArchitecture language={language} />
+        <div ref={worldRef} className="cofein-map-world" style={{ width: worldWidth, height: worldHeight }}>
+          <CofeinFloorPlanDecor geometry={geometry} language={language} />
           {tables.map((table) => {
-            const placement = projectCofeinTable(table);
+            const placement = projectCofeinTable(table, geometry);
             if (!placement) return null;
             const state = states[table.id] || { status: 'unknown', selectable: false, label: text.unknown };
             const selected = selectedSet.has(table.id);

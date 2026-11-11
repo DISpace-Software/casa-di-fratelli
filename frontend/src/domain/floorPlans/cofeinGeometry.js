@@ -22,6 +22,8 @@ const transforms = Object.freeze({
   interior: { minX: 1560, maxX: 2155, minY: 1218, maxY: 2610 },
 });
 
+const transformFor = (id) => Object.hasOwn(transforms, id) ? transforms[id] : null;
+
 const kinds = new Map();
 for (let n = 1; n <= 12; n += 1) kinds.set(`T${String(n).padStart(2, "0")}`, "paired");
 for (let n = 13; n <= 14; n += 1) kinds.set(`T${n}`, "square");
@@ -35,10 +37,23 @@ function fragmentFor(area, rawY) {
   return rawY >= 2050 ? "interior-angled" : "interior-main";
 }
 
-export function projectCofeinTable(table) {
-  const transform = transforms[table?.area];
-  if (!transform || typeof table.x !== "number" || typeof table.y !== "number"
+export function projectCofeinTable(table, geometry) {
+  if (geometry && !geometry.zones.some(zone => zone.id === table?.area)) return null;
+  const transform = transformFor(table?.area);
+  if (typeof table?.x !== "number" || typeof table?.y !== "number"
     || !Number.isFinite(table.x) || !Number.isFinite(table.y)) return null;
+  if (!transform) {
+    const zone = geometry?.zones.find(item => item.id === table.area);
+    if (!zone) return null;
+    const content = zone.content;
+    return {
+      x: content.x + (table.x - 5) / 90 * content.width,
+      y: content.y + (table.y - 5) / 90 * content.height,
+      width: table.wide ? 98 : 80, height: table.wide ? 98 : 78,
+      rotation: 0, kind: table.wide ? "booth" : "square",
+      fragmentId: zone.viewId, compact: false, openEnd: false,
+    };
+  }
 
   const rawX = transform.minX + ((table.x - 5) / 90) * (transform.maxX - transform.minX);
   const rawY = transform.minY + ((table.y - 5) / 90) * (transform.maxY - transform.minY);
@@ -65,24 +80,93 @@ export function projectCofeinTable(table) {
   };
 }
 
-export function getCofeinMapGeometry(zones = []) {
+const DETAIL_VIEWS = Object.freeze({
+  exterior: ["exterior-upper", "exterior-lower"],
+  interior: ["interior-main", "interior-angled"],
+});
+const VIEW_NAMES = {
+  "exterior-upper": { bg: "Външна · горна", en: "Exterior · upper", ru: "Внешний · верхняя" },
+  "exterior-lower": { bg: "Външна · долна", en: "Exterior · lower", ru: "Внешний · нижняя" },
+  "interior-main": { bg: "Вътрешна · основна", en: "Interior · main", ru: "Внутренний · основная" },
+  "interior-angled": { bg: "Вътрешна · ъглова", en: "Interior · angled", ru: "Внутренний · угловая" },
+};
+
+// Zone IDs and camera view IDs are separate namespaces. A hall can be named
+// "interior-main" without colliding with a preset detail view.
+export const cofeinZoneViewId = (zoneId) => `zone:${zoneId}`;
+export function cofeinViewLabel(view, language = "bg") {
+  return view?.names?.[language] || view?.names?.bg || view?.label || "";
+}
+
+function annexDetailBounds(zone, tables, zones) {
+  const placed = tables.filter(table => table.area === zone.id && table.isActive !== false)
+    .map(table => projectCofeinTable(table, { zones })).filter(Boolean);
+  if (!placed.length) return { x: zone.x, y: zone.y, width: zone.width, height: zone.height };
+  const left = Math.min(...placed.map(table => table.x - table.width / 2));
+  const right = Math.max(...placed.map(table => table.x + table.width / 2));
+  const top = Math.min(...placed.map(table => table.y - table.height / 2));
+  const bottom = Math.max(...placed.map(table => table.y + table.height / 2));
+  const width = Math.min(zone.width, Math.max(360, right - left + 140));
+  const height = Math.min(zone.height, Math.max(400, bottom - top + 140));
   return {
-    world: COFEIN_MAP_WORLD,
-    zones: zones.filter((zone) => transforms[zone.id]).map((zone) => ({
-      ...zone,
-      ...COFEIN_MAP_VIEWS[zone.id],
-      // Preserve the live localized name and presentation metadata.
-      name: zone.name,
-    })),
+    x: Math.max(zone.x, Math.min(zone.x + zone.width - width, (left + right - width) / 2)),
+    y: Math.max(zone.y, Math.min(zone.y + zone.height - height, (top + bottom - height) / 2)),
+    width, height,
   };
 }
 
-export function unprojectCofeinPoint(area, point) {
-  const transform = transforms[area];
-  if (!transform || !Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return null;
+export function getCofeinMapGeometry(zones = [], tables = []) {
+  const hasPreset = zones.some(zone => transformFor(zone.id));
+  const extras = zones.filter(zone => !transformFor(zone.id));
+  const extraBounds = new Map(extras.map((zone, index) => [zone.id, {
+    x: (hasPreset ? 980 : 60) + (index % 2) * 1280,
+    y: 60 + Math.floor(index / 2) * 1280, width: 1200, height: 1200,
+  }]));
+  const active = zones.filter(zone => zone.isActive !== false).map(zone => {
+    const bounds = transformFor(zone.id) ? COFEIN_MAP_VIEWS[zone.id] : extraBounds.get(zone.id);
+    return { ...zone, x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height,
+      viewId: cofeinZoneViewId(zone.id), preset: Boolean(transformFor(zone.id)),
+      content: transformFor(zone.id) ? null : {
+        x: bounds.x + 70, y: bounds.y + 110,
+        width: bounds.width - 140, height: bounds.height - 180,
+      },
+    };
+  });
+  const annexes = active.filter(zone => !zone.preset);
+  const world = annexes.length ? {
+    width: Math.max(hasPreset ? COFEIN_MAP_WORLD.width : 0, ...annexes.map(zone => zone.x + zone.width + 60)),
+    height: Math.max(hasPreset ? COFEIN_MAP_WORLD.height : 0, ...annexes.map(zone => zone.y + zone.height + 60)),
+  } : COFEIN_MAP_WORLD;
+  const views = { all: { id: "all", x: 0, y: 0, ...world, label: "Цялата карта", names: { bg: "Цялата карта", en: "Whole map", ru: "Вся карта" } } };
+  const detailViews = ["all"];
+  for (const zone of active) {
+    const bounds = zone.preset ? zone : annexDetailBounds(zone, tables, active);
+    views[zone.viewId] = { id: zone.viewId, zoneId: zone.id, x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, label: zone.name, names: zone.names };
+    if (zone.preset) {
+      // Keep legacy known-zone camera IDs for saved callers, while explicit
+      // zoneId drives filters instead of guessing from a string prefix.
+      views[zone.id] = views[zone.viewId];
+      for (const id of DETAIL_VIEWS[zone.id]) {
+        views[id] = { ...COFEIN_MAP_VIEWS[id], zoneId: zone.id, names: VIEW_NAMES[id] };
+        detailViews.push(id);
+      }
+    } else detailViews.push(zone.viewId);
+  }
+  return { world, zones: active, views, detailViews, hasPreset, minScale: Math.min(0.12, 200 / Math.max(world.width, world.height)) };
+}
+
+export function unprojectCofeinPoint(area, point, geometry) {
+  if (geometry && !geometry.zones.some(zone => zone.id === area)) return null;
+  const transform = transformFor(area);
+  if (!Number.isFinite(point?.x) || !Number.isFinite(point?.y)) return null;
   // Match FloorPlanService's accepted coordinate range so pointer/keyboard
   // editing cannot produce a document the server necessarily rejects.
   const bound = (number) => Math.min(95, Math.max(5, number));
+  if (!transform) {
+    const content = geometry?.zones.find(zone => zone.id === area)?.content;
+    if (!content) return null;
+    return { x: bound(5 + (point.x - content.x) / content.width * 90), y: bound(5 + (point.y - content.y) / content.height * 90) };
+  }
   return {
     x: bound(5 + (((point.x * 2 + 740) - transform.minX) / (transform.maxX - transform.minX)) * 90),
     y: bound(5 + (((point.y * 2 + 350) - transform.minY) / (transform.maxY - transform.minY)) * 90),

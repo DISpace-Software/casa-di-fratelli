@@ -1,6 +1,6 @@
 .cofein-map-explorer { min-width: 0; }
-.cofein-map-views { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
-.cofein-map-views button { min-height: 44px; border: 1px solid #cfb18138; border-radius: 100px; padding: 10px 14px; color: #d6c9b8; background: transparent; font: 500 11px/1.4 'Manrope', Arial, sans-serif; }
+.cofein-map-views { display: flex; flex-wrap: nowrap; gap: 7px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
+.cofein-map-views button { flex: 0 0 auto; max-width: 280px; min-height: 44px; border: 1px solid #cfb18138; border-radius: 100px; padding: 10px 14px; color: #d6c9b8; background: transparent; font: 500 11px/1.4 'Manrope', Arial, sans-serif; }
 .cofein-map-views button[aria-pressed='true'] { background: #cfb181; border-color: #cfb181; color: #20170f; }
 .cofein-map-views button:hover { border-color: #cfb181; }
 .cofein-map-surface { position: relative; overflow: hidden; border: 1px solid #cfb18145; border-radius: 12px; background: #eee5d6; isolation: isolate; }
@@ -21,8 +21,7 @@
 .cofein-map-instructions { color: #a99d8f; font: 400 11px/1.7 'Manrope', Arial, sans-serif; margin: 12px 0 0; }
 @media (max-width: 580px) {
   .cofein-map-views { gap: 6px; }
-  .cofein-map-views button { flex: 1 1 auto; font-size: 10px; padding-inline: 10px; }
-  .cofein-map-views button:first-child { flex-basis: 100%; }
+  .cofein-map-views button { flex: 0 0 auto; font-size: 10px; padding-inline: 10px; }
   .cofein-map-tools { top: 10px; right: 10px; }
 }
 @media (max-width: 580px), (max-height: 520px) {

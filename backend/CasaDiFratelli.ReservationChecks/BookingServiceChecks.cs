@@ -54,6 +54,9 @@ internal static class BookingServiceChecks
     private static async Task AdminCapacityOverrideAsync()
     {
         await using var restaurant = await Restaurant.CreateAsync("casa-di-fratelli");
+        // This scenario crosses into map/history guards that use the system
+        // clock. Keep its booking clock aligned and its reservation upcoming.
+        restaurant.Clock.Now = DateTimeOffset.UtcNow;
         var current = new CurrentTenant(); current.Resolve(restaurant.Tenant);
         var plans = new FloorPlanService(restaurant.Db, current);
         var plan = await plans.GetAsync();
@@ -61,8 +64,10 @@ internal static class BookingServiceChecks
 
         var request = Request();
         request.TableIds = ["23"]; request.GuestCount = 6;
-        request.ReservedDate = new(2026, 11, 6); request.ReservedTime = "19:30";
-        Check((await restaurant.Booking.CreateAsync(request)).Kind == ReservationBookingResultKind.Invalid,
+        request.ReservedDate = DateOnly.FromDateTime(restaurant.Clock.Now.UtcDateTime).AddDays(3); request.ReservedTime = "19:30";
+        var publicResult = await restaurant.Booking.CreateAsync(request);
+        Check(publicResult.Kind == ReservationBookingResultKind.Invalid &&
+            publicResult.Value is string message && message.Contains("not have enough seats", StringComparison.Ordinal),
             "Public six-person booking at four-seat Casa table 23 must remain rejected");
         request.CreatedByAdmin = true; request.Email = ""; request.PrivacyConsent = false;
         Check((await restaurant.Booking.CreateAsync(request)).Kind == ReservationBookingResultKind.Unauthorized,
@@ -73,6 +78,8 @@ internal static class BookingServiceChecks
         Check((await restaurant.Booking.CreateAsync(request, administrator)).Kind == ReservationBookingResultKind.Success,
             "Authenticated staff must retain legacy six-person booking at nominal four-seat table 23");
         var saved = await restaurant.Db.Reservations.Include(r => r.Tables).SingleAsync();
+        Check(saved.ReservedDate > DateOnly.FromDateTime(DateTime.UtcNow),
+            "Map protection regression must exercise an upcoming reservation");
         Check(saved.GuestCount == 6 && saved.Tables.Single().TableCode == "23" && saved.Status == "Approved" && saved.CreatedByAdminUserId == administrator.Id,
             "Staff capacity override must preserve the requested guest count, table and authenticated attribution");
         Check((await plans.GetAsync()).Tables.Single(t => t.Id == "23").Seats == 4,

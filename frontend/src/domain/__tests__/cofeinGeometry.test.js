@@ -73,3 +73,108 @@ test("camera bounds preserve live zone data and four fragments remain on one wor
     assert.ok(view.y + view.height <= COFEIN_MAP_WORLD.height);
   }
 });
+
+test("extra halls preserve approved Cofein coordinates and expose their own camera view", () => {
+  const zones = [
+    { id: "interior", name: "Вътре", isActive: true },
+    { id: "exterior", name: "Вън", isActive: true },
+    { id: "roof", name: "Покрив", names: { en: "Rooftop" }, isActive: true },
+  ];
+  const geometry = getCofeinMapGeometry(zones);
+  assert.equal(geometry.zones.length, 3);
+  assert.equal(geometry.views["zone:roof"].zoneId, "roof");
+  assert.equal(geometry.views["zone:roof"].names.en, "Rooftop");
+  assert.ok(geometry.detailViews.includes("zone:roof"));
+  const known = { id: "T01", area: "exterior", x: 5, y: 5 };
+  assert.deepEqual(projectCofeinTable(known, geometry), projectCofeinTable(known));
+  const added = projectCofeinTable({ id: "NEW", area: "roof", x: 50, y: 50, seats: 12 }, geometry);
+  assert.equal(added.kind, "square");
+  assert.ok(added.x > COFEIN_MAP_WORLD.width);
+  assert.ok(added.x < geometry.world.width && added.y < geometry.world.height);
+});
+
+test("annex table editing round-trips all API bounds and clamps out-of-range drags", () => {
+  const geometry = getCofeinMapGeometry([{ id: "roof", name: "Roof", isActive: true }]);
+  for (const [x, y] of [[5, 5], [95, 95], [5, 95], [95, 5], [32.17, 75.22]]) {
+    const result = unprojectCofeinPoint("roof", projectCofeinTable({ id: "T01", area: "roof", x, y }, geometry), geometry);
+    close(result.x, x, 1e-9); close(result.y, y, 1e-9);
+  }
+  assert.deepEqual(unprojectCofeinPoint("roof", { x: -10000, y: 10000 }, geometry), { x: 5, y: 95 });
+  assert.equal(projectCofeinTable({ id: "MISSING", area: "unconfigured", x: 50, y: 50 }, geometry), null);
+  assert.equal(geometry.hasPreset, false);
+  assert.equal(projectCofeinTable({ id: "T24", area: "roof", x: 50, y: 50 }, geometry).rotation, 0);
+});
+
+test("deactivation removes views and tables without moving other hall coordinates", () => {
+  const zones = ["interior", "roof", "garden", "lounge"].map(id => ({ id, name: id, isActive: true }));
+  const before = getCofeinMapGeometry(zones);
+  const after = getCofeinMapGeometry(zones.map(zone => ({ ...zone, isActive: !["interior", "roof"].includes(zone.id) })));
+  assert.equal(after.views["zone:roof"], undefined);
+  assert.equal(after.views["interior-main"], undefined);
+  assert.equal(projectCofeinTable({ id: "A", area: "roof", x: 50, y: 50 }, after), null);
+  assert.equal(unprojectCofeinPoint("roof", { x: 100, y: 100 }, after), null);
+  const table = { id: "B", area: "garden", x: 25, y: 50 };
+  assert.deepEqual(projectCofeinTable(table, after), projectCofeinTable(table, before));
+  const empty = getCofeinMapGeometry([]);
+  assert.deepEqual(empty.zones, []);
+  assert.deepEqual(empty.detailViews, ["all"]);
+  assert.equal(projectCofeinTable({ id: "T01", area: "exterior", x: 5, y: 5 }, empty), null);
+});
+
+test("view identity supports IDs resembling fragments and inherited object properties", () => {
+  const geometry = getCofeinMapGeometry(["interior", "interior-main", "constructor"].map(id => ({ id, name: id, isActive: true })));
+  assert.equal(geometry.views["interior-main"].zoneId, "interior");
+  assert.equal(geometry.views["zone:interior-main"].zoneId, "interior-main");
+  assert.equal(geometry.views["zone:constructor"].zoneId, "constructor");
+  assert.equal(projectCofeinTable({ id: "A", area: "constructor", x: 20, y: 30 }, geometry).kind, "square");
+  assert.equal(projectCofeinTable({ id: "A", area: "constructor", x: 20, y: 30 }), null);
+});
+
+test("fifty configured halls produce bounded layouts and a camera scale suitable for mobile", () => {
+  const zones = Array.from({ length: 50 }, (_, i) => ({ id: `hall-${i}`, name: `Hall ${i}`, isActive: true }));
+  const geometry = getCofeinMapGeometry(zones);
+  assert.equal(geometry.zones.length, 50);
+  assert.equal(geometry.detailViews.length, 51);
+  assert.ok(geometry.minScale * geometry.world.height <= 200);
+  for (const zone of geometry.zones) {
+    assert.ok(zone.x >= 0 && zone.y >= 0 && zone.x + zone.width <= geometry.world.width && zone.y + zone.height <= geometry.world.height);
+    assert.ok(zone.content.width >= 1000 && zone.content.height >= 1000);
+    const center = projectCofeinTable({ id: "A", area: zone.id, x: 50, y: 50 }, geometry);
+    assert.ok(center.x > zone.x && center.x < zone.x + zone.width);
+  }
+});
+
+test("a sparse annex detail frames its active furniture comfortably while overview stays unchanged", () => {
+  const zones = [{ id: "roof", name: "Roof", isActive: true }];
+  const tables = [{ id: "ROOF-TABLE-1234567890", area: "roof", x: 50, y: 50, isActive: true }];
+  const empty = getCofeinMapGeometry(zones);
+  const populated = getCofeinMapGeometry(zones, tables);
+  const detail = populated.views["zone:roof"];
+  const placed = projectCofeinTable(tables[0], populated);
+  assert.equal(detail.width, 360);
+  assert.equal(detail.height, 400);
+  close(detail.x + detail.width / 2, placed.x, 1e-9);
+  close(detail.y + detail.height / 2, placed.y, 1e-9);
+  assert.deepEqual(populated.views.all, empty.views.all);
+  assert.deepEqual(populated.zones, empty.zones);
+  assert.deepEqual(getCofeinMapGeometry(zones, [{ ...tables[0], isActive: false }]).views["zone:roof"], empty.views["zone:roof"]);
+});
+
+test("dense annex views include edge furniture, sparse edge views stay inside their room", () => {
+  const zones = [{ id: "roof", name: "Roof", isActive: true }];
+  const tables = [[5, 5], [95, 95], [5, 95], [95, 5]].map(([x, y], index) => ({ id: `A${index}`, area: "roof", x, y, isActive: true }));
+  const dense = getCofeinMapGeometry(zones, tables);
+  const detail = dense.views["zone:roof"];
+  assert.equal(detail.width, dense.zones[0].width);
+  assert.equal(detail.height, dense.zones[0].height);
+  for (const table of tables) {
+    const sparse = getCofeinMapGeometry(zones, [table]);
+    const view = sparse.views["zone:roof"];
+    const zone = sparse.zones[0];
+    const point = projectCofeinTable(table, sparse);
+    assert.ok(view.x >= zone.x && view.y >= zone.y);
+    assert.ok(view.x + view.width <= zone.x + zone.width && view.y + view.height <= zone.y + zone.height);
+    assert.ok(point.x - point.width / 2 >= view.x && point.x + point.width / 2 <= view.x + view.width);
+    assert.ok(point.y - point.height / 2 >= view.y && point.y + point.height / 2 <= view.y + view.height);
+  }
+});

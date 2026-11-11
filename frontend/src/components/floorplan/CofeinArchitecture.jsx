@@ -34,9 +34,13 @@ function Door({ x, y, rotation = 0, width = 80, reverse = false }) {
 
 /** The photographed building is one connected floor. Only furniture controls
  * are interactive; this SVG is a stable, scalable architectural underlay. */
-export default function CofeinArchitecture({ language = "bg", className = "" }) {
+export default function CofeinArchitecture({ language = "bg", className = "", zones = [] }) {
   const uid = useId().replace(/:/g, "");
-  const t = strings[language] || strings.bg;
+  const t = { ...(strings[language] || strings.bg) };
+  for (const id of ["interior", "exterior"]) {
+    const zone = zones.find(item => item.id === id);
+    if (zone) t[id] = zone.names?.[language] || zone.name;
+  }
   const floor = "M880 730H1440L1725 455H1900V610H2190V825L2280 740L2490 945L2290 1125L2470 1230L1910 1775V1940L2340 2370L1940 2780L1820 2890L1240 3460H895V1090H880Z";
   const outerWalls = "M880 995V730H1440L1725 455H1900V610H2190V825L2280 740L2490 945L2290 1125L2470 1230L1910 1775V1940L2340 2370M895 1090V1815M895 1965V2460M1455 2190V2250L1940 2780";
   const serviceWalls = "M1065 730V945H1015M1120 955H1440L1600 955L1630 925V770L1730 680H1770M1870 680H1900V610M1900 720V740M1900 835V955H2190M1900 780H2050M2050 780H2190M2050 640V675M2050 750V780M2050 805V840M2050 920V955M1900 955V1035H2130V1090M2130 1170V1325H2045L1925 1440V1570M2190 955L2240 1005M2290 1125L2190 1045";
