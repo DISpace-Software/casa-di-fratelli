@@ -149,14 +149,14 @@ try {
   await grouped.context.close();
 
   const real = await makePage(); const r = real.page; await open(r); const date = await contact(r);
-  await r.getByRole('button', { name: 'Резервирай маса', exact: true }).click();
+  await r.locator('.cofein-booking').getByRole('button', { name: 'Резервирай маса', exact: true }).click();
   check('Required field validation focuses name and sends no request', await r.locator('.cofein-field-error').count() === 4 && await r.locator('[name=guestName]').evaluate(e => e === document.activeElement) && postCount === 0);
   const draft = await fillContact(r); let release, received; const gate = new Promise(resolve => { release = resolve; }); const seen = new Promise(resolve => { received = resolve; }); let realPosts = 0;
   await r.route(bookingUrl, async route => {
     if (route.request().method() !== 'POST') return route.continue(); realPosts++;
     const response = await route.fetch(); const result = await response.json(); if (result.id) created.add(result.id); received(result); await gate; await route.fulfill({ response });
   });
-  await r.getByRole('button', { name: 'Резервирай маса', exact: true }).click({ clickCount: 2 }); const booked = await seen;
+  await r.locator('.cofein-booking').getByRole('button', { name: 'Резервирай маса', exact: true }).click({ clickCount: 2 }); const booked = await seen;
   check('Real request disables close and prevents double-submit', realPosts === 1 && await r.getByRole('button', { name: 'Затвори прозореца', exact: true }).isDisabled());
   await r.keyboard.press('Escape'); check('Escape cannot dismiss an in-flight booking', await r.locator('dialog[open]').count() === 1); release(); await step(r, 'result');
   await r.getByText('Резервацията Ви е потвърдена.', { exact: true }).waitFor();
@@ -177,7 +177,7 @@ try {
 
   const preflight = await makePage(); const q = preflight.page; await open(q); const qDate = await contact(q, { days: 5 }); await fillContact(q); const postsBefore = postCount;
   await q.route(blockedUrl, route => route.fulfill({ status: 200, json: [{ reservedDate: qDate, reservedTime: '19:00', tableIds: ['T19'] }] }));
-  await q.getByRole('button', { name: 'Резервирай маса', exact: true }).click(); await step(q, 'workspace');
+  await q.locator('.cofein-booking').getByRole('button', { name: 'Резервирай маса', exact: true }).click(); await step(q, 'workspace');
   check('Final preflight catches a newly occupied table and returns to the same hall without POST', postCount === postsBefore && await q.getByRole('button', { name: 'Изберете маса', exact: true }).isDisabled() && await q.evaluate(key => sessionStorage.getItem(key), pendingKey) === null); report.simulatedCases.push('Occupied final preflight'); await preflight.context.close();
 
   const relocated = await makePage(); const moved = relocated.page; await open(moved); await contact(moved, { days: 5 }); await fillContact(moved); const postsBeforeMove = postCount;
@@ -185,13 +185,13 @@ try {
   // Trap any unexpected POST so even a regression cannot book a different hall.
   await moved.route(bookingUrl, route => route.fulfill({ status: 503, json: {} }));
   await moved.route(planUrl, async route => { const response = await route.fetch(); const data = await response.json(); await route.fulfill({ response, json: { ...data, tables: data.tables.map(table => table.id === 'T19' ? { ...table, area: 'exterior' } : table) } }); });
-  await moved.getByRole('button', { name: 'Резервирай маса', exact: true }).click(); await step(moved, 'workspace');
+  await moved.locator('.cofein-booking').getByRole('button', { name: 'Резервирай маса', exact: true }).click(); await step(moved, 'workspace');
   check('Final preflight rejects a table relocated into another hall without sending POST', postCount === postsBeforeMove && await moved.locator('.cofein-map-world').getAttribute('data-map-zone') === 'interior' && await moved.getByRole('button', { name: 'Изберете маса', exact: true }).isDisabled() && await moved.evaluate(key => sessionStorage.getItem(key), pendingKey) === null);
   report.simulatedCases.push('Selected table moves to a different hall before final preflight'); await relocated.context.close();
 
   const unknown = await makePage({ width: 390, height: 844 }); const u = unknown.page; await open(u); await contact(u, { days: 6 }); await fillContact(u); let unknownPosts = 0;
   await u.route(bookingUrl, route => { unknownPosts++; return route.fulfill({ status: 503, json: {} }); });
-  await u.getByRole('button', { name: 'Резервирай маса', exact: true }).click(); await step(u, 'result');
+  await u.locator('.cofein-booking').getByRole('button', { name: 'Резервирай маса', exact: true }).click(); await step(u, 'result');
   check('Uncertain POST outcome blocks resubmission and stores only a non-personal marker', await u.getByRole('button', { name: 'Нова резервация след проверка', exact: true }).isDisabled() && await u.evaluate(key => sessionStorage.getItem(key), pendingKey) === '1');
   await capture(u, 'unknown-result'); await u.getByRole('button', { name: 'Готово', exact: true }).click(); await u.evaluate(() => { location.hash = '#booking'; }); await step(u, 'result'); await u.reload(); await step(u, 'result');
   check('Reopen and reload retain uncertainty protection with exactly one intercepted POST', unknownPosts === 1 && await u.getByRole('button', { name: 'Нова резервация след проверка', exact: true }).isDisabled()); report.simulatedCases.push('POST503, no write'); await unknown.context.close();

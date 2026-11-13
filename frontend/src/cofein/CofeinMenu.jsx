@@ -10,11 +10,13 @@ const normalize = value => value.toLocaleLowerCase('bg').normalize('NFKC').trim(
 const allergenLabels = new Map(allergens.map(allergen => [allergen.id, allergen.label]));
 const describeAllergens = ids => ids.map(id => allergenLabels.has(id) ? `${id} – ${allergenLabels.get(id)}` : String(id)).join('; ');
 
-export default function CofeinMenu() {
-  const [department, setDepartment] = useState('food');
-  const [categoryId, setCategoryId] = useState(food[0].id);
+export default function CofeinMenu({ initialDepartment = 'food' }) {
+  const startingDepartment = initialDepartment === 'drinks' ? 'drinks' : 'food';
+  const [department, setDepartment] = useState(startingDepartment);
+  const [categoryId, setCategoryId] = useState(sections[startingDepartment][0].id);
   const [query, setQuery] = useState('');
   const searchRef = useRef(null);
+  const paperRef = useRef(null);
   const searchTerm = normalize(query);
   const isSearching = searchTerm.length > 0;
   const categories = sections[department];
@@ -34,6 +36,8 @@ export default function CofeinMenu() {
   function changeCategory(id) {
     setCategoryId(id);
     setQuery('');
+    // Keep the new category's first dish visible after browsing a long menu.
+    paperRef.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
   }
   function clearSearch() {
     setQuery('');
@@ -42,20 +46,20 @@ export default function CofeinMenu() {
 
   return <div className="cofein-menu">
     <header className="menu-intro">
-      <p className="eyebrow">COFEIN · COFFEE BAR & DINER</p>
-      <h2 id="dialog-title">За всеки <span>вкус.</span></h2>
+      <p className="eyebrow">COFEIN · МЕНЮ</p>
+      <h2 id="dialog-title">Вкусът на <span>твоя ден.</span></h2>
       <p id="dialog-description">От първото кафе до вечерята с приятели.</p>
       <div className="menu-tools">
         <div className="menu-departments" role="group" aria-label="Раздел на менюто">
-          <button type="button" aria-pressed={department === 'food'} onClick={() => changeDepartment('food')}>Кухня <span>01</span></button>
-          <button type="button" aria-pressed={department === 'drinks'} onClick={() => changeDepartment('drinks')}>Бар <span>02</span></button>
+          <button type="button" aria-pressed={department === 'food'} onClick={() => changeDepartment('food')}>Кухня</button>
+          <button type="button" aria-pressed={department === 'drinks'} onClick={() => changeDepartment('drinks')}>Бар</button>
         </div>
-        <label className="menu-search"><span>Търси в {department === 'food' ? 'кухнята' : 'бара'}</span><input ref={searchRef} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Име или съставка…" autoComplete="off" /></label>
+        <div className="menu-search"><label htmlFor="cofein-menu-search">Търси в {department === 'food' ? 'кухнята' : 'бара'}</label><div className="menu-search-field"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" /></svg><input id="cofein-menu-search" ref={searchRef} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Име или съставка…" autoComplete="off" />{query && <button type="button" onClick={clearSearch} aria-label="Изчисти търсенето"><span aria-hidden="true">×</span></button>}</div></div>
       </div>
     </header>
-    <div className="menu-paper">
+    <div className="menu-paper" ref={paperRef}>
       <aside className="menu-index" aria-label="Категории">
-        <p className="eyebrow">ИЗБЕРИ СВОЯ МОМЕНТ</p>
+        <p className="eyebrow">КАТЕГОРИИ</p>
         <div className="menu-category-buttons">{categories.map(category => <button type="button" key={category.id} aria-pressed={!isSearching && selected.id === category.id} onClick={() => changeCategory(category.id)}>{category.label}<span>{String(category.items.length).padStart(2, '0')}</span></button>)}</div>
         <label className="menu-category-select">Категория<select value={isSearching ? '' : selected.id} onChange={event => changeCategory(event.target.value)}>{isSearching && <option value="" disabled>Резултати от търсенето</option>}{categories.map(category => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
       </aside>
