@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import useCofeinMotion from './useCofeinMotion';
-import CofeinMenu from './CofeinMenu.jsx';
-import CofeinBooking from './CofeinBooking.jsx';
+import { cofeinContact } from './contact.js';
+// Keep the lightweight dialog shell styled while the form or menu loads.
+import './cofein-booking.css';
+const CofeinMenu = lazy(() => import('./CofeinMenu.jsx'));
+const CofeinBooking = lazy(() => import('./CofeinBooking.jsx'));
 
 const bookingsEnabled = import.meta.env.VITE_COFEIN_BOOKINGS_ENABLED === 'true' && Boolean(import.meta.env.VITE_COFEIN_API_BASE_URL);
 const modalFromHash = () => ['#menu', '#booking'].includes(window.location.hash) ? { type: window.location.hash.slice(1) } : null;
@@ -32,7 +35,27 @@ function SectionLabel({ number, children }) {
   return <p className="section-label"><span>{number}</span>{children}</p>;
 }
 
-function CofeinDialog({ modal, onClose, onPhotoChange, returnFocus }) {
+function DialogLoading({ type }) {
+  return <section className="cofein-dialog-loading" style={{ padding: '48px 28px', maxWidth: 640, marginInline: 'auto' }} aria-busy="true">
+    <h2 id="dialog-title">{type === 'menu' ? 'Менюто на Cofein' : 'Резервация в Cofein'}</h2>
+    <p id="dialog-description" role="status">{type === 'menu' ? 'Зареждаме менюто…' : 'Зареждаме резервациите…'}</p>
+  </section>;
+}
+
+class DialogContentBoundary extends Component {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return <section className="cofein-dialog-loading" style={{ padding: '48px 28px', maxWidth: 640, marginInline: 'auto' }}>
+      <h2 id="dialog-title">Не успяхме да заредим прозореца.</h2>
+      <p id="dialog-description" role="alert">Презаредете страницата и опитайте отново.</p>
+      <button type="button" className="cofein-booking-secondary" onClick={() => window.location.reload()}>Презареди страницата</button>
+    </section>;
+  }
+}
+
+function CofeinDialog({ modal, onClose, onPhotoChange, returnFocus, bookingBusy, onBookingBusyChange }) {
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
   useEffect(() => {
@@ -48,7 +71,7 @@ function CofeinDialog({ modal, onClose, onPhotoChange, returnFocus }) {
     };
   }, [returnFocus]);
   const photo = modal.type === 'photo' ? photographs[modal.index] : null;
-  const closeButton = <button ref={closeRef} type="button" className="close-modal icon-button" aria-label="Затвори прозореца" onClick={onClose}><span aria-hidden="true">×</span></button>;
+  const closeButton = <button ref={closeRef} type="button" className="close-modal icon-button" aria-label="Затвори прозореца" disabled={modal.type === 'booking' && bookingBusy} onClick={onClose}><span aria-hidden="true">×</span></button>;
   return (
     <dialog ref={dialogRef} className={`modal ${photo ? 'photo-modal' : modal.type === 'menu' ? 'menu-modal' : 'booking-modal'}`} aria-labelledby="dialog-title" aria-describedby={photo ? undefined : 'dialog-description'}
       onCancel={event => { event.preventDefault(); onClose(); }}
@@ -62,11 +85,13 @@ function CofeinDialog({ modal, onClose, onPhotoChange, returnFocus }) {
         event.preventDefault();
         onPhotoChange(event.key === 'ArrowRight' ? 1 : -1);
       }}>
-      {modal.type === 'booking' ? <div className="cofein-booking-toolbar"><span aria-hidden="true">COFEIN · РЕЗЕРВАЦИИ</span>{closeButton}</div> : closeButton}
+      {modal.type === 'booking' ? <div className="cofein-booking-toolbar"><span aria-live="polite" role="status">{bookingBusy ? 'Бронираме…' : 'COFEIN · РЕЗЕРВАЦИИ'}</span>{closeButton}</div> : closeButton}
       {photo ? <>
         <div className="modal-image"><Photo key={photo.id} id={photo.id} alt={photo.alt} eager /></div>
         <div className="modal-caption"><div aria-live="polite"><p className="eyebrow">COFEIN · {String(modal.index + 1).padStart(2, '0')} / 05</p><h2 id="dialog-title">{photo.label}</h2></div><div className="gallery-controls"><button type="button" className="icon-button" aria-label="Предишна снимка" onClick={() => onPhotoChange(-1)}><Arrow direction="left" /></button><button type="button" className="icon-button" aria-label="Следваща снимка" onClick={() => onPhotoChange(1)}><Arrow direction="right" /></button></div></div>
-      </> : modal.type === 'menu' ? <CofeinMenu /> : <CofeinBooking onClose={onClose} />}
+      </> : <DialogContentBoundary key={modal.type}><Suspense fallback={<DialogLoading type={modal.type} />}>
+        {modal.type === 'menu' ? <CofeinMenu /> : <CofeinBooking onClose={onClose} onBusyChange={onBookingBusyChange} />}
+      </Suspense></DialogContentBoundary>}
     </dialog>
   );
 }
@@ -78,22 +103,47 @@ export default function CofeinPage() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeSpace, setActiveSpace] = useState(1);
   const [modal, setModal] = useState(modalFromHash);
+  const [bookingBusy, setBookingBusy] = useState(false);
+  const bookingBusyRef = useRef(false);
+  const onBookingBusyChange = useCallback(value => {
+    // Ref gates close/hash events immediately, before React paints disabled UI.
+    bookingBusyRef.current = Boolean(value);
+    setBookingBusy(Boolean(value));
+  }, []);
   useCofeinMotion(rootRef);
 
   useEffect(() => {
     const syncHash = () => {
+      if (bookingBusyRef.current) {
+        if (window.location.hash !== '#booking') window.history.replaceState(null, '', '#booking');
+        return;
+      }
       setModal(modalFromHash());
     };
     window.addEventListener('hashchange', syncHash);
     return () => window.removeEventListener('hashchange', syncHash);
   }, []);
 
+  useEffect(() => {
+    if (!bookingBusy) return;
+    // Ordinary modal closing never prompts. Only leaving/reloading the page
+    // while a request is in flight asks the browser to retain the result.
+    const protectPendingBooking = event => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', protectPendingBooking);
+    return () => window.removeEventListener('beforeunload', protectPendingBooking);
+  }, [bookingBusy]);
+
   function closeModal() {
+    if (bookingBusyRef.current) return;
     setModal(null);
     if (['#menu', '#booking'].includes(window.location.hash)) window.history.replaceState(null, '', window.location.pathname + window.location.search);
   }
 
   function openModal(value, event) {
+    if (bookingBusyRef.current) return;
     const returnFocus = mobileOpen ? menuRef.current : event.currentTarget;
     setMobileOpen(false);
     setModal({ ...value, returnFocus });
@@ -167,8 +217,8 @@ export default function CofeinPage() {
         <section className="booking-section" aria-labelledby="booking-title"><Photo id="garden" alt={photographs[4].alt} className="booking-image" sizes="(max-width: 760px) 900px, 100vw" /><div className="booking-shade" /><div className="booking-content section-wrap" data-reveal><p className="eyebrow">ТВОЯТ СЛЕДВАЩ МОМЕНТ</p><h2 id="booking-title">Следващата среща<br />е тук.</h2><p>Хубавата компания заслужава своето място.</p><button className="button button-gold" type="button" onClick={event => openModal({ type: 'booking' }, event)}>Резервация <Arrow /></button><span className="booking-status"><span />{bookingsEnabled ? 'Избери своята маса онлайн' : 'Онлайн резервациите предстоят'}</span></div></section>
       </main>
 
-      <footer className="site-footer section-wrap"><div className="footer-top"><a className="brand-link" href="#top" aria-label="Cofein — начало" onClick={navigate}><Wordmark /></a><p>Твоето място.<br />От деня до вечерта.</p><a className="back-top" href="#top" onClick={navigate}>Нагоре <Arrow direction="up" /></a></div><div className="footer-contacts" aria-label="Контакти"><div><span className="eyebrow">НАМЕРИ НИ</span><address>ул. „Орфей“ 24<br />Пловдив</address></div><div><span className="eyebrow">ОБАДИ СЕ</span><a href="tel:+359893300305">089 330 0305</a></div><div><span className="eyebrow">ОЧАКВАМЕ ТЕ</span><p>Всеки ден<br />07:30 — 23:00</p></div></div><div className="footer-bottom"><span>COFEIN · ПЛОВДИВ</span><button type="button" onClick={event => openModal({ type: 'menu' }, event)}>Разгледай менюто <Arrow /></button><span>RESERVATIONS BY <strong>SeatMap</strong></span></div></footer>
-      {modal && <CofeinDialog modal={modal} onClose={closeModal} onPhotoChange={changePhoto} returnFocus={modal.returnFocus} />}
+      <footer className="site-footer section-wrap"><div className="footer-top"><a className="brand-link" href="#top" aria-label="Cofein — начало" onClick={navigate}><Wordmark /></a><p>Твоето място.<br />От деня до вечерта.</p><a className="back-top" href="#top" onClick={navigate}>Нагоре <Arrow direction="up" /></a></div><div className="footer-contacts" aria-label="Контакти"><div><span className="eyebrow">НАМЕРИ НИ</span><address>ул. „Орфей“ 24<br />Пловдив</address></div><div><span className="eyebrow">ОБАДИ СЕ</span><a href={`tel:${cofeinContact.telephone}`}>{cofeinContact.phone}</a></div><div><span className="eyebrow">ОЧАКВАМЕ ТЕ</span><p>Всеки ден<br />07:30 — 23:00</p></div></div><div className="footer-bottom"><span>COFEIN · ПЛОВДИВ</span><button type="button" onClick={event => openModal({ type: 'menu' }, event)}>Разгледай менюто <Arrow /></button><span>RESERVATIONS BY <strong>SeatMap</strong></span></div></footer>
+      {modal && <CofeinDialog modal={modal} onClose={closeModal} onPhotoChange={changePhoto} returnFocus={modal.returnFocus} bookingBusy={bookingBusy} onBookingBusyChange={onBookingBusyChange} />}
     </div>
   );
 }

@@ -18,9 +18,12 @@ export class BookingError extends Error {
 }
 
 export function bookingErrorMessage(error) {
+  if (error?.kind === 'search-invalid') return 'Избраното посещение вече не е достъпно. Проверете датата, часа и броя гости.';
   if (error?.status === 409) return 'Наличността се промени. Проверете отново свободните маси и изберете друга възможност.';
-  if (error?.status === 429) return 'Достигнат е дневният лимит за резервации с тези данни.';
-  if (error?.status === 400) return 'Проверете данните, датата и избраната маса, след което опитайте отново.';
+  if (error?.status === 429) return 'Достигнат е дневният лимит за резервации с този телефон или имейл. За допълнителна резервация се свържете с Cofein.';
+  if (error?.status === 400 || error?.status === 422) return 'Проверете въведените данни, датата и часа. Коригирайте ги и опитайте отново.';
+  if (error?.status === 401 || error?.status === 403) return 'В момента онлайн резервациите не са достъпни. Свържете се с Cofein за съдействие.';
+  if (error?.status === 404) return 'Услугата за резервации временно не е достъпна. Опитайте по-късно или се свържете с Cofein.';
   if (error?.kind === 'configuration') return 'Онлайн резервациите все още не са активни.';
   return 'В момента не можем да проверим свободните маси. Моля, опитайте отново.';
 }
@@ -216,7 +219,14 @@ export function createCofeinBookingApi(env = import.meta.env ?? {}, fetcher = gl
     const [setup, blocked, zones, closure] = await Promise.all([
       loadSetup(signal), request('/reservations/blocked-slots', { signal }), request('/zones', { signal }), request('/closure', { signal }),
     ]);
-    if (!validBookingSearch(search, setup.policy, setup.plan)) throw new BookingError('invalid');
+    if (!validBookingSearch(search, setup.policy, setup.plan)) {
+      // The server may have changed its booking window, schedule or party limit
+      // since the form opened. Supply only validated configuration so the form
+      // can show the new constraints without treating this as availability.
+      const error = new BookingError('search-invalid');
+      error.setup = setup;
+      throw error;
+    }
     if (!isRecord(zones) || !stringList(zones.closedAreas) || !isRecord(closure) || typeof closure.enabled !== 'boolean' ||
         (closure.enabled && (!validDate(closure.startDate) || !validDate(closure.endDate) || closure.endDate < closure.startDate))) throw new BookingError('invalid');
     const closed = closure.enabled && search.date >= closure.startDate && search.date <= closure.endDate;

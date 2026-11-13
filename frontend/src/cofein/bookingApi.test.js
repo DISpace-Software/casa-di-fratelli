@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { blockedTableIds, bookingTimes, createCofeinBookingApi, floorMapDimensions, normalizeBookingPolicy, normalizeFloorPlan, restaurantClock, tableOptions, validateBookingResult } from './bookingApi.js';
+import { blockedTableIds, bookingErrorMessage, bookingTimes, createCofeinBookingApi, floorMapDimensions, normalizeBookingPolicy, normalizeFloorPlan, restaurantClock, tableOptions, validateBookingResult } from './bookingApi.js';
 
 const brand = { name: 'Cofein', timeZoneId: 'Europe/Sofia', walkInOpeningTime: '10:00', publicLatestReservationTime: '21:00', publicLeadMinutes: 15, publicMaxReservationDaysAhead: 10, phone: '' };
 const policy = normalizeBookingPolicy(brand);
@@ -19,6 +19,16 @@ const search = { date: next.toISOString().slice(0, 10), time: '12:00', guests: 2
 const env = { VITE_COFEIN_BOOKINGS_ENABLED: 'true', VITE_COFEIN_API_BASE_URL: 'https://api.example.test' };
 const success = (value) => ({ ok: true, status: 200, json: async () => value });
 const responseFor = (url) => url.endsWith('/branding') ? brand : url.endsWith('/floor-plan') ? plan : url.endsWith('/zones') ? { closedAreas: [] } : url.endsWith('/closure') ? { enabled: false } : [];
+
+test('known HTTP errors explain the relevant action without exposing server text', () => {
+  assert.match(bookingErrorMessage({ status: 409 }), /Наличността се промени/);
+  assert.match(bookingErrorMessage({ status: 429 }), /телефон или имейл.*свържете с Cofein/);
+  for (const status of [400, 422]) assert.match(bookingErrorMessage({ status }), /Коригирайте/);
+  for (const status of [401, 403, 404]) assert.match(bookingErrorMessage({ status }), /Cofein/);
+  assert.match(bookingErrorMessage({ kind: 'configuration' }), /не са активни/);
+  assert.match(bookingErrorMessage({ kind: 'search-invalid' }), /датата, часа и броя гости/);
+  assert.equal(bookingErrorMessage({ status: 500, message: 'private provider token' }).includes('private'), false);
+});
 
 test('disabled/missing/relative API configuration never makes a request or falls back to Casa', async () => {
   let calls = 0;
@@ -81,6 +91,38 @@ test('malformed availability fails closed instead of becoming an empty blocked l
   assert.throws(() => blockedTableIds([{ reservedDate: search.date, reservedTime: 'broken', tableIds: ['A'] }], search.date, search.time));
   const api = createCofeinBookingApi(env, async (url) => success(url.endsWith('/zones') ? {} : responseFor(url)));
   await assert.rejects(api.loadAvailability(search));
+});
+
+test('a changed guest limit returns validated setup so an open form can recover without booking', async () => {
+  const requests = [];
+  const changedPlan = { ...plan, revision: 'changed-limit', publicMaxGuests: 1 };
+  const api = createCofeinBookingApi(env, async (url, options) => {
+    requests.push(options.method);
+    return success(url.endsWith('/floor-plan') ? changedPlan : responseFor(url));
+  });
+  await assert.rejects(api.loadAvailability(search), error => {
+    assert.equal(error.kind, 'search-invalid');
+    assert.equal(error.setup.plan, changedPlan);
+    assert.deepEqual(error.setup.policy, policy);
+    assert.equal(error.options, undefined);
+    assert.equal(error.checkedAt, undefined);
+    return true;
+  });
+  assert.deepEqual(requests, ['GET', 'GET', 'GET', 'GET', 'GET']);
+  assert.ok((await api.loadAvailability({ ...search, guests: 1 })).options.length > 0);
+});
+
+test('changed schedule returns its new policy, while malformed configuration never leaks a recovery setup', async () => {
+  const earlier = { ...brand, publicLatestReservationTime: '11:00' };
+  const api = createCofeinBookingApi(env, async url => success(url.endsWith('/branding') ? earlier : responseFor(url)));
+  await assert.rejects(api.loadAvailability(search), error => error.kind === 'search-invalid' && error.setup.policy.latestTime === '11:00');
+  assert.ok((await api.loadAvailability({ ...search, time: '10:00' })).options.length > 0);
+  for (const malformed of [{ ...brand, name: 'Another restaurant' }, { ...brand, timeZoneId: 'Invalid/Zone' }]) {
+    const broken = createCofeinBookingApi(env, async url => success(url.endsWith('/branding') ? malformed : responseFor(url)));
+    await assert.rejects(broken.loadAvailability(search), error => error.kind === 'configuration' && error.setup === undefined);
+  }
+  const failing = createCofeinBookingApi(env, async () => ({ ok: false, status: 503 }));
+  await assert.rejects(failing.loadAvailability(search), error => error.status === 503 && error.setup === undefined);
 });
 
 test('only active open-zone tables and explicitly allowed combinations meet party capacity', () => {
