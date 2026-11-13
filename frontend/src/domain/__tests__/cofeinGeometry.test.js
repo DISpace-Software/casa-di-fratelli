@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { COFEIN_MAP_WORLD, COFEIN_MAP_VIEWS, getCofeinMapGeometry, projectCofeinTable, unprojectCofeinPoint } from "../floorPlans/cofeinGeometry.js";
+import { COFEIN_MAP_WORLD, COFEIN_MAP_VIEWS, getCofeinMapGeometry, getCofeinBookingViews, projectCofeinTable, unprojectCofeinPoint } from "../floorPlans/cofeinGeometry.js";
 
 const close = (actual, expected, tolerance = .05) => assert.ok(Math.abs(actual - expected) < tolerance, `${actual} should be close to ${expected}`);
 
@@ -177,4 +177,52 @@ test("dense annex views include edge furniture, sparse edge views stay inside th
     assert.ok(point.x - point.width / 2 >= view.x && point.x + point.width / 2 <= view.x + view.width);
     assert.ok(point.y - point.height / 2 >= view.y && point.y + point.height / 2 <= view.y + view.height);
   }
+});
+
+test("public hall crops use only active furniture from their own part without moving placements", () => {
+  const zones = [{ id: "interior", name: "Inside", isActive: true }, { id: "exterior", name: "Outside", isActive: true }, { id: "roof", name: "Roof", isActive: true }];
+  const tables = [
+    { id: "T19", area: "interior", x: 5, y: 5 },
+    { id: "T20", area: "interior", x: 5, y: 25 },
+    { id: "T24", area: "interior", x: 95, y: 77.87 },
+    { id: "T01", area: "exterior", x: 5, y: 5 },
+    { id: "R1", area: "roof", x: 50, y: 50 },
+    { id: "OFF", area: "interior", x: 95, y: 5, isActive: false },
+  ];
+  const geometry = getCofeinMapGeometry(zones, tables);
+  const original = structuredClone(geometry);
+  const views = getCofeinBookingViews(geometry, "interior", tables);
+  assert.deepEqual(views.map(view => view.id), ["interior-main", "interior-angled"]);
+  assert.deepEqual(views[0].tableIds, ["T19", "T20"]);
+  assert.deepEqual(views[1].tableIds, ["T24"]);
+  assert.ok(views[0].height < COFEIN_MAP_VIEWS["interior-main"].height);
+  assert.ok(views[0].y > 200, "public crop excludes unrelated service rooms above the tables");
+  for (const view of views) {
+    for (const tableId of view.tableIds) {
+      const table = tables.find(item => item.id === tableId);
+      const point = projectCofeinTable(table, geometry);
+      assert.deepEqual(point, projectCofeinTable(table, original));
+      assert.ok(point.x - point.width / 2 >= view.x && point.x + point.width / 2 <= view.x + view.width);
+      assert.ok(point.y - point.height / 2 >= view.y && point.y + point.height / 2 <= view.y + view.height);
+    }
+  }
+  assert.deepEqual(geometry, original);
+});
+
+test("public hall crops support sparse new halls, renamed halls, empty parts and reserved view names", () => {
+  const zones = ["interior", "constructor", "interior-main"].map(id => ({ id, name: `Live ${id}`, isActive: true }));
+  const tables = zones.map((zone, index) => ({ id: `M${index}`, area: zone.id, x: 50, y: 95, isActive: true }));
+  const geometry = getCofeinMapGeometry(zones, tables);
+  assert.deepEqual(getCofeinBookingViews(geometry, "interior", tables).map(view => view.id), ["interior-angled"]);
+  for (const zone of zones.slice(1)) {
+    const [view] = getCofeinBookingViews(geometry, zone.id, tables);
+    assert.equal(view.id, `zone:${zone.id}`);
+    assert.equal(view.label, zone.name);
+    assert.equal(view.width, 300);
+    assert.equal(view.height, 320);
+    assert.equal(view.tableIds.length, 1);
+  }
+  assert.deepEqual(getCofeinBookingViews(geometry, "missing", tables), []);
+  assert.deepEqual(getCofeinBookingViews(geometry, "constructor", []), []);
+  assert.deepEqual(getCofeinBookingViews(getCofeinMapGeometry(zones.map(zone => ({ ...zone, isActive: false }))), "interior", tables), []);
 });

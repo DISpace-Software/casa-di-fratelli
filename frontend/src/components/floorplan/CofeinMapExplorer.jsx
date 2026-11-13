@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import CofeinFloorPlanDecor from './CofeinFloorPlanDecor.jsx';
 import CofeinTableVisual from './CofeinTableVisual.jsx';
-import { getCofeinMapGeometry, cofeinViewLabel, projectCofeinTable, unprojectCofeinPoint } from '../../domain/floorPlans/cofeinGeometry.js';
-import { clampCamera, fitBounds, pinchCamera, preserveWorldCenter, zoomCameraAt } from '../../domain/adminMap/mapCamera.js';
+import { getCofeinMapGeometry, getCofeinBookingViews, cofeinViewLabel, projectCofeinTable, unprojectCofeinPoint } from '../../domain/floorPlans/cofeinGeometry.js';
+import { fitBounds, pinchCamera, preserveWorldCenter, zoomCameraAt } from '../../domain/adminMap/mapCamera.js';
+import { clampCofeinCamera } from '../../domain/floorPlans/cofeinCamera.js';
 import './cofein-explorer.css';
 
 const MAX_SCALE = 3;
@@ -15,18 +16,26 @@ const centered = (points) => ({ x: (points[0].x + points[1].x) / 2, y: (points[0
 const distance = (points) => Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
 
 /** Architecture is presentation; availability and selectable IDs always come from the caller. */
-export default function CofeinMapExplorer({ tables, zones, geometryTables = tables, states = {}, selectedIds = [], onTableSelect, onTableMove, viewId = 'all', onViewChange, language = 'bg' }) {
+export default function CofeinMapExplorer({ tables, zones, geometryTables = tables, states = {}, selectedIds = [], onTableSelect, onTableMove, viewId = 'all', onViewChange, language = 'bg', scopeZoneId, hideNavigation = false }) {
   const geometry = useMemo(() => getCofeinMapGeometry(zones ?? [...new Set(tables.map(table => table.area))].map(id => ({ id, name: id, isActive: true })), geometryTables), [zones, tables, geometryTables]);
   const { width: worldWidth, height: worldHeight } = geometry.world;
   const minScale = geometry.minScale;
-  const viewBounds = geometry.views[viewId] || geometry.views.all;
-  const activeViewId = geometry.views[viewId] ? viewId : 'all';
+  const scoped = Boolean(scopeZoneId);
+  const scopedViews = useMemo(() => scopeZoneId ? getCofeinBookingViews(geometry, scopeZoneId, geometryTables) : [], [scopeZoneId, geometry, geometryTables]);
+  const viewBounds = scopeZoneId
+    ? scopedViews.find(view => view.id === viewId) || scopedViews[0] || geometry.views[`zone:${scopeZoneId}`] || geometry.views.all
+    : geometry.views[viewId] || geometry.views.all;
+  const activeViewId = viewBounds.id;
+  const scopedTableIds = scopeZoneId ? new Set(viewBounds.tableIds || []) : null;
+  const renderedTables = scopedTableIds ? tables.filter(table => scopedTableIds.has(table.id)) : tables;
+  const decorGeometry = useMemo(() => scopeZoneId ? { ...geometry, zones: geometry.zones.filter(zone => zone.id === scopeZoneId), hasPreset: Boolean(geometry.zones.find(zone => zone.id === scopeZoneId)?.preset) } : geometry, [scopeZoneId, geometry]);
+  const navigationViews = scopeZoneId ? scopedViews : geometry.detailViews.map(id => geometry.views[id]);
   const viewportRef = useRef(null);
   const worldRef = useRef(null);
   const cameraRef = useRef({ x: 0, y: 0, scale: 1 });
   const sizeRef = useRef({ width: 1, height: 1 });
   const hasMeasuredViewport = useRef(false);
-  const boundsRef = useRef(viewBounds);
+  const boundsRef = useRef({ x: 0, y: 0, width: 1, height: 1 });
   const pointersRef = useRef(new Map());
   const gestureRef = useRef(null);
   const frameRef = useRef(0);
@@ -41,15 +50,19 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
   const text = COPY[language] || COPY.bg;
 
   const applyCamera = useCallback((value, announce = false) => {
-    const next = clampCamera(value, sizeRef.current, { width: worldWidth, height: worldHeight }, 32);
+    const next = clampCofeinCamera(value, sizeRef.current, { width: worldWidth, height: worldHeight }, boundsRef.current, scoped);
     cameraRef.current = next;
     if (worldRef.current) worldRef.current.style.transform = `translate3d(${next.x}px, ${next.y}px, 0) scale(${next.scale})`;
     if (announce) setScaleLabel(Math.round(next.scale * 100));
-  }, [worldWidth, worldHeight]);
+  }, [worldWidth, worldHeight, scoped]);
+
+  const cameraMinScale = useCallback(() => scoped
+    ? fitBounds(boundsRef.current, sizeRef.current, 16, minScale, MAX_SCALE).scale
+    : minScale, [scoped, minScale]);
 
   const fit = useCallback(() => {
-    applyCamera(fitBounds(boundsRef.current, sizeRef.current, 24, minScale, MAX_SCALE), true);
-  }, [applyCamera, minScale]);
+    applyCamera(fitBounds(boundsRef.current, sizeRef.current, scoped ? 16 : 24, minScale, MAX_SCALE), true);
+  }, [applyCamera, minScale, scoped]);
 
   useLayoutEffect(() => {
     boundsRef.current = { x: viewBounds.x, y: viewBounds.y, width: viewBounds.width, height: viewBounds.height };
@@ -59,7 +72,7 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
   // camera under the pointer or keyboard while the administrator edits a table.
   useLayoutEffect(() => {
     fit();
-  }, [activeViewId, fit]);
+  }, [activeViewId, scopeZoneId, fit]);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -70,7 +83,7 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
       const next = { width: rect.width, height: rect.height };
       if (hasMeasuredViewport.current && Math.abs(previous.width - next.width) < 0.5 && Math.abs(previous.height - next.height) < 0.5) return;
       sizeRef.current = next;
-      if (!hasMeasuredViewport.current) {
+      if (!hasMeasuredViewport.current || scopeZoneId) {
         hasMeasuredViewport.current = true;
         fit();
       } else {
@@ -81,7 +94,7 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
     const observer = new ResizeObserver(resize);
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [fit, applyCamera]);
+  }, [fit, applyCamera, scopeZoneId]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -91,14 +104,14 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
       event.preventDefault();
       const rect = viewport.getBoundingClientRect();
       applyCamera(zoomCameraAt(cameraRef.current, { x: event.clientX - rect.left, y: event.clientY - rect.top },
-        cameraRef.current.scale * Math.exp(-event.deltaY * 0.008), minScale, MAX_SCALE), true);
+        cameraRef.current.scale * Math.exp(-event.deltaY * 0.008), cameraMinScale(), MAX_SCALE), true);
     };
     viewport.addEventListener('wheel', wheel, { passive: false });
     return () => {
       viewport.removeEventListener('wheel', wheel);
       cancelAnimationFrame(frameRef.current);
     };
-  }, [applyCamera, minScale]);
+  }, [applyCamera, cameraMinScale]);
 
   const point = (event) => {
     const rect = viewportRef.current.getBoundingClientRect();
@@ -144,7 +157,7 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
       if (next) pendingEdit.current = { table, point: next };
     } else {
       pendingCamera.current = points.length > 1
-        ? pinchCamera(gesture.camera, centered(gesture.points), centered(points), distance(points) / Math.max(1, distance(gesture.points)), minScale, MAX_SCALE)
+        ? pinchCamera(gesture.camera, centered(gesture.points), centered(points), distance(points) / Math.max(1, distance(gesture.points)), cameraMinScale(), MAX_SCALE)
         : { ...gesture.camera, x: gesture.camera.x + delta.x, y: gesture.camera.y + delta.y };
     }
     if (!frameRef.current) frameRef.current = requestAnimationFrame(() => {
@@ -171,7 +184,7 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
   }
 
   function zoom(multiplier) {
-    applyCamera(zoomCameraAt(cameraRef.current, { x: sizeRef.current.width / 2, y: sizeRef.current.height / 2 }, cameraRef.current.scale * multiplier, minScale, MAX_SCALE), true);
+    applyCamera(zoomCameraAt(cameraRef.current, { x: sizeRef.current.width / 2, y: sizeRef.current.height / 2 }, cameraRef.current.scale * multiplier, cameraMinScale(), MAX_SCALE), true);
   }
 
   function ensureTableVisible(table) {
@@ -185,7 +198,7 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
     const right = left + placement.width * camera.scale;
     const bottom = top + placement.height * camera.scale;
     if (left >= padding && top >= padding && right <= viewport.width - padding && bottom <= viewport.height - padding) return;
-    const scale = Math.max(minScale, Math.min(camera.scale, (viewport.width - padding * 2) / placement.width, (viewport.height - padding * 2) / placement.height));
+    const scale = Math.max(cameraMinScale(), Math.min(camera.scale, (viewport.width - padding * 2) / placement.width, (viewport.height - padding * 2) / placement.height));
     applyCamera({ x: viewport.width / 2 - placement.x * scale, y: viewport.height / 2 - placement.y * scale, scale }, true);
   }
 
@@ -204,9 +217,9 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
   }
 
   return <div className="cofein-map-explorer">
-    <div className="cofein-map-views" role="group" aria-label={text.sections}>
-      {geometry.detailViews.map(key => <button type="button" key={key} aria-pressed={activeViewId === key} onClick={() => onViewChange?.(key)}>{cofeinViewLabel(geometry.views[key], language)}</button>)}
-    </div>
+    {!hideNavigation && navigationViews.length > 1 && <div className="cofein-map-views" role="group" aria-label={text.sections}>
+      {navigationViews.map(view => <button type="button" key={view.id} aria-pressed={activeViewId === view.id} onClick={() => onViewChange?.(view.id)}>{cofeinViewLabel(view, language)}</button>)}
+    </div>}
     <div className="cofein-map-surface">
       <div className="cofein-map-tools" role="group" aria-label={text.zoom}>
         <button type="button" onClick={() => zoom(1.3)} aria-label={text.increase}>+</button>
@@ -221,9 +234,10 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
           if (event.target === event.currentTarget) pointerEnd(event);
         }}
         onClickCapture={(event) => { if (Date.now() < suppressClickUntil.current) { event.preventDefault(); event.stopPropagation(); } }} onKeyDown={keyDown}>
-        <div ref={worldRef} className="cofein-map-world" style={{ width: worldWidth, height: worldHeight }}>
-          <CofeinFloorPlanDecor geometry={geometry} language={language} />
-          {tables.map((table) => {
+        <div ref={worldRef} className="cofein-map-world" data-map-view={activeViewId} data-map-zone={scopeZoneId || undefined} style={{ width: worldWidth, height: worldHeight,
+          clipPath: scopeZoneId ? `inset(${viewBounds.y}px ${worldWidth - viewBounds.x - viewBounds.width}px ${worldHeight - viewBounds.y - viewBounds.height}px ${viewBounds.x}px)` : undefined }}>
+          <CofeinFloorPlanDecor geometry={decorGeometry} language={language} />
+          {renderedTables.map((table) => {
             const placement = projectCofeinTable(table, geometry);
             if (!placement) return null;
             const state = states[table.id] || { status: 'unknown', selectable: false, label: text.unknown };

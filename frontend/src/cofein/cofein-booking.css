@@ -1,179 +1,264 @@
-.booking-modal { width: min(1160px, calc(100vw - 40px)); height: min(900px, calc(100dvh - 40px)); background: #211b18; overflow: hidden; }
+/* Public reservations follow the same visit → table → contact interaction as Casa.
+   Geometry, table positions and the admin viewport are deliberately independent. */
+.booking-modal { width: min(1240px, calc(100vw - 48px)); height: min(940px, calc(100dvh - 32px)); background: #211b18; overflow: hidden; }
 .booking-modal[open] { display: flex; flex-direction: column; }
-.booking-modal:has(.cofein-booking:is([data-step='visit'], [data-step='contact'])) { width: min(700px, calc(100vw - 40px)); height: min(820px, calc(100dvh - 40px)); }
-.booking-modal:has(.cofein-booking:is([data-step='result'], [data-step='notice'])) { width: min(640px, calc(100vw - 40px)); height: auto; }
-.cofein-booking-toolbar { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 60px; padding: 8px 16px 8px 28px; background: #211b18; border-bottom: 1px solid #cfb18130; }
+.booking-modal:has(.cofein-booking[data-step='contact']) { width: min(620px, calc(100vw - 40px)); height: fit-content; max-height: calc(100dvh - 32px); }
+.booking-modal:has(.cofein-booking:is([data-step='result'], [data-step='notice'])) { width: min(600px, calc(100vw - 40px)); height: fit-content; }
+.cofein-booking-toolbar { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; padding: 4px 12px 4px 24px; border-bottom: 1px solid #cfb18126; background: #211b18; }
 .cofein-booking-toolbar > span { color: #cfb181; font: 600 10px/1.4 'Manrope', Arial, sans-serif; letter-spacing: .14em; }
-.booking-modal .close-modal { position: static; flex: 0 0 44px; width: 44px; height: 44px; margin: 0; }
+.booking-modal .close-modal { position: static; flex: 0 0 40px; width: 40px; height: 40px; margin: 0; }
 .cofein-booking-toolbar .close-modal:disabled { opacity: .45; cursor: wait; }
 .cofein-booking { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow: hidden; color: #f4ecde; font-family: 'Manrope', Arial, sans-serif; text-align: left; }
 .cofein-booking * { box-sizing: border-box; }
-.cofein-booking-body { overflow: auto; overscroll-behavior: contain; min-height: 0; flex: 1; padding: 20px 28px 24px; scrollbar-width: thin; scrollbar-color: #cfb18160 transparent; scroll-padding-block: 20px; }
-.cofein-booking h2 { font-size: clamp(26px, 3vw, 34px); line-height: 1.2; font-weight: 550; letter-spacing: -.04em; margin: 18px 0 10px; }
+.cofein-booking-body { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; padding: 20px 24px 24px; scrollbar-width: thin; scrollbar-color: #cfb18150 transparent; scroll-padding-block: 16px; }
+.cofein-booking[data-step='workspace'] .cofein-booking-body { display: flex; flex-direction: column; overflow: hidden; }
+.cofein-booking-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px 24px; flex-wrap: wrap; flex-shrink: 0; margin-bottom: 20px; }
+.cofein-booking h2 { margin: 0; font-size: clamp(24px, 2.5vw, 30px); font-weight: 550; line-height: 1.25; letter-spacing: -.035em; }
 .cofein-booking h2:focus { outline: none; }
-.cofein-booking h3 { font-size: 21px; letter-spacing: -.03em; font-weight: 550; }
+.cofein-booking h3 { margin: 0; font-size: 18px; line-height: 1.35; letter-spacing: -.025em; font-weight: 550; }
 .cofein-booking p { max-width: none; }
-.cofein-booking-heading > p { color: #bdb0a4; font-size: 13px; line-height: 1.65; margin: 0 0 24px; }
-.cofein-booking-kicker { color: #cfb181; font-size: 10px; font-weight: 600; letter-spacing: .15em; }
-.cofein-booking-steps { display: flex; justify-content: space-between; gap: 8px; list-style: none; padding: 0 0 12px; margin: 0; border-bottom: 1px solid #cfb18125; }
-.cofein-booking-steps button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0; font-size: 12px; color: #c4b4a1; white-space: nowrap; }
-.cofein-booking-steps button > span { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid #cfb18150; border-radius: 50%; color: #cfb181; font-size: 11px; }
-.cofein-booking-steps svg { width: 16px; height: 16px; }
-.cofein-booking-steps [aria-current='step'] button { color: #f4ecde; }
-.cofein-booking-steps [aria-current='step'] button > span { background: #cfb181; color: #211b18; border-color: #cfb181; }
+.cofein-booking-heading > p { flex-basis: 100%; margin: -4px 0 0; color: #bdb0a4; font-size: 12px; line-height: 1.6; }
+.cofein-booking-progress { display: flex; align-items: center; gap: 16px; padding: 0; margin: 0; list-style: none; color: #a89a8c; font-size: 11px; line-height: 1.4; }
+.cofein-booking-progress li { display: flex; align-items: center; gap: 7px; }
+.cofein-booking-progress li + li::before { content: ''; width: 20px; height: 1px; background: #cfb18140; margin-right: 8px; }
+.cofein-booking-progress :is(button, span) { display: inline-flex; align-items: center; gap: 7px; }
+.cofein-booking-progress button { min-height: 36px; color: inherit; padding: 0; font-size: inherit; }
+.cofein-booking-progress [aria-current='step'], .cofein-booking-progress [data-active='true'] { color: #e8d2ad; }
+.cofein-booking-progress svg { width: 16px; height: 16px; }
+.cofein-booking-kicker { color: #cfb181; font-size: 10px; font-weight: 600; letter-spacing: .14em; }
+.cofein-booking button { font-family: inherit; cursor: pointer; }
+.cofein-booking :is(button, a, input, select, textarea):focus-visible { outline: 2px solid #e0c59d; outline-offset: 3px; }
+.cofein-booking button:disabled { cursor: default; opacity: .45; }
 .cofein-booking fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
-.cofein-booking-search, .cofein-booking-contact fieldset { display: grid; gap: 18px; }
-.cofein-booking-search-row, .cofein-booking-contact-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
-.cofein-booking label, .cofein-booking legend { display: block; font-size: 13px; color: #e3cfad; line-height: 1.6; }
-.cofein-booking input:not([type='checkbox']), .cofein-booking select, .cofein-booking textarea { display: block; width: 100%; min-width: 0; min-height: 52px; color: #f4ecde; font: 500 16px/1.5 'Manrope', Arial, sans-serif; padding: 12px 14px; margin-top: 6px; background: #171310; border: 1px solid #cfb18145; border-radius: 10px; color-scheme: dark; transition: border-color .15s; }
+.cofein-booking fieldset:disabled { opacity: .65; }
+.cofein-booking label, .cofein-booking legend { display: block; font-size: 12px; color: #d7c5ae; line-height: 1.6; }
+.cofein-booking input:not([type='checkbox']), .cofein-booking select, .cofein-booking textarea { display: block; width: 100%; min-width: 0; min-height: 48px; margin-top: 6px; padding: 10px 12px; border: 1px solid #cfb18140; border-radius: 9px; background: #171310; color: #f4ecde; color-scheme: dark; font: 500 16px/1.5 'Manrope', Arial, sans-serif; transition: border-color .15s; }
 .cofein-booking input::placeholder, .cofein-booking textarea::placeholder { color: #a49688; opacity: 1; }
 .cofein-booking :is(input, select, textarea):focus { border-color: #cfb181; }
 .cofein-booking :is(input, textarea)[aria-invalid='true'] { border-color: #de9e89; }
 .cofein-booking textarea { resize: vertical; }
-.cofein-booking button { font-family: inherit; cursor: pointer; }
-.cofein-booking :is(button, a, input, select, textarea):focus-visible { outline: 2px solid #e0c59d; outline-offset: 4px; }
-.cofein-booking button:disabled { cursor: default; opacity: .45; }
-.cofein-booking fieldset:disabled { opacity: .65; }
+.cofein-booking-search, .cofein-booking-contact fieldset { display: grid; gap: 16px; }
+.cofein-booking-search-row, .cofein-booking-contact-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.cofein-booking-workspace { display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, 1fr) 300px; grid-template-areas: 'map visit'; gap: 24px; align-items: stretch; }
+.cofein-booking-map-column { grid-area: map; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.cofein-booking-visit-panel { grid-area: visit; overflow: auto; min-width: 0; min-height: 0; padding: 20px; border: 1px solid #cfb18130; border-radius: 14px; background: #191512; scrollbar-width: thin; scrollbar-color: #cfb18140 transparent; }
+.cofein-booking-visit-panel > h3, .cofein-booking-visit-controls > h3 { font-size: 20px; margin-bottom: 20px; }
+.cofein-booking-visit-panel > .cofein-booking-kicker { margin: 0 0 8px; }
 .cofein-booking-quick-dates { display: flex; gap: 8px; margin-top: 8px; }
-.cofein-booking-quick-dates button { min-height: 44px; min-width: 76px; border: 1px solid #cfb18138; padding: 8px 14px; border-radius: 8px; font-size: 13px; color: #d4c0a6; }
-.cofein-booking-quick-dates button[aria-pressed='true'] { color: #f5e5cd; background: #cfb18118; border-color: #cfb181; }
-.cofein-booking .cofein-booking-halls { margin-top: 24px; }
-.cofein-booking-halls legend { margin-bottom: 10px; }
-.cofein-booking-hall-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; max-height: 240px; overflow: auto; padding: 4px; margin: -4px; }
-.cofein-booking-hall-options button { display: flex; align-items: center; gap: 12px; min-height: 74px; padding: 12px 14px; border: 1px solid #cfb18135; border-radius: 10px; text-align: left; color: #e0d2bf; }
-.cofein-booking-hall-options button:first-child { grid-column: 1 / -1; min-height: 64px; }
-.cofein-booking-hall-options button > svg { flex-shrink: 0; color: #cfb181; }
-.cofein-booking-hall-options button > span { min-width: 0; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
-.cofein-booking-hall-options small { display: block; margin-top: 4px; color: #b9ab9d; font-size: 10px; line-height: 1.5; }
-.cofein-booking-hall-options [aria-pressed='true'] { background: #cfb18112; border-color: #cfb181; }
-.cofein-booking-help { color: #b9ab9d; font-size: 11px; line-height: 1.7; margin-top: 18px; }
-.cofein-booking-phone-help { font-size: 12px; color: #b9ab9d; margin-top: 8px; line-height: 1.8; }
+.cofein-booking-quick-dates button { flex: 1; min-height: 36px; padding: 6px 12px; border: 1px solid #cfb18130; border-radius: 7px; color: #c4b4a1; font-size: 12px; }
+.cofein-booking-quick-dates button[aria-pressed='true'] { border-color: #cfb18185; color: #f1dec0; background: #cfb18112; }
+.cofein-booking .cofein-booking-halls { margin: 20px 0 0; }
+.cofein-booking-halls legend { margin-bottom: 8px; }
+.cofein-booking-hall-options { display: grid; gap: 8px; }
+.cofein-booking-hall-options button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 58px; padding: 10px 12px; border: 1px solid #cfb18130; border-radius: 9px; background: #ffffff02; color: #d8cbb9; text-align: left; }
+.cofein-booking-hall-options button > svg { flex-shrink: 0; width: 20px; height: 20px; color: #cfb181; }
+.cofein-booking-hall-options button > span { min-width: 0; flex: 1; font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.cofein-booking-hall-options button > span:last-child:not(:first-of-type) { flex: 0 0 auto; }
+.cofein-booking-hall-options small { display: block; margin-top: 4px; color: #a99c8d; font-size: 10px; line-height: 1.4; }
+.cofein-booking-hall-options [aria-pressed='true'] { border-color: #cfb181; background: #cfb18113; color: #f2e2c8; }
+.cofein-booking-hall-options [aria-pressed='true'] small { color: #c9b79e; }
+.cofein-booking-help { margin: 16px 0 0; color: #aa9d8f; font-size: 11px; line-height: 1.7; }
+.cofein-booking-phone-help { margin: 8px 0 0; color: #b9ab9d; font-size: 11px; line-height: 1.8; }
 .cofein-booking a { text-underline-offset: 4px; }
-.cofein-booking-phone-help a { color: #e3cfad; text-decoration: underline; }
-.cofein-booking-primary, .cofein-booking-secondary { min-height: 52px; display: inline-flex; align-items: center; justify-content: center; gap: 16px; padding: 14px 18px; border: 1px solid transparent; border-radius: 10px; font-size: 14px; font-weight: 650; line-height: 1.4; text-align: center; transition: background .15s, border-color .15s; }
+.cofein-booking-phone-help a { color: #e3cfad; text-decoration: underline; white-space: nowrap; }
+.cofein-booking-map-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; min-height: 44px; gap: 12px; margin-bottom: 10px; }
+.cofein-booking-map-header h3 { font-size: 18px; }
+.cofein-booking-map-header p, .cofein-booking-map-header small { display: block; margin: 4px 0 0; color: #a99d8f; font-size: 11px; line-height: 1.5; }
+.cofein-booking-map-header > div:first-child { min-width: 0; }
+.cofein-booking-mode { display: flex; flex-shrink: 0; padding: 3px; border: 1px solid #cfb18130; border-radius: 8px; }
+.cofein-booking-mode button { min-height: 36px; padding: 6px 12px; border-radius: 5px; color: #b9ab9d; font-size: 11px; }
+.cofein-booking-mode [aria-pressed='true'] { background: #cfb181; color: #211b18; }
+.cofein-booking-sections { display: grid; flex-shrink: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.cofein-booking-sections > button { display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 60px; padding: 5px 10px 5px 5px; border: 1px solid #cfb18130; border-radius: 9px; background: #191512; color: #c5b9aa; text-align: left; }
+.cofein-booking-sections > button[aria-pressed='true'] { border-color: #cfb181; background: #cfb18112; color: #f1dfbf; }
+.cofein-booking-section-preview { display: block; flex: 0 0 72px; width: 72px; height: 48px; overflow: hidden; border-radius: 5px; background: #ede4d6; }
+.cofein-booking-section-preview > :is(div, svg) { display: block; width: 100%; height: 100%; }
+.cofein-booking-sections > button > span:not(.cofein-booking-section-preview) { min-width: 0; font-size: 12px; line-height: 1.4; }
+.cofein-booking-sections strong { display: block; font-size: inherit; font-weight: 550; }
+.cofein-booking-sections small { display: block; margin-top: 3px; color: #a99d8f; font-size: 10px; }
+.cofein-booking .cofein-map-explorer { display: flex; flex: 1; flex-direction: column; min-height: 240px; }
+.cofein-booking .cofein-map-surface { flex: 1; min-height: 0; border-radius: 12px; border-color: #cfb18165; }
+.cofein-booking .cofein-map-viewport { height: 100%; min-height: 240px; }
+.cofein-booking .cofein-map-instructions { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+.cofein-booking-map-caption { display: flex; flex-shrink: 0; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; color: #a99d8f; font-size: 10px; line-height: 1.5; }
+.cofein-booking-map-caption .cofein-booking-legend { margin: 0; }
+.cofein-booking-map-caption > span { text-align: right; }
+.cofein-booking-map-header h3:focus { outline: none; }
+.cofein-booking-sections .cofein-booking-section-check { flex: 0 0 auto; margin-left: auto; color: #ead6b5; }
+.cofein-booking-back { margin: -10px 0 10px; }
+.cofein-booking .cofein-map-tools { top: 12px; right: 12px; }
+.cofein-booking .cofein-map-tools button { width: 40px; height: 40px; }
+.cofein-booking .cofein-map-scale { font-size: 9px; padding: 4px 7px; }
+.cofein-booking-legend { display: flex; flex-shrink: 0; flex-wrap: wrap; gap: 16px; margin: 10px 0 0; color: #b9ab9d; font-size: 10px; }
+.cofein-booking-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.cofein-booking-legend span::before { content: ''; width: 7px; height: 7px; border: 1px solid #6b806c; border-radius: 50%; background: #6b806c; }
+.cofein-booking-legend span:nth-child(2)::before { background: #cfb181; border-color: #cfb181; }
+.cofein-booking-legend span:nth-child(3)::before { border-style: dashed; border-color: #a99d8f; background: transparent; }
+.cofein-booking-map-placeholder { position: relative; display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; min-height: 360px; border: 1px solid #cfb18135; border-radius: 12px; background: #ece3d5; text-align: center; }
+.cofein-booking-map-placeholder > .cofein-map-preview { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .65; }
+.cofein-booking-map-placeholder > div:not(.cofein-map-preview) { position: relative; z-index: 1; max-width: 300px; padding: 24px; border: 1px solid #d5c4aa; border-radius: 12px; background: #fff9eef2; box-shadow: 0 12px 35px #38231412; color: #493522; }
+.cofein-booking-map-placeholder h3 { color: #493522; font-size: 22px; }
+.cofein-booking-map-placeholder p { margin: 10px 0 0; color: #776550; font-size: 12px; line-height: 1.7; }
+.cofein-booking-map-placeholder svg:not(.cofein-map-preview) { color: #987b50; }
+.cofein-booking-list { flex: 1; min-height: 0; overflow: auto; padding: 2px; margin: -2px; scrollbar-width: thin; scrollbar-color: #cfb18150 transparent; }
+.cofein-booking-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.cofein-booking-options button { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 76px; padding: 12px; border: 1px solid #cfb18130; border-radius: 10px; background: #191512; text-align: left; }
+.cofein-booking-options button > svg { flex-shrink: 0; color: #cfb181; }
+.cofein-booking-options button > span:first-of-type { flex: 1; min-width: 0; }
+.cofein-booking-options strong { display: block; color: #efdfc7; font-size: 14px; font-weight: 550; overflow-wrap: anywhere; }
+.cofein-booking-options small { display: block; margin-top: 4px; color: #a99d8f; font-size: 10px; }
+.cofein-booking-options button > span:last-child { display: flex; align-items: center; gap: 5px; color: #c5b196; font-size: 10px; white-space: nowrap; }
+.cofein-booking-options button > span:last-child svg { width: 18px; height: 18px; }
+.cofein-booking-options [aria-pressed='true'] { border-color: #cfb181; background: #cfb18115; }
+.cofein-booking-primary, .cofein-booking-secondary { display: inline-flex; align-items: center; justify-content: center; gap: 16px; min-height: 48px; padding: 12px 18px; border: 1px solid transparent; border-radius: 9px; font-size: 14px; font-weight: 650; line-height: 1.4; text-align: center; transition: background .15s, border-color .15s; }
 .cofein-booking-primary { background: #cfb181; color: #21170e; }
 .cofein-booking-primary:enabled:hover { background: #e0c59d; }
 .cofein-booking-secondary { color: #e0c59d; border-color: #cfb18160; }
 .cofein-booking-secondary:hover { background: #cfb18110; border-color: #cfb181; }
-.cofein-booking-footer { flex-shrink: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 300px); align-items: center; gap: 20px; border-top: 1px solid #cfb18135; padding: 14px 28px max(14px, env(safe-area-inset-bottom)); background: #211b18; box-shadow: 0 -8px 24px #0d090818; }
-.cofein-booking-footer-summary { display: grid; gap: 5px; min-width: 0; }
-.cofein-booking-footer-summary strong { color: #eedcc0; font-size: 14px; font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.cofein-booking-footer-summary span { color: #b9ab9d; font-size: 11px; }
-.cofein-booking-footer .cofein-booking-primary { justify-content: space-between; margin: 0; width: 100%; }
-.cofein-booking-visit-summary, .cofein-booking-selection { display: flex; align-items: center; gap: 12px; border: 1px solid #cfb18130; border-radius: 10px; background: #171310; padding: 12px 14px; }
-.cofein-booking-visit-summary > svg, .cofein-booking-selection > svg { color: #cfb181; flex-shrink: 0; }
-.cofein-booking-visit-summary > div, .cofein-booking-selection > div { display: grid; gap: 4px; flex: 1; min-width: 0; }
-.cofein-booking-visit-summary span, .cofein-booking-selection span { color: #b9ab9d; font-size: 11px; line-height: 1.45; }
-.cofein-booking-visit-summary span:first-child, .cofein-booking-selection strong { color: #e8d8bf; font-size: 14px; font-weight: 550; }
-.cofein-booking-visit-summary button, .cofein-booking-selection button { color: #cfb181; font-size: 12px; min-height: 44px; padding: 8px 0 8px 10px; }
-.cofein-booking-feedback { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0; min-height: 44px; }
-.cofein-booking-live { font-size: 11px; color: #c4b39e; line-height: 1.6; margin: 0; }
-.cofein-booking-refresh { flex-shrink: 0; color: #cfb181; font-size: 12px; min-height: 44px; padding: 8px 0 8px 8px; }
-.cofein-booking-status { padding: 12px 14px; background: #cfb1810a; border: 1px solid #cfb18138; border-radius: 10px; font-size: 13px; color: #ead8bb; line-height: 1.6; margin-block: 12px; }
-.cofein-booking-map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 22px; align-items: start; }
-.cofein-booking-map-column { min-width: 0; }
-.cofein-booking-map-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin: 0 0 10px; }
-.cofein-booking-map-heading h3 { margin: 0; font-size: 18px; }
-.cofein-booking-mode { display: flex; padding: 3px; border: 1px solid #cfb18130; border-radius: 10px; flex-shrink: 0; }
-.cofein-booking-mode button { min-height: 44px; padding: 7px 14px; border-radius: 7px; font-size: 12px; color: #b9ab9d; }
-.cofein-booking-mode [aria-pressed='true'] { background: #cfb181; color: #211b18; }
-.cofein-booking-choice { border: 1px solid #cfb18138; border-radius: 12px; background: #171310; padding: 22px 20px; margin-top: 57px; }
-.cofein-booking-choice > svg { color: #cfb181; width: 36px; height: 36px; margin-top: 20px; }
-.cofein-booking-choice h3 { margin: 14px 0 10px; font-size: 26px; overflow-wrap: anywhere; }
-.cofein-booking-choice > p:not(.cofein-booking-kicker) { font-size: 12px; line-height: 1.7; color: #b9ab9d; }
-.cofein-booking-choice dl { display: grid; gap: 14px; border-top: 1px solid #cfb18130; padding-top: 18px; margin-top: 18px; font-size: 12px; }
-.cofein-booking-choice dt { color: #b9ab9d; font-size: 10px; margin-bottom: 5px; }
-.cofein-booking-choice dd { margin: 0; color: #ead8bb; }
-.cofein-booking-choice .cofein-booking-help { font-size: 11px; }
-.cofein-booking-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-block: 12px 4px; color: #b9ab9d; font-size: 10px; }
-.cofein-booking-legend span { display: inline-flex; align-items: center; gap: 6px; }
-.cofein-booking-legend span::before { content: ''; width: 8px; height: 8px; border: 1px solid #6b806c; border-radius: 50%; background: #6b806c; }
-.cofein-booking-legend span:nth-child(2)::before { background: #cfb181; border-color: #cfb181; }
-.cofein-booking-legend span:nth-child(3)::before { border-style: dashed; border-color: #a99d8f; background: transparent; }
-.cofein-booking-list .cofein-booking-zone { display: block; margin-bottom: 16px; }
-.cofein-booking-options { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
-.cofein-booking-options button { border: 1px solid #cfb18138; border-radius: 10px; min-height: 78px; padding: 12px; display: flex; align-items: center; gap: 10px; text-align: left; }
-.cofein-booking-options button > svg { color: #cfb181; flex-shrink: 0; }
-.cofein-booking-options button > span:first-of-type { flex: 1; min-width: 0; }
-.cofein-booking-options strong { display: block; font-size: 14px; color: #efdfc7; font-weight: 550; overflow-wrap: anywhere; }
-.cofein-booking-options small { display: block; font-size: 10px; color: #b9ab9d; margin-top: 5px; }
-.cofein-booking-options button > span:last-child { display: flex; align-items: center; gap: 5px; color: #c5b196; font-size: 10px; white-space: nowrap; }
-.cofein-booking-options button > span:last-child svg { width: 18px; height: 18px; }
-.cofein-booking-options [aria-pressed='true'] { border-color: #cfb181; background: #cfb18115; }
+.cofein-booking-footer { display: grid; flex-shrink: 0; grid-template-columns: minmax(0, 1fr) minmax(180px, 280px); align-items: center; gap: 20px; padding: 12px 24px max(12px, env(safe-area-inset-bottom)); border-top: 1px solid #cfb18130; background: #211b18; box-shadow: 0 -8px 24px #0d090810; }
+.cofein-booking-footer-summary { display: grid; gap: 4px; min-width: 0; }
+.cofein-booking-footer-summary strong { overflow: hidden; color: #eedcc0; font-size: 14px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.cofein-booking-footer-summary span { color: #b9ab9d; font-size: 11px; line-height: 1.4; }
+.cofein-booking-footer .cofein-booking-primary { justify-content: space-between; width: 100%; margin: 0; }
+.cofein-booking-mobile-summary, .cofein-booking-footer .cofein-booking-mobile-next { display: none; }
+.cofein-booking-selection, .cofein-booking-visit-summary { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #cfb18130; border-radius: 10px; background: #171310; }
 .cofein-booking-selection { margin-bottom: 20px; }
-.cofein-booking-note-toggle { min-height: 44px; justify-self: start; color: #e3cfad; font-size: 13px; text-align: left; }
-.cofein-booking-note-toggle span, .cofein-booking-optional { color: #b9ab9d; font-size: 11px; margin-left: 8px; }
-.cofein-booking label.cofein-booking-consent { display: flex; align-items: flex-start; gap: 12px; padding-block: 4px; color: #c9bbac; font-size: 12px; line-height: 1.7; cursor: pointer; }
+.cofein-booking-selection > svg, .cofein-booking-visit-summary > svg { flex-shrink: 0; color: #cfb181; }
+.cofein-booking-selection > div, .cofein-booking-visit-summary > div { display: grid; flex: 1; gap: 4px; min-width: 0; }
+.cofein-booking-selection span, .cofein-booking-visit-summary span { color: #b9ab9d; font-size: 11px; line-height: 1.5; }
+.cofein-booking-selection strong, .cofein-booking-visit-summary span:first-child { color: #e8d8bf; font-size: 14px; font-weight: 550; }
+.cofein-booking-selection button, .cofein-booking-visit-summary button { min-height: 44px; padding: 8px 0 8px 10px; color: #cfb181; font-size: 12px; }
+.cofein-booking-contact fieldset { gap: 16px; }
+.cofein-booking-note-toggle { justify-self: start; min-height: 40px; color: #e3cfad; font-size: 12px; text-align: left; }
+.cofein-booking-note-toggle span, .cofein-booking-optional { margin-left: 8px; color: #a99d8f; font-size: 10px; }
+.cofein-booking label.cofein-booking-consent { display: flex; align-items: flex-start; gap: 10px; padding-block: 4px; color: #c9bbac; font-size: 12px; line-height: 1.7; cursor: pointer; }
 .cofein-booking-consent input { flex: 0 0 20px; width: 20px; height: 20px; margin: 1px 0 0; accent-color: #cfb181; }
-.cofein-field-error { display: block; color: #efb5a2; font-size: 12px; line-height: 1.5; margin-top: 5px; }
-.cofein-booking-empty { padding: 22px 0; font-size: 13px; color: #c9bbac; line-height: 1.7; }
-.cofein-booking-empty h3 { color: #f4ecde; margin-block: 12px; }
+.cofein-field-error { display: block; margin-top: 5px; color: #efb5a2; font-size: 12px; line-height: 1.5; }
+.cofein-booking-status { padding: 12px 14px; margin-block: 12px; border: 1px solid #cfb18138; border-radius: 10px; background: #cfb1810a; color: #ead8bb; font-size: 12px; line-height: 1.6; }
+.cofein-booking-feedback { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; margin: 0 0 8px; }
+.cofein-booking-live { margin: 0; color: #c4b39e; font-size: 11px; line-height: 1.6; }
+.cofein-booking-refresh { flex-shrink: 0; min-height: 40px; padding: 8px; color: #cfb181; font-size: 12px; }
+.cofein-booking-empty { padding: 22px 0; color: #c9bbac; font-size: 13px; line-height: 1.7; }
+.cofein-booking-empty h3 { margin-block: 12px; color: #f4ecde; }
 .cofein-booking-empty > svg { width: 32px; height: 32px; color: #cfb181; }
 .cofein-booking-empty button { margin: 18px 12px 0 0; }
-.cofein-booking-text-button { color: #cfb181; font-size: 12px; line-height: 1.6; min-height: 44px; text-align: left; padding-block: 10px; }
-.cofein-booking-result { padding: 8px 0 12px; font-size: 14px; line-height: 1.8; color: #d7c7b5; }
-.cofein-booking-result-icon { display: grid; place-items: center; width: 60px; height: 60px; margin-bottom: 20px; border-radius: 50%; background: #cfb18118; color: #cfb181; }
-.cofein-booking-result-icon svg { width: 30px; height: 30px; }
-.cofein-booking-reference { font-size: 11px; color: #b9ab9d; margin-top: 12px; overflow-wrap: anywhere; }
+.cofein-booking-text-button { min-height: 40px; padding-block: 8px; color: #cfb181; font-size: 12px; line-height: 1.6; text-align: left; }
+.cofein-booking-result { padding: 8px 0 12px; color: #d7c7b5; font-size: 14px; line-height: 1.8; }
+.cofein-booking-result-icon { display: grid; place-items: center; width: 56px; height: 56px; margin-bottom: 18px; border-radius: 50%; background: #cfb18118; color: #cfb181; }
+.cofein-booking-result-icon svg { width: 28px; height: 28px; }
+.cofein-booking-reference { margin-top: 12px; color: #b9ab9d; font-size: 11px; overflow-wrap: anywhere; }
 .cofein-booking-receipt { margin: 20px 0; border-top: 1px solid #cfb18130; }
 .cofein-booking-receipt > div { display: flex; justify-content: space-between; gap: 20px; padding: 14px 0; border-bottom: 1px solid #cfb18130; font-size: 13px; line-height: 1.6; }
 .cofein-booking-receipt dt { color: #b9ab9d; }
 .cofein-booking-receipt dd { margin: 0; text-align: right; }
-.cofein-booking-result :is(.cofein-booking-primary, .cofein-booking-secondary, .cofein-booking-text-button) { display: flex; width: 100%; margin-top: 20px; justify-content: center; }
+.cofein-booking-result :is(.cofein-booking-primary, .cofein-booking-secondary, .cofein-booking-text-button) { display: flex; justify-content: center; width: 100%; margin-top: 20px; }
 .cofein-booking .cofein-unknown-consent { margin-top: 20px; }
-.cofein-booking-loading { display: flex; align-items: center; gap: 12px; color: #cfb181; padding: 28px 0; font-size: 13px; }
-.cofein-booking-spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: cofein-booking-spin .8s linear infinite; flex-shrink: 0; }
+.cofein-booking-loading { display: flex; align-items: center; gap: 12px; padding: 28px 0; color: #cfb181; font-size: 13px; }
+.cofein-booking-spinner { display: inline-block; flex-shrink: 0; width: 18px; height: 18px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: cofein-booking-spin .8s linear infinite; }
 .cofein-booking-sr { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @keyframes cofein-booking-spin { to { transform: rotate(360deg); } }
+@media (min-width: 901px) and (max-height: 700px) {
+  .cofein-booking[data-step='workspace'] .cofein-booking-body { overflow: auto; }
+  .cofein-booking-workspace { flex: none; min-height: 460px; }
+}
+@media (max-width: 1100px) and (min-width: 901px) {
+  .cofein-booking-workspace { grid-template-columns: minmax(0, 1fr) 276px; gap: 18px; }
+  .cofein-booking-visit-panel { padding: 16px; }
+  .cofein-booking-section-preview { width: 54px; flex-basis: 54px; }
+  .cofein-booking-sections > button { gap: 8px; }
+}
 @media (max-width: 900px) {
-  .cofein-booking-map-layout { grid-template-columns: minmax(0, 1fr); }
-  .cofein-booking-choice { display: none; }
+  .booking-modal { width: min(760px, calc(100vw - 32px)); }
+  .cofein-booking-quick-dates button { min-height: 44px; }
+  .cofein-booking-mode button { min-height: 44px; }
+  .cofein-booking-workspace { display: flex; flex-direction: column; gap: 0; }
+  .cofein-booking-visit-panel { padding: 0; border: 0; border-radius: 0; background: transparent; overflow: visible; }
+  .cofein-booking-visit-panel > h3, .cofein-booking-visit-controls > h3, .cofein-booking-visit-panel > .cofein-booking-kicker { display: none; }
+  .cofein-booking-hall-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cofein-booking-hall-options button { min-height: 64px; }
+  .cofein-booking[data-step='workspace'][data-editing-visit='true'] .cofein-booking-body { display: block; overflow: auto; }
+  .cofein-booking[data-editing-visit='true'] .cofein-booking-map-column { display: none; }
+  .cofein-booking[data-editing-visit='true'] .cofein-booking-mobile-next { display: flex; }
+  .cofein-booking[data-editing-visit='true'] .cofein-booking-continue { display: none; }
+  .cofein-booking[data-step='workspace'][data-editing-visit='false'] .cofein-booking-visit-panel { display: none; }
+  .cofein-booking[data-step='workspace'][data-editing-visit='false'] .cofein-booking-heading { position: absolute; width: 1px; height: 1px; margin: 0; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); }
+  .cofein-booking[data-step='workspace'][data-editing-visit='false'] .cofein-booking-map-column { flex: 1; }
+  .cofein-booking-mobile-summary { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; padding: 0 0 12px; margin-bottom: 12px; border-bottom: 1px solid #cfb18130; color: #ead6b5; text-align: left; }
+  .cofein-booking-mobile-summary > div, .cofein-booking-mobile-summary > span:nth-child(2) { display: grid; flex: 1; gap: 4px; min-width: 0; }
+  .cofein-booking-mobile-summary strong { font-size: 13px; line-height: 1.4; font-weight: 550; }
+  .cofein-booking-mobile-summary small { color: #b9ab9d; font-size: 10px; line-height: 1.4; }
+  .cofein-booking-mobile-summary > span:last-child, .cofein-booking-mobile-summary > svg { flex-shrink: 0; color: #cfb181; font-size: 11px; }
+  .cofein-booking[data-editing-visit='true'] .cofein-booking-mobile-summary { display: none; }
+  .cofein-booking-sections { gap: 8px; margin-bottom: 10px; }
+  .cofein-booking-map-caption { justify-content: center; margin-top: 8px; }
+  .cofein-booking-map-caption > span { display: none; }
+  .cofein-booking-map-header { min-height: 44px; margin-bottom: 8px; }
+  .cofein-booking-map-header h3 { font-size: 17px; }
+  .cofein-booking-legend { margin-top: 8px; }
 }
-@media (max-width: 580px) {
+@media (max-width: 680px) {
   .modal.booking-modal, .modal.booking-modal:has(.cofein-booking) { width: 100%; max-width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; border: 0; border-radius: 0; }
-  .cofein-booking-toolbar { padding: max(6px, env(safe-area-inset-top)) 12px 6px 18px; min-height: 56px; }
-  .cofein-booking-body { padding: 12px 18px 20px; }
-  .cofein-booking h2 { font-size: 27px; margin-top: 16px; }
-  .cofein-booking-heading > p { font-size: 12px; margin-bottom: 20px; }
-  .cofein-booking-steps { gap: 6px; padding-bottom: 6px; }
-  .cofein-booking-steps button { font-size: 10px; gap: 6px; }
-  .cofein-booking-steps button > span { width: 23px; height: 23px; font-size: 10px; }
-  .cofein-booking-search-row { gap: 12px; }
-  .cofein-booking input:not([type='checkbox']), .cofein-booking select, .cofein-booking textarea { padding-inline: 10px; }
+  .cofein-booking-toolbar { min-height: 52px; padding: max(4px, env(safe-area-inset-top)) 10px 4px 16px; }
+  .booking-modal .close-modal { width: 44px; height: 44px; flex-basis: 44px; }
+  .cofein-booking-body { padding: 16px; }
+  .cofein-booking-heading { display: block; margin-bottom: 22px; }
+  .cofein-booking h2 { font-size: 27px; }
+  .cofein-booking-heading > p { margin: 8px 0 0; }
+  .cofein-booking-progress { margin-top: 10px; gap: 10px; font-size: 10px; }
+  .cofein-booking-progress li + li::before { width: 18px; margin-right: 2px; }
+  .cofein-booking-quick-dates button { min-height: 44px; }
   .cofein-booking-hall-options { gap: 8px; }
-  .cofein-booking-hall-options button { padding: 12px 10px; gap: 8px; }
-  .cofein-booking-hall-options button > span { font-size: 13px; }
-  .cofein-booking-hall-options button > svg { width: 20px; }
-  .cofein-booking-footer { padding: 12px 18px max(12px, env(safe-area-inset-bottom)); gap: 12px; grid-template-columns: minmax(0, 1fr) minmax(156px, 1.15fr); }
+  .cofein-booking-hall-options button { padding: 10px; gap: 8px; }
+  .cofein-booking-hall-options button > span { font-size: 12px; }
+  .cofein-booking-footer { grid-template-columns: minmax(0, 1fr) minmax(148px, 1.05fr); gap: 12px; padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
   .cofein-booking-footer-summary strong { font-size: 12px; }
-  .cofein-booking-footer-summary span { font-size: 10px; line-height: 1.5; }
-  .cofein-booking-footer .cofein-booking-primary { padding: 12px; gap: 8px; font-size: 12px; }
-  .cofein-booking-map-heading { gap: 8px; }
-  .cofein-booking-map-heading h3 { font-size: 16px; }
-  .cofein-booking-mode button { padding-inline: 10px; min-height: 44px; }
-  .cofein-booking-options, .cofein-booking-contact-grid { grid-template-columns: minmax(0, 1fr); }
-  .cofein-booking-visit-summary, .cofein-booking-selection { padding: 8px 12px; gap: 10px; }
-  .cofein-booking-visit-summary span:first-child { font-size: 13px; }
-  .cofein-booking-contact fieldset { gap: 16px; }
-  .cofein-booking-contact-grid { gap: 16px; }
-  .cofein-booking[data-step='table'] .cofein-booking-heading > p { display: none; }
-  .cofein-booking[data-step='table'] h2 { font-size: 25px; margin-bottom: 16px; }
+  .cofein-booking-footer-summary span { font-size: 10px; }
+  .cofein-booking-footer .cofein-booking-primary { min-height: 48px; padding: 12px; gap: 8px; font-size: 12px; }
+  .cofein-booking[data-step='workspace'][data-editing-visit='false'] .cofein-booking-body { padding: 8px 12px 10px; }
+  .cofein-booking-mobile-summary { margin-bottom: 8px; padding-bottom: 8px; min-height: 52px; }
+  .cofein-booking-map-header { gap: 8px; }
+  .cofein-booking-map-header h3 { font-size: 15px; }
+  .cofein-booking-map-header p, .cofein-booking-map-header small { font-size: 10px; }
+  .cofein-booking-mode button { min-height: 44px; padding: 6px 10px; font-size: 10px; }
+  .cofein-booking-sections > button { min-height: 56px; gap: 8px; padding-right: 7px; }
+  .cofein-booking-section-preview { width: 52px; flex-basis: 52px; height: 44px; }
+  .cofein-booking-sections > button > span:not(.cofein-booking-section-preview) { font-size: 11px; }
+  .cofein-booking-sections small { font-size: 9px; }
+  .cofein-booking .cofein-map-surface { border-radius: 10px; }
+  .cofein-booking .cofein-map-tools { top: 8px; right: 8px; }
+  .cofein-booking .cofein-map-tools button { width: 44px; height: 44px; }
+  .cofein-booking-legend { justify-content: center; gap: 16px; font-size: 9px; }
+  .cofein-booking-options { grid-template-columns: minmax(0, 1fr); }
+  .cofein-booking-contact-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .cofein-booking-selection { padding: 10px 12px; gap: 10px; }
 }
-@media (max-height: 500px) and (min-width: 581px) {
-  .modal.booking-modal, .modal.booking-modal:has(.cofein-booking) { height: 100dvh; max-height: 100dvh; max-width: 100%; margin-block: 0; border-radius: 0; }
-  .cofein-booking-toolbar { min-height: 48px; padding-block: 2px; }
+/* Short portrait screens keep the full-width map and scroll its content above
+   the persistent action. The side rail below belongs only to landscape. */
+@media (max-width: 900px) and (max-height: 560px) and (orientation: portrait) {
+  .cofein-booking[data-step='workspace'][data-editing-visit='false'] .cofein-booking-body { overflow: auto; }
+  .cofein-booking[data-step='workspace'][data-editing-visit='false'] .cofein-booking-workspace { flex: none; min-height: 420px; }
+}
+@media (max-width: 900px) and (max-height: 560px) and (orientation: landscape) {
+  .modal.booking-modal, .modal.booking-modal:has(.cofein-booking) { width: 100%; height: 100dvh; max-height: 100dvh; max-width: 100%; margin: 0; border: 0; border-radius: 0; }
+  .cofein-booking-toolbar { min-height: 44px; padding-block: 0; }
+  .booking-modal .close-modal { flex-basis: 44px; width: 44px; height: 44px; }
   .cofein-booking-footer { padding-block: 8px; }
+  .cofein-booking[data-step='workspace'][data-editing-visit='false'] .cofein-booking-body { position: relative; padding: 8px 12px 8px 222px; overflow: hidden; }
+  .cofein-booking[data-step='workspace'][data-editing-visit='false'] .cofein-booking-workspace { min-height: 0; flex: 1; }
+  .cofein-booking[data-editing-visit='false'] .cofein-booking-mobile-summary { position: absolute; top: 8px; left: 12px; width: 198px; min-height: 64px; margin: 0; padding-bottom: 8px; gap: 6px; }
+  .cofein-booking[data-editing-visit='false'] .cofein-booking-mobile-summary > svg { display: none; }
+  .cofein-booking[data-editing-visit='false'] .cofein-booking-mobile-summary strong { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .cofein-booking[data-editing-visit='false'] .cofein-booking-map-header { position: absolute; top: 82px; left: 12px; width: 198px; margin: 0; }
+  .cofein-booking[data-editing-visit='false'] .cofein-booking-map-header > div:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+  .cofein-booking[data-editing-visit='false'] .cofein-booking-mode { width: 100%; }
+  .cofein-booking[data-editing-visit='false'] .cofein-booking-mode button { flex: 1; min-height: 44px; }
+  .cofein-booking[data-editing-visit='false'] .cofein-booking-sections { position: absolute; top: 138px; left: 12px; width: 198px; max-height: calc(100% - 146px); overflow: auto; grid-template-columns: minmax(0, 1fr); gap: 6px; margin: 0; scrollbar-width: thin; }
+  .cofein-booking[data-editing-visit='false'] .cofein-booking-sections > button { min-height: 52px; }
+  .cofein-booking[data-editing-visit='false'] .cofein-booking-section-preview { height: 40px; flex-basis: 54px; }
+  .cofein-booking[data-editing-visit='false'] .cofein-map-explorer, .cofein-booking[data-editing-visit='false'] .cofein-map-viewport { min-height: 0; }
+  .cofein-booking[data-editing-visit='false'] .cofein-booking-map-caption { display: none; }
+  .cofein-booking .cofein-map-tools button { width: 44px; height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .cofein-booking *, .cofein-booking *::before { transition: none !important; animation: none !important; }
-}
-/* Compact public booking viewport; the editor and admin map keep their own sizing. */
-.cofein-booking[data-step='table'] .cofein-booking-heading > p { display: none; }
-.cofein-booking[data-step='table'] h2 { margin-bottom: 16px; }
-.cofein-booking .cofein-map-viewport { height: clamp(280px, calc(100dvh - 640px), 400px); min-height: 0; }
-.cofein-booking .cofein-map-instructions { font-size: 10px; margin-top: 8px; }
-.cofein-booking .cofein-map-views { margin-bottom: 10px; }
-.cofein-booking .cofein-map-views button { font-size: 11px; }
-@media (max-width: 580px) {
-  .cofein-booking .cofein-map-viewport { height: clamp(220px, calc(100dvh - 500px), 350px); }
 }

@@ -155,6 +155,42 @@ export function getCofeinMapGeometry(zones = [], tables = []) {
   return { world, zones: active, views, detailViews, hasPreset, minScale: Math.min(0.12, 200 / Math.max(world.width, world.height)) };
 }
 
+const BOOKING_VIEW_NAMES = Object.freeze({
+  "exterior-upper": { bg: "Горна част", en: "Upper part", ru: "Верхняя часть" },
+  "exterior-lower": { bg: "Долна част", en: "Lower part", ru: "Нижняя часть" },
+  "interior-main": { bg: "Основна част", en: "Main part", ru: "Основная часть" },
+  "interior-angled": { bg: "Ъглова част", en: "Corner part", ru: "Угловая часть" },
+});
+
+/** Camera crops are presentation, not new business halls or booking rules.
+ * Every placement stays in the original world; availability never changes a
+ * crop. Only active furniture in this API hall determines its visible parts. */
+export function getCofeinBookingViews(geometry, zoneId, tables = []) {
+  const zone = geometry.zones.find(item => item.id === zoneId);
+  if (!zone) return [];
+  const placed = tables.filter(table => table.area === zoneId && table.isActive !== false)
+    .map(table => ({ table, placement: projectCofeinTable(table, geometry) })).filter(item => item.placement);
+  const ids = Object.hasOwn(DETAIL_VIEWS, zoneId) ? DETAIL_VIEWS[zoneId] : [zone.viewId];
+  return ids.flatMap(id => {
+    const furniture = placed.filter(item => item.placement.fragmentId === id);
+    if (!furniture.length) return [];
+    const left = Math.min(...furniture.map(({ placement: p }) => p.x - p.width / 2));
+    const right = Math.max(...furniture.map(({ placement: p }) => p.x + p.width / 2));
+    const top = Math.min(...furniture.map(({ placement: p }) => p.y - p.height / 2));
+    const bottom = Math.max(...furniture.map(({ placement: p }) => p.y + p.height / 2));
+    // Keep nearby walls/glazing readable without fitting unrelated kitchens or
+    // other halls. Sparse configured halls receive the same comfortable scale.
+    const width = Math.min(geometry.world.width, Math.max(300, right - left + 112));
+    const height = Math.min(geometry.world.height, Math.max(320, bottom - top + 112));
+    const names = BOOKING_VIEW_NAMES[id] || zone.names;
+    return [{ ...geometry.views[id], id, zoneId, names, label: names?.bg || zone.name,
+      x: Math.max(0, Math.min(geometry.world.width - width, (left + right - width) / 2)),
+      y: Math.max(0, Math.min(geometry.world.height - height, (top + bottom - height) / 2)),
+      width, height, tableIds: furniture.map(({ table }) => table.id),
+    }];
+  });
+}
+
 export function unprojectCofeinPoint(area, point, geometry) {
   if (geometry && !geometry.zones.some(zone => zone.id === area)) return null;
   const transform = transformFor(area);
