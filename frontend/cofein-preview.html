@@ -6,30 +6,6 @@
     <meta name="robots" content="noindex, nofollow" />
     <meta name="theme-color" content="#29221d" />
     <link rel="icon" type="image/svg+xml" href="/cofein/favicon.svg" />
-    <script>
-      // Start the first scene while React loads, using the same bypass and
-      // responsive asset rules as CofeinIntro and CofeinCoffeeScene.
-      (() => {
-        const navigation = performance.getEntriesByType('navigation')[0];
-        if (location.hash || matchMedia('(prefers-reduced-motion: reduce)').matches
-          || navigation?.type === 'back_forward' || scrollY > 1) return;
-        const resolution = innerWidth <= 760 ? 768 : 1280;
-        const assets = [
-          [`/cofein/intro/cup-${resolution}.webp`, 'image/webp', 'high'],
-          [`/cofein/intro/saucer-${resolution}.webp`, 'image/webp', 'auto'],
-          ['/cofein/brand/cofein-lockup.svg', 'image/svg+xml', 'auto'],
-        ];
-        for (const [href, type, priority] of assets) {
-          const link = document.createElement('link');
-          link.rel = 'preload';
-          link.as = 'image';
-          link.href = href;
-          link.type = type;
-          link.fetchPriority = priority;
-          document.head.append(link);
-        }
-      })();
-    </script>
     <link rel="preload" href="/cofein/fonts/Manrope-variable.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" as="image" href="/cofein/terrace-1280.webp" imagesrcset="/cofein/terrace-640.webp 640w, /cofein/terrace-1280.webp 1280w, /cofein/terrace-1920.webp 1920w" imagesizes="(max-width: 760px) 100vw, (max-width: 1440px) 52vw, 720px" fetchpriority="high" />
     <meta name="description" content="Cofein Coffee Bar & Diner — Пловдив, ул. „Орфей“ 24. Разгледайте менюто и открийте своето място. Всеки ден 07:30–23:00." />

@@ -11,13 +11,19 @@ function initialExperience() {
     || restoredPosition;
   return {
     enabled: !bypass,
-    distance: Math.max(1, Math.round(window.innerHeight * 1.55)),
+    distance: Math.max(1, Math.round(window.innerHeight * 2)),
+    initialHeight: window.innerHeight,
     initialHash,
     restoreAnchor: Boolean(initialHash) && !restoredPosition,
   };
 }
 
-/** Native scrolling uncovers the real page; its DOM and booking state stay intact. */
+function pageOffset(progress, height) {
+  const reveal = Math.max(0, Math.min(1, (progress - 0.02) / 0.62));
+  return height * (1 - reveal * reveal * (3 - 2 * reveal));
+}
+
+/** The real page rises from below the cup using native scroll, with one live DOM. */
 export default function CofeinIntro({ children }) {
   const [experience] = useState(initialExperience);
   const [active, setActive] = useState(experience.enabled);
@@ -29,6 +35,11 @@ export default function CofeinIntro({ children }) {
   const activeRef = useRef(experience.enabled);
   const readyRef = useRef(false);
   const progressRef = useRef(0);
+  const layoutRef = useRef({
+    pageTop: experience.initialHeight,
+    viewportWidth: window.innerWidth,
+    viewportHeight: experience.initialHeight,
+  });
   const deadlineRef = useRef(null);
   const handoffRef = useRef(null);
 
@@ -75,7 +86,7 @@ export default function CofeinIntro({ children }) {
     if (!mountedRef.current || !activeRef.current) return;
     activeRef.current = false;
     handoffRef.current = {
-      top: reason === 'complete' ? Math.max(0, window.scrollY - experience.distance * 0.95) : 0,
+      top: reason === 'complete' ? Math.max(0, window.scrollY - experience.distance) : 0,
       hash: window.location.hash,
       restoreFocus: reason === 'skip' || overlayRef.current?.contains(document.activeElement),
     };
@@ -88,7 +99,7 @@ export default function CofeinIntro({ children }) {
     readyRef.current = true;
     window.clearTimeout(deadlineRef.current);
     shellRef.current?.setAttribute('data-ready', 'true');
-    sceneRef.current?.render(progressRef.current);
+    sceneRef.current?.render(progressRef.current, layoutRef.current);
   }, []);
 
   const onError = useCallback(() => finish('error'), [finish]);
@@ -126,16 +137,19 @@ export default function CofeinIntro({ children }) {
       if (!activeRef.current) return;
       const offset = Math.max(0, window.scrollY);
       const progress = Math.min(1, offset / experience.distance);
+      const pageTop = pageOffset(progress, window.innerHeight);
       progressRef.current = progress;
+      layoutRef.current = { pageTop, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight };
       if (contentRef.current) {
-        contentRef.current.style.transform = `translateY(${Math.min(offset, experience.distance * 0.95) - experience.distance}px)`;
+        // Layout contributes D − scrollY. Cancel that native offset while the
+        // page enters from below; at p=1 the transform and runway cancel exactly.
+        contentRef.current.style.transform = `translateY(${Math.min(offset, experience.distance) - experience.distance + pageTop}px)`;
       }
       shellRef.current?.setAttribute('data-progress', progress.toFixed(4));
+      shellRef.current?.setAttribute('data-page-top', pageTop.toFixed(2));
       overlayRef.current?.style.setProperty('--intro-progress', String(progress));
-      sceneRef.current?.render(progress);
-      // At this point the canvas is clear. Do not leave visible controls inert
-      // while asking the visitor to scroll through an invisible final segment.
-      if (progress >= 0.95) finish('complete');
+      sceneRef.current?.render(progress, layoutRef.current);
+      if (progress >= 1) finish('complete');
     };
     const schedule = () => {
       if (!frame && activeRef.current) frame = window.requestAnimationFrame(draw);
@@ -147,6 +161,7 @@ export default function CofeinIntro({ children }) {
       if (event.key === 'Escape') finish('skip');
     };
     window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule, { passive: true });
     window.addEventListener('hashchange', onHashChange);
     window.addEventListener('pageshow', onPageShow);
     window.addEventListener('keydown', onKeyDown);
@@ -158,6 +173,7 @@ export default function CofeinIntro({ children }) {
       window.cancelAnimationFrame(frame);
       window.clearTimeout(deadlineRef.current);
       window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
       window.removeEventListener('hashchange', onHashChange);
       window.removeEventListener('pageshow', onPageShow);
       window.removeEventListener('keydown', onKeyDown);
@@ -171,6 +187,7 @@ export default function CofeinIntro({ children }) {
       className="cofein-intro-shell"
       data-coffee-intro={active ? 'active' : experience.enabled ? 'complete' : 'bypassed'}
       data-progress={active ? '0.0000' : '1.0000'}
+      data-page-top={active ? experience.initialHeight : 0}
       data-ready="false"
       style={{ paddingTop: active ? experience.distance : undefined }}
     >
@@ -178,7 +195,7 @@ export default function CofeinIntro({ children }) {
         ref={contentRef}
         className="cofein-intro-content"
         inert={active}
-        style={{ transform: active ? `translateY(${-experience.distance}px)` : undefined }}
+        style={{ transform: active ? `translateY(${experience.initialHeight - experience.distance}px)` : undefined }}
       >{children}</div>
       {active && <section ref={overlayRef} className="cofein-intro-overlay" aria-label="Добре дошли в Cofein">
         <div className="cofein-intro-scene" aria-hidden="true">
