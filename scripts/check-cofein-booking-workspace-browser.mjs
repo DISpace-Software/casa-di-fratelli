@@ -58,8 +58,6 @@ async function visit(p, { days = 3, guests = 2, time = '19:00' } = {}) {
 async function showMap(p) {
   const next = p.getByRole('button', { name: 'Виж масите', exact: true });
   if (await next.isVisible()) await next.click();
-  const map = p.getByRole('button', { name: 'Карта', exact: true });
-  if (await map.isVisible() && await map.getAttribute('aria-pressed') === 'false') await map.click();
   await p.locator('.cofein-map-table-button:enabled').first().waitFor(); await frame(p);
 }
 async function chooseHall(p, name) {
@@ -121,9 +119,8 @@ try {
     await chooseHall(p, 'Екстериор'); await showMap(p);
     check(`${size.name}: changing hall clears selection and switches the scoped map`, await p.locator('.cofein-map-world').getAttribute('data-map-zone') === 'exterior' && await p.getByRole('button', { name: 'Изберете маса', exact: true }).isDisabled() && !(await p.locator('.cofein-booking-footer-summary').innerText()).includes('T19'));
     await p.locator('.cofein-booking-sections button').nth(1).click(); await p.locator('[data-table-id=T13]').click(); await capture(p, `${size.name}-02-exterior-selected`);
-    await p.getByRole('button', { name: 'Списък', exact: true }).click();
-    check(`${size.name}: list respects the existing hall selector`, await p.locator('.cofein-booking-list select').count() === 0 && (await p.locator('.cofein-booking-options button').allInnerTexts()).every(text => !/T19|T20|T21|T22/.test(text)));
-    await chooseHall(p, 'Интериор'); await showMap(p); await p.getByRole('button', { name: 'Карта', exact: true }).click(); await choose(p);
+    check(`${size.name}: table selection uses only the scoped map without a list or mode switch`, await p.getByRole('button', { name: 'Списък', exact: true }).count() === 0 && await p.locator('.cofein-booking-mode, .cofein-booking-list, .cofein-booking-options').count() === 0 && await p.locator('.cofein-map-table-button[aria-pressed=true]').getAttribute('data-table-id') === 'T13');
+    await chooseHall(p, 'Интериор'); await showMap(p); await choose(p);
     await p.getByRole('button', { name: 'Вашите данни', exact: true }).click(); await step(p, 'contact'); await measure(p, `${size.name}-contact`);
     check(`${size.name}: contacts contain one summary, focused heading and no early validation`, await p.locator('.cofein-booking-selection').count() === 1 && await p.locator('.cofein-field-error').count() === 0 && await p.locator('#dialog-title').evaluate(e => e === document.activeElement));
     await capture(p, `${size.name}-03-contact`); await p.locator('[name=guestName]').fill('Запазена чернова');
@@ -132,6 +129,24 @@ try {
     check(`${size.name}: back to map and forward preserve contact draft without POST`, await p.locator('[name=guestName]').inputValue() === 'Запазена чернова' && postCount === 0);
     await device.context.close();
   }
+
+  const grouped = await makePage(); const g = grouped.page;
+  const groupIds = ['T19', 'T20'];
+  await g.route(planUrl, async route => {
+    const response = await route.fetch(); const data = await response.json();
+    await route.fulfill({ response, json: { ...data, publicMaxTables: 2, publicMaxGuests: Math.max(data.publicMaxGuests, 4), combinations: [groupIds], tables: data.tables.map(table => groupIds.includes(table.id) ? { ...table, seats: 2 } : table) } });
+  });
+  await open(g); await visit(g, { guests: 4 }); await showMap(g);
+  const firstMember = g.locator('[data-table-id=T19]');
+  await firstMember.focus(); await firstMember.press('Enter');
+  check('A permitted combination can be selected directly on the map with the keyboard', (await g.locator('.cofein-map-table-button[aria-pressed=true]').evaluateAll(nodes => nodes.map(node => node.dataset.tableId).sort())).join('|') === groupIds.join('|') && await g.getByRole('button', { name: 'Вашите данни', exact: true }).isEnabled());
+  await g.locator('[data-table-id=T20]').click();
+  check('Tapping another member preserves the selected combination without introducing a table list', await g.locator('.cofein-map-table-button[aria-pressed=true]').count() === 2 && await g.locator('.cofein-booking-mode, .cofein-booking-list, .cofein-booking-options').count() === 0);
+  await capture(g, 'map-only-combination');
+  await g.getByRole('button', { name: 'Вашите данни', exact: true }).click(); await step(g, 'contact');
+  check('The map-selected combination reaches contacts without an early booking request', await g.locator('.cofein-booking-selection').count() === 1 && postCount === 0);
+  report.simulatedCases.push('GET floor-plan enables one permitted pair; no plan or booking write');
+  await grouped.context.close();
 
   const real = await makePage(); const r = real.page; await open(r); const date = await contact(r);
   await r.getByRole('button', { name: 'Резервирай маса', exact: true }).click();

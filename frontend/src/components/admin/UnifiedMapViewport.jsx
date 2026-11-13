@@ -1,5 +1,7 @@
 import { tenantStorageKey } from "../../config/tenantRuntime";
 import React from "react";
+import CofeinAdminHallNavigation from "./CofeinAdminHallNavigation";
+import { clampCofeinCamera } from "../../domain/floorPlans/cofeinCamera";
 import {
   ADMIN_MAP_CAMERA,
   ADMIN_MAP_WORLD,
@@ -52,6 +54,11 @@ export default function UnifiedMapViewport({
   surfaceClassName = "",
   minimumScale,
   detailViews,
+  hallNavigation = false,
+  hallTables,
+  activeDetailView,
+  onDetailViewChange,
+  selectionSummary,
 }) {
   const world = geometry?.world || ADMIN_MAP_WORLD;
   const minScale = minimumScale ?? ADMIN_MAP_CAMERA.minScale;
@@ -85,6 +92,9 @@ export default function UnifiedMapViewport({
   const focusX = focusTarget?.x;
   const focusY = focusTarget?.y;
   const focusScale = focusTarget?.scale;
+  const detailBoundsRef = React.useRef(activeDetailView);
+  const activeDetailId = activeDetailView?.id;
+  React.useLayoutEffect(() => { detailBoundsRef.current = activeDetailView; }, [activeDetailView]);
 
   React.useEffect(() => {
     onExitExpandedRef.current = onExitExpanded;
@@ -98,12 +108,13 @@ export default function UnifiedMapViewport({
   }, []);
 
   const applyCamera = React.useCallback((nextCamera, { animate = false, persist = true } = {}) => {
-    const camera = clampCamera(
-      { ...nextCamera, scale: Math.min(ADMIN_MAP_CAMERA.maxScale, Math.max(minScale, nextCamera.scale)) },
-      viewportSizeRef.current,
-      world,
-      ADMIN_MAP_CAMERA.panOverscan
-    );
+    const bounds = detailBoundsRef.current;
+    const viewport = viewportSizeRef.current;
+    const scopedMinimum = hallNavigation && bounds ? Math.max(minScale, Math.min((viewport.width - 32) / bounds.width, (viewport.height - 32) / bounds.height)) : minScale;
+    const scaled = { ...nextCamera, scale: Math.min(ADMIN_MAP_CAMERA.maxScale, Math.max(scopedMinimum, nextCamera.scale)) };
+    const camera = hallNavigation && bounds
+      ? clampCofeinCamera(scaled, viewport, world, bounds, true, 16)
+      : clampCamera(scaled, viewport, world, ADMIN_MAP_CAMERA.panOverscan);
     cameraRef.current = camera;
     if (worldRef.current) {
       worldRef.current.style.transition = animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -115,11 +126,11 @@ export default function UnifiedMapViewport({
     if (persist && ADMIN_MAP_CAMERA.persistCamera) {
       window.localStorage.setItem(storageKey, JSON.stringify(camera));
     }
-  }, [world, minScale, storageKey]);
+  }, [world, minScale, storageKey, hallNavigation]);
 
   const fitToBounds = React.useCallback((bounds, animate = true) => {
     const viewport = viewportSizeRef.current;
-    const padding = viewport.width < 640 ? 22 : ADMIN_MAP_CAMERA.fitPadding;
+    const padding = hallNavigation ? 16 : viewport.width < 640 ? 22 : ADMIN_MAP_CAMERA.fitPadding;
     const availableWidth = Math.max(1, viewport.width - padding * 2);
     const availableHeight = Math.max(1, viewport.height - padding * 2);
     const scale = Math.min(
@@ -131,19 +142,23 @@ export default function UnifiedMapViewport({
       y: (viewport.height - bounds.height * scale) / 2 - bounds.y * scale,
       scale,
     }, { animate });
-  }, [applyCamera, minScale]);
+  }, [applyCamera, minScale, hallNavigation]);
 
   const fitToMap = React.useCallback((animate = true) => {
     fitToBounds({ x: 0, y: 0, width: world.width, height: world.height }, animate);
   }, [fitToBounds, world.width, world.height]);
 
   const fitToCurrentView = React.useCallback((animate = true) => {
+    if (hallNavigation && detailBoundsRef.current) {
+      fitToBounds(detailBoundsRef.current, animate);
+      return;
+    }
     if (viewMode === "section") {
       fitToBounds(getZone(activeZone), animate);
       return;
     }
     fitToMap(animate);
-  }, [activeZone, fitToBounds, fitToMap, viewMode, getZone]);
+  }, [activeZone, fitToBounds, fitToMap, viewMode, getZone, hallNavigation]);
 
   const focusZone = React.useCallback((zoneId) => {
     const zone = getZone(zoneId);
@@ -197,15 +212,21 @@ export default function UnifiedMapViewport({
       viewportSizeRef.current = next;
       if (!initializedRef.current) {
         initializedRef.current = true;
-        if (readSavedCamera(storageKey)) applyCamera(cameraRef.current, { persist: false });
+        if (!hallNavigation && readSavedCamera(storageKey)) applyCamera(cameraRef.current, { persist: false });
         else fitToCurrentView(false);
+      } else if (hallNavigation) {
+        fitToCurrentView(false);
       } else {
         applyCamera(preserveWorldCenter(cameraRef.current, previous, next), { persist: false });
       }
     });
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, [applyCamera, fitToCurrentView, storageKey]);
+  }, [applyCamera, fitToCurrentView, storageKey, hallNavigation]);
+
+  React.useLayoutEffect(() => {
+    if (hallNavigation && initializedRef.current) fitToCurrentView(true);
+  }, [activeDetailId, activeZone, hallNavigation, fitToCurrentView]);
 
   React.useEffect(() => {
     if (!initializedRef.current || viewMode !== "section") return;
@@ -422,33 +443,13 @@ export default function UnifiedMapViewport({
 
   const ShellElement = isExpanded && !useNativeFullscreen ? "dialog" : "div";
 
-  return (
-    <ShellElement
-      ref={shellRef}
-      data-admin-reservation-map-shell="true"
-      className={`relative ${
-        isExpanded
-          ? "fixed inset-0 z-[250] m-0 flex h-[100dvh] max-h-none w-screen max-w-none flex-col border-0 bg-[#090806] px-[max(10px,env(safe-area-inset-left))] pb-[max(10px,env(safe-area-inset-bottom))] pt-[max(10px,env(safe-area-inset-top))] text-white"
-          : ""
-      }`}
-      style={isExpanded ? { touchAction: "auto", overscrollBehavior: "none" } : undefined}
-    >
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <select
-          value={activeZone}
-          onChange={(event) => focusZone(event.target.value)}
-          aria-label={labels.zone}
-          title={labels.zone}
-          className="min-h-[44px] min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-sm font-semibold text-[#fff4df] outline-none sm:max-w-[280px]"
-        >
-          {zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}
-        </select>
+  const cameraControls = (
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => zoomAtCenter(-1)} aria-label={labels.out} title={labels.out} className="ghost-button h-11 w-11 rounded-xl text-xl">−</button>
           <span className="hidden min-w-[58px] text-center text-xs font-semibold text-white/50 sm:block">{Math.round(scaleLabel * 100)}%</span>
           <button type="button" onClick={() => zoomAtCenter(1)} aria-label={labels.in} title={labels.in} className="ghost-button h-11 w-11 rounded-xl text-xl">+</button>
-          <button type="button" onClick={() => fitToCurrentView(true)} aria-label={labels.fit} title={labels.fit} className="ghost-button min-h-[44px] rounded-xl px-3 text-xs font-semibold">Fit</button>
-          <button type="button" onClick={() => { window.localStorage.removeItem(storageKey); fitToCurrentView(true); }} aria-label={labels.reset} title={labels.reset} className="ghost-button hidden min-h-[44px] rounded-xl px-3 text-xs font-semibold sm:block">Reset</button>
+          <button type="button" onClick={() => fitToCurrentView(true)} aria-label={hallNavigation ? (language === "bg" ? "Покажи избраната част" : language === "ru" ? "Показать выбранную часть" : "Fit selected section") : labels.fit} title={labels.fit} className="ghost-button min-h-[44px] rounded-xl px-3 text-xs font-semibold">{hallNavigation ? (language === "bg" ? "Побери" : language === "ru" ? "Целиком" : "Fit") : "Fit"}</button>
+          {!hallNavigation && <button type="button" onClick={() => { window.localStorage.removeItem(storageKey); fitToCurrentView(true); }} aria-label={labels.reset} title={labels.reset} className="ghost-button hidden min-h-[44px] rounded-xl px-3 text-xs font-semibold sm:block">Reset</button>}
           <button
             type="button"
             onClick={toggleFullscreen}
@@ -461,8 +462,44 @@ export default function UnifiedMapViewport({
               : language === "bg" ? "Цял екран" : "Fullscreen"}
           </button>
         </div>
-      </div>
-      {detailViews?.length > 0 && <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" role="group" aria-label={language === "bg" ? "Изгледи на картата" : "Map views"}>
+  );
+
+  return (
+    <ShellElement
+      ref={shellRef}
+      data-admin-reservation-map-shell="true"
+      className={`relative ${
+        isExpanded
+          ? "fixed inset-0 z-[250] m-0 flex h-[100dvh] max-h-none w-screen max-w-none flex-col border-0 bg-[#090806] px-[max(10px,env(safe-area-inset-left))] pb-[max(10px,env(safe-area-inset-bottom))] pt-[max(10px,env(safe-area-inset-top))] text-white"
+          : ""
+      }`}
+      style={isExpanded ? { touchAction: "auto", overscrollBehavior: "none" } : undefined}
+    >
+      {hallNavigation ? <CofeinAdminHallNavigation
+        geometry={geometry}
+        tables={hallTables}
+        zones={zones}
+        activeZone={activeZone}
+        onZoneChange={onZoneChange}
+        views={detailViews || []}
+        activeViewId={activeDetailId}
+        onViewChange={onDetailViewChange}
+        language={language}
+        controls={cameraControls}
+        selectionSummary={selectionSummary}
+      /> : <div className="mb-3 flex flex-wrap items-center gap-2">
+        <select
+          value={activeZone}
+          onChange={(event) => focusZone(event.target.value)}
+          aria-label={labels.zone}
+          title={labels.zone}
+          className="min-h-[44px] min-w-0 flex-1 rounded-2xl border border-white/10 bg-black/30 px-3 py-2 text-sm font-semibold text-[#fff4df] outline-none sm:max-w-[280px]"
+        >
+          {zones.map((zone) => <option key={zone.id} value={zone.id}>{zone.name}</option>)}
+        </select>
+        {cameraControls}
+      </div>}
+      {!hallNavigation && detailViews?.length > 0 && <div className="mb-3 flex shrink-0 gap-2 overflow-x-auto pb-1" role="group" aria-label={language === "bg" ? "Изгледи на картата" : "Map views"}>
         {detailViews.map(view => <button key={view.id} type="button" className="ghost-button min-h-[44px] shrink-0 rounded-xl px-3 text-xs font-semibold aria-pressed:border-[#c9a56a] aria-pressed:bg-[#c9a56a]/20"
           aria-pressed={selectedDetailId === view.id} onClick={() => {
             setSelectedDetailId(view.id);
@@ -515,12 +552,15 @@ export default function UnifiedMapViewport({
       >
         <div
           ref={worldRef}
+          data-admin-map-zone={hallNavigation ? activeZone : undefined}
+          data-admin-map-view={hallNavigation ? activeDetailId : undefined}
           className="absolute left-0 top-0 will-change-transform"
           style={{
             contain: "layout style",
             width: world.width,
             height: world.height,
             transformOrigin: "0 0",
+            clipPath: hallNavigation && activeDetailView ? `inset(${activeDetailView.y}px ${Math.max(0, world.width - activeDetailView.x - activeDetailView.width)}px ${Math.max(0, world.height - activeDetailView.y - activeDetailView.height)}px ${activeDetailView.x}px)` : undefined,
           }}
         >
           {children}

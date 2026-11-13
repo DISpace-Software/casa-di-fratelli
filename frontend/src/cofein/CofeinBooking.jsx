@@ -3,13 +3,14 @@ import { BookingError, bookingErrorMessage, bookingTimes, createCofeinBookingApi
 import { CONTACT_LIMITS, validateBookingContact } from './bookingForm.js';
 import { cofeinContact } from './contact.js';
 import { getAttempt, startAttempt, clearAttempt, isDefinitiveBookingFailure } from './bookingAttempt.js';
+import { getMapSelectionOptions, getMapSelectionOption } from './bookingMapSelection.js';
 import CofeinMapExplorer from '../components/floorplan/CofeinMapExplorer.jsx';
 import CofeinMapPreview from '../components/floorplan/CofeinMapPreview.jsx';
 import CofeinVisitControls from './CofeinVisitControls.jsx';
 import { getCofeinMapGeometry, getCofeinBookingViews, cofeinViewLabel } from '../domain/floorPlans/cofeinGeometry.js';
 import './cofein-booking.css';
 
-const choiceLabel = option => `${option.tableIds.length === 1 ? 'Маса' : 'Маси'} ${option.tableIds.join(' + ')}`;
+const choiceLabel = option => option.tableIds.length === 1 ? `Маса ${option.tableIds[0]}` : `${option.tableIds.length} маси заедно`;
 const dateLabel = date => date.split('-').reverse().join('.');
 const guestsLabel = guests => `${guests} ${guests === 1 ? 'гост' : 'гости'}`;
 const EMPTY_CONTACT = { guestName: '', phone: '', email: '', notes: '', privacyConsent: false };
@@ -32,7 +33,6 @@ export default function CofeinBooking({ onClose, onBusyChange }) {
   const [selectedKey, setSelectedKey] = useState('');
   const [step, setStep] = useState('workspace');
   const [editingVisit, setEditingVisit] = useState(true);
-  const [displayMode, setDisplayMode] = useState('map');
   const [contact, setContact] = useState(EMPTY_CONTACT);
   const [fieldErrors, setFieldErrors] = useState({});
   const [showNotes, setShowNotes] = useState(false);
@@ -137,21 +137,22 @@ export default function CofeinBooking({ onClose, onBusyChange }) {
   }, [displayPlan, zones]);
   const zoneName = areaId => zones.find(zone => zone.id === areaId)?.names?.bg || zones.find(zone => zone.id === areaId)?.name || '';
   const options = useMemo(() => fresh ? current.options.filter(option => option.area === activeArea) : [], [fresh, current, activeArea]);
+  const mapOptions = useMemo(() => getMapSelectionOptions(options, activeArea), [options, activeArea]);
   const views = useMemo(() => getCofeinBookingViews(mapGeometry, activeArea, mapTables), [mapGeometry, activeArea, mapTables]);
   const activeView = views.find(view => view.id === mapView) || views[0];
   const zoneCounts = useMemo(() => fresh ? Object.fromEntries(zones.map(zone => [zone.id, current.options.filter(option => option.area === zone.id).length])) : null, [fresh, current, zones]);
   const tableStates = useMemo(() => {
-    const singles = new Set(current?.options.filter(option => option.tableIds.length === 1).map(option => option.tableIds[0]) || []);
     const occupied = new Set(current?.unavailable || []);
     const open = new Set(current?.zones.map(zone => zone.id) || []);
     return Object.fromEntries(mapTables.map(table => {
       const closed = fresh && (current.closed || !open.has(table.area));
       const unavailable = occupied.has(table.id.toLowerCase());
-      const suitable = singles.has(table.id);
-      return [table.id, { status: !fresh ? 'unknown' : closed || unavailable || !suitable ? 'unavailable' : 'available', selectable: fresh && suitable && !submitting,
-        label: !fresh ? 'Очаква проверка' : closed ? 'Залата е затворена' : unavailable ? 'Заета' : !suitable ? 'Не е подходяща за избрания брой гости' : 'Свободна' }];
+      const option = getMapSelectionOption(mapOptions, table.id, selectedKey);
+      const suitable = Boolean(option);
+      return [table.id, { status: !fresh ? 'unknown' : closed || unavailable || !suitable ? 'unavailable' : 'available', selectable: fresh && suitable && !closed && !unavailable && !submitting,
+        label: !fresh ? 'Очаква проверка' : closed ? 'Залата е затворена' : unavailable ? 'Заета' : !suitable ? 'Не е подходяща за избрания брой гости' : option.tableIds.length > 1 ? `Свободна в комбинация от ${option.tableIds.length} маси` : 'Свободна' }];
     }));
-  }, [mapTables, current, fresh, submitting]);
+  }, [mapTables, mapOptions, selectedKey, current, fresh, submitting]);
   const canContinue = Boolean(selected && selected.area === activeArea && fresh && isSearchValid);
   const canExplore = Boolean(isSearchValid && activeArea && (!fresh || (!current.closed && openZones.some(zone => zone.id === activeArea))));
   const telephone = policy?.phone?.replace(/[^+\d]/g, '') || cofeinContact.telephone;
@@ -316,14 +317,12 @@ export default function CofeinBooking({ onClose, onBusyChange }) {
           <div className="cofein-booking-workspace">
             <div className="cofein-booking-map-column">
               <div className="cofein-booking-map-header"><div><h3 ref={mapHeadingRef} tabIndex={-1}>{areaTitle || 'Вашата маса'}</h3><p role="status">{availabilityText}</p></div>
-                {isSearchValid && <div className="cofein-booking-mode" role="group" aria-label="Начин на избор"><button type="button" aria-pressed={displayMode === 'map'} onClick={() => setDisplayMode('map')}>Карта</button><button type="button" aria-pressed={displayMode === 'list'} onClick={() => setDisplayMode('list')}>Списък</button></div>}
               </div>
               {!isSearchValid ? <div className="cofein-booking-map-placeholder">
                 {activeView && <CofeinMapPreview geometry={mapGeometry} view={activeView} tables={mapTables} />}
                 <div><BookingIcon kind="calendar" /><h3>Кога ще ни посетите?</h3><p>Изберете дата, час и гости, за да видите свободните маси в {areaTitle || 'залата'}.</p></div>
               </div> : <>
                 {availability.status === 'error' && <div className="cofein-booking-status" role="alert"><p>{bookingErrorMessage(availability.error)}</p><button className="cofein-booking-text-button" type="button" onClick={retryAvailability}>Опитай отново</button></div>}
-                {displayMode === 'map' ? <>
                   {views.length > 1 && <div className="cofein-booking-sections" role="group" aria-label={`Части на ${areaTitle}`}>
                     {views.map(view => <button type="button" key={view.id} aria-pressed={activeView?.id === view.id} onClick={() => changeMapView(view.id)}>
                       <span className="cofein-booking-section-preview"><CofeinMapPreview geometry={mapGeometry} view={view} tables={mapTables} /></span>
@@ -331,13 +330,8 @@ export default function CofeinBooking({ onClose, onBusyChange }) {
                     </button>)}
                   </div>}
                   {activeView ? <CofeinMapExplorer zones={displayPlan.zones} geometryTables={displayPlan.tables} tables={mapTables} states={tableStates} selectedIds={fresh ? selected?.tableIds || [] : []} scopeZoneId={activeArea} hideNavigation viewId={activeView.id} onViewChange={changeMapView}
-                    onTableSelect={table => selectOption(current?.options.find(option => option.tableIds.length === 1 && option.tableIds[0] === table.id))} /> : <div className="cofein-booking-empty"><p>В тази зала още няма маси за онлайн резервация.</p></div>}
+                    onTableSelect={table => selectOption(getMapSelectionOption(mapOptions, table.id, selectedKey))} /> : <div className="cofein-booking-empty"><p>В тази зала още няма маси за онлайн резервация.</p></div>}
                   <div className="cofein-booking-map-caption"><div className="cofein-booking-legend" aria-label="Легенда"><span>Свободна</span><span>Избрана</span><span>Недостъпна</span></div><span>Увеличете за по-близък изглед</span></div>
-                  {fresh && options.some(option => option.tableIds.length > 1) && <button className="cofein-booking-text-button" type="button" onClick={() => setDisplayMode('list')}>Виж комбинациите от маси →</button>}
-                </> : <div className="cofein-booking-list">
-                  <div className="cofein-booking-options" role="group" aria-label={`Свободни маси в ${areaTitle}`}>{options.map(option => <button type="button" key={option.key} aria-pressed={selectedKey === option.key} onClick={() => selectOption(option)}><BookingIcon /><span><strong>{choiceLabel(option)}</strong><small>{option.seats} места</small></span>{selectedKey === option.key && <BookingIcon kind="check" />}</button>)}</div>
-                  {!fresh && <p className="cofein-booking-status">Изчакваме проверката на свободните места.</p>}
-                </div>}
                 {fresh && !options.length && <div className="cofein-booking-empty"><p>{current.closed ? 'Изберете друга дата за Вашето посещение.' : 'Няма подходяща свободна маса тук. Променете часа или залата.'}</p><button type="button" className="cofein-booking-text-button cofein-booking-mobile-edit" onClick={editVisit}>Промени посещението</button><a href={`tel:${telephone}`}>Обадете ни се</a></div>}
               </>}
             </div>

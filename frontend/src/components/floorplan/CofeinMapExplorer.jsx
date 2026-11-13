@@ -16,15 +16,15 @@ const centered = (points) => ({ x: (points[0].x + points[1].x) / 2, y: (points[0
 const distance = (points) => Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
 
 /** Architecture is presentation; availability and selectable IDs always come from the caller. */
-export default function CofeinMapExplorer({ tables, zones, geometryTables = tables, states = {}, selectedIds = [], onTableSelect, onTableMove, viewId = 'all', onViewChange, language = 'bg', scopeZoneId, hideNavigation = false }) {
+export default function CofeinMapExplorer({ tables, zones, geometryTables = tables, states = {}, selectedIds = [], onTableSelect, onTableMove, viewId = 'all', onViewChange, language = 'bg', scopeZoneId, hideNavigation = false, cameraView }) {
   const geometry = useMemo(() => getCofeinMapGeometry(zones ?? [...new Set(tables.map(table => table.area))].map(id => ({ id, name: id, isActive: true })), geometryTables), [zones, tables, geometryTables]);
   const { width: worldWidth, height: worldHeight } = geometry.world;
   const minScale = geometry.minScale;
   const scoped = Boolean(scopeZoneId);
   const scopedViews = useMemo(() => scopeZoneId ? getCofeinBookingViews(geometry, scopeZoneId, geometryTables) : [], [scopeZoneId, geometry, geometryTables]);
-  const viewBounds = scopeZoneId
+  const viewBounds = cameraView || (scopeZoneId
     ? scopedViews.find(view => view.id === viewId) || scopedViews[0] || geometry.views[`zone:${scopeZoneId}`] || geometry.views.all
-    : geometry.views[viewId] || geometry.views.all;
+    : geometry.views[viewId] || geometry.views.all);
   const activeViewId = viewBounds.id;
   const scopedTableIds = scopeZoneId ? new Set(viewBounds.tableIds || []) : null;
   const renderedTables = scopedTableIds ? tables.filter(table => scopedTableIds.has(table.id)) : tables;
