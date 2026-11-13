@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import CofeinBrand from './CofeinBrand.jsx';
 import { BookingError, bookingErrorMessage, bookingTimes, createCofeinBookingApi, restaurantClock, validBookingSearch } from './bookingApi.js';
 import { CONTACT_LIMITS, validateBookingContact } from './bookingForm.js';
 import { cofeinContact } from './contact.js';
@@ -289,13 +290,13 @@ export default function CofeinBooking({ onClose, onBusyChange }) {
       </header>
       {loading && !finished && <div className="cofein-booking-loading" role="status"><span className="cofein-booking-spinner" />Подготвяме свободните места…</div>}
       {blockedSetup && !finished && <div className="cofein-booking-empty" role="status"><BookingIcon kind="phone" /><h3>{!api.enabled || setup.error?.kind === 'configuration' ? 'Резервация по телефона' : 'Връзката се забави'}</h3>
-        <p>{!api.enabled || setup.error?.kind === 'configuration' ? 'Онлайн резервациите предстоят. За маса се свържете с екипа на Cofein.' : bookingErrorMessage(setup.error)}</p>
+        <p>{!api.enabled || setup.error?.kind === 'configuration' ? <>Онлайн резервациите предстоят. За маса се свържете с екипа на <CofeinBrand compact />.</> : bookingErrorMessage(setup.error)}</p>
         <a className="cofein-booking-primary" href={`tel:${telephone}`}><BookingIcon kind="phone" />{phoneLabel}</a>
         {api.enabled && <button className="cofein-booking-secondary" type="button" onClick={retrySetup}>Опитай отново</button>}
       </div>}
       {finished && <div className="cofein-booking-result">
         <div className="cofein-booking-result-icon"><BookingIcon kind={submission.status === 'unknown' ? 'phone' : 'check'} /></div>
-        <p role="status">{submission.status === 'unknown' ? 'Не получихме потвърждение от системата. Възможно е резервацията да е записана. Свържете се с Cofein, преди да изпратите нова.' : submission.result?.status === 'Approved' ? 'Резервацията Ви е потвърдена.' : 'Изпратихме линк на посочения имейл. Отворете го, за да потвърдите резервацията. Проверете и папката „Спам“.'}</p>
+        <p role="status">{submission.status === 'unknown' ? <>Не получихме потвърждение от системата. Възможно е резервацията да е записана. Свържете се с <CofeinBrand compact />, преди да изпратите нова.</> : submission.result?.status === 'Approved' ? 'Резервацията Ви е потвърдена.' : 'Изпратихме линк на посочения имейл. Отворете го, за да потвърдите резервацията. Проверете и папката „Спам“.'}</p>
         {submission.result && <><p className="cofein-booking-reference">Резервация №{submission.result.id}</p><dl className="cofein-booking-receipt">
           <div><dt>Кога</dt><dd>{dateLabel(submission.result.reservedDate)} · {submission.result.reservedTime}</dd></div>
           <div><dt>Гости</dt><dd>{guestsLabel(submission.result.guestCount)}</dd></div>
@@ -349,7 +350,7 @@ export default function CofeinBooking({ onClose, onBusyChange }) {
             <label htmlFor={`${id}-guestName`}><span id={`${id}-guestName-label`}>Име и фамилия</span><input {...inputProps('guestName')} autoComplete="name" placeholder="Напр. Георги Иванов" maxLength={CONTACT_LIMITS.guestName} required />{fieldError('guestName')}</label>
             <div className="cofein-booking-contact-grid"><label htmlFor={`${id}-phone`}><span id={`${id}-phone-label`}>Телефон</span><input {...inputProps('phone')} type="tel" inputMode="tel" autoComplete="tel" placeholder="08… или +359…" maxLength={CONTACT_LIMITS.phone} required />{fieldError('phone')}</label><label htmlFor={`${id}-email`}><span id={`${id}-email-label`}>Имейл</span><input {...inputProps('email')} type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="name@example.com" maxLength={CONTACT_LIMITS.email} required />{fieldError('email')}</label></div>
             {!showNotes ? <button className="cofein-booking-note-toggle" type="button" onClick={() => setShowNotes(true)}>＋ Добавете бележка <span>по желание</span></button> : <label htmlFor={`${id}-notes`}><span id={`${id}-notes-label`}>Бележка</span> <span className="cofein-booking-optional">по желание</span><textarea {...inputProps('notes')} rows={2} maxLength={CONTACT_LIMITS.notes} placeholder="Например: ще бъдем с детска количка" />{fieldError('notes')}</label>}
-            <label className="cofein-booking-consent" htmlFor={`${id}-privacyConsent`}><input id={`${id}-privacyConsent`} type="checkbox" name="privacyConsent" checked={contact.privacyConsent} required onChange={event => updateContact('privacyConsent', event.target.checked)} aria-labelledby={`${id}-privacyConsent-label`} aria-invalid={Boolean(fieldErrors.privacyConsent)} aria-describedby={fieldErrors.privacyConsent ? `${id}-privacyConsent-error` : undefined} /><span><span id={`${id}-privacyConsent-label`}>Съгласен/съгласна съм Cofein да използва данните ми за тази резервация.</span>{fieldError('privacyConsent')}</span></label>
+            <label className="cofein-booking-consent" htmlFor={`${id}-privacyConsent`}><input id={`${id}-privacyConsent`} type="checkbox" name="privacyConsent" checked={contact.privacyConsent} required onChange={event => updateContact('privacyConsent', event.target.checked)} aria-labelledby={`${id}-privacyConsent-label`} aria-invalid={Boolean(fieldErrors.privacyConsent)} aria-describedby={fieldErrors.privacyConsent ? `${id}-privacyConsent-error` : undefined} /><span><span id={`${id}-privacyConsent-label`}>Съгласен/съгласна съм <CofeinBrand compact /> да използва данните ми за тази резервация.</span>{fieldError('privacyConsent')}</span></label>
           </fieldset>
           <p className="cofein-booking-help">Ще видите потвърждение след изпращането. Ако е нужна проверка по имейл, ще Ви покажем следващата стъпка.</p>
         </form>}

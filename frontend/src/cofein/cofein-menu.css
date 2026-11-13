@@ -1,13 +1,16 @@
 .menu-modal { width: min(1120px, calc(100vw - 48px)); background: var(--ink); scrollbar-gutter: stable; }
 .menu-modal .close-modal { position: sticky; float: right; top: 16px; margin: 16px 16px -60px 0; background: #34251ee8; color: #f4eee4; }
 .menu-intro { padding: 38px 48px 28px; }
+.menu-brand-label { display: flex; align-items: center; gap: 18px; }
+.menu-brand-label > .cofein-brand { font-size: 22px; }
+.menu-brand-label > span:last-child { border-left: 1px solid #bda78b55; padding-left: 18px; }
 .menu-intro > .eyebrow { color: var(--gold); font-size: 10px; }
 .menu-intro h2 { margin: 18px 0 12px; font-family: var(--display-font, Georgia, serif); font-size: clamp(34px, 4vw, 48px); font-weight: 400; line-height: 1.1; letter-spacing: -.025em; }
-.menu-intro h2 span { color: var(--gold-light); font-style: italic; }
+.menu-intro h2 span { color: var(--gold-light); font-style: normal; }
 .menu-intro > p:last-of-type { color: var(--muted); font-size: 13px; line-height: 1.7; }
 .menu-tools { display: flex; align-items: end; justify-content: space-between; gap: 40px; margin-top: 26px; }
-.menu-departments { display: flex; padding: 4px; gap: 4px; border: 1px solid #d7b89838; border-radius: 9px; background: #f4eee407; }
-.menu-departments button { min-width: 100px; min-height: 44px; padding: 10px 20px; border-radius: 5px; font-size: 14px; font-weight: 550; color: var(--muted); transition: color .15s, background .15s; }
+.menu-departments { display: flex; padding: 4px; gap: 4px; border: 1px solid #d7b89838; border-radius: 2px; background: #f4eee407; }
+.menu-departments button { min-width: 100px; min-height: 44px; padding: 10px 20px; border-radius: 0; font-size: 14px; font-weight: 550; color: var(--muted); transition: color .15s, background .15s; }
 .menu-departments button[aria-pressed='true'] { color: #35271f; background: #ecdfce; }
 .menu-search { display: flex; flex-direction: column; gap: 6px; width: 290px; font-size: 11px; color: var(--muted); }
 .menu-search-field { display: flex; align-items: center; border-bottom: 1px solid #cfb18160; }

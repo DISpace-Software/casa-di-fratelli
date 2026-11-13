@@ -3,6 +3,7 @@ import food from './data/menu-food.json';
 import drinks from './data/menu-drinks.json';
 import allergens from './data/menu-allergens.json';
 import './cofein-menu.css';
+import CofeinBrand from './CofeinBrand.jsx';
 
 const sections = { food, drinks };
 const formatPrice = value => value.toLocaleString('bg-BG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -46,7 +47,7 @@ export default function CofeinMenu({ initialDepartment = 'food' }) {
 
   return <div className="cofein-menu">
     <header className="menu-intro">
-      <p className="eyebrow">COFEIN · МЕНЮ</p>
+      <p className="eyebrow menu-brand-label"><CofeinBrand compact /><span>МЕНЮ</span></p>
       <h2 id="dialog-title">Вкусът на <span>твоя ден.</span></h2>
       <p id="dialog-description">От първото кафе до вечерята с приятели.</p>
       <div className="menu-tools">
