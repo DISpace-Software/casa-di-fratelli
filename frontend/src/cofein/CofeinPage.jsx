@@ -246,7 +246,7 @@ export default function CofeinPage() {
             <div className="hero-story">
               <p className="eyebrow hero-kicker">ПЛОВДИВ · ОРФЕЙ 24</p>
               <h1 id="hero-title"><CofeinBrand /></h1>
-              <p className="hero-title">Време за вас.<br />Място за разговор.</p>
+              <p className="hero-title">Време за вас.<br /><em>Място за разговор.</em></p>
               <p className="hero-description">От първото кафе до вечерята.<br />С добра храна и любимата компания.</p>
               <div className="hero-actions">
                 <button className="button button-gold" type="button" onClick={event => openModal({ type: 'booking' }, event)}>Резервирай маса <Arrow /></button>
