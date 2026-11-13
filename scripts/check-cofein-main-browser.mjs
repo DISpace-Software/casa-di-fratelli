@@ -10,6 +10,7 @@ const { chromium } = await import(pathToFileURL(playwrightPath).href);
 const browser = await chromium.launch({ headless: true, executablePath: chromiumPath });
 await fs.mkdir(outputRoot, { recursive: true });
 const report = { localOnly: true, realBrowser: true, checks: [], errors: [], failedResources: [], screenshots: [], metrics: [], writes: 0 };
+let activePage;
 const check = (name, result) => { report.checks.push({ name, passed: Boolean(result) }); console.log(`${result ? 'PASS' : 'FAIL'}: ${name}`); };
 const frame = page => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 async function capture(page, label, fullPage = false) { const file = `${label}.png`; await page.screenshot({ path: path.join(outputRoot, file), fullPage, animations: 'disabled' }); report.screenshots.push(file); }
@@ -26,7 +27,7 @@ async function closeDialog(page) { await page.getByRole('button', { name: 'За�
 try {
   for (const size of [{ name: 'desktop', width: 1440, height: 1000 }, { name: 'phone390', width: 390, height: 844 }, { name: 'phone360', width: 360, height: 740 }, { name: 'phone320', width: 320, height: 740 }, { name: 'landscape', width: 844, height: 390 }]) {
     const context = await browser.newContext({ viewport: size, isMobile: size.width < 900, hasTouch: size.width < 900, deviceScaleFactor: 1, locale: 'bg-BG', timezoneId: 'Europe/Sofia', reducedMotion: 'reduce' });
-    const page = await context.newPage(); page.setDefaultTimeout(15000);
+    const page = await context.newPage(); activePage = page; page.setDefaultTimeout(15000);
     page.on('pageerror', error => report.errors.push({ device: size.name, message: error.message }));
     page.on('response', response => { if (response.status() >= 400) report.failedResources.push({ device: size.name, status: response.status(), url: response.url() }); });
     await page.route('**/*', async route => { const method = route.request().method(); if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) { report.writes++; return route.abort(); } return route.continue(); });
@@ -99,12 +100,29 @@ try {
   const motionPage = await motionContext.newPage();
   motionPage.on('pageerror', error => report.errors.push({ device: 'desktop-motion', message: error.message }));
   await motionPage.goto(`${origin}/cofein-preview.html`, { waitUntil: 'networkidle' });
+  const introSkip = motionPage.getByRole('button', { name: 'Към сайта', exact: true });
+  if (await introSkip.isVisible()) await introSkip.click();
   for (const selector of ['#atmosphere', '#spaces', '#gallery', '#visit']) { await motionPage.locator(selector).scrollIntoViewIfNeeded(); await motionPage.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))); }
   check('Normal-motion sections reveal as they enter the viewport', await motionPage.locator('[data-reveal]').evaluateAll(nodes => nodes.every(node => node.classList.contains('is-visible'))));
   await motionPage.emulateMedia({ reducedMotion: 'reduce' }); await frame(motionPage);
   check('Changing to reduced motion preserves all revealed content', await motionPage.locator('[data-reveal]').evaluateAll(nodes => nodes.every(node => getComputedStyle(node).opacity === '1')));
   await motionContext.close();
   check('No JavaScript page exceptions', report.errors.length === 0); check('No failing HTTP resource responses', report.failedResources.length === 0); check('Main site audit made no writes', report.writes === 0);
-} catch (error) { report.fatal = { message: error.message, stack: error.stack }; throw error; }
+} catch (error) {
+  report.fatal = { message: error.message, stack: error.stack };
+  if (activePage && !activePage.isClosed()) {
+    report.failureState = await activePage.evaluate(() => ({
+      date: document.querySelector('[name=reservedDate]')?.value,
+      time: document.querySelector('[name=reservedTime]')?.value,
+      guests: document.querySelector('[name=guestCount]')?.value,
+      mapStatus: document.querySelector('.cofein-booking-map-header')?.innerText,
+      enabledTables: document.querySelectorAll('.cofein-map-table-button:enabled').length,
+      step: document.querySelector('.cofein-booking')?.dataset.step,
+      intro: document.querySelector('.cofein-intro-shell')?.dataset.coffeeIntro,
+    })).catch(() => null);
+    await capture(activePage, 'failure-state').catch(() => {});
+  }
+  throw error;
+}
 finally { await fs.writeFile(path.join(outputRoot, 'report.json'), JSON.stringify(report, null, 2)); await browser.close(); }
 if (report.checks.some(item => !item.passed)) process.exitCode = 1;
