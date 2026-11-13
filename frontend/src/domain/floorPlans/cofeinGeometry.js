@@ -9,8 +9,8 @@ export const COFEIN_MAP_VIEWS = Object.freeze({
   all: view("all", "Цялата карта", 0, 0, 900, 1600),
   exterior: view("exterior", "Външна зала", 35, 315, 555, 1270),
   interior: view("interior", "Вътрешна зала", 290, 35, 600, 1240),
-  "exterior-upper": view("exterior-upper", "Външна зала · горна част", 35, 305, 390, 785),
-  "exterior-lower": view("exterior-lower", "Външна зала · долна част", 35, 1025, 555, 560),
+  "exterior-upper": view("exterior-upper", "Външна зала · към градината", 35, 305, 390, 785),
+  "exterior-lower": view("exterior-lower", "Външна зала · към улицата", 35, 1025, 555, 560),
   "interior-main": view("interior-main", "Вътрешна зала · основна част", 300, 35, 590, 875),
   "interior-angled": view("interior-angled", "Вътрешна зала · ъглова част", 315, 765, 520, 515),
 });
@@ -85,8 +85,8 @@ const DETAIL_VIEWS = Object.freeze({
   interior: ["interior-main", "interior-angled"],
 });
 const VIEW_NAMES = {
-  "exterior-upper": { bg: "Външна · горна", en: "Exterior · upper", ru: "Внешний · верхняя" },
-  "exterior-lower": { bg: "Външна · долна", en: "Exterior · lower", ru: "Внешний · нижняя" },
+  "exterior-upper": { bg: "Външна зала · към градината", en: "Exterior hall · garden side", ru: "Внешний зал · со стороны сада" },
+  "exterior-lower": { bg: "Външна зала · към улицата", en: "Exterior hall · street side", ru: "Внешний зал · со стороны улицы" },
   "interior-main": { bg: "Вътрешна · основна", en: "Interior · main", ru: "Внутренний · основная" },
   "interior-angled": { bg: "Вътрешна · ъглова", en: "Interior · angled", ru: "Внутренний · угловая" },
 };
@@ -156,8 +156,8 @@ export function getCofeinMapGeometry(zones = [], tables = []) {
 }
 
 const BOOKING_VIEW_NAMES = Object.freeze({
-  "exterior-upper": { bg: "Горна част", en: "Upper part", ru: "Верхняя часть" },
-  "exterior-lower": { bg: "Долна част", en: "Lower part", ru: "Нижняя часть" },
+  "exterior-upper": { bg: "Към градината", en: "Garden side", ru: "Со стороны сада" },
+  "exterior-lower": { bg: "Към улицата", en: "Street side", ru: "Со стороны улицы" },
   "interior-main": { bg: "Основна част", en: "Main part", ru: "Основная часть" },
   "interior-angled": { bg: "Ъглова част", en: "Corner part", ru: "Угловая часть" },
 });
