@@ -46,9 +46,9 @@ export default function FloorPlanZonesEditor({ plan, language = "bg", selectedAr
     </div>
     {selected && <div className="grid gap-3 rounded-xl border border-white/10 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
       <label className="min-w-0 text-sm text-white/70">{text.selected}: {text.name}
-        <input value={selected.names?.[language] ?? selected.name ?? ""} maxLength={100} onChange={event => updateZone({ name: event.target.value, names: { ...selected.names, [language]: event.target.value } })} className="mt-1 min-h-[44px] w-full rounded-xl border border-white/15 bg-black/20 px-3 text-white" />
+        <input name="hall.name" value={selected.names?.[language] ?? selected.name ?? ""} maxLength={100} onChange={event => updateZone({ name: event.target.value, names: { ...selected.names, [language]: event.target.value } })} className="mt-1 min-h-[44px] w-full rounded-xl border border-white/15 bg-black/20 px-3 text-white" />
       </label>
-      <label className="flex min-h-[44px] items-center gap-2 text-sm text-white/80"><input type="checkbox" checked={selected.isActive} onChange={event => updateZone({ isActive: event.target.checked })} />{text.active}</label>
+      <label className="flex min-h-[44px] items-center gap-2 text-sm text-white/80"><input name="hall.isActive" type="checkbox" checked={selected.isActive} onChange={event => updateZone({ isActive: event.target.checked })} />{text.active}</label>
       <p className="text-xs text-white/55 sm:col-span-2">{text.hint}</p>
     </div>}
   </section>;

@@ -22,7 +22,7 @@ export default function CofeinAdminHallNavigation({ geometry, tables, zones, act
     {sectioned ? <div className="cofein-admin-halls-header">
       <div className="cofein-admin-hall-choice">
         <span className="cofein-admin-hall-label">{text.hall}</span>
-        {zones.length > 4 ? <select aria-label={text.hall} value={activeZone} onChange={event => onZoneChange(event.target.value)}>
+        {zones.length > 4 ? <select name="mapHall" aria-label={text.hall} value={activeZone} onChange={event => onZoneChange(event.target.value)}>
           {zones.map(zone => <option key={zone.id} value={zone.id}>{zone.name}</option>)}
         </select> : <div className="cofein-admin-hall-buttons" role="group" aria-label={text.hall}>
           {zones.map(zone => <button key={zone.id} type="button" aria-pressed={activeZone === zone.id} onClick={() => onZoneChange(zone.id)}>{zone.name}</button>)}

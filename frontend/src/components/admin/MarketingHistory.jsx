@@ -43,11 +43,11 @@ export default function MarketingHistory({ adminLanguage, adminFetch, refreshVer
       </div>
       <p className="mt-2 text-sm text-white/60">{t.note}</p>
       <form className="mt-4 flex flex-wrap gap-2" onSubmit={(event) => { event.preventDefault(); setSearch(draft.trim()); setPage(1); setReload((n) => n + 1); }}>
-        <select aria-label={t.all} className={inputClass} value={campaign} onChange={(event) => { setCampaign(event.target.value); setPage(1); }}>
+        <select name="marketingHistory.campaign" aria-label={t.all} className={inputClass} value={campaign} onChange={(event) => { setCampaign(event.target.value); setPage(1); }}>
           <option value="">{t.all}</option>
           {["birthday", "loyalty", "winback"].map((key) => <option key={key} value={key}>{t[key]}</option>)}
         </select>
-        <input aria-label={t.search} placeholder={t.search} className={`${inputClass} flex-1`} value={draft} onChange={(event) => setDraft(event.target.value)} />
+        <input name="marketingHistory.search" aria-label={t.search} placeholder={t.search} className={`${inputClass} flex-1`} value={draft} onChange={(event) => setDraft(event.target.value)} />
         <button className="ghost-button min-h-11 rounded-2xl px-4 py-2">{t.apply}</button>
       </form>
       <div className="mt-4" aria-live="polite" aria-busy={busy}>

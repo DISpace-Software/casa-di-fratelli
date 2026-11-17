@@ -62,7 +62,7 @@ export default function CofeinMenu({ initialDepartment = 'food' }) {
       <aside className="menu-index" aria-label="Категории">
         <p className="eyebrow">КАТЕГОРИИ</p>
         <div className="menu-category-buttons">{categories.map(category => <button type="button" key={category.id} aria-pressed={!isSearching && selected.id === category.id} onClick={() => changeCategory(category.id)}>{category.label}<span>{String(category.items.length).padStart(2, '0')}</span></button>)}</div>
-        <label className="menu-category-select">Категория<select value={isSearching ? '' : selected.id} onChange={event => changeCategory(event.target.value)}>{isSearching && <option value="" disabled>Резултати от търсенето</option>}{categories.map(category => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
+        <label className="menu-category-select">Категория<select name="menuCategory" value={isSearching ? '' : selected.id} onChange={event => changeCategory(event.target.value)}>{isSearching && <option value="" disabled>Резултати от търсенето</option>}{categories.map(category => <option key={category.id} value={category.id}>{category.label}</option>)}</select></label>
       </aside>
       <div className="menu-dishes">
         <div className="menu-result-line"><span>{isSearching ? 'РЕЗУЛТАТИ ОТ ТЪРСЕНЕТО' : department === 'food' ? 'ОТ НАШАТА КУХНЯ' : 'ОТ НАШИЯ БАР'}</span><span role="status" aria-live="polite">{count} {count === 1 ? 'предложение' : 'предложения'}</span></div>

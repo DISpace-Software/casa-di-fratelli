@@ -304,7 +304,7 @@ export default function CofeinBooking({ onClose, onBusyChange }) {
         </dl></>}
         {submission.status === 'unknown' && <>
           {telephone && <a className="cofein-booking-primary" href={`tel:${telephone}`}><BookingIcon kind="phone" />{phoneLabel}</a>}
-          <label className="cofein-booking-consent cofein-unknown-consent"><input type="checkbox" checked={checkedWithTeam} onChange={event => setCheckedWithTeam(event.target.checked)} /><span>Проверих с екипа и трябва да направя нова резервация.</span></label>
+          <label className="cofein-booking-consent cofein-unknown-consent"><input name="checkedWithTeam" type="checkbox" checked={checkedWithTeam} onChange={event => setCheckedWithTeam(event.target.checked)} /><span>Проверих с екипа и трябва да направя нова резервация.</span></label>
           <button type="button" className="cofein-booking-secondary" disabled={!checkedWithTeam} onClick={() => { clearAttempt(); setCheckedWithTeam(false); setSubmission({ status: 'idle', error: '', result: null }); setSelectedKey(''); setStep('workspace'); setEditingVisit(true); setRefresh(value => value + 1); }}>Нова резервация след проверка</button>
         </>}
         {onClose && <button className={submission.status === 'unknown' ? 'cofein-booking-text-button' : 'cofein-booking-primary'} type="button" onClick={onClose}>Готово</button>}

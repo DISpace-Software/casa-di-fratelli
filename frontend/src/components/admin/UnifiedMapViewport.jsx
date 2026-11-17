@@ -501,6 +501,7 @@ export default function UnifiedMapViewport({
         onViewModeChange={onViewModeChange}
       /> : <div className="mb-3 flex flex-wrap items-center gap-2">
         <select
+          name="mapZone"
           value={activeZone}
           onChange={(event) => focusZone(event.target.value)}
           aria-label={labels.zone}
