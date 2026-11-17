@@ -10,8 +10,9 @@ function Seat({ x, y, width = 22, height = 16, rotate = 0, fill }) {
   </g>;
 }
 
-export default function CofeinTableVisual({ table, placement, status = "available", selected = false }) {
+export default function CofeinTableVisual({ table, placement, status = "available", selected = false, svgGroup = false }) {
   const uid = useId().replace(/:/g, "");
+  const Element = svgGroup ? "g" : "svg";
   const p = placement || projectCofeinTable(table);
   if (!p) return null;
   const compact = p.compact;
@@ -29,10 +30,10 @@ export default function CofeinTableVisual({ table, placement, status = "availabl
   const upholstery = `url(#${uid}-upholstery)`;
   const availableStatus = ["available", "free", "unknown"].includes(status);
 
-  return <svg
+  return <Element
     className="cofein-map-table-visual"
     data-status={effectiveStatus}
-    viewBox={`${-p.width / 2} ${-p.height / 2} ${p.width} ${p.height}`}
+    viewBox={svgGroup ? undefined : `${-p.width / 2} ${-p.height / 2} ${p.width} ${p.height}`}
     aria-hidden="true"
     focusable="false"
   >
@@ -84,5 +85,5 @@ export default function CofeinTableVisual({ table, placement, status = "availabl
             : <path d="M0-3V0L2 1" />}
     </g>}
     {selected && <g className="cofein-map-status-badge" transform={`translate(${compact ? 18 : 28} ${compact ? -18 : -22})`}><circle r={compact ? 5 : 7} /><path d="m-3 0 2 2 4-4" /></g>}
-  </svg>;
+  </Element>;
 }

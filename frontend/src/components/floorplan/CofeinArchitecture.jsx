@@ -34,8 +34,9 @@ function Door({ x, y, rotation = 0, width = 80, reverse = false }) {
 
 /** The photographed building is one connected floor. Only furniture controls
  * are interactive; this SVG is a stable, scalable architectural underlay. */
-export default function CofeinArchitecture({ language = "bg", className = "", zones = [] }) {
+export default function CofeinArchitecture({ language = "bg", className = "", zones = [], svgGroup = false }) {
   const uid = useId().replace(/:/g, "");
+  const Element = svgGroup ? "g" : "svg";
   const t = { ...(strings[language] || strings.bg) };
   for (const id of ["interior", "exterior"]) {
     const zone = zones.find(item => item.id === id);
@@ -46,9 +47,9 @@ export default function CofeinArchitecture({ language = "bg", className = "", zo
   const serviceWalls = "M1065 730V945H1015M1120 955H1440L1600 955L1630 925V770L1730 680H1770M1870 680H1900V610M1900 720V740M1900 835V955H2190M1900 780H2050M2050 780H2190M2050 640V675M2050 750V780M2050 805V840M2050 920V955M1900 955V1035H2130V1090M2130 1170V1325H2045L1925 1440V1570M2190 955L2240 1005M2290 1125L2190 1045";
   const columns = [[895,1090],[895,1475],[895,1965],[895,2460],[895,2690],[895,2960],[895,3230],[895,3460],[1240,3460],[1455,1090],[1455,1475],[1455,1910],[1490,2250],[1740,2510],[1940,2780],[2135,2580],[2340,2370],[1120,1090],[1120,1475],[1120,1965],[1120,2690],[1120,2960],[1120,3230]];
 
-  return <svg
+  return <Element
     className={`cofein-map-architecture ${className}`.trim()}
-    viewBox={`0 0 ${COFEIN_MAP_WORLD.width} ${COFEIN_MAP_WORLD.height}`}
+    viewBox={svgGroup ? undefined : `0 0 ${COFEIN_MAP_WORLD.width} ${COFEIN_MAP_WORLD.height}`}
     aria-hidden="true"
     focusable="false"
   >
@@ -148,5 +149,5 @@ export default function CofeinArchitecture({ language = "bg", className = "", zo
     <Label x={795} y={1010} anchor="start" className="cofein-map-direction-label">{t.gardenExit}</Label>
     <Label x={795} y={1885} anchor="start" className="cofein-map-direction-label">{t.gardenExit}</Label>
     <Label x={1950} y={2925} anchor="start" className="cofein-map-direction-label">{t.streetEntry}</Label>
-  </svg>;
+  </Element>;
 }

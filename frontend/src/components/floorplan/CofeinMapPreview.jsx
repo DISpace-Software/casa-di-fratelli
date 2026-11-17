@@ -19,18 +19,16 @@ export default function CofeinMapPreview({ geometry, view, tables, language = 'b
     <defs><clipPath id={clipId}><rect x={view.x} y={view.y} width={view.width} height={view.height} /></clipPath></defs>
     {/* viewBox scales into the thumbnail but does not clip the letterbox margins. */}
     <g clipPath={`url(#${clipId})`}>
-    <foreignObject x="0" y="0" width={geometry.world.width} height={geometry.world.height}>
-      <div xmlns="http://www.w3.org/1999/xhtml" style={{ position: 'relative', width: geometry.world.width, height: geometry.world.height }}>
-        <CofeinFloorPlanDecor geometry={decor} language={language} />
-        {tables.filter(table => ids.has(table.id)).map(table => {
-          const placement = projectCofeinTable(table, geometry);
-          if (!placement) return null;
-          return <div key={table.id} style={{ position: 'absolute', left: placement.x, top: placement.y, width: placement.width, height: placement.height, transform: 'translate(-50%, -50%)' }}>
-            <CofeinTableVisual table={table} placement={placement} />
-          </div>;
-        })}
-      </div>
-    </foreignObject>
+      {/* Pure SVG keeps Safari's nested foreignObject compositor out of the
+          thumbnail while reusing the interactive map's exact artwork. */}
+      <CofeinFloorPlanDecor geometry={decor} language={language} svgOnly />
+      {tables.filter(table => ids.has(table.id)).map(table => {
+        const placement = projectCofeinTable(table, geometry);
+        if (!placement) return null;
+        return <g key={table.id} transform={`translate(${placement.x} ${placement.y})`}>
+          <CofeinTableVisual table={table} placement={placement} svgGroup />
+        </g>;
+      })}
     </g>
   </svg>;
 }
