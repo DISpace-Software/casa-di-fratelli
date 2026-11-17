@@ -174,7 +174,8 @@ def main():
                 check('same email authenticates independently with different tenant passwords')
                 for tenant in (CASA, COFEIN):
                     context = expect('/api/admin/context', tenant=tenant)
-                    check(f'public admin context resolves {tenant} without returning credentials', context['tenantId'] == tenant and set(context) == {'tenantId', 'name', 'frontendUrl', 'notificationsEnabled'} and context['notificationsEnabled'] is False)
+                    check(f'public admin context resolves {tenant} without returning credentials', context['tenantId'] == tenant and set(context) == {'tenantId', 'name', 'frontendUrl', 'notificationsEnabled', 'reservationDictation'} and context['notificationsEnabled'] is False)
+                    check(f'on-device name and phone dictation is enabled by default for {tenant}', context['reservationDictation'] == {'enabled': True, 'mode': 'on-device', 'languages': ['bg'], 'fields': ['guestName', 'phone']})
                 # The shared build packages this exact Casa asset. Keep browser
                 # checks local instead of depending on a fake website hostname.
                 local_casa_branding = expect('/api/branding', tenant=CASA)
