@@ -5,6 +5,7 @@ using SeatMap.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SeatMap.Api.Services.Tenancy;
+using SeatMap.Api.Services.Reservations;
 
 namespace SeatMap.Api.Controllers;
 
@@ -52,6 +53,7 @@ public class AdminAuthController : ControllerBase
     [HttpGet("context")]
     public IActionResult GetContext()
     {
+        Response.Headers.CacheControl = "no-store";
         if (!_currentTenant.IsResolved)
             return NotFound(new { code = "TENANT_NOT_FOUND", message = "No active restaurant is selected." });
 
@@ -61,7 +63,8 @@ public class AdminAuthController : ControllerBase
             tenantId = _currentTenant.TenantId,
             name = _currentTenant.TenantName,
             frontendUrl = _currentTenant.FrontendUrl,
-            notificationsEnabled = _currentTenant.NotificationsEnabled
+            notificationsEnabled = _currentTenant.NotificationsEnabled,
+            reservationDictation = ReservationDictationPolicy.Get(_configuration)
         });
     }
 

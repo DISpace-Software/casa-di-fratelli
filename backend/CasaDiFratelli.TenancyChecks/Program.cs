@@ -16,6 +16,8 @@ Check(!typeof(ReservationsController).GetMethods()
         .Any(method => method.Name == "OnActionExecutionAsync"),
     "Controller filter implementation is not exposed as an MVC action");
 
+ReservationDictationChecks.Run();
+
 static TenantDefinition Tenant(string id) => new()
 {
     Id = id, Slug = id, Domain = $"{id}.example.test",

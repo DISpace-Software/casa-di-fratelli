@@ -1,4 +1,5 @@
-import LocalReservationFieldDictation, { ReservationVoiceField as LocalReservationVoiceField, ReservationFieldVoiceStatus as LocalReservationFieldVoiceStatus } from "../components/admin/ReservationFieldDictation";
+import ReservationFieldDictation, { ReservationVoiceField, ReservationFieldVoiceStatus } from "../components/admin/ReservationFieldDictation";
+import { useReservationDictationPolicy } from "../components/admin/useReservationDictationPolicy";
 import { createReservationLocalSpeech } from "../domain/reservations/reservationLocalSpeech";
 import { applyVoiceReservationDraft } from "../domain/reservations/voiceReservationDraft";
 import { restaurantAssetUrl } from "../domain/adminMap/restaurantAssets";
@@ -54,15 +55,6 @@ import { findPublicTableHold } from "../domain/reservations/publicTableHolds";
 import { getActiveLayoutTables, getMoveCandidateOptions } from "../domain/reservations/adminPlanRules";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
 import { resolveAdminMapViewMode, sectionForAdminSelection } from "../domain/adminMap/mapViewMode";
-
-// Explicit local mode keeps audio on the device; WebSpeech is preview-only.
-const browserVoicePreview = import.meta.env.DEV && import.meta.env.VITE_RESERVATION_VOICE_PREVIEW === "true";
-const localVoiceRecognition = import.meta.env.VITE_RESERVATION_VOICE_MODE === "local";
-const reservationFieldVoiceEnabled = tenantContext.tenantId === "casa-di-fratelli" && (browserVoicePreview || import.meta.env.VITE_RESERVATION_VOICE_ENABLED === "true");
-function VoicePreviewPassthrough({ children }) { return children; }
-const ReservationFieldDictation = reservationFieldVoiceEnabled ? LocalReservationFieldDictation : VoicePreviewPassthrough;
-const ReservationVoiceField = reservationFieldVoiceEnabled ? LocalReservationVoiceField : VoicePreviewPassthrough;
-const ReservationFieldVoiceStatus = reservationFieldVoiceEnabled ? LocalReservationFieldVoiceStatus : () => null;
 
 const isCasaTenant = tenantContext.tenantId === "casa-di-fratelli";
 const adminMapViewStorageKey = () => tenantStorageKey(tenantContext.tenantId === "cofein" ? "cofein-admin-map-view-mode-v1" : "casa-admin-map-view-mode");
@@ -1828,6 +1820,7 @@ function SectionMapViewport({
 function ReservationOperationsMap({
   voiceRequest,
   localSpeechClient,
+  reservationFieldVoiceEnabled,
   text,
   language = "bg",
   layout,
@@ -2522,7 +2515,7 @@ function ReservationOperationsMap({
       >
         <ReservationFieldDictation
           enabled={reservationFieldVoiceEnabled && !reservationFormBusy}
-          request={voiceRequest} baseUrl={API_BASE_URL} allowBrowserRecognition={browserVoicePreview} localRecognition={localVoiceRecognition} localSpeechClient={localSpeechClient}
+          request={voiceRequest} baseUrl={API_BASE_URL} localRecognition localSpeechClient={localSpeechClient}
           minDate={tableReservationDraft.id ? undefined : formatLocalDate(new Date())}
           language={language} currentDate={tableReservationDraft.reservedDate}
           availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
@@ -5836,15 +5829,16 @@ export default function AdminPage(props) {
 
 function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged, onEventsChanged, theme, onToggleTheme, layoutSession, layoutSync }) {
   const adminFormId = React.useId();
+  const reservationFieldVoiceEnabled = useReservationDictationPolicy();
   const [localSpeechClient, setLocalSpeechClient] = React.useState(null);
   React.useEffect(() => {
-    if (!reservationFieldVoiceEnabled || !localVoiceRecognition) return;
+    if (!reservationFieldVoiceEnabled) { setLocalSpeechClient(null); return; }
     // One model per authenticated page, reused between reservations and map/list.
     // Construction does not download files or open the microphone.
     const client = createReservationLocalSpeech();
     setLocalSpeechClient(client);
     return () => client.dispose();
-  }, []);
+  }, [reservationFieldVoiceEnabled]);
   const { plan } = useFloorPlan();
   const { closedAreas, loaded: zonesLoaded, error: zonesError, updateZones, reloadZones } = useSeasonalZones();
   const [savingSeasonalArea, setSavingSeasonalArea] = React.useState("");
@@ -9532,6 +9526,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
               <ReservationOperationsMap
                 voiceRequest={adminFetch}
                 localSpeechClient={localSpeechClient}
+                reservationFieldVoiceEnabled={reservationFieldVoiceEnabled}
                 text={a.liveMap}
                 language={adminLanguage}
                 layout={plan.tables}
@@ -9636,7 +9631,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                     <ReservationFieldDictation
                       enabled={reservationFieldVoiceEnabled}
-                      request={adminFetch} baseUrl={API_BASE_URL} allowBrowserRecognition={browserVoicePreview} localRecognition={localVoiceRecognition} localSpeechClient={localSpeechClient}
+                      request={adminFetch} baseUrl={API_BASE_URL} localRecognition localSpeechClient={localSpeechClient}
                       minDate={formatLocalDate(new Date())}
                       language={adminLanguage} currentDate={adminReservation.reservedDate}
                       availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}

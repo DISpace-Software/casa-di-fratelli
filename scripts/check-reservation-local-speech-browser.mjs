@@ -1,18 +1,21 @@
 // Disposable local fixture only. Real UI/client with a stub of this application's
 // dedicated speech worker, synthetic capture and PCM decoding. No model accuracy,
 // real microphone, physical iPad, WebGPU performance or production CSP claim.
-// node script <private-state.json> <output-dir> <playwright-index.mjs> <chrome> [webkit]
+// node script <private-state.json> <output-dir> <playwright-index.mjs> <chrome> [webkit] [tenant,tenant] [all|policy|matrix]
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
-const [statePath, outputRoot, playwrightPath, chromiumPath, webkitPath] = process.argv.slice(2);
+const [statePath, outputRoot, playwrightPath, chromiumPath, webkitPath, tenantList, scenario = 'all'] = process.argv.slice(2);
+assert.ok(['all', 'policy', 'matrix'].includes(scenario));
 const { chromium, webkit } = await import(pathToFileURL(playwrightPath).href);
 const state = JSON.parse(await fs.readFile(statePath, 'utf8'));
 assert.equal(state.localOnly, true);
 for (const value of [state.apiUrl, state.origin]) assert.equal(new URL(value).hostname, '127.0.0.1');
 await fs.mkdir(outputRoot, { recursive: true });
-const checks = [], errors = [], voiceRequests = [], runtimeRequests = [], operationalWrites = [], browsers = [];
+const tenantIds = tenantList?.split(',') || state.voiceTenants || ['casa-di-fratelli'];
+for (const tenant of tenantIds) assert.ok(state.tenants[tenant], 'Each test tenant must exist in the disposable fixture');
+const checks = [], errors = [], voiceRequests = [], runtimeRequests = [], operationalWrites = [], browsers = [], tenantRequests = [], verifiedTiers = [];
 const fields = ['guestName', 'phone'];
 const manualFields = ['reservedDate', 'reservedTime', 'guestCount', 'email'];
 const allFields = [...fields, ...manualFields];
@@ -37,11 +40,12 @@ async function waitPhase(form, value) {
     }; check();
   }), value);
 }
-async function reservations() {
-  const response = await fetch(state.apiUrl + '/api/reservations', { headers: { 'X-Tenant-Id': 'casa-di-fratelli', 'X-Admin-Token': state.tenants['casa-di-fratelli'].auth.token } });
+async function reservations(tenant = 'casa-di-fratelli') {
+  const response = await fetch(state.apiUrl + '/api/reservations', { headers: { 'X-Tenant-Id': tenant, 'X-Admin-Token': state.tenants[tenant].auth.token } });
   assert.equal(response.status, 200); return response.json();
 }
 async function open(browser, engine, orientation, options = {}) {
+  const tenantId = options.tenantId || 'casa-di-fratelli';
   const viewport = orientation === 'portrait' ? { width: 820, height: 1180 } : { width: 1180, height: 820 };
   const context = await browser.newContext({ viewport, isMobile: true, hasTouch: true, timezoneId: 'Europe/Sofia' });
   await context.addInitScript(({ options, speech }) => {
@@ -105,6 +109,9 @@ async function open(browser, engine, orientation, options = {}) {
   page.on('console', message => { if (message.type() === 'error') errors.push({ engine, error: message.text() }); });
   await page.route('**/*', async route => {
     const request = route.request(), url = new URL(request.url());
+    if (url.origin === state.apiUrl && url.pathname.startsWith('/api/')) {
+      tenantRequests.push({ engine, expected: tenantId, actual: request.headers()['x-tenant-id'], path: url.pathname });
+    }
     if (/\/speech\/|huggingface\.co|cdn-lfs|\.onnx(?:\?|$)|\.wasm(?:\?|$)|transformers[./-].*\.js|ort-wasm/i.test(url.href)) {
       runtimeRequests.push({ engine, path: url.pathname }); return route.abort('blockedbyclient');
     }
@@ -114,25 +121,37 @@ async function open(browser, engine, orientation, options = {}) {
     if (url.pathname.startsWith('/api/') && !['GET', 'HEAD', 'OPTIONS'].includes(request.method()) && !url.pathname.endsWith('/admin/login')) {
       operationalWrites.push({ engine, method: request.method(), path: url.pathname }); return route.abort('blockedbyclient');
     }
+    if (options.policyDisabled && url.pathname === '/api/admin/context' && request.method() === 'GET') {
+      const response = await route.fetch();
+      const json = await response.json();
+      json.reservationDictation = { ...json.reservationDictation, enabled: false };
+      return route.fulfill({ response, json });
+    }
     return route.continue();
   });
-  await page.goto(state.origin + '/r/casa-di-fratelli/admin');
-  await page.locator('input[type=email]').fill(state.tenants['casa-di-fratelli'].email);
-  await page.locator('input[type=password]').fill(state.tenants['casa-di-fratelli'].password);
+  const tierResponse = page.waitForResponse(response => new URL(response.url()).pathname === '/api/product-tier' && response.request().method() === 'GET');
+  await page.goto(state.origin + '/r/' + tenantId + '/admin');
+  await page.locator('input[type=email]').fill(state.tenants[tenantId].email);
+  await page.locator('input[type=password]').fill(state.tenants[tenantId].password);
   await page.locator('button[type=submit]').click();
+  const tier = await (await tierResponse).json();
+  if (state.tenants[tenantId].tier) assert.equal(tier.tier, state.tenants[tenantId].tier);
+  assert.equal(tier.isPro, tier.tier === 'Pro');
+  verifiedTiers.push({ engine, tenantId, tier: tier.tier, responseMocked: false });
   await page.getByRole('button', { name: /^Карта на резервациите/ }).waitFor();
   return { page, context, viewport };
 }
-async function formFor(page, mode) {
+async function formFor(page, mode, tenantId = 'casa-di-fratelli') {
   if (mode === 'map') {
     await page.getByRole('button', { name: /^Карта на резервациите/ }).click();
-    await page.locator('.admin-map-table-node').filter({ hasText: /^23$/ }).click();
+    if (tenantId === 'casa-di-fratelli') await page.locator('.admin-map-table-node').filter({ hasText: /^23$/ }).click();
+    else await page.locator('.cofein-map-table-button, .admin-map-table-node').first().click();
     await page.getByRole('button', { name: 'Създай резервация', exact: true }).click();
     return page.getByRole('form', { name: 'Резервация', exact: true });
   }
   await page.getByRole('button', { name: /^Резервации/ }).first().click();
   await page.getByRole('button', { name: 'Нова резервация', exact: true }).click();
-  return page.locator('form').filter({ has: page.getByPlaceholder('Напр. 20, 21, 22', { exact: true }) });
+  return page.locator('form').filter({ has: page.locator('input[name="reservationCreate.tableIds"]') });
 }
 async function prepare(page, form) {
   await prepareButton(form).click();
@@ -161,12 +180,12 @@ async function phoneCandidate(form) {
 }
 
 try {
-  const before = await reservations();
+  const before = Object.fromEntries(await Promise.all(tenantIds.map(async tenant => [tenant, await reservations(tenant)])));
   for (const [engine, type, executablePath] of [['chromium', chromium, chromiumPath], ['webkit', webkit, webkitPath]]) {
     const browser = await type.launch({ headless: true, ...(executablePath ? { executablePath } : {}) }); browsers.push(browser);
-    for (const orientation of ['portrait', 'landscape']) for (const mode of ['map', 'list']) {
-      const { page, context, viewport } = await open(browser, engine, orientation);
-      const form = await formFor(page, mode);
+    if (scenario !== 'policy') for (const tenantId of tenantIds) for (const orientation of ['portrait', 'landscape']) for (const mode of ['map', 'list']) {
+      const { page, context, viewport } = await open(browser, engine, orientation, { tenantId });
+      const form = await formFor(page, mode, tenantId);
       await prepareButton(form).waitFor();
       assert.equal(await form.locator('[data-voice-field]').count(), 2);
       for (const field of manualFields) assert.equal(await mic(form, field).count(), 0);
@@ -174,10 +193,15 @@ try {
       for (const key of fields) assert.equal(await mic(form, key).isDisabled(), true);
       assert.deepEqual(await page.evaluate(() => ({ workers: window.qaLocalSpeech.workers.length, gpuProbes: window.qaLocalSpeech.gpuProbes, permissions: window.qaLocalSpeech.permissions })), { workers: 0, gpuProbes: 0, permissions: 0 });
       assert.match(await status(form).innerText(), /не се изпраща към сървър/);
-      await page.screenshot({ path: `${outputRoot}/${engine}-${orientation}-${mode}-before-prepare.png`, fullPage: true });
+      await page.screenshot({ path: `${outputRoot}/${engine}-${tenantId}-${orientation}-${mode}-before-prepare.png`, fullPage: true });
       await prepare(page, form);
       assert.equal(await page.evaluate(() => window.qaLocalSpeech.permissions), 0);
       assert.equal(await page.evaluate(() => window.qaLocalSpeech.worker.workerType), 'classic');
+      assert.equal(await page.evaluate(() => new URL(window.qaLocalSpeech.worker.url, location.href).origin === location.origin), true);
+      assert.equal(await page.evaluate(() => {
+        const url = new URL(window.qaLocalSpeech.messages.find(message => message.type === 'prepare').assetBase);
+        return url.origin === location.origin && url.pathname.startsWith('/speech/');
+      }), true, 'The model must use the current admin origin for every tenant');
       await input(form, 'reservedDate').fill(expected.reservedDate);
       await input(form, 'reservedTime').selectOption(expected.reservedTime);
       await input(form, 'guestCount').fill(expected.guestCount);
@@ -190,7 +214,7 @@ try {
           await form.locator('[data-voice-accept-phone]').waitFor();
           assert.deepEqual(await values(form), previous);
           assert.match(await status(form).innerText(), /0888123456/);
-          await page.screenshot({ path: `${outputRoot}/${engine}-${orientation}-${mode}-phone-review.png`, fullPage: true });
+          await page.screenshot({ path: `${outputRoot}/${engine}-${tenantId}-${orientation}-${mode}-phone-review.png`, fullPage: true });
           await form.locator('[data-voice-accept-phone]').click();
         }
         const next = await values(form);
@@ -204,10 +228,43 @@ try {
       assert.deepEqual(messages, fields.map(field => ({ field, language: 'bg', length: 16000, float: true })));
       await assertMicClosed(page);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1));
-      await page.screenshot({ path: `${outputRoot}/${engine}-${orientation}-${mode}-filled.png`, fullPage: true });
-      passed(`${engine} ${orientation} ${mode}: no eager worker/model/mic, explicit preparation, name and phone only; date/time/count/email remain manual and unchanged, explicit phone confirmation, classic worker PCM transfer, readable tablet layout`);
+      await page.screenshot({ path: `${outputRoot}/${engine}-${tenantId}-${orientation}-${mode}-filled.png`, fullPage: true });
+      passed(`${engine} ${tenantId} ${orientation} ${mode}: real tier verified; no eager worker/model/mic, same-origin preparation, name and phone only; date/time/count/email remain manual and unchanged, explicit phone confirmation, classic worker PCM transfer, readable tablet layout`);
       await context.close();
     }
+    if (scenario === 'matrix') continue;
+    const disabledTenant = tenantIds.includes('cofein') ? 'cofein' : tenantIds[0];
+    for (const mode of ['map', 'list']) {
+      const disabled = await open(browser, engine, 'portrait', { tenantId: disabledTenant, policyDisabled: true });
+      const disabledForm = await formFor(disabled.page, mode, disabledTenant);
+      await input(disabledForm, 'guestName').fill('Ръчно Име');
+      assert.equal(await disabledForm.locator('[data-voice-field], [data-voice-prepare]').count(), 0);
+      assert.equal(await input(disabledForm, 'guestName').inputValue(), 'Ръчно Име');
+      assert.deepEqual(await disabled.page.evaluate(() => ({ workers: window.qaLocalSpeech.workers.length, permissions: window.qaLocalSpeech.permissions })), { workers: 0, permissions: 0 });
+      passed(engine + ' ' + disabledTenant + ' ' + mode + ': API policy disabled removes all speech controls before any worker/model/microphone starts; manual entry works');
+      await disabled.context.close();
+    }
+    const dynamicPolicy = { tenantId: disabledTenant };
+    const rollback = await open(browser, engine, 'portrait', dynamicPolicy);
+    const rollbackForm = await formFor(rollback.page, 'map', disabledTenant);
+    await prepare(rollback.page, rollbackForm);
+    await input(rollbackForm, 'guestName').fill('Запазено Име');
+    await input(rollbackForm, 'phone').fill('0899123456');
+    await input(rollbackForm, 'reservedDate').fill(expected.reservedDate);
+    await input(rollbackForm, 'reservedTime').selectOption(expected.reservedTime);
+    await input(rollbackForm, 'guestCount').fill(expected.guestCount);
+    await input(rollbackForm, 'email').fill(expected.email);
+    const rollbackValues = await values(rollbackForm);
+    dynamicPolicy.policyDisabled = true;
+    await rollback.page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await mic(rollbackForm, 'guestName').waitFor({ state: 'detached' });
+    assert.equal(await rollbackForm.locator('[data-voice-field], [data-voice-prepare]').count(), 0);
+    assert.deepEqual(await values(rollbackForm), rollbackValues);
+    assert.equal(await rollback.page.evaluate(() => window.qaLocalSpeech.workers.length === 1 && window.qaLocalSpeech.workers.every(worker => worker.terminated === 1)), true);
+    assert.equal(await rollback.page.evaluate(() => window.qaLocalSpeech.permissions), 0);
+    passed(engine + ' ' + disabledTenant + ': runtime API disable on focus disposes the prepared worker, removes microphones and preserves all six manual values');
+    await rollback.context.close();
+    if (scenario === 'policy') continue;
     const { page, context } = await open(browser, engine, 'portrait'); const form = await formFor(page, 'map');
     await input(form, 'guestName').fill('Проверено Име');
     await page.evaluate(() => { window.qaLocalSpeech.autoReady = false; });
@@ -302,7 +359,8 @@ try {
     passed(`${engine}: missing microphone APIs reject preparation without creating a worker; manual fields remain usable`);
     await noAudio.context.close();
   }
-  assert.deepEqual(await reservations(), before);
+  assert.deepEqual(Object.fromEntries(await Promise.all(tenantIds.map(async tenant => [tenant, await reservations(tenant)]))), before);
+  assert.ok(tenantRequests.length > 0 && tenantRequests.every(request => request.expected === request.actual), 'Every API request keeps its own tenant selector');
   assert.deepEqual(voiceRequests, []); assert.deepEqual(runtimeRequests, []); assert.deepEqual(operationalWrites, []); assert.deepEqual(errors, []);
   passed('No voice capability/upload API calls, external model/runtime downloads, operational writes or runtime errors; fixture reservations unchanged');
 } catch (error) {
@@ -312,6 +370,7 @@ try {
   await Promise.all(browsers.map(browser => browser.close()));
   const report = { passed: checks.every(check => check.passed), localOnly: true, mockedDedicatedWorker: true, syntheticCaptureAndDecode: true,
     actualModelTested: false, actualMicrophoneTested: false, physicalIPadTested: false, productionCspTested: false,
+    scenario, tenantIds, verifiedTiers, tenantSelectorChecks: tenantRequests.length,
     checks, errors, voiceRequests, runtimeRequests, operationalWrites };
   await fs.writeFile(outputRoot + '/report.json', JSON.stringify(report, null, 2));
   if (report.passed) await fs.rm(outputRoot + '/failure.png', { force: true });
