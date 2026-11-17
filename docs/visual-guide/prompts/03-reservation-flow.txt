@@ -1,0 +1,45 @@
+Revision 1 — exact generation prompt
+Use case: infographic-diagram.
+Create one real raster infographic, landscape approximately 16:10, very high resolution and crisp readable Russian typography. Match a premium technical editorial architecture atlas: ivory #F5F1E8 background, near-black text, muted copper for frontend, dark teal for API/data, slate for secondary information. Spacious rounded cards, restrained line icons, thin clean directional arrows, large legible text, generous whitespace. No photos, 3D, fake logos, gradients or decorative filler. Every label must be correctly spelled Russian.
+
+Top left small header exactly "SEATMAP • 17.11.2026". Large main title exactly "Как проходит бронирование".
+
+Main composition: two distinct left-hand entry lanes converge into one shared teal processing lane, then a clear result on the right. Preserve strictly left-to-right directional flow and keep connectors away from text.
+
+Upper left copper lane headed "Посетитель · сайт" with three sequential rounded cards: "Посещение" (small second line "Дата · время · гости"), then "Зал → карта → стол", then "Контакты". Arrows point forward from each card to the next, then into the central API block.
+
+Lower left slate lane headed "Сотрудник · админка" with two sequential rounded cards: "Вход и сессия", then "Создать · изменить · перенести". Arrow from this lane also enters the SAME central API block. It must not bypass validation or connect directly to database.
+
+Central teal API block headed "API выбранного ресторана". Inside it a compact ordered list with three readable lines: "Доступность и сезонные закрытия", "Допустимые столы и вместимость", "Время и конфликты". The selection of restaurant is explicit in the block heading, not a separate unconnected subsystem.
+
+From API validation arrow to a teal transaction card "Транзакция + блокировка"; next arrow to a database/save card "Сохранить бронь и CRM" with smaller line "В БД этого ресторана"; next arrow to the result card "Результат гостю". Below the save/result area show a distinct short return/read branch "Обновление админки" with an arrow FROM saved data toward this read/refresh card. The diagram must never imply that admin refresh creates the booking.
+
+Place an emphasized but restrained current-policy note by result: "Cofein сейчас" then "Approved · автоматически" then "Уведомления отключены". Do not show a live manual approval gate or an email-required Cofein path.
+
+Across the lower part of the image, an airy four-cell comparison strip headed "Правила выбора". Exact short copy:
+1. "Посетитель" / "До 8 гостей · 1 стол"
+2. "Персонал" / "Интерфейс: до 40 гостей" / "Серверные правила — отдельно"
+3. "Casa" / "Группы столов одного зала"
+4. "Cofein" / "Только заданные группы" / "Сейчас: 0 комбинаций"
+This strip is supporting detail, not part of the temporal arrows. Do not depict arbitrary Cofein table combining. 40 is a UI limit, not a universal server-enforced limit.
+
+A small isolated dashed future pill at bottom says "Позже: ручное подтверждение Cofein". It must be visibly separate from the current sequence, without solid runtime arrows.
+
+Footer left exactly "03/05". Footer right exactly "Фактическая схема · подробности в документации".
+
+Accuracy and layout constraints: All creation/edit/move commands are checked server-side and use the tenant's database. Saving happens inside transaction, with lock protecting concurrent writes. Live Cofein confirmation is automatic, notifications disabled. No global guest profile is implied by CRM. Clear arrows in correct direction; no circular or ambiguous connections, no excessively small text. Preserve the supplied facts without adding unrequested features.
+
+Revision 1 history: initial generation visually reviewed; factual label corrections requested and applied in revision 2 below.
+Generation mode: built-in image_gen.
+Visual QA: Russian labels, technical facts, future/current separation and arrow direction inspected using view_image. No text truncation or spelling defects observed.
+
+Revision 2 — exact edit prompt
+Use case: precise-object-edit / infographic-diagram text accuracy correction.
+Edit the supplied existing Russian infographic. Preserve its entire composition, landscape aspect ratio, ivory background, serif typography, copper/teal/slate colors, icons, cards, all arrows, spacing, footer, and every unmentioned label exactly. Change ONLY the following four label groups, using correct crisp readable Russian text and fitting the same card positions:
+1. In the central teal API card, replace the heading "API выбранного ресторана" with the heading "Общий API" and a smaller but clear subtitle "Контекст ресторана". Keep its three numbered validation lines unchanged. This must read as one common backend with a restaurant context.
+2. In the lock-icon card, keep "Транзакция + блокировка" and add a clearly readable small line "Повторная проверка" below it. This documents final revalidation inside the locked transaction.
+3. In the database/save card, replace all its current text "Сохранить бронь и CRM" and "В БД этого ресторана" with heading "Сохранить изменения" and subtitle "Бронь и связанные данные". Preserve the database icon and arrow down toward admin refresh. Do not use the term CRM here.
+4. In the rightmost check-icon result card, replace "Результат гостю" with "Результат операции".
+Keep all remaining wording exactly, especially the Cofein automatic Approved / notifications disabled note, visitor 8 guests and 1 table, staff UI up to 40 with separate server rules, Casa same-hall groups, Cofein configured groups with 0 current combinations, and the dashed future manual-confirmation pill. Do not move cards, add new connectors, change arrows, remove facts, or redesign the image. Preserve premium technical editorial quality. Only these four precise factual text corrections.
+
+Revision 2 QA: inspected the corrected PNG with view_image. All four requested label groups are correct and legible; layout, arrows and remaining facts are preserved. Built-in image_gen edit with the existing image as reference. Final selected asset: ../images/03-reservation-flow.png.

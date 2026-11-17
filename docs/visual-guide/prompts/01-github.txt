@@ -1,0 +1,26 @@
+Use case: infographic-diagram
+Asset type: actual raster infographic for a Russian technical documentation guide, image 01 of 05.
+Primary request: Create one polished landscape infographic, approximately 16:10, with large crisp readable Russian typography. Show the verified repository structure and three separate frontend builds, not three repositories.
+Style: premium technical editorial design, flat vector-like raster artwork. Warm ivory #F5F1E8 background, near-black text, deep teal for API/data, copper for frontend, slate for supporting tools. Rounded cards, extremely subtle borders, thin directional arrows, consistent generous whitespace. Clean modern sans-serif Cyrillic typography. No photographs, 3D, fake brand logos, gradients, clutter, watermarks, tiny text, or code screenshots.
+Composition: small header at top left, large title below. Below title, a prominent repository card spanning the page, then a tree of five folder cards. Next, a clearly separated three-column build/output row. Bottom, a restrained branch/status callout and a footer.
+Exact header text: "SEATMAP • 17.11.2026"
+Exact title: "GitHub: один репозиторий, три приложения"
+Repository card, exact text: "DISpace-Software/casa-di-fratelli" and small badge "Публичный репозиторий".
+Five folder cards connected by thin tree lines from that single repository card:
+1. Copper card: "frontend/"; contents on separate short lines: "Casa", "Cofein", "Общая админка", "Общие компоненты".
+2. Deep teal card: "backend/"; contents: ".NET API", "Проекты проверок".
+3. Slate card: "scripts/"; contents: "Упаковка", "Проверки".
+4. Slate card: "docs/"; contents: "Документация".
+5. Slate card: "archive/"; contents: "Архив экспериментов".
+The build row has exact heading "Три сборки → три приложения Vercel" and three equal copper-accented cards:
+"dist" → "Сайт Casa";
+"dist-cofein" → "Сайт Cofein";
+"dist-admin" → "Общая админка".
+Add the exact explanatory line: "Отдельные приложения, не отдельные репозитории".
+Bottom status callout has three visually separated labels, no connecting push/merge arrows:
+"GitHub main · 2052214"
+"Локальный релиз UI · 243623e"
+"Документация → отдельная ветка"
+Factual constraints: there is exactly one relevant GitHub repository. The latest local UI release must not appear as already pushed to GitHub main. Do not invent other repositories, remote branches, automatic deployments, or extra technical facts. Folder tree and frontend build row must remain distinct.
+Footer: "01/05" at left and "Фактическая схема · подробности в документации" at right.
+Text must be exactly as specified, with correct Russian spelling and exact repository/hash strings. Prioritize accurate, readable text and obvious hierarchy over decorative icons.
