@@ -3,8 +3,10 @@ import { parseVoiceReservationField } from '../../domain/reservations/voiceReser
 import { startReservationFieldSpeechSession } from '../../domain/reservations/reservationFieldSpeechSession';
 import { startReservationAudioSession } from '../../domain/reservations/reservationAudioSession';
 import { getReservationSpeechCapabilities, transcribeReservationAudio } from '../../domain/reservations/reservationSpeechTransport';
+import { createReservationLocalSpeech } from '../../domain/reservations/reservationLocalSpeech';
 
 const VoiceFieldContext = React.createContext(null);
+const DICTATION_FIELDS = new Set(['guestName', 'phone']);
 const copy = {
   bg: {
     dictate: 'Диктувай', stop: 'Спри', language: 'Език на диктовката', title: 'Диктовка', listening: 'Слушам', filled: 'Попълнено', heard: 'Разпознат текст',
@@ -13,6 +15,14 @@ const copy = {
     starting: 'Разрешаване на микрофона', processing: 'Разпознавам', checking: 'Проверявам диктовката…', offline: 'Диктовката още не е свързана. Можеш да попълниш полетата ръчно.',
     timeout: 'Няма отговор от услугата. Опитай отново.', busy: 'Диктовката е заета. Изчакай малко и опитай отново.', cancel: 'Отмени', pastDate: 'Датата е в миналото. Избери предстояща дата.',
     manualHint: 'Кажи стойността и натисни стоп.',
+    phoneHint: 'Кажи цифрите една по една, с кратка пауза. После натисни стоп.',
+    prepareLocal: 'Подготви диктовката на устройството', preparingLocal: 'Подготвям диктовката',
+    localHint: 'Без платена услуга. Първата подготовка изтегля около 100 MB — използвай Wi-Fi. После моделът може да се използва от кеша на браузъра.',
+    localPrivacy: 'Аудиото се разпознава на това устройство и не се изпраща към сървър.',
+    localReview: 'Провери името и телефона. Останалите полета се попълват ръчно.',
+    reviewPhone: 'Разпознат телефон', usePhone: 'Използвай този номер',
+    localUnsupported: 'Това устройство не поддържа локалната диктовка. Полетата остават достъпни за ръчно въвеждане.',
+    localFailed: 'Диктовката не успя да се подготви. Провери връзката и свободната памет, след което опитай отново.',
     recordingHint: 'Кажи стойността и натисни стоп. Записът приключва и след пауза.',
     unsupported: 'Този браузър няма гласово разпознаване. Полетата могат да се попълват ръчно.',
     permission: 'Разреши достъп до микрофона в браузъра и опитай отново.',
@@ -32,6 +42,14 @@ const copy = {
     starting: 'Доступ к микрофону', processing: 'Распознаю', checking: 'Проверяю диктовку…', offline: 'Диктовка пока не подключена. Поля можно заполнить вручную.',
     timeout: 'Сервис не ответил. Повторите попытку.', busy: 'Диктовка занята. Подождите немного и повторите.', cancel: 'Отменить', pastDate: 'Дата уже прошла. Выберите будущую дату.',
     manualHint: 'Назовите значение и нажмите стоп.',
+    phoneHint: 'Называйте цифры по одной, с короткой паузой. Затем нажмите стоп.',
+    prepareLocal: 'Подготовить диктовку на устройстве', preparingLocal: 'Подготавливаю диктовку',
+    localHint: 'Без платного сервиса. Первая подготовка загружает около 100 МБ — используйте Wi-Fi. Затем модель может загружаться из кэша браузера.',
+    localPrivacy: 'Звук распознаётся на этом устройстве и не отправляется на сервер.',
+    localReview: 'Проверьте имя и телефон. Остальные поля заполняются вручную.',
+    reviewPhone: 'Распознанный телефон', usePhone: 'Использовать этот номер',
+    localUnsupported: 'Это устройство не поддерживает локальную диктовку. Поля можно заполнить вручную.',
+    localFailed: 'Не удалось подготовить диктовку. Проверьте соединение и свободную память, затем повторите попытку.',
     recordingHint: 'Назовите значение и нажмите стоп. Запись также завершится после паузы.',
     unsupported: 'В браузере нет распознавания речи. Поля можно заполнить вручную.',
     permission: 'Разрешите доступ к микрофону в браузере и повторите попытку.',
@@ -51,6 +69,14 @@ const copy = {
     starting: 'Allow microphone access', processing: 'Recognizing', checking: 'Checking dictation…', offline: 'Dictation is not connected yet. You can type into every field.',
     timeout: 'The speech service did not respond. Please try again.', busy: 'Dictation is busy. Please wait a moment and try again.', cancel: 'Cancel', pastDate: 'This date has passed. Choose an upcoming date.',
     manualHint: 'Say the value and press stop.',
+    phoneHint: 'Say each digit separately, with a short pause. Then press stop.',
+    prepareLocal: 'Prepare dictation on this device', preparingLocal: 'Preparing dictation',
+    localHint: 'No paid service. Initial preparation downloads about 100 MB — use Wi-Fi. The model can then be reused from the browser cache.',
+    localPrivacy: 'Audio is recognized on this device and is not sent to a server.',
+    localReview: 'Review the name and phone number. Fill in the remaining fields manually.',
+    reviewPhone: 'Recognized phone number', usePhone: 'Use this number',
+    localUnsupported: 'This device does not support local dictation. You can still type into every field.',
+    localFailed: 'Dictation could not be prepared. Check your connection and available memory, then try again.',
     recordingHint: 'Say the value and press stop. Recording also ends after a pause.',
     unsupported: 'Speech recognition is unavailable in this browser. You can type into every field.',
     permission: 'Allow microphone access in your browser and try again.',
@@ -65,11 +91,14 @@ const copy = {
   },
 };
 
-export default function ReservationFieldDictation({ enabled, language = 'bg', currentDate, minDate, availableTimes, onApply, request, baseUrl, allowBrowserRecognition = false, children }) {
+export default function ReservationFieldDictation({ enabled, language = 'bg', currentDate, minDate, availableTimes, onApply, request, baseUrl, allowBrowserRecognition = false, localRecognition = false, localSpeechClient, children }) {
   const t = copy[language.split('-')[0]] || copy.bg;
   const id = React.useId();
-  const [speechLanguage, setSpeechLanguage] = React.useState(language.startsWith('ru') ? 'ru-RU' : language.startsWith('en') ? 'en-GB' : 'bg-BG');
+  const [speechLanguage, setSpeechLanguage] = React.useState(localRecognition ? 'bg-BG' : language.startsWith('ru') ? 'ru-RU' : language.startsWith('en') ? 'en-GB' : 'bg-BG');
   const [service, setService] = React.useState({ enabled: false, languages: [], loading: true });
+  const [localState, setLocalState] = React.useState({ status: 'idle', progress: null, error: null });
+  const localRef = React.useRef(null);
+  const preparationRef = React.useRef(null);
   const [activeField, setActiveField] = React.useState(null);
   const [phase, setPhase] = React.useState('idle');
   const [silenceDetection, setSilenceDetection] = React.useState(false);
@@ -77,6 +106,8 @@ export default function ReservationFieldDictation({ enabled, language = 'bg', cu
   const [transcript, setTranscript] = React.useState('');
   const [notice, setNotice] = React.useState('');
   const [error, setError] = React.useState('');
+  const [phoneReview, setPhoneReview] = React.useState(null);
+  const phoneReviewRef = React.useRef(null);
   const sessionRef = React.useRef(null);
   const sessionTokenRef = React.useRef(0);
   const activeFieldRef = React.useRef(null);
@@ -84,8 +115,10 @@ export default function ReservationFieldDictation({ enabled, language = 'bg', cu
   React.useEffect(() => { latestRef.current = { onApply, currentDate, minDate, availableTimes }; }, [onApply, currentDate, minDate, availableTimes]);
 
   const cancel = React.useCallback((field) => {
-    if (field && activeFieldRef.current !== field) return;
+    if (field && activeFieldRef.current !== field && !(field === 'phone' && phoneReviewRef.current)) return;
     sessionTokenRef.current += 1;
+    preparationRef.current?.abort();
+    preparationRef.current = null;
     sessionRef.current?.abort();
     sessionRef.current = null;
     activeFieldRef.current = null;
@@ -95,10 +128,40 @@ export default function ReservationFieldDictation({ enabled, language = 'bg', cu
     setTranscript('');
     setNotice('');
     setError('');
+    phoneReviewRef.current = null;
+    setPhoneReview(null);
   }, []);
 
   React.useEffect(() => {
-    if (!enabled || !request) return;
+    if (!enabled || !localRecognition) return;
+    const client = localSpeechClient || createReservationLocalSpeech();
+    localRef.current = client;
+    setLocalState(client.getSnapshot());
+    const unsubscribe = client.subscribe(setLocalState);
+    return () => {
+      preparationRef.current?.abort();
+      preparationRef.current = null;
+      unsubscribe();
+      if (!localSpeechClient) client.dispose();
+      if (localRef.current === client) localRef.current = null;
+    };
+  }, [enabled, localRecognition, localSpeechClient]);
+
+  async function prepareLocal() {
+    if (!enabled || !localRecognition || !localRef.current) return;
+    if (!audioSupported) { setError(t.unsupported); return; }
+    cancel();
+    window.dispatchEvent(new CustomEvent('reservation-dictation-start', { detail: id }));
+    const controller = new AbortController();
+    preparationRef.current = controller;
+    try { await localRef.current.prepare({ signal: controller.signal }); }
+    catch (error) {
+      if (!controller.signal.aborted) setError(error?.code === 'local-unsupported' ? t.localUnsupported : t.localFailed);
+    } finally { if (preparationRef.current === controller) preparationRef.current = null; }
+  }
+
+  React.useEffect(() => {
+    if (!enabled || !request || localRecognition) return;
     let disposed = false;
     setService({ enabled: false, languages: [], loading: true });
     const controller = new AbortController();
@@ -108,7 +171,7 @@ export default function ReservationFieldDictation({ enabled, language = 'bg', cu
       .catch(() => { if (!disposed) setService({ enabled: false, languages: [], loading: false }); })
       .finally(() => clearTimeout(timeout));
     return () => { disposed = true; clearTimeout(timeout); controller.abort(); };
-  }, [enabled, request, baseUrl]);
+  }, [enabled, request, baseUrl, localRecognition]);
 
   React.useEffect(() => {
     const hidden = () => { if (document.hidden) cancel(); };
@@ -122,6 +185,7 @@ export default function ReservationFieldDictation({ enabled, language = 'bg', cu
       window.removeEventListener('pagehide', pageHide);
       window.removeEventListener('reservation-dictation-start', otherSession);
       sessionTokenRef.current += 1;
+      preparationRef.current?.abort();
       sessionRef.current?.abort();
       sessionRef.current = null;
     };
@@ -130,22 +194,23 @@ export default function ReservationFieldDictation({ enabled, language = 'bg', cu
 
   const Recognition = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
   const audioSupported = typeof window !== 'undefined' && Boolean(window.MediaRecorder && navigator.mediaDevices?.getUserMedia && window.isSecureContext);
-  const serverMode = service.enabled && service.languages.includes(speechLanguage.split('-')[0]);
-  const browserMode = !serverMode && allowBrowserRecognition && Boolean(Recognition);
-  const supported = serverMode ? audioSupported : browserMode;
-  const checking = Boolean(request && service.loading && !allowBrowserRecognition);
+  const serverMode = !localRecognition && service.enabled && service.languages.includes(speechLanguage.split('-')[0]);
+  const browserMode = !localRecognition && !serverMode && allowBrowserRecognition && Boolean(Recognition);
+  const supported = localRecognition ? audioSupported && ['ready', 'processing'].includes(localState.status) : serverMode ? audioSupported : browserMode;
+  const checking = !localRecognition && Boolean(request && service.loading && !allowBrowserRecognition);
 
   function toggle(field) {
-    if (!enabled) return;
+    if (!enabled || !DICTATION_FIELDS.has(field)) return;
     if (activeFieldRef.current === field && sessionRef.current) {
       if (phase === 'processing' || phase === 'starting') cancel(field);
       else sessionRef.current.stop();
       return;
     }
     cancel();
+    if (localRecognition && localRef.current?.getSnapshot().status !== 'ready') return;
     window.dispatchEvent(new CustomEvent('reservation-dictation-start', { detail: id }));
     setTargetField(field);
-    if (!supported) { setError(serverMode ? t.unsupported : t.offline); return; }
+    if (!supported) { setError(localRecognition ? t.localUnsupported : serverMode ? t.unsupported : t.offline); return; }
     const token = sessionTokenRef.current;
     const isCurrent = () => sessionTokenRef.current === token;
     let ended = false;
@@ -183,6 +248,7 @@ export default function ReservationFieldDictation({ enabled, language = 'bg', cu
           'language-not-supported': t.unsupported, 'unsupported': t.unsupported,
           'start-timeout': t.timeout, 'timeout': t.timeout, 'transcription-timeout': t.timeout,
           'busy': t.busy, 'rate-limited': t.busy,
+          'local-unsupported': t.localUnsupported, 'local-not-ready': t.localFailed,
         };
         setError(errors[code] || t.error);
       },
@@ -202,30 +268,47 @@ export default function ReservationFieldDictation({ enabled, language = 'bg', cu
           if (field === 'reservedTime' && current.availableTimes && !(current.availableTimes(current.currentDate) || []).includes(candidate)) {
             setError(t.unavailable); return;
           }
+          if (localRecognition && field === 'phone') {
+            // Real local-model tests showed plausible wrong digits. The admin
+            // must explicitly accept the visible number before it edits a contact.
+            phoneReviewRef.current = candidate;
+            setPhoneReview(candidate);
+            setNotice('');
+            setError('');
+            return;
+          }
           current.onApply({ [field]: candidate });
           setNotice(`${t.filled}: ${t.fields[field]} — ${candidate}`);
           setError('');
         } else setError(lastIssue || t.empty);
       },
     };
-    const session = serverMode
+    const session = serverMode || localRecognition
       ? startReservationAudioSession({
         ...callbacks, field,
         mediaDevices: navigator.mediaDevices,
         MediaRecorder: window.MediaRecorder,
         AudioContext: window.AudioContext || window.webkitAudioContext,
-        transcribe: audio => transcribeReservationAudio(request, baseUrl, audio),
+        transcribe: audio => localRecognition ? localRef.current.transcribe(audio) : transcribeReservationAudio(request, baseUrl, audio),
       })
       : startReservationFieldSpeechSession({ ...callbacks, Recognition });
     if (!ended) sessionRef.current = session;
   }
-  const context = { enabled, id, t, speechLanguage, setSpeechLanguage, activeField, phase, silenceDetection, targetField, transcript, notice, error, supported, checking, serverMode, toggle, cancel };
+  function acceptPhone() {
+    const value = phoneReviewRef.current;
+    if (!value || activeFieldRef.current) return;
+    phoneReviewRef.current = null;
+    setPhoneReview(null);
+    latestRef.current.onApply({ phone: value });
+    setNotice(`${t.filled}: ${t.fields.phone} — ${value}`);
+  }
+  const context = { enabled, id, t, speechLanguage, setSpeechLanguage, activeField, phase, silenceDetection, targetField, transcript, notice, error, supported, checking, serverMode, audioSupported, localRecognition, localState, prepareLocal, phoneReview, acceptPhone, toggle, cancel };
   return <VoiceFieldContext.Provider value={context}><div className="contents" onSubmitCapture={() => cancel()} onKeyDown={event => { if (event.key === 'Escape') cancel(); }}>{children}</div></VoiceFieldContext.Provider>;
 }
 
 export function ReservationVoiceField({ field, label, children }) {
   const voice = React.useContext(VoiceFieldContext);
-  if (!voice?.enabled) return children;
+  if (!voice?.enabled || !DICTATION_FIELDS.has(field)) return children;
   const listening = voice.activeField === field;
   const action = `${listening ? (voice.phase === 'processing' || voice.phase === 'starting' ? voice.t.cancel : voice.t.stop) : voice.t.dictate}: ${label || voice.t.fields[field]}`;
   return (
@@ -246,15 +329,33 @@ export function ReservationFieldVoiceStatus() {
     <div id={`${voice.id}-status`} data-reservation-field-dictation="true" data-voice-phase={phase} className="min-w-0 space-y-1.5 py-1">
       <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/55">
         <span>{t.title}</span>
-        <select name="reservationDictationLanguage" aria-label={t.language} value={voice.speechLanguage} disabled={Boolean(activeField)} onChange={event => voice.setSpeechLanguage(event.target.value)} className="min-w-0 rounded-lg border border-white/15 bg-[#15110e] px-2 py-1.5 text-xs text-white/80 disabled:opacity-50"><option value="bg-BG">Български</option><option value="ru-RU">Русский</option><option value="en-GB">English</option></select>
+        {voice.localRecognition ? <span className="rounded-lg border border-white/15 px-2 py-1.5 text-white/80">Български</span> : <select name="reservationDictationLanguage" aria-label={t.language} value={voice.speechLanguage} disabled={Boolean(activeField)} onChange={event => voice.setSpeechLanguage(event.target.value)} className="min-w-0 rounded-lg border border-white/15 bg-[#15110e] px-2 py-1.5 text-xs text-white/80 disabled:opacity-50"><option value="bg-BG">Български</option><option value="ru-RU">Русский</option><option value="en-GB">English</option></select>}
       </div>
-      {!activeField && !notice && !error && <p className="text-[11px] leading-relaxed text-white/50">{voice.checking ? t.checking : voice.supported ? t.hint : t.offline}</p>}
+      {voice.localRecognition && !['ready', 'processing'].includes(voice.localState.status) && <div className="space-y-2 rounded-xl border border-[#c9a56a]/20 p-3">
+        <p className="text-xs leading-relaxed text-white/65">{voice.audioSupported ? t.localHint : t.unsupported}</p>
+        {voice.localState.status === 'preparing' ? <>
+          <p role="status" className="text-xs text-[#e1bf82]">{t.preparingLocal}{Number.isFinite(voice.localState.progress?.percent) ? ` · ${Math.round(voice.localState.progress.percent)}%` : '…'}</p>
+          <progress aria-label={t.preparingLocal} max="100" value={voice.localState.progress?.percent ?? undefined} className="block h-1.5 w-full accent-[#c9a56a]" />
+          <button type="button" onClick={() => voice.cancel()} className="min-h-11 rounded-xl border border-white/20 px-4 text-xs text-white/75">{t.cancel}</button>
+        </> : <button type="button" data-voice-prepare="true" onClick={voice.prepareLocal} className="min-h-11 rounded-xl border border-[#c9a56a]/40 bg-[#c9a56a]/10 px-4 py-2 text-left text-xs text-[#e1bf82]">{t.prepareLocal}</button>}
+      </div>}
+      {!activeField && !notice && !error && !voice.phoneReview && (!voice.localRecognition || voice.supported) && <p className="text-[11px] leading-relaxed text-white/50">{voice.checking ? t.checking : voice.supported ? t.hint : t.offline}</p>}
       {activeField && <p role="status" className="break-words text-xs text-[#e1bf82]">{phase === 'starting' ? t.starting : phase === 'processing' ? t.processing : t.listening}: {t.fields[activeField]}… {transcript}</p>}
-      {activeField && phase === 'listening' && voice.serverMode && <p className="text-[11px] text-white/55">{silenceDetection ? t.recordingHint : t.manualHint}</p>}
-      {!activeField && notice && <p role="status" className="break-words text-xs text-emerald-200">{notice}</p>}
+      {activeField && phase === 'listening' && (voice.serverMode || voice.localRecognition) && <p className="text-[11px] text-white/55">{voice.localRecognition && activeField === 'phone' ? t.phoneHint : silenceDetection ? t.recordingHint : t.manualHint}</p>}
+      {!activeField && notice && <p role="status" className="break-words text-sm font-medium text-emerald-200">{notice}</p>}
+      {voice.phoneReview && <div role="status" className="space-y-2 rounded-xl border border-[#c9a56a]/35 bg-[#c9a56a]/5 p-3">
+        <p className="text-xs text-white/65">{t.reviewPhone}</p>
+        <p className="break-all font-mono text-lg text-[#e1bf82]">{voice.phoneReview}</p>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" data-voice-accept-phone="true" onClick={voice.acceptPhone} className="min-h-11 rounded-xl bg-[#c9a56a] px-4 text-sm font-medium text-[#15110e]">{t.usePhone}</button>
+          <button type="button" onClick={() => voice.cancel()} className="min-h-11 rounded-xl border border-white/20 px-4 text-sm text-white/75">{t.cancel}</button>
+        </div>
+      </div>}
+      {voice.localRecognition && voice.supported && <p className="text-xs leading-relaxed text-white/65">{t.localReview}</p>}
       {error && <p role="alert" className="text-xs text-red-200">{targetField && `${t.fields[targetField]}: `}{error}</p>}
+      {!error && voice.localRecognition && voice.localState.status === 'error' && <p role="alert" className="text-xs text-red-200">{voice.localState.error === 'local-unsupported' ? t.localUnsupported : t.localFailed}</p>}
       {!activeField && error && transcript && <p className="break-words text-[11px] text-white/55">{t.heard}: {transcript}</p>}
-      <p className="text-[10px] leading-relaxed text-white/35">{voice.serverMode ? t.privacy : voice.supported ? "Local preview · browser speech service" : ""}</p>
+      <p className="text-[10px] leading-relaxed text-white/35">{voice.localRecognition ? t.localPrivacy : voice.serverMode ? t.privacy : voice.supported ? "Local preview · browser speech service" : ""}</p>
     </div>
   );
 }

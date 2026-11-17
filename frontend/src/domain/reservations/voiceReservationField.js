@@ -101,6 +101,13 @@ function parseCompleteField(field, transcript, now, language) {
   const cleaned = cleanValue(field, transcript);
   const value = bulgarian ? normalizeFieldNotation(field, cleaned) : cleaned;
   if (!value || uncertain.test(value)) return failure;
+  if (bulgarian && field === 'phone') {
+    // Actual short-clip ASR confused "осем" with "осемстотин", creating
+    // plausible 080… contacts. Ask for digits rather than inventing a grouping.
+    // Preserve the explicitly spoken Bulgarian international country code.
+    const subscriber = value.replace(/^плюс\s+триста\s+(?:и\s+)?петдесет\s+(?:и\s+)?девет\s+/iu, '');
+    if (/(?<!\p{L})(?:сто|двеста|триста|четиристотин|петстотин|шестстотин|седемстотин|осемстотин|деветстотин|хиляда|хиляди)(?!\p{L})/iu.test(subscriber)) return failure;
+  }
   // A decimal headcount is invalid even when its two digits happen to match;
   // it must not be mistaken for an identical read-back ("2,2" -> "2").
   if (field === 'guestCount' && /^\d+\s*[.,]\s*\d+(?:\s+\p{L}+)?$/u.test(value)) return failure;
@@ -115,16 +122,20 @@ function parseCompleteField(field, transcript, now, language) {
   const parsed = parseVoiceReservation(labelled, now, { language });
   const result = parsed.fields[field];
   if (!result || parsed.issues.includes(issue)) return failure;
-  // Keep short 087/088/089 dictation fragments out of the form while the
-  // remaining digits arrive. Other numbers retain the shared length checks.
-  if (bulgarian && field === 'phone' && ((/^08[789]/u.test(result) && result.length < 10)
-    || (/^\+3598[789]/u.test(result) && result.length < 13))) return failure;
+  // Bulgarian 87/88/89 mobile numbers have nine national significant digits.
+  // Reject missing AND extra digits: ASR can turn "пет" into "петстотин".
+  // Other/international prefixes retain the shared checks; never trim a number.
+  if (bulgarian && field === 'phone' && ((/^08[789]/u.test(result) && result.length !== 10)
+    || (/^\+3598[789]/u.test(result) && result.length !== 13))) return failure;
 
   if (field === 'guestName') {
     // The shared parser may stop at a second field or chatter. A field dictation
     // must consist of the complete name, not a name found inside a conversation.
     const noise = /(?<!\p{L})(?:слушам|слушаме|секунда|момент|няма|нямам|трябва|още|нека|разговор|говорим|кажете|поръчах|поръчайте|сметката|менюто|не|да|съм|си|е|ли|само|днес|утре|вчера|tomorrow|today|wait|hello|hi)(?!\p{L})/iu;
-    if (result !== value || noise.test(value)) return failure;
+    // Observed ASR failure on short clips: a video outro instead of speech.
+    // Reject these phrases; capitalized words alone do not establish a name.
+    const outro = /(?<!\p{L})(?:абонирайте|субтитри|гледахте|подписывайтесь|подпишитесь|субтитры|просмотр|subscribe|subtitles|watching)(?!\p{L})/iu;
+    if (result !== value || noise.test(value) || outro.test(value)) return failure;
   } else if (field === 'reservedDate') {
     if (!dateShape.test(body)) return failure;
   } else if (bulgarian) {

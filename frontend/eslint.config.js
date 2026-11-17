@@ -5,7 +5,8 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'dist-admin', 'dist-cofein']),
+  // Pinned third-party WASM glue is verified by the speech asset manifest.
+  globalIgnores(['dist', 'dist-admin', 'dist-cofein', 'public/speech/**']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

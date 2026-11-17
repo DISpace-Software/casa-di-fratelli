@@ -1,4 +1,5 @@
-# REVIEW / BENCHMARK CANDIDATE ONLY — not deployed.
+# DO NOT DEPLOY: user declined the paid trial; new spending budget is $0.
+# Retained technical candidate only — not deployed or authorized.
 # 4c-8g is currently $175/month, prorated. Creating this service incurs charges.
 # This blueprint owns only the speech worker, never the live SeatMap API or DB.
 services:

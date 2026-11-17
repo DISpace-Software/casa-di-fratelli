@@ -1,0 +1,20 @@
+Bulgarian local reservation speech recognition
+
+Model: Bulgarian ASR Zipformer, Preslav Penev, Apache-2.0 (model card).
+https://huggingface.co/preslaff/bulgarian-asr-zipformer
+Revision: 8d2f8f4f159918a27b33c430e4fa83b10c705c28
+Files are the unmodified dynamic int8 ONNX exports and token table.
+
+Runtime: sherpa-onnx v1.12.36, k2-fsa / Xiaomi Corporation, Apache-2.0.
+https://github.com/k2-fsa/sherpa-onnx/releases/tag/v1.12.36
+Official browser WASM archive: sherpa-onnx-wasm-simd-1.12.36-vad-asr-en-zipformer_gigaspeech.tar.bz2
+The .wasm is unmodified. The JavaScript removes only the bundled English
+.data preloader and exposes its RAM filesystem; the ASR wrapper exposes
+OfflineRecognizer on the worker global. No English model is distributed.
+Runtime includes ONNX Runtime (MIT) and k2-fsa dependencies; see upstream
+https://github.com/k2-fsa/sherpa-onnx/tree/v1.12.36/cmake for dependency licenses.
+
+Recognition runs inside a dedicated Web Worker. Model/runtime files may be
+cached; recordings and recognized text are never stored or uploaded.
+Author benchmarks are not tablet validation. Validate on actual iPad hardware.
+Reproduce/verify with scripts/prepare-reservation-local-speech.py.

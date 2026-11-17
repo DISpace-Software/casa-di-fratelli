@@ -1,4 +1,5 @@
 import LocalReservationFieldDictation, { ReservationVoiceField as LocalReservationVoiceField, ReservationFieldVoiceStatus as LocalReservationFieldVoiceStatus } from "../components/admin/ReservationFieldDictation";
+import { createReservationLocalSpeech } from "../domain/reservations/reservationLocalSpeech";
 import { applyVoiceReservationDraft } from "../domain/reservations/voiceReservationDraft";
 import { restaurantAssetUrl } from "../domain/adminMap/restaurantAssets";
 import { getTenantPushRegistration } from "../domain/adminMap/pushRegistration";
@@ -54,8 +55,9 @@ import { getActiveLayoutTables, getMoveCandidateOptions } from "../domain/reserv
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
 import { resolveAdminMapViewMode, sectionForAdminSelection } from "../domain/adminMap/mapViewMode";
 
-// Production dictation uses the private speech service; browser recognition is local preview only.
+// Explicit local mode keeps audio on the device; WebSpeech is preview-only.
 const browserVoicePreview = import.meta.env.DEV && import.meta.env.VITE_RESERVATION_VOICE_PREVIEW === "true";
+const localVoiceRecognition = import.meta.env.VITE_RESERVATION_VOICE_MODE === "local";
 const reservationFieldVoiceEnabled = tenantContext.tenantId === "casa-di-fratelli" && (browserVoicePreview || import.meta.env.VITE_RESERVATION_VOICE_ENABLED === "true");
 function VoicePreviewPassthrough({ children }) { return children; }
 const ReservationFieldDictation = reservationFieldVoiceEnabled ? LocalReservationFieldDictation : VoicePreviewPassthrough;
@@ -1825,6 +1827,7 @@ function SectionMapViewport({
 
 function ReservationOperationsMap({
   voiceRequest,
+  localSpeechClient,
   text,
   language = "bg",
   layout,
@@ -2519,7 +2522,7 @@ function ReservationOperationsMap({
       >
         <ReservationFieldDictation
           enabled={reservationFieldVoiceEnabled && !reservationFormBusy}
-          request={voiceRequest} baseUrl={API_BASE_URL} allowBrowserRecognition={browserVoicePreview}
+          request={voiceRequest} baseUrl={API_BASE_URL} allowBrowserRecognition={browserVoicePreview} localRecognition={localVoiceRecognition} localSpeechClient={localSpeechClient}
           minDate={tableReservationDraft.id ? undefined : formatLocalDate(new Date())}
           language={language} currentDate={tableReservationDraft.reservedDate}
           availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
@@ -5833,6 +5836,15 @@ export default function AdminPage(props) {
 
 function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged, onEventsChanged, theme, onToggleTheme, layoutSession, layoutSync }) {
   const adminFormId = React.useId();
+  const [localSpeechClient, setLocalSpeechClient] = React.useState(null);
+  React.useEffect(() => {
+    if (!reservationFieldVoiceEnabled || !localVoiceRecognition) return;
+    // One model per authenticated page, reused between reservations and map/list.
+    // Construction does not download files or open the microphone.
+    const client = createReservationLocalSpeech();
+    setLocalSpeechClient(client);
+    return () => client.dispose();
+  }, []);
   const { plan } = useFloorPlan();
   const { closedAreas, loaded: zonesLoaded, error: zonesError, updateZones, reloadZones } = useSeasonalZones();
   const [savingSeasonalArea, setSavingSeasonalArea] = React.useState("");
@@ -9519,6 +9531,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
             {activeTab === "liveMap" && (
               <ReservationOperationsMap
                 voiceRequest={adminFetch}
+                localSpeechClient={localSpeechClient}
                 text={a.liveMap}
                 language={adminLanguage}
                 layout={plan.tables}
@@ -9623,7 +9636,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                     <ReservationFieldDictation
                       enabled={reservationFieldVoiceEnabled}
-                      request={adminFetch} baseUrl={API_BASE_URL} allowBrowserRecognition={browserVoicePreview}
+                      request={adminFetch} baseUrl={API_BASE_URL} allowBrowserRecognition={browserVoicePreview} localRecognition={localVoiceRecognition} localSpeechClient={localSpeechClient}
                       minDate={formatLocalDate(new Date())}
                       language={adminLanguage} currentDate={adminReservation.reservedDate}
                       availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}

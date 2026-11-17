@@ -1,0 +1,85 @@
+{
+  "model": "preslaff/bulgarian-asr-zipformer",
+  "revision": "8d2f8f4f159918a27b33c430e4fa83b10c705c28",
+  "license": "Apache-2.0",
+  "runtime": "sherpa-onnx v1.12.36",
+  "runtimeArchiveSha256": "833cb4e3b729c96f256bec3594c149fb4f84f005dea70da5c40ce5ecbfd21350",
+  "files": [
+    {
+      "name": "LICENSE-APACHE-2.0.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "name": "LICENSE-KALDI-NATIVE-FBANK.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "name": "LICENSE-ONNX-RUNTIME.txt",
+      "bytes": 1073,
+      "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+    },
+    {
+      "name": "LICENSE-SIMPLE-SENTENCEPIECE.txt",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "name": "MODEL-CARD.md",
+      "bytes": 5132,
+      "sha256": "594a197e522111b05b1bcd34df961a5f82cbd25829db0127b5914016bfcb0dbf"
+    },
+    {
+      "name": "NOTICE.txt",
+      "bytes": 1195,
+      "sha256": "6743a969765fc9d5961e758e0ed8da69a5d9f31bc5dc3e7a54e1a882c7371957"
+    },
+    {
+      "name": "THIRD-PARTY-NOTICES-ONNX-RUNTIME.txt",
+      "bytes": 338538,
+      "sha256": "4f9e2bb7b4b407d710a68168615bbc6f70e3d7cc8ba9410fb6c65d92fa71accf"
+    },
+    {
+      "name": "decoder-epoch-40-avg-8.int8.onnx",
+      "bytes": 540689,
+      "sha256": "6b5af659e54db0b1b42d046c8255ad9e7c0e13dc7a9eccd4a38e9eb9a4f69a85"
+    },
+    {
+      "name": "encoder-epoch-40-avg-8.int8.onnx",
+      "bytes": 72828389,
+      "sha256": "60f331e122d6ed3b5845e151a608eee8e94bf12f0bd86130007b4a482221b7cc"
+    },
+    {
+      "name": "joiner-epoch-40-avg-8.int8.onnx",
+      "bytes": 259417,
+      "sha256": "a9c0f45365455b236e67cf29e5a53231c035700a22551212f930f1ff2ea0c8ab"
+    },
+    {
+      "name": "sherpa-asr.js",
+      "bytes": 54015,
+      "sha256": "56775b925188f7ddc4f5346086d25f509d3d7a74d71ede2d4fb7e3500000dacb"
+    },
+    {
+      "name": "sherpa-runtime.js",
+      "bytes": 90550,
+      "sha256": "bdecebbf66525dc881ee2b392f3a12037f2a0fb87560f2cff55150f4e828fded"
+    },
+    {
+      "name": "sherpa-runtime.wasm",
+      "bytes": 11872164,
+      "sha256": "fdd6e54522cf5468c60346bcff27ac2a84785ff24ef0b8efe1b082d248cec2b2"
+    },
+    {
+      "name": "tokens.txt",
+      "bytes": 7119,
+      "sha256": "863ff314c172148a74301a4579eda890e1c957ae797ffffafd295473d9f0f3f5"
+    }
+  ],
+  "additionalLicenseSources": {
+    "LICENSE-ONNX-RUNTIME.txt": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.17.1/LICENSE",
+    "THIRD-PARTY-NOTICES-ONNX-RUNTIME.txt": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.17.1/ThirdPartyNotices.txt",
+    "LICENSE-KALDI-NATIVE-FBANK.txt": "https://raw.githubusercontent.com/csukuangfj/kaldi-native-fbank/v1.22.3/LICENSE",
+    "LICENSE-SIMPLE-SENTENCEPIECE.txt": "https://raw.githubusercontent.com/pkufool/simple-sentencepiece/v0.7/LICENSE"
+  }
+}
