@@ -1,7 +1,9 @@
 # Shared restaurant administration
 
-Updated: 2026-11-04. Production rollout completed; visual browser verification
-remains pending because Chrome automation failed.
+Updated: 2026-11-18. The shared administration application is in production.
+The API-owned on-device dictation policy is live in backend commit `af01a5a`.
+The shared frontend consuming it is live from `f6ca33f`, Vercel deployment
+`dpl_7dzuTeG6J2ce1oRfpJi6Af6bs6EP`.
 
 Production uses one application at `https://seatmap-admin-eight.vercel.app`:
 
@@ -9,7 +11,8 @@ Production uses one application at `https://seatmap-admin-eight.vercel.app`:
 - Cofein: `https://seatmap-admin-eight.vercel.app/r/cofein/admin`
 
 Legacy `/admin` links, plus Cofein's `/cofein-admin.html`, redirect to it.
-Frontend source: `ec3614d`; backend source: `84e4bc7`. Release evidence is in the
+For the original 2026-11-04 rollout, frontend source was `ec3614d` and backend
+source was `84e4bc7`. That historical release evidence is in the
 original workspace's `output/shared-admin-qa/release.json`. Verified: 107 frontend
 tests, 23 two-database HTTP checks, 6 auth DOM checks, 14 complete AdminPage DOM
 checks, 18 production API checks and published-file/redirect checks. DOM checks
@@ -64,16 +67,66 @@ and returns only:
   "tenantId": "cofein",
   "name": "Cofein",
   "frontendUrl": "https://cofein.vercel.app",
-  "notificationsEnabled": false
+  "notificationsEnabled": false,
+  "reservationDictation": {
+    "enabled": true,
+    "mode": "on-device",
+    "languages": ["bg"],
+    "fields": ["guestName", "phone"]
+  }
 }
 ```
 
-The response reads `ICurrentTenant` only: it contains no database connection,
+The response reads `ICurrentTenant` and the global dictation policy, with
+`Cache-Control: no-store`. It contains no database connection,
 credential, owner email, token or private configuration, and performs no database
 query. The shared entry validates the returned tenant ID and uses the website
 URL to resolve restaurant-relative media. This works for an unlisted restaurant
 without publishing it in the public catalogue. Unknown explicit tenant selectors
 still fail in the middleware before the action executes.
+
+## Shared on-device dictation
+
+`ReservationDictationPolicy` enables Bulgarian name and phone dictation for
+every resolved restaurant by default, including future restaurants. Availability
+does not depend on Basic/Pro and does not change reservation permissions. No
+Casa allowlist, per-restaurant database setting or voice build flag is needed.
+The optional global rollback is `ReservationDictation__Enabled=false` in API
+configuration. A missing value enables the feature; false, empty and invalid
+values disable it. The policy is separate from editable tenant branding and
+from the existing, disabled server speech service.
+
+The admin fetches `/api/admin/context` after authentication in both shared and
+Casa builds, then revalidates on visible tab focus. It requires a matching
+tenant, `enabled:true`, mode `on-device`, Bulgarian support and exactly
+`guestName`/`phone`. Missing, malformed or failed responses leave manual entry
+available without enabling another recognition service. A disabled response
+cancels dictation and disposes the prepared model. Environment changes require
+an API restart; an already open tab observes rollback on its next policy fetch.
+
+Model preparation requires an explicit click. The pinned Bulgarian Zipformer
+model and sherpa-onnx WASM runtime are served from the same frontend origin and
+run in a dedicated Worker. Audio is processed in memory on the device, with no
+upload to Render or an external ASR provider. There are no calls to the server
+voice capabilities/transcription endpoints and no WebSpeech fallback. Only name
+and phone have microphones; a proposed phone must be confirmed before it changes
+the field. Date, time, guest count and email remain manual.
+
+On 2026-11-18, read-only production checks confirmed the new policy and
+`no-store` for Casa and Cofein, and `404 TENANT_NOT_FOUND` for an unknown tenant.
+The shared frontend was then promoted after its compiled JavaScript and model
+manifest matched the release package, with correct WASM/ONNX content types.
+Both production restaurant routes return the exact packaged HTML. Before release,
+479 domain tests and 52 browser scenarios passed, including a future tenant,
+both form locations and disabling an already prepared worker without losing
+manual values.
+The model has been tested with synthetic Bulgarian audio in desktop Chrome and
+WebKit, not with a physical iPad microphone or restaurant noise. It can recognize
+wrong phone digits; confirmation is mandatory. The initial assets are about
+86 MB, and the tested WASM heap reserves 512 MiB in addition to other tab memory.
+Older devices may be unsupported; persistent WebKit cache and iPad airplane-mode
+operation are unverified. See [the on-device guide](reservation-dictation-ondevice.md)
+for accuracy evidence, lifecycle checks and reproduction instructions.
 
 ## Restaurant policies
 
@@ -161,7 +214,12 @@ python3 scripts/package-shared-admin.py /tmp/shared-admin-release
 
 The packager copies only the admin entry, compiled assets and required public
 assets, writes restaurant-path rewrites and no-index headers, and prints file
-hashes. Packaging does not publish anything. The ordinary frontend Vercel config
+hashes. It includes the versioned `speech/bg-zipformer/8d2f8f4-sherpa-1.12.36/`
+manifest allowlist: model, WASM/JavaScript runtime and licenses. It checks the
+pinned source/revision, file sizes and SHA256 hashes, rejects missing or altered
+files, and sets WASM/ONNX content types. These assets are loaded only when the
+administrator prepares dictation; browser audio never goes to the API.
+Packaging does not publish anything. The ordinary frontend Vercel config
 is not the standalone package's routing configuration.
 
 ## Safe rollout
@@ -170,7 +228,9 @@ is not the standalone package's routing configuration.
    the previous deployment/configuration for recovery. Do not use the unrelated
    dirty checkout as the release source.
 2. Deploy the compatible backend before the shared frontend depends on
-   `/api/admin/context`. No schema migration is required. Keep
+   `/api/admin/context` and its dictation policy. Backend `af01a5a` already serves
+   that contract; the new frontend fails closed against an older API. No schema
+   migration is required. Keep
    `Tenancy__MigrateOnStartup=false` and existing restaurant definitions,
    connection strings and owner credentials unchanged.
 3. Add the exact shared admin origin to an unused
@@ -180,18 +240,19 @@ is not the standalone package's routing configuration.
    origin to one restaurant and make the other selector conflict. Do not replace
    existing origin entries or use a wildcard. Verify preflight permits
    `X-Tenant-Id`, `X-Admin-Token`, `Content-Type` and map revision headers.
-4. Verify Cofein's product tier. A missing `AppSettings["ProductTier"]` is Basic,
-   which hides Orders/Inventory and blocks operational staff roles. To provide
-   the existing Pro functions, set Cofein's own value to Pro; do not bypass the
-   tier in UI or promote its owner to Developer.
+4. Preserve the configured restaurant product tier. A missing
+   `AppSettings["ProductTier"]` is Basic, which hides Orders/Inventory and blocks
+   operational staff roles. Dictation is available at either tier and requires
+   no product-tier or account-role change.
 5. Deploy the same standalone artifact for both restaurant links. Validate
    context, login, own data, cross-tenant rejection, map revision handling and
    disabled Cofein notifications before redirecting legacy entry links. Preserve
    tenant context in redirects, bookmarks and service-worker notification clicks.
 
-For step 4, connect directly to database `cofein` as `cofein_app`, record the prior
-setting, and apply only this scoped change. The guarded Cofein-only update was applied during the 2026-11-04 rollout;
-the prior value and database backups were stored outside the repository.
+The following SQL records the historical Cofein-only Pro provisioning performed
+during the 2026-11-04 rollout. It is not a current rollout step and must not be
+reapplied for dictation. The prior value and backups were stored outside the
+repository; this example is not evidence of the restaurant's current tier.
 
 ```sql
 BEGIN;
@@ -214,18 +275,17 @@ Verify `/api/product-tier` with Cofein's authenticated session. Any recovery of
 this setting must use the recorded previous value in the same database only.
 Do not run database bootstrap or migrations to change a product tier.
 
-## Verification still required and known gap
+## Original verification scope and known gap (2026-11-04)
 
-Visual desktop/mobile comparison and interactive browser verification are still
-pending. Current Chrome/CDP automation commands fail; a loaded page or simulated
-DOM test does not establish that clicks, navigation, maps and dialogs work in a
-real browser. Record this limitation rather than treating automated API checks
-as visual approval. Compare the same viewport, role, product tier and theme
-against the existing Casa interface, then check both restaurants' own data and
-session separation.
+At the original rollout, visual desktop/mobile comparison and interactive
+browser verification were pending because Chrome/CDP automation failed. Those
+historical results do not establish that clicks, navigation, maps and dialogs
+work in a real browser. Later dictation checks and their remaining physical-iPad
+limitations are recorded separately in the on-device guide; the old automation
+failure is not a statement about the current test environment.
 
-Cofein's public menu still reads static JSON. Editing database menu items through
-the shared admin does not yet update that public page. Synchronization is a
-separate unfinished task, including preservation of independently printed EUR/BGN
-prices, allergen information and the one unconfirmed EUR price. This shared-admin
-change does not claim to fix that flow or introduce a menu schema migration.
+The original audit also recorded that Cofein's public menu read static JSON and
+database edits did not update it. That separate synchronization task included
+printed EUR/BGN prices, allergens and one unconfirmed EUR price. This dictation
+update does not re-audit or claim to fix that flow and introduces no menu schema
+migration.
