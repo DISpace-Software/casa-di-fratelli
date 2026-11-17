@@ -1,0 +1,8 @@
+.tenant-brand-logo { display: block; object-fit: contain; }
+.tenant-brand-logo[data-original-cofein] {
+  filter: invert(93%) sepia(18%) saturate(555%) hue-rotate(344deg) brightness(104%) contrast(93%);
+}
+html[data-theme="light"] .tenant-brand-logo[data-original-cofein] {
+  filter: invert(7%) sepia(25%) saturate(980%) hue-rotate(341deg) brightness(88%) contrast(94%);
+}
+.tenant-brand-logo-name { display: flex; align-items: center; font-size: 1.25rem; font-weight: 600; }

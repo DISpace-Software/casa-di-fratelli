@@ -10,7 +10,8 @@ export const CASA_BRANDING = Object.freeze({
 
 export function normalizeTenantBranding(value, options = {}) {
   const valid = value && typeof value === "object" && !Array.isArray(value);
-  const isCasa = options.isCasa ?? (!valid || !value.name || value.name.trim() === CASA_BRANDING.name);
+  const isCasa = options.isCasa ?? (options.tenantId ? options.tenantId === "casa-di-fratelli" : !valid || !value.name || value.name.trim() === CASA_BRANDING.name);
+  const isCofein = options.tenantId === "cofein";
   const result = Object.fromEntries(Object.entries(CASA_BRANDING).map(([key, fallback]) => [key,
     typeof fallback === "number" ? valid && Number.isFinite(value[key]) && value[key] >= (key === "publicMaxReservationDaysAhead" ? 1 : 0) && value[key] <= (key === "publicMaxReservationDaysAhead" ? 365 : 1440) ? value[key] : fallback
       : valid && typeof value[key] === "string" ? value[key].trim() : isCasa || key.endsWith("Time") || key === "timeZoneId" ? fallback : "",
@@ -20,7 +21,19 @@ export function normalizeTenantBranding(value, options = {}) {
     const url = result[key];
     if (url && (/\\/.test(url) || (!/^https?:\/\//i.test(url) && !/^\/(?!\/)/.test(url)))) result[key] = "";
   }
-  return { ...result, isCasa, faviconUrl: isCasa ? "/favicon-48x48.png" : "/restaurant-generic.svg", heroImageUrl: isCasa ? "/restaurant-terrace.jpg" : "", address: result.addressBg, city: isCasa ? "Пловдив" : "", openingHoursText: result.openingHoursBg };
+  return {
+    ...result, isCasa, isCofein,
+    // These local assets identify a known tenant when its API has no logo.
+    // Keep logoUrl untouched: saved API branding and custom artwork remain authoritative.
+    fallbackLogoUrl: isCasa ? "/casa-di-fratelli-logo.svg" : isCofein ? "/cofein/brand/cofein-lockup.svg" : "",
+    faviconUrl: isCasa ? "/favicon-48x48.png" : isCofein ? "/cofein/favicon.svg" : "/restaurant-generic.svg",
+    heroImageUrl: isCasa ? "/restaurant-terrace.jpg" : "", address: result.addressBg, city: isCasa ? "Пловдив" : "", openingHoursText: result.openingHoursBg,
+  };
+}
+
+export function initialTenantBranding(context) {
+  const name = context.tenantId === "cofein" ? "Cofein" : context.tenantId === "casa-di-fratelli" ? CASA_BRANDING.name : "Restaurant";
+  return normalizeTenantBranding(context.shared ? { name } : null, { tenantId: context.tenantId });
 }
 
 export function brandingPayload(branding) {

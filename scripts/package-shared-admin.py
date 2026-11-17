@@ -24,8 +24,10 @@ public_assets = [
     'casa-fratelli-icon-192.png', 'casa-fratelli-icon-512.png', 'favicon-48x48.png', 'favicon-96x96.png',
     'admin-role-chef.jpeg', 'admin-role-waiter.jpeg', 'admin-role-admin.jpeg',
     'admin-role-owner.jpeg', 'admin-role-developer.jpeg',
+    'cofein/brand/cofein-lockup.svg', 'cofein/favicon.svg',
 ]
 for name in public_assets:
+    (destination / name).parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(build / name, destination / name)
 (destination / 'robots.txt').write_text('User-agent: *\nDisallow: /\n')
 (destination / 'vercel.json').write_text(json.dumps({

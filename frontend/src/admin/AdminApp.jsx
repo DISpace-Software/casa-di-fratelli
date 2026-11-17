@@ -1,6 +1,7 @@
 import React from "react";
 import AdminLogin from "../components/admin/AdminLogin";
 import BackToTopButton from "../components/layout/BackToTopButton";
+import TenantBrandLogo from "../components/admin/TenantBrandLogo";
 import { useTenantBranding } from "../context/TenantBrandingContext";
 import { API_BASE_URL, apiFetch } from "../config/api";
 import { tenantContext, tenantStorageKey } from "../config/tenantRuntime.js";
@@ -9,9 +10,11 @@ const AdminPage = React.lazy(() => import("../pages/AdminPage"));
 const unchanged = () => {};
 
 function AdminStatus({ error = "" }) {
+  const { branding } = useTenantBranding();
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#090705] px-6 text-center text-[#f7ead3]" aria-live="polite" aria-busy={!error}>
       <div>
+        {tenantContext.valid && <TenantBrandLogo branding={branding} className="mx-auto mb-8 h-16 w-[220px]" />}
         {!error && <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-[#c9a56a]/30 border-t-[#c9a56a]" />}
         <p className="text-sm font-semibold uppercase tracking-[0.22em] text-[#c9a56a]">{error || "Зареждане на администрацията"}</p>
         {error && <button type="button" className="ghost-button mt-6 rounded-2xl px-5 py-3" onClick={() => window.location.reload()}>Опитай отново</button>}
