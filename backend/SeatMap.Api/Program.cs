@@ -46,6 +46,10 @@ builder.Services.AddHttpClient<EmailService>(client =>
 });
 builder.Services.AddScoped<ReservationConflictService>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddOptions<ReservationSpeechOptions>().Bind(builder.Configuration.GetSection("ReservationSpeech"));
+builder.Services.AddSingleton<ReservationSpeechGate>();
+builder.Services.AddHttpClient<ReservationSpeechService>(client => client.Timeout = TimeSpan.FromSeconds(20))
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 builder.Services.AddScoped<ReservationBookingService>();
 builder.Services.AddScoped<IReservationBookingNotifications, ReservationBookingNotifications>();
 builder.Services.AddScoped<AdminAuthService>();

@@ -37,7 +37,7 @@ async function open({ mobile = false, supported = true } = {}) {
     window.qaVoiceInstances = [];
     if (supported) window.SpeechRecognition = class {
       constructor() { this.results = []; window.qaVoiceInstances.push(this); }
-      start() { window.qaVoiceStarts = (window.qaVoiceStarts || 0) + 1; window.qaVoice = this; }
+      start() { window.qaVoiceStarts = (window.qaVoiceStarts || 0) + 1; window.qaVoice = this; this.onstart?.(); }
       stop() {
         window.qaVoiceStops = (window.qaVoiceStops || 0) + 1;
         if (window.qaStopFinal) { this.emit(window.qaStopFinal); window.qaStopFinal = null; }
@@ -62,11 +62,12 @@ async function open({ mobile = false, supported = true } = {}) {
       reservationMutations.push({ method: request.method(), path: url.pathname });
     }
   });
+  await page.route('**/api/admin/reservations/voice/capabilities', route => route.fulfill({ json: { enabled: false, languages: [] } }));
   await page.goto(state.origin + '/r/casa-di-fratelli/admin');
   await page.locator('input[type=email]').fill(state.tenants['casa-di-fratelli'].email);
   await page.locator('input[type=password]').fill(state.tenants['casa-di-fratelli'].password);
   await page.locator('button[type=submit]').click();
-  await page.getByText('Restaurant CRM', { exact: true }).waitFor();
+  await page.getByRole('button', { name: /^Карта на резервациите/ }).waitFor();
   return { page, context };
 }
 async function mapForm(page) {
@@ -246,8 +247,8 @@ try {
   await page.clock.install();
   await start(page, form, 'guestCount');
   await emit(page, 'четирима');
-  await fieldEquals(form, 'guestCount', '4');
   await page.clock.fastForward(2500);
+  await fieldEquals(form, 'guestCount', '4');
   assert.equal(await mic(form, 'guestCount').getAttribute('aria-pressed'), 'false');
   const startsAfterAutoStop = await page.evaluate(() => window.qaVoiceStarts);
   await page.clock.fastForward(2000);
@@ -303,9 +304,9 @@ try {
   const unsupported = await open({ mobile: true, supported: false });
   const unsupportedForm = await mapForm(unsupported.page);
   await assertIcons(unsupportedForm);
-  await mic(unsupportedForm, 'guestName').click();
+  assert.equal(await mic(unsupportedForm, 'guestName').isDisabled(), true);
   assert.equal(await unsupported.page.evaluate(() => window.qaVoiceStarts || 0), 0);
-  assert.match(await unsupportedForm.locator('[data-reservation-field-dictation]').innerText(), /браузър|разпознаване|микрофон/iu);
+  assert.match(await unsupportedForm.locator('[data-reservation-field-dictation]').innerText(), /браузър|разпознаване|микрофон|диктовка/iu);
   await input(unsupportedForm, 'guestName').fill('Ръчно въведено име');
   await fieldEquals(unsupportedForm, 'guestName', 'Ръчно въведено име');
   assert.deepEqual(await reservations(), before);

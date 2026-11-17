@@ -54,8 +54,9 @@ import { getActiveLayoutTables, getMoveCandidateOptions } from "../domain/reserv
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
 import { resolveAdminMapViewMode, sectionForAdminSelection } from "../domain/adminMap/mapViewMode";
 
-// Keep local microphone controls and recognition code out of production builds.
-const reservationFieldVoiceEnabled = import.meta.env.DEV && import.meta.env.VITE_RESERVATION_VOICE_PREVIEW === "true";
+// Production dictation uses the private speech service; browser recognition is local preview only.
+const browserVoicePreview = import.meta.env.DEV && import.meta.env.VITE_RESERVATION_VOICE_PREVIEW === "true";
+const reservationFieldVoiceEnabled = tenantContext.tenantId === "casa-di-fratelli" && (browserVoicePreview || import.meta.env.VITE_RESERVATION_VOICE_ENABLED === "true");
 function VoicePreviewPassthrough({ children }) { return children; }
 const ReservationFieldDictation = reservationFieldVoiceEnabled ? LocalReservationFieldDictation : VoicePreviewPassthrough;
 const ReservationVoiceField = reservationFieldVoiceEnabled ? LocalReservationVoiceField : VoicePreviewPassthrough;
@@ -1823,6 +1824,7 @@ function SectionMapViewport({
 }
 
 function ReservationOperationsMap({
+  voiceRequest,
   text,
   language = "bg",
   layout,
@@ -2516,7 +2518,9 @@ function ReservationOperationsMap({
         onClick={(event) => event.stopPropagation()}
       >
         <ReservationFieldDictation
-          enabled={reservationFieldVoiceEnabled}
+          enabled={reservationFieldVoiceEnabled && !reservationFormBusy}
+          request={voiceRequest} baseUrl={API_BASE_URL} allowBrowserRecognition={browserVoicePreview}
+          minDate={tableReservationDraft.id ? undefined : formatLocalDate(new Date())}
           language={language} currentDate={tableReservationDraft.reservedDate}
           availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
           onApply={(patch) => setTableReservationDraft(previous => applyVoiceReservationDraft(previous, patch))}
@@ -9514,6 +9518,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
             {activeTab === "liveMap" && (
               <ReservationOperationsMap
+                voiceRequest={adminFetch}
                 text={a.liveMap}
                 language={adminLanguage}
                 layout={plan.tables}
@@ -9618,6 +9623,8 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                     <ReservationFieldDictation
                       enabled={reservationFieldVoiceEnabled}
+                      request={adminFetch} baseUrl={API_BASE_URL} allowBrowserRecognition={browserVoicePreview}
+                      minDate={formatLocalDate(new Date())}
                       language={adminLanguage} currentDate={adminReservation.reservedDate}
                       availableTimes={(date) => getAvailableReservationTimesForDate(adminReservationTimes, date)}
                       onApply={(patch) => setAdminReservation(previous => applyVoiceReservationDraft(previous, patch, { resetTables: true }))}

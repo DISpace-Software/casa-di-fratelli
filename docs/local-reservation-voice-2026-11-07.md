@@ -1,5 +1,14 @@
 # Local reservation dictation prototype — 2026-11-07
 
+## Current implementation (2026-11-17)
+
+This document records the earlier browser-recognition prototype. The current
+local implementation for iPad/Chrome uses a private speech worker; see
+[self-hosted dictation](reservation-dictation-selfhosted.md) and
+[verification results](reservation-dictation-validation.md). Production activation
+is still pending hosting and a physical-device check. Historical process IDs,
+ports and production-flag notes below are not current setup instructions.
+
 Current local-only branch: feat/reservation-field-voice-20261109 in /Users/macbookpro/casa-worktrees/reservation-field-voice-20261109, based on ff214af. Not pushed or deployed. The original /private/tmp/casa-admin-parity-20261104 source files were removed by temporary-directory cleanup on November 9; its running Vite process returned HTTP 404. The development server has been restarted on the same port from the permanent worktree. The original dirty workspace remains untouched. Production occupancy change is separate: commit 2052214, Vercel dpl_8zNxm4vD6Gsbi2Gg6fZ9svCAXfsb.
 
 ## Current interaction — individual fields, November 9
