@@ -12,7 +12,7 @@
 | --- | --- | --- |
 | Frontend domain suite | 449 / 449 | Разбор текста, отмена, жизненный цикл записи, transport |
 | Болгарский текстовый корпус | 1000 / 1000, ещё 750 промежуточных состояний | Детерминированный разбор синтетического текста; не точность микрофона |
-| .NET speech checks | 44 / 44 | Роли, tenant isolation, протокол, лимиты, ошибки; worker подменён |
+| .NET speech checks | 82 / 82 | Роли, tenant isolation, протокол, лимиты, ошибки, узкий opt-in private HTTP; worker подменён |
 | Python worker | 33 / 33 | Настоящее декодирование WAV, MP4/AAC, WebM/Opus, Ogg/Opus; модель подменена |
 | Старый browser preview | 15 / 15 | Поля карты/списка, 390 px, ошибки; события WebSpeech подменены |
 | Новый audio browser flow | 29 / 29 | Chrome и WebKit, 820×1180 /1180×820, оба окна брони; микрофон и ASR подменены |
@@ -27,6 +27,12 @@ Worker проверяет реальные декодированные длит
 на диск. Отмена HTTP не освобождает слот, пока native inference действительно не
 закончится. CPU/GPU Docker recipes подготовлены, но **Docker и NVIDIA GPU не
 запускались**: локальный Docker daemon недоступен, GPU хоста нет.
+
+Дополнительно проверена фактическая конфигурация Render: live API — Starter,
+0,5 CPU / 512 MB, Ohio. Подготовлены отдельные `speech-service/render.yaml` и
+`Dockerfile.render` с закреплённой моделью. Удалённая проверка Blueprint возвращает
+одну ошибку: локальная feature-ветка ещё не опубликована на GitHub. Размещения и
+замера на Render не было; детали в [плане Render](reservation-dictation-render.md).
 
 ## Настоящее распознавание звука
 

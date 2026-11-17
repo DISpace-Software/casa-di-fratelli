@@ -118,3 +118,18 @@ Implementation references: [faster-whisper official usage and model loading](htt
 [audio decoding implementation](https://github.com/SYSTRAN/faster-whisper/blob/master/faster_whisper/audio.py),
 [FastAPI lifespan](https://fastapi.tiangolo.com/advanced/events/), and
 [Starlette multipart parser](https://github.com/encode/starlette/blob/0.49.3/starlette/formparsers.py).
+
+## Render candidate (not deployed)
+
+`Dockerfile.render` builds the locally evaluated turbo revision into a CPU image,
+verifies the model binary SHA-256, and enables offline loading at runtime. Build:
+
+```sh
+docker build -f speech-service/Dockerfile.render -t seatmap-speech-render speech-service
+```
+
+`render.yaml` describes one Ohio private service with manual deployments and no
+persistent disk. Its 4 CPU / 8 GB plan is a paid benchmark candidate, not an approved
+production plan. See the [Render deployment assessment](../docs/reservation-dictation-render.md)
+for cost, private HTTP configuration, current validation limits and release criteria.
+The Docker image has not been built locally; the feature branch is not yet on GitHub.

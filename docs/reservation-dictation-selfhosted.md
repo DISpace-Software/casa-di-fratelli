@@ -84,6 +84,7 @@ Worker использует открытый [faster-whisper](https://github.com
 | --- | --- |
 | `ReservationSpeech__Enabled` | `true` после готовности сервиса |
 | `ReservationSpeech__ServiceUrl` | Корневой HTTPS URL своего worker; Development допускает HTTP loopback |
+| `ReservationSpeech__TrustedPrivateHost` | По умолчанию пуст; точный внутренний DNS hostname для явного разрешения HTTP в private network |
 | `ReservationSpeech__ServiceToken` | Случайный приватный токен, совпадающий с `RESERVATION_SPEECH_TOKEN` worker |
 | `ReservationSpeech__AllowedTenants__0` | `casa-di-fratelli` |
 
@@ -92,6 +93,11 @@ Worker использует открытый [faster-whisper](https://github.com
 в этой среде не запускались. Публичный доступ к worker не требуется: аудио проходит
 через API с проверкой Administrator/Owner/Developer. Секрет worker не попадает в
 браузер, исходники или `VITE_` переменные.
+
+Для существующего Render подготовлен отдельный
+[план размещения и проверки](reservation-dictation-render.md). Он учитывает
+ограничения Starter, приватный HTTP-адрес и веса модели внутри образа;
+платный сервис пока не создан.
 
 `GET /api/admin/reservations/voice/capabilities` сообщает готовность **конфигурации**,
 а не живую проверку модели. `/health` worker проверяется при размещении и мониторинге.
@@ -106,7 +112,7 @@ Worker использует открытый [faster-whisper](https://github.com
 - Аудио и текст не пишутся в логи/БД/файлы. Кэш модели содержит только её веса.
 
 Проверки включают domain-тесты, 1000 синтетических текстовых диалогов и 750
-промежуточных состояний, 44 backend-проверки, 33 worker-проверки и браузерные
+промежуточных состояний, 82 backend-проверки, 33 worker-проверки и браузерные
 сценарии. Детальные результаты и измерения записаны в
 [reservation-dictation-validation.md](reservation-dictation-validation.md).
 

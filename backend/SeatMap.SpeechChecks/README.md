@@ -7,7 +7,7 @@ dotnet build backend/SeatMap.SpeechChecks/SeatMap.SpeechChecks.csproj -p:UseAppH
 dotnet backend/SeatMap.SpeechChecks/bin/Debug/net8.0/SeatMap.SpeechChecks.dll
 ```
 
-The current suite reports **44 focused checks**. It starts a temporary local HTTP
+The current suite reports **82 focused checks**. It starts a temporary local HTTP
 server and two separate SQLite databases in memory. It uses the real tenant
 middleware and admin authorization filter, with synthetic administrator and
 waiter sessions. It does not connect to production, write reservations, require a
@@ -17,6 +17,9 @@ Checks cover authentication and permitted roles, cross-tenant isolation, disable
 and missing configuration, private worker URL rules, request/concurrency limits,
 bounded multipart uploads, MIME/container signatures, normalized worker requests,
 sanitized error responses, response-size limits and `no-store` results.
+Private HTTP is off by default; its explicit exact-host configuration is checked
+against IPs, public domain suffixes, wrong hosts, missing/default ports, credentials,
+queries, fragments and paths that URI parsing would otherwise normalize away.
 
 The worker HTTP handler is a **test double**. Its audio payloads and transcription
 responses verify the protocol and failure handling, not decoding or recognition

@@ -1,0 +1,77 @@
+# syntax=docker/dockerfile:1
+# Reviewable CPU-only Render Private Service image; not deployed or built here.
+# Build context: speech-service/ (the generic Dockerfile is intentionally separate).
+FROM python:3.11-slim AS dependencies
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Weights enter the image during build, never during a service restart.
+# Keep the tested repository alias and immutable revision. Hugging Face currently
+# redirects this alias to dropbox-dash/faster-whisper-large-v3-turbo.
+FROM dependencies AS model
+ENV HF_HUB_DISABLE_TELEMETRY=1
+RUN python - <<'PY'
+import hashlib
+import json
+import shutil
+from pathlib import Path
+
+from huggingface_hub import snapshot_download
+
+repository = "mobiuslabsgmbh/faster-whisper-large-v3-turbo"
+revision = "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf"
+weights_sha256 = "e76620f83d5f5b69efd3d87e3dc180c1bd21df9fbebacfd4335e5e1efcc018da"
+files = ["config.json", "model.bin", "preprocessor_config.json", "tokenizer.json", "vocabulary.json"]
+target = Path("/opt/whisper-model")
+snapshot_download(
+    repo_id=repository,
+    revision=revision,
+    local_dir=str(target),
+    allow_patterns=files,
+    token=False,
+    max_workers=2,
+)
+for name in files:
+    if not (target / name).is_file():
+        raise RuntimeError(f"Pinned model file missing: {name}")
+digest = hashlib.sha256()
+with (target / "model.bin").open("rb") as weights:
+    for chunk in iter(lambda: weights.read(1024 * 1024), b""):
+        digest.update(chunk)
+if digest.hexdigest() != weights_sha256:
+    raise RuntimeError("Pinned model weights failed SHA-256 verification")
+(target / "MODEL_REVISION.json").write_text(
+    json.dumps({"repository": repository, "revision": revision, "model_sha256": weights_sha256}, indent=2) + "\n",
+    encoding="utf-8",
+)
+# Only the actual model and provenance are copied into the runtime image.
+shutil.rmtree(target / ".cache", ignore_errors=True)
+PY
+
+FROM dependencies AS runtime
+ENV WHISPER_MODEL=/opt/whisper-model \
+    WHISPER_DEVICE=cpu \
+    WHISPER_COMPUTE_TYPE=int8 \
+    WHISPER_CPU_THREADS=4 \
+    WHISPER_BEAM_SIZE=1 \
+    WHISPER_LOCAL_FILES_ONLY=true \
+    HF_HUB_OFFLINE=1 \
+    HF_HUB_DISABLE_TELEMETRY=1 \
+    HF_HOME=/tmp/huggingface
+
+COPY --from=model /opt/whisper-model/ /opt/whisper-model/
+COPY worker.py ./
+RUN chmod -R a+rX /opt/whisper-model \
+    && useradd --create-home --uid 10001 speech
+USER speech
+EXPOSE 8000
+# Inject RESERVATION_SPEECH_TOKEN at runtime through Render's secret environment.
+# One process owns one model and one bounded inference slot. CPU latency/quality
+# still need acceptance on the intended Render plan; this is not production approval.
+CMD ["uvicorn", "worker:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--no-access-log"]

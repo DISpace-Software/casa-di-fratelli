@@ -22,13 +22,39 @@ using SeatMap.Api.Services.Tenancy;
 var passed = 0;
 void Check(bool condition, string scenario) { if (!condition) throw new Exception(scenario); passed++; Console.WriteLine($"PASS {scenario}"); }
 var options = new ReservationSpeechOptions();
-Check(!options.Enabled && options.AllowedTenants.SequenceEqual(["casa-di-fratelli"]), "Speech is disabled by default and opt-in is scoped to Casa");
+Check(!options.Enabled && options.TrustedPrivateHost == "" && options.AllowedTenants.SequenceEqual(["casa-di-fratelli"]), "Speech and private HTTP trust are disabled by default and tenant opt-in is scoped to Casa");
 options.Enabled = true; options.ServiceToken = "fixture-worker-token-for-tests-0123456789"; options.ServiceUrl = "https://speech.example.test";
 Check(options.Endpoint(false)?.AbsoluteUri == "https://speech.example.test/v1/audio/transcriptions", "Private worker route is fixed");
 foreach (var url in new[] { "http://speech.example.test", "https://user:pass@speech.example.test", "https://speech.example.test/path", "https://speech.example.test/?key=x", "file:///tmp/audio" })
 { options.ServiceUrl = url; Check(options.Endpoint(false) is null, "Reject unsafe worker URL shape"); }
 options.ServiceUrl = "http://127.0.0.1:9988";
 Check(options.Endpoint(false) is null && options.Endpoint(true) is not null, "HTTP loopback worker requires Development");
+options.ServiceUrl = "http://speech-worker-q4x2:8080";
+Check(options.Endpoint(false) is null && options.Endpoint(true) is null, "An internal-looking HTTP hostname is not trusted by default, including Development");
+options.TrustedPrivateHost = "speech-worker-q4x2";
+Check(options.Endpoint(false)?.AbsoluteUri == "http://speech-worker-q4x2:8080/v1/audio/transcriptions", "Explicit private host opt-in permits only the fixed worker route");
+options.TrustedPrivateHost = "srv-abc123"; options.ServiceUrl = "http://SRV-ABC123:65535/";
+Check(options.Endpoint(false)?.AbsoluteUri == "http://srv-abc123:65535/v1/audio/transcriptions", "Platform-provided single-label host matches case-insensitively with an explicit valid port");
+options.TrustedPrivateHost = "speech-worker-q4x2";
+foreach (var url in new[]
+{
+    "http://other-worker:8080", "http://speech-worker-q4x2.example.com:8080", "http://speech-worker-q4x2.:8080",
+    "http://speech-worker-q4x2", "http://speech-worker-q4x2:80", "http://speech-worker-q4x2:0", "http://speech-worker-q4x2:65536",
+    "http://user:pass@speech-worker-q4x2:8080", "http://speech-worker-q4x2:8080/path", "http://speech-worker-q4x2:8080/segment/..",
+    "http://speech-worker-q4x2:8080/%2e", "http://speech-worker-q4x2:8080/?key=x", "http://speech-worker-q4x2:8080/#fragment",
+    "http://127.0.0.1:8080", "http://10.0.0.2:8080", "http://93.184.215.14:8080", "http://[::1]:8080"
+})
+{ options.ServiceUrl = url; Check(options.Endpoint(false) is null, $"Private HTTP rejects an untrusted or non-origin address: {url}"); }
+foreach (var host in new[] { "localhost", "LOCALHOST", "127.0.0.1", "2130706433", "0x7f000001", "10.0.0.2", "speech.example.com", "speech.", "-speech", "speech-", "speech_worker", "speech worker", "speech,other", "speech/other", "реч", new string('a', 64) })
+{
+    options.TrustedPrivateHost = host; options.ServiceUrl = $"http://{host}:8080";
+    Check(options.Endpoint(false) is null, $"Invalid private-host configuration cannot authorize HTTP: {host}");
+}
+options.TrustedPrivateHost = "speech-worker-q4x2"; options.ServiceUrl = "http://127.0.0.1:9988";
+Check(options.Endpoint(false) is null && options.Endpoint(true) is not null, "Private-host opt-in does not weaken production loopback protection or remove Development support");
+options.ServiceUrl = "https://speech.example.test";
+Check(options.Endpoint(false)?.AbsoluteUri == "https://speech.example.test/v1/audio/transcriptions", "Private-host opt-in leaves existing HTTPS worker configuration unchanged");
+options.TrustedPrivateHost = "";
 options.ServiceUrl = "https://speech.example.test"; options.ServiceToken = "";
 Check(options.Endpoint(false) is null, "A service token is required even for the configured endpoint");
 options.ServiceToken = "too-short";

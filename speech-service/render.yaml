@@ -1,0 +1,30 @@
+# REVIEW / BENCHMARK CANDIDATE ONLY — not deployed.
+# 4c-8g is currently $175/month, prorated. Creating this service incurs charges.
+# This blueprint owns only the speech worker, never the live SeatMap API or DB.
+services:
+  - type: pserv
+    name: seatmap-speech-cpu-trial
+    runtime: docker
+    repo: https://github.com/DISpace-Software/casa-di-fratelli
+    branch: feat/casa-production-voice-20261117
+    region: ohio
+    plan: 4c-8g
+    numInstances: 1
+    autoDeployTrigger: off
+    dockerfilePath: ./speech-service/Dockerfile.render
+    dockerContext: ./speech-service
+    # Private services use TCP checks. The socket opens after model loading.
+    # Model weights are in the image, so no persistent disk is required.
+    envVars:
+      - key: RESERVATION_SPEECH_TOKEN
+        sync: false
+      - key: WHISPER_DEVICE
+        value: cpu
+      - key: WHISPER_COMPUTE_TYPE
+        value: int8
+      - key: WHISPER_CPU_THREADS
+        value: "4"
+      - key: WHISPER_BEAM_SIZE
+        value: "1"
+      - key: WHISPER_LOCAL_FILES_ONLY
+        value: "true"
