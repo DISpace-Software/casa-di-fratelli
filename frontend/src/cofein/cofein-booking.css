@@ -1,6 +1,9 @@
 /* Public reservations follow the same visit → table → contact interaction as Casa.
    Geometry, table positions and the admin viewport are deliberately independent. */
 .booking-modal { width: min(1240px, calc(100vw - 48px)); height: min(940px, calc(100dvh - 32px)); background: #211b18; overflow: hidden; }
+/* `contain` still permits Safari's elastic side movement. Booking is a vertical
+   form; retain browser pinch zoom and the map's own touch-action: none gestures. */
+.modal.booking-modal, .cofein-booking-body { overscroll-behavior-x: none; touch-action: pan-y pinch-zoom; }
 .booking-modal[open] { display: flex; flex-direction: column; }
 .booking-modal:has(.cofein-booking[data-step='contact']) { width: min(620px, calc(100vw - 40px)); height: fit-content; max-height: calc(100dvh - 32px); }
 .booking-modal:has(.cofein-booking:is([data-step='result'], [data-step='notice'])) { width: min(600px, calc(100vw - 40px)); height: fit-content; }
@@ -10,7 +13,7 @@
 .cofein-booking-toolbar .close-modal:disabled { opacity: .45; cursor: wait; }
 .cofein-booking { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow: hidden; color: #f4ecde; font-family: 'Manrope', Arial, sans-serif; text-align: left; }
 .cofein-booking * { box-sizing: border-box; }
-.cofein-booking-body { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain; padding: 20px 24px 24px; scrollbar-width: thin; scrollbar-color: #cfb18150 transparent; scroll-padding-block: 16px; }
+.cofein-booking-body { min-height: 0; flex: 1; overflow: auto; overscroll-behavior-y: contain; padding: 20px 24px 24px; scrollbar-width: thin; scrollbar-color: #cfb18150 transparent; scroll-padding-block: 16px; }
 .cofein-booking[data-step='workspace'] .cofein-booking-body { display: flex; flex-direction: column; overflow: hidden; }
 .cofein-booking-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px 24px; flex-wrap: wrap; flex-shrink: 0; margin-bottom: 20px; }
 .cofein-booking h2 { margin: 0; font-size: clamp(24px, 2.5vw, 30px); font-weight: 550; line-height: 1.25; letter-spacing: -.035em; }

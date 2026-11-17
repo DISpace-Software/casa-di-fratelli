@@ -50,6 +50,7 @@ export default function UnifiedMapViewport({
   onExitExpanded,
   language = "bg",
   viewMode = "scroll",
+  onViewModeChange,
   storageNamespace,
   surfaceClassName = "",
   minimumScale,
@@ -92,6 +93,7 @@ export default function UnifiedMapViewport({
   const focusX = focusTarget?.x;
   const focusY = focusTarget?.y;
   const focusScale = focusTarget?.scale;
+  const appliedFocusRef = React.useRef("");
   const detailBoundsRef = React.useRef(activeDetailView);
   const activeDetailId = activeDetailView?.id;
   React.useLayoutEffect(() => { detailBoundsRef.current = activeDetailView; }, [activeDetailView]);
@@ -168,7 +170,15 @@ export default function UnifiedMapViewport({
   }, [fitToBounds, onZoneChange, getZone]);
 
   React.useEffect(() => {
-    if (!focusKey || !Number.isFinite(focusX) || !Number.isFinite(focusY)) return;
+    if (!focusKey || !Number.isFinite(focusX) || !Number.isFinite(focusY)) {
+      appliedFocusRef.current = "";
+      return;
+    }
+    const request = `${focusKey}:${focusX}:${focusY}:${focusScale || ""}`;
+    // A mode change fits its new camera bounds without re-focusing an already
+    // selected reservation. A new table click still carries a new focus key.
+    if (hallNavigation && appliedFocusRef.current === request) return;
+    appliedFocusRef.current = request;
     const viewport = viewportSizeRef.current;
     const isTablet = typeof window !== "undefined"
       && isTabletMapViewport(viewport, window.navigator);
@@ -189,7 +199,7 @@ export default function UnifiedMapViewport({
       ),
       { animate: true }
     );
-  }, [applyCamera, focusKey, focusScale, focusX, focusY, minScale]);
+  }, [applyCamera, focusKey, focusScale, focusX, focusY, minScale, hallNavigation]);
 
   const zoomAtCenter = React.useCallback((direction) => {
     const viewport = viewportSizeRef.current;
@@ -229,9 +239,9 @@ export default function UnifiedMapViewport({
   }, [activeDetailId, activeZone, hallNavigation, fitToCurrentView]);
 
   React.useEffect(() => {
-    if (!initializedRef.current || viewMode !== "section") return;
+    if (!initializedRef.current || hallNavigation || viewMode !== "section") return;
     fitToBounds(getZone(activeZone), true);
-  }, [activeZone, fitToBounds, viewMode, getZone]);
+  }, [activeZone, fitToBounds, viewMode, getZone, hallNavigation]);
 
   React.useEffect(() => () => {
     window.cancelAnimationFrame(animationRef.current);
@@ -448,7 +458,7 @@ export default function UnifiedMapViewport({
           <button type="button" onClick={() => zoomAtCenter(-1)} aria-label={labels.out} title={labels.out} className="ghost-button h-11 w-11 rounded-xl text-xl">−</button>
           <span className="hidden min-w-[58px] text-center text-xs font-semibold text-white/50 sm:block">{Math.round(scaleLabel * 100)}%</span>
           <button type="button" onClick={() => zoomAtCenter(1)} aria-label={labels.in} title={labels.in} className="ghost-button h-11 w-11 rounded-xl text-xl">+</button>
-          <button type="button" onClick={() => fitToCurrentView(true)} aria-label={hallNavigation ? (language === "bg" ? "Покажи избраната част" : language === "ru" ? "Показать выбранную часть" : "Fit selected section") : labels.fit} title={labels.fit} className="ghost-button min-h-[44px] rounded-xl px-3 text-xs font-semibold">{hallNavigation ? (language === "bg" ? "Побери" : language === "ru" ? "Целиком" : "Fit") : "Fit"}</button>
+          <button type="button" onClick={() => fitToCurrentView(true)} aria-label={hallNavigation && viewMode === "section" ? (language === "bg" ? "Покажи избраната част" : language === "ru" ? "Показать выбранную часть" : "Fit selected section") : labels.fit} title={labels.fit} className="ghost-button min-h-[44px] rounded-xl px-3 text-xs font-semibold">{hallNavigation ? (language === "bg" ? "Побери" : language === "ru" ? "Целиком" : "Fit") : "Fit"}</button>
           {!hallNavigation && <button type="button" onClick={() => { window.localStorage.removeItem(storageKey); fitToCurrentView(true); }} aria-label={labels.reset} title={labels.reset} className="ghost-button hidden min-h-[44px] rounded-xl px-3 text-xs font-semibold sm:block">Reset</button>}
           <button
             type="button"
@@ -487,6 +497,8 @@ export default function UnifiedMapViewport({
         language={language}
         controls={cameraControls}
         selectionSummary={selectionSummary}
+        viewMode={viewMode}
+        onViewModeChange={onViewModeChange}
       /> : <div className="mb-3 flex flex-wrap items-center gap-2">
         <select
           value={activeZone}

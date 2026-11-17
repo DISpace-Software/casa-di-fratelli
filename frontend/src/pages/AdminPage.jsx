@@ -52,6 +52,7 @@ import { formatBirthdayEmailSentAt, daysUntilBirthday, getCustomerBirthDate, sea
 import { findPublicTableHold } from "../domain/reservations/publicTableHolds";
 import { getActiveLayoutTables, getMoveCandidateOptions } from "../domain/reservations/adminPlanRules";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
+import { resolveAdminMapViewMode, sectionForAdminSelection } from "../domain/adminMap/mapViewMode";
 
 // Keep local microphone controls and recognition code out of production builds.
 const reservationFieldVoiceEnabled = import.meta.env.DEV && import.meta.env.VITE_RESERVATION_VOICE_PREVIEW === "true";
@@ -61,7 +62,7 @@ const ReservationVoiceField = reservationFieldVoiceEnabled ? LocalReservationVoi
 const ReservationFieldVoiceStatus = reservationFieldVoiceEnabled ? LocalReservationFieldVoiceStatus : () => null;
 
 const isCasaTenant = tenantContext.tenantId === "casa-di-fratelli";
-const adminMapViewStorageKey = () => tenantStorageKey("casa-admin-map-view-mode");
+const adminMapViewStorageKey = () => tenantStorageKey(tenantContext.tenantId === "cofein" ? "cofein-admin-map-view-mode-v1" : "casa-admin-map-view-mode");
 
 const emptyMenuItem = {
   nameBg: "",
@@ -1529,7 +1530,7 @@ function TableLayoutEditor({
         </div>
       }
     >
-      {!cofeinSpatial && <div className="mb-5 rounded-2xl border border-[#c9a56a]/18 bg-black/20 p-4">
+      <div className="mb-5 rounded-2xl border border-[#c9a56a]/18 bg-black/20 p-4">
         <div className="section-kicker text-[10px]">Изглед на оперативната карта</div>
         <p className="mt-1 text-sm text-white/55">
           Изберете как да се отваря картата за резервации и преместване на гости.
@@ -1537,7 +1538,7 @@ function TableLayoutEditor({
         <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Изглед на картата">
           {[
             ["section", "По секции"],
-            ["scroll", "Скрол карта"],
+            ["scroll", cofeinSpatial ? "Цялата карта" : "Скрол карта"],
           ].map(([mode, label]) => (
             <button
               key={mode}
@@ -1552,7 +1553,7 @@ function TableLayoutEditor({
             </button>
           ))}
         </div>
-      </div>}
+      </div>
       <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]">
         <div className="min-w-0">
           {cofeinSpatial ? <CofeinAdminHallNavigation
@@ -1853,12 +1854,14 @@ function ReservationOperationsMap({
   ordersOnly = false,
   onExitMap,
   mapViewMode = "scroll",
+  onMapViewModeChange,
 }) {
   const { plan } = useFloorPlan();
   const { branding } = useTenantBranding();
   // Architecture changes presentation only. Identity, capacity and booking rules
   // continue to come from the restaurant's current floor-plan document.
   const cofeinSpatial = tenantContext.tenantId === "cofein";
+  const cofeinWholeMap = cofeinSpatial && mapViewMode === "scroll";
   const legacySection = mapViewMode === "section" && !cofeinSpatial;
   const geometry = React.useMemo(() => cofeinSpatial
     ? getCofeinMapGeometry(plan.zones, plan.tables)
@@ -1911,9 +1914,14 @@ function ReservationOperationsMap({
     [getActiveTablesForArea, plan]
   );
   const cofeinViews = React.useMemo(() => cofeinSpatial ? getCofeinBookingViews(geometry, selectedArea, areaTables) : [], [cofeinSpatial, geometry, selectedArea, areaTables]);
-  const cofeinView = cofeinViews.find(view => view.id === cofeinViewId) || cofeinViews[0] || geometry.views?.[`zone:${selectedArea}`];
-  const cofeinViewTableIds = React.useMemo(() => new Set(cofeinView?.tableIds || []), [cofeinView]);
-  const cofeinDecorGeometry = React.useMemo(() => cofeinSpatial ? { ...geometry, zones: geometry.zones.filter(zone => zone.id === selectedArea), hasPreset: Boolean(geometry.zones.find(zone => zone.id === selectedArea)?.preset) } : geometry, [cofeinSpatial, geometry, selectedArea]);
+  const cofeinView = cofeinWholeMap ? geometry.views.all
+    : cofeinViews.find(view => view.id === cofeinViewId) || cofeinViews[0] || geometry.views?.[`zone:${selectedArea}`];
+  const cofeinViewTableIds = React.useMemo(() => new Set(cofeinWholeMap ? areaTables.map(table => table.id) : cofeinView?.tableIds || []), [cofeinWholeMap, areaTables, cofeinView]);
+  const cofeinDecorGeometry = React.useMemo(() => {
+    if (!cofeinSpatial) return geometry;
+    const visibleZones = geometry.zones.filter(zone => !closedAreas.includes(zone.id) && (cofeinWholeMap || zone.id === selectedArea));
+    return { ...geometry, zones: visibleZones, hasPreset: visibleZones.some(zone => zone.preset) };
+  }, [cofeinSpatial, cofeinWholeMap, geometry, selectedArea, closedAreas]);
   const occupancy = React.useMemo(
     () => getRestaurantOccupancy(layout, reservations, now, {
       closedAreas,
@@ -2304,6 +2312,17 @@ function ReservationOperationsMap({
     );
   }
 
+  function handleMapViewModeChange(mode) {
+    if (mode === "section" && cofeinSpatial) {
+      const selectedIds = selectedTableId ? [selectedTableId]
+        : tableReservationDraft ? tableReservationDraft.tableIds || [tableReservationDraft.tableId]
+        : walkInDraft ? [walkInDraft.tableId]
+        : moveReservationId ? moveDraft.tableIds : selectedReservation?.tableIds || [];
+      setCofeinViewId(sectionForAdminSelection(cofeinViews, cofeinViewId, selectedIds)?.id || "");
+    }
+    onMapViewModeChange?.(mode);
+  }
+
   function openConsumptionPanel() {
     if (!selectedReservation) return;
 
@@ -2679,7 +2698,7 @@ function ReservationOperationsMap({
         <div className="relative min-w-0">
         <MapViewport
           geometry={geometry}
-          storageNamespace={cofeinSpatial ? "cofein-halls-v3" : undefined}
+          storageNamespace={cofeinSpatial ? `cofein-halls-v4:${mapViewMode}` : undefined}
           surfaceClassName={cofeinSpatial ? "cofein-admin-map-surface" : undefined}
           minimumScale={cofeinSpatial ? geometry.minScale : undefined}
           detailViews={cofeinSpatial ? cofeinViews : undefined}
@@ -2771,7 +2790,8 @@ function ReservationOperationsMap({
             </div>
           )}
           language={language}
-          viewMode={cofeinSpatial ? "scroll" : mapViewMode}
+          viewMode={mapViewMode}
+          onViewModeChange={cofeinSpatial ? handleMapViewModeChange : undefined}
           text={text}
         >
           {cofeinSpatial && <CofeinFloorPlanDecor geometry={cofeinDecorGeometry} language={language} />}
@@ -2806,7 +2826,7 @@ function ReservationOperationsMap({
           })}
 
           {liveReservations.filter((reservation) => cofeinSpatial
-            ? reservation.id === selectedReservationId || (reservation.area === selectedArea && reservation.tableIds.some(id => cofeinViewTableIds.has(id)))
+            ? reservation.id === selectedReservationId || ((cofeinWholeMap || reservation.area === selectedArea) && reservation.tableIds.some(id => cofeinViewTableIds.has(id)))
             : !legacySection || reservation.area === selectedArea).map((reservation) => {
             const bounds = getReservationBounds(reservation, cofeinSpatial ? cofeinViewTableIds : null);
             if (!bounds) return null;
@@ -5876,9 +5896,15 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     if (!layoutZones.some(zone => zone.id === layoutArea)) setLayoutArea(layoutZones[0]?.id || "");
   }, [layoutZones, layoutArea]);
   const [adminMapViewMode, setAdminMapViewMode] = React.useState(() => {
-    if (typeof window === "undefined") return "scroll";
-    return window.localStorage.getItem(adminMapViewStorageKey()) === "section" ? "section" : "scroll";
+    let saved;
+    try { saved = typeof window === "undefined" ? null : window.localStorage.getItem(adminMapViewStorageKey()); } catch { /* Storage is optional. */ }
+    return resolveAdminMapViewMode(saved, tenantContext.tenantId);
   });
+  const changeAdminMapViewMode = React.useCallback((mode) => {
+    if (mode !== "section" && mode !== "scroll") return;
+    setAdminMapViewMode(mode);
+    try { window.localStorage.setItem(adminMapViewStorageKey(), mode); } catch { /* Keep the selected view for this session. */ }
+  }, []);
   const [reservationMapDate, setReservationMapDate] = React.useState(() => formatLocalDate(new Date()));
   const [noteEdits, setNoteEdits] = React.useState({});
   const [orderMenuSearches, setOrderMenuSearches] = React.useState({});
@@ -9520,6 +9546,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                 ordersOnly={false}
                 onExitMap={() => setActiveTab("home")}
                 mapViewMode={adminMapViewMode}
+                onMapViewModeChange={changeAdminMapViewMode}
               />
             )}
 
@@ -11700,10 +11727,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                 layout={tableLayout}
                 selectedArea={layoutArea}
                 mapViewMode={adminMapViewMode}
-                onMapViewModeChange={(mode) => {
-                  setAdminMapViewMode(mode);
-                  window.localStorage.setItem(adminMapViewStorageKey(), mode);
-                }}
+                onMapViewModeChange={changeAdminMapViewMode}
                 onAreaChange={setLayoutArea}
                 onUpdate={updateTableLayoutItem}
                 onAdd={addTableLayoutItem}
