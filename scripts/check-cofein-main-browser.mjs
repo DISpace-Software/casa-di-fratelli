@@ -99,6 +99,8 @@ try {
   const motionContext = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'no-preference', locale: 'bg-BG' });
   const motionPage = await motionContext.newPage();
   motionPage.on('pageerror', error => report.errors.push({ device: 'desktop-motion', message: error.message }));
+  motionPage.on('response', response => { if (response.status() >= 400) report.failedResources.push({ device: 'desktop-motion', status: response.status(), url: response.url() }); });
+  await motionPage.route('**/*', async route => { const method = route.request().method(); if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) { report.writes++; return route.abort(); } return route.continue(); });
   await motionPage.goto(`${origin}/cofein-preview.html`, { waitUntil: 'networkidle' });
   const introSkip = motionPage.getByRole('button', { name: 'Към сайта', exact: true });
   if (await introSkip.isVisible()) await introSkip.click();

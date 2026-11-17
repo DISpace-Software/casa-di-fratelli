@@ -1,0 +1,1278 @@
+{
+  "localOnly": true,
+  "realBrowser": true,
+  "checks": [
+    {
+      "name": "desktop: one main landmark and one page heading",
+      "passed": true
+    },
+    {
+      "name": "desktop: menu and booking are deferred on landing",
+      "passed": true
+    },
+    {
+      "name": "desktop-hero: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "desktop: hero exposes direct booking and menu actions",
+      "passed": true
+    },
+    {
+      "name": "desktop: day moments support keyboard and mount only the selected image",
+      "passed": true
+    },
+    {
+      "name": "desktop: menu opens by navigation and locks background",
+      "passed": true
+    },
+    {
+      "name": "desktop-menu: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "desktop-menu: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "desktop: menu search explains zero matches",
+      "passed": true
+    },
+    {
+      "name": "desktop: clearing menu search restores products and focus",
+      "passed": true
+    },
+    {
+      "name": "desktop: menu keyboard focus stays inside its modal",
+      "passed": true
+    },
+    {
+      "name": "desktop: escape closes menu, clears hash and restores focus",
+      "passed": true
+    },
+    {
+      "name": "desktop: bar shortcut opens the drinks department directly",
+      "passed": true
+    },
+    {
+      "name": "desktop: hall presentation tabs support arrow keys",
+      "passed": true
+    },
+    {
+      "name": "desktop: gallery arrow key advances photo",
+      "passed": true
+    },
+    {
+      "name": "desktop-gallery: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "desktop-gallery: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "desktop-footer: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "desktop: contact area exposes telephone and directions links",
+      "passed": true
+    },
+    {
+      "name": "desktop-booking: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "desktop-booking: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "desktop: booking opens from primary site action with correct hash",
+      "passed": true
+    },
+    {
+      "name": "desktop-contact: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "desktop-contact: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "desktop: site reaches reservation contact step without creating a booking",
+      "passed": true
+    },
+    {
+      "name": "desktop: closing booking restores header action focus and page scroll",
+      "passed": true
+    },
+    {
+      "name": "desktop: no failed loaded content images",
+      "passed": true
+    },
+    {
+      "name": "desktop: menu deep link opens directly",
+      "passed": true
+    },
+    {
+      "name": "desktop: booking deep link opens directly",
+      "passed": true
+    },
+    {
+      "name": "phone390: one main landmark and one page heading",
+      "passed": true
+    },
+    {
+      "name": "phone390: menu and booking are deferred on landing",
+      "passed": true
+    },
+    {
+      "name": "phone390-hero: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone390: hero exposes direct booking and menu actions",
+      "passed": true
+    },
+    {
+      "name": "phone390: day moments support keyboard and mount only the selected image",
+      "passed": true
+    },
+    {
+      "name": "phone390: mobile navigation opens and focuses its first action",
+      "passed": true
+    },
+    {
+      "name": "phone390: mobile navigation locks and makes background inert",
+      "passed": true
+    },
+    {
+      "name": "phone390: mobile keyboard focus stays in navigation header",
+      "passed": true
+    },
+    {
+      "name": "phone390: escape closes navigation and restores trigger focus",
+      "passed": true
+    },
+    {
+      "name": "phone390: menu opens by navigation and locks background",
+      "passed": true
+    },
+    {
+      "name": "phone390-menu: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone390-menu: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone390: menu search explains zero matches",
+      "passed": true
+    },
+    {
+      "name": "phone390: clearing menu search restores products and focus",
+      "passed": true
+    },
+    {
+      "name": "phone390: menu keyboard focus stays inside its modal",
+      "passed": true
+    },
+    {
+      "name": "phone390: escape closes menu, clears hash and restores focus",
+      "passed": true
+    },
+    {
+      "name": "phone390: bar shortcut opens the drinks department directly",
+      "passed": true
+    },
+    {
+      "name": "phone390: hall presentation tabs support arrow keys",
+      "passed": true
+    },
+    {
+      "name": "phone390: gallery arrow key advances photo",
+      "passed": true
+    },
+    {
+      "name": "phone390-gallery: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone390-gallery: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone390-footer: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone390: contact area exposes telephone and directions links",
+      "passed": true
+    },
+    {
+      "name": "phone390-booking: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone390-booking: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone390: booking opens from primary site action with correct hash",
+      "passed": true
+    },
+    {
+      "name": "phone390-contact: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone390-contact: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone390: site reaches reservation contact step without creating a booking",
+      "passed": true
+    },
+    {
+      "name": "phone390: closing booking restores header action focus and page scroll",
+      "passed": true
+    },
+    {
+      "name": "phone390: no failed loaded content images",
+      "passed": true
+    },
+    {
+      "name": "phone390: menu deep link opens directly",
+      "passed": true
+    },
+    {
+      "name": "phone390: booking deep link opens directly",
+      "passed": true
+    },
+    {
+      "name": "phone390: navigation to booking retains background lock",
+      "passed": true
+    },
+    {
+      "name": "phone390: navigation booking returns to its menu trigger and unlocks page",
+      "passed": true
+    },
+    {
+      "name": "phone360: one main landmark and one page heading",
+      "passed": true
+    },
+    {
+      "name": "phone360: menu and booking are deferred on landing",
+      "passed": true
+    },
+    {
+      "name": "phone360-hero: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone360: hero exposes direct booking and menu actions",
+      "passed": true
+    },
+    {
+      "name": "phone360: day moments support keyboard and mount only the selected image",
+      "passed": true
+    },
+    {
+      "name": "phone360: mobile navigation opens and focuses its first action",
+      "passed": true
+    },
+    {
+      "name": "phone360: mobile navigation locks and makes background inert",
+      "passed": true
+    },
+    {
+      "name": "phone360: mobile keyboard focus stays in navigation header",
+      "passed": true
+    },
+    {
+      "name": "phone360: escape closes navigation and restores trigger focus",
+      "passed": true
+    },
+    {
+      "name": "phone360: menu opens by navigation and locks background",
+      "passed": true
+    },
+    {
+      "name": "phone360-menu: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone360-menu: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone360: menu search explains zero matches",
+      "passed": true
+    },
+    {
+      "name": "phone360: clearing menu search restores products and focus",
+      "passed": true
+    },
+    {
+      "name": "phone360: menu keyboard focus stays inside its modal",
+      "passed": true
+    },
+    {
+      "name": "phone360: escape closes menu, clears hash and restores focus",
+      "passed": true
+    },
+    {
+      "name": "phone360: bar shortcut opens the drinks department directly",
+      "passed": true
+    },
+    {
+      "name": "phone360: hall presentation tabs support arrow keys",
+      "passed": true
+    },
+    {
+      "name": "phone360: gallery arrow key advances photo",
+      "passed": true
+    },
+    {
+      "name": "phone360-gallery: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone360-gallery: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone360-footer: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone360: contact area exposes telephone and directions links",
+      "passed": true
+    },
+    {
+      "name": "phone360-booking: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone360-booking: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone360: booking opens from primary site action with correct hash",
+      "passed": true
+    },
+    {
+      "name": "phone360-contact: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone360-contact: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone360: site reaches reservation contact step without creating a booking",
+      "passed": true
+    },
+    {
+      "name": "phone360: closing booking restores header action focus and page scroll",
+      "passed": true
+    },
+    {
+      "name": "phone360: no failed loaded content images",
+      "passed": true
+    },
+    {
+      "name": "phone360: menu deep link opens directly",
+      "passed": true
+    },
+    {
+      "name": "phone360: booking deep link opens directly",
+      "passed": true
+    },
+    {
+      "name": "phone360: navigation to booking retains background lock",
+      "passed": true
+    },
+    {
+      "name": "phone360: navigation booking returns to its menu trigger and unlocks page",
+      "passed": true
+    },
+    {
+      "name": "phone320: one main landmark and one page heading",
+      "passed": true
+    },
+    {
+      "name": "phone320: menu and booking are deferred on landing",
+      "passed": true
+    },
+    {
+      "name": "phone320-hero: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone320: hero exposes direct booking and menu actions",
+      "passed": true
+    },
+    {
+      "name": "phone320: day moments support keyboard and mount only the selected image",
+      "passed": true
+    },
+    {
+      "name": "phone320: mobile navigation opens and focuses its first action",
+      "passed": true
+    },
+    {
+      "name": "phone320: mobile navigation locks and makes background inert",
+      "passed": true
+    },
+    {
+      "name": "phone320: mobile keyboard focus stays in navigation header",
+      "passed": true
+    },
+    {
+      "name": "phone320: escape closes navigation and restores trigger focus",
+      "passed": true
+    },
+    {
+      "name": "phone320: menu opens by navigation and locks background",
+      "passed": true
+    },
+    {
+      "name": "phone320-menu: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone320-menu: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone320: menu search explains zero matches",
+      "passed": true
+    },
+    {
+      "name": "phone320: clearing menu search restores products and focus",
+      "passed": true
+    },
+    {
+      "name": "phone320: menu keyboard focus stays inside its modal",
+      "passed": true
+    },
+    {
+      "name": "phone320: escape closes menu, clears hash and restores focus",
+      "passed": true
+    },
+    {
+      "name": "phone320: bar shortcut opens the drinks department directly",
+      "passed": true
+    },
+    {
+      "name": "phone320: hall presentation tabs support arrow keys",
+      "passed": true
+    },
+    {
+      "name": "phone320: gallery arrow key advances photo",
+      "passed": true
+    },
+    {
+      "name": "phone320-gallery: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone320-gallery: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone320-footer: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone320: contact area exposes telephone and directions links",
+      "passed": true
+    },
+    {
+      "name": "phone320-booking: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone320-booking: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone320: booking opens from primary site action with correct hash",
+      "passed": true
+    },
+    {
+      "name": "phone320-contact: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone320-contact: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "phone320: site reaches reservation contact step without creating a booking",
+      "passed": true
+    },
+    {
+      "name": "phone320: closing booking restores header action focus and page scroll",
+      "passed": true
+    },
+    {
+      "name": "phone320: no failed loaded content images",
+      "passed": true
+    },
+    {
+      "name": "phone320: menu deep link opens directly",
+      "passed": true
+    },
+    {
+      "name": "phone320: booking deep link opens directly",
+      "passed": true
+    },
+    {
+      "name": "phone320: navigation to booking retains background lock",
+      "passed": true
+    },
+    {
+      "name": "phone320: navigation booking returns to its menu trigger and unlocks page",
+      "passed": true
+    },
+    {
+      "name": "landscape: one main landmark and one page heading",
+      "passed": true
+    },
+    {
+      "name": "landscape: menu and booking are deferred on landing",
+      "passed": true
+    },
+    {
+      "name": "landscape-hero: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "landscape: hero exposes direct booking and menu actions",
+      "passed": true
+    },
+    {
+      "name": "landscape: day moments support keyboard and mount only the selected image",
+      "passed": true
+    },
+    {
+      "name": "landscape: menu opens by navigation and locks background",
+      "passed": true
+    },
+    {
+      "name": "landscape-menu: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "landscape-menu: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "landscape: menu search explains zero matches",
+      "passed": true
+    },
+    {
+      "name": "landscape: clearing menu search restores products and focus",
+      "passed": true
+    },
+    {
+      "name": "landscape: menu keyboard focus stays inside its modal",
+      "passed": true
+    },
+    {
+      "name": "landscape: escape closes menu, clears hash and restores focus",
+      "passed": true
+    },
+    {
+      "name": "landscape: bar shortcut opens the drinks department directly",
+      "passed": true
+    },
+    {
+      "name": "landscape: hall presentation tabs support arrow keys",
+      "passed": true
+    },
+    {
+      "name": "landscape: gallery arrow key advances photo",
+      "passed": true
+    },
+    {
+      "name": "landscape-gallery: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "landscape-gallery: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "landscape-footer: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "landscape: contact area exposes telephone and directions links",
+      "passed": true
+    },
+    {
+      "name": "landscape-booking: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "landscape-booking: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "landscape: booking opens from primary site action with correct hash",
+      "passed": true
+    },
+    {
+      "name": "landscape-contact: no page horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "landscape-contact: dialog fits width without horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "landscape: site reaches reservation contact step without creating a booking",
+      "passed": true
+    },
+    {
+      "name": "landscape: closing booking restores header action focus and page scroll",
+      "passed": true
+    },
+    {
+      "name": "landscape: no failed loaded content images",
+      "passed": true
+    },
+    {
+      "name": "landscape: menu deep link opens directly",
+      "passed": true
+    },
+    {
+      "name": "landscape: booking deep link opens directly",
+      "passed": true
+    },
+    {
+      "name": "Normal-motion sections reveal as they enter the viewport",
+      "passed": true
+    },
+    {
+      "name": "Changing to reduced motion preserves all revealed content",
+      "passed": true
+    },
+    {
+      "name": "No JavaScript page exceptions",
+      "passed": true
+    },
+    {
+      "name": "No failing HTTP resource responses",
+      "passed": true
+    },
+    {
+      "name": "Main site audit made no writes",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "failedResources": [],
+  "screenshots": [
+    "desktop-01-hero.png",
+    "desktop-03-menu.png",
+    "desktop-04-spaces.png",
+    "desktop-05-gallery.png",
+    "desktop-06-footer.png",
+    "desktop-07-booking.png",
+    "desktop-08-contact.png",
+    "desktop-09-full-page.png",
+    "phone390-01-hero.png",
+    "phone390-02-navigation.png",
+    "phone390-03-menu.png",
+    "phone390-04-spaces.png",
+    "phone390-05-gallery.png",
+    "phone390-06-footer.png",
+    "phone390-07-booking.png",
+    "phone390-08-contact.png",
+    "phone390-09-full-page.png",
+    "phone360-01-hero.png",
+    "phone360-02-navigation.png",
+    "phone360-03-menu.png",
+    "phone360-04-spaces.png",
+    "phone360-05-gallery.png",
+    "phone360-06-footer.png",
+    "phone360-07-booking.png",
+    "phone360-08-contact.png",
+    "phone360-09-full-page.png",
+    "phone320-01-hero.png",
+    "phone320-02-navigation.png",
+    "phone320-03-menu.png",
+    "phone320-04-spaces.png",
+    "phone320-05-gallery.png",
+    "phone320-06-footer.png",
+    "phone320-07-booking.png",
+    "phone320-08-contact.png",
+    "phone320-09-full-page.png",
+    "landscape-01-hero.png",
+    "landscape-03-menu.png",
+    "landscape-04-spaces.png",
+    "landscape-05-gallery.png",
+    "landscape-06-footer.png",
+    "landscape-07-booking.png",
+    "landscape-08-contact.png",
+    "landscape-09-full-page.png"
+  ],
+  "metrics": [
+    {
+      "label": "desktop-initial-performance",
+      "note": "Local Chromium, warm OS cache, no throttling; dev module sizes are not production bundle sizes.",
+      "lcp": 340,
+      "cls": 0,
+      "longTasks": 0,
+      "resourceCount": 23,
+      "encodedBytes": 1831628,
+      "imageBytes": 257438,
+      "fontBytes": 53708,
+      "imageRequests": [
+        {
+          "path": "/cofein/terrace-1280.webp",
+          "bytes": 257438
+        }
+      ],
+      "lazyMenuLoaded": false,
+      "lazyBookingLoaded": false
+    },
+    {
+      "label": "desktop-hero",
+      "width": 1440,
+      "height": 1000,
+      "documentWidth": 1440,
+      "scrollY": 0,
+      "bodyOverflow": "visible",
+      "dialog": null,
+      "activeElement": "BODY"
+    },
+    {
+      "label": "desktop-menu",
+      "width": 1440,
+      "height": 1000,
+      "documentWidth": 1440,
+      "scrollY": 0,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 160,
+        "y": 20,
+        "width": 1120,
+        "height": 960,
+        "scrollWidth": 1103,
+        "clientWidth": 1103
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "desktop-gallery",
+      "width": 1440,
+      "height": 1000,
+      "documentWidth": 1440,
+      "scrollY": 2224,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 130,
+        "y": 39.296875,
+        "width": 1180,
+        "height": 921.390625,
+        "scrollWidth": 1178,
+        "clientWidth": 1178
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "desktop-footer",
+      "width": 1440,
+      "height": 1000,
+      "documentWidth": 1440,
+      "scrollY": 3386,
+      "bodyOverflow": "visible",
+      "dialog": null,
+      "activeElement": "BUTTON"
+    },
+    {
+      "label": "desktop-booking",
+      "width": 1440,
+      "height": 1000,
+      "documentWidth": 1440,
+      "scrollY": 3386,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 100,
+        "y": 30,
+        "width": 1240,
+        "height": 940,
+        "scrollWidth": 1238,
+        "clientWidth": 1238
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "desktop-contact",
+      "width": 1440,
+      "height": 1000,
+      "documentWidth": 1440,
+      "scrollY": 3386,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 410,
+        "y": 174.375,
+        "width": 620,
+        "height": 651.25,
+        "scrollWidth": 618,
+        "clientWidth": 618
+      },
+      "activeElement": "dialog-title"
+    },
+    {
+      "label": "phone390-initial-performance",
+      "note": "Local Chromium, warm OS cache, no throttling; dev module sizes are not production bundle sizes.",
+      "lcp": 216,
+      "cls": 0,
+      "longTasks": 0,
+      "resourceCount": 23,
+      "encodedBytes": 1656980,
+      "imageBytes": 82790,
+      "fontBytes": 53708,
+      "imageRequests": [
+        {
+          "path": "/cofein/terrace-640.webp",
+          "bytes": 82790
+        }
+      ],
+      "lazyMenuLoaded": false,
+      "lazyBookingLoaded": false
+    },
+    {
+      "label": "phone390-hero",
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "scrollY": 0,
+      "bodyOverflow": "visible",
+      "dialog": null,
+      "activeElement": "BODY"
+    },
+    {
+      "label": "phone390-menu",
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "scrollY": 0,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 8,
+        "y": 8,
+        "width": 374,
+        "height": 828,
+        "scrollWidth": 372,
+        "clientWidth": 372
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "phone390-gallery",
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "scrollY": 2304,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 12,
+        "y": 239,
+        "width": 366,
+        "height": 366,
+        "scrollWidth": 364,
+        "clientWidth": 364
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "phone390-footer",
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "scrollY": 3815,
+      "bodyOverflow": "visible",
+      "dialog": null,
+      "activeElement": "BUTTON"
+    },
+    {
+      "label": "phone390-booking",
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "scrollY": 3815,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "phone390-contact",
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "scrollY": 3815,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 844,
+        "scrollWidth": 390,
+        "clientWidth": 390
+      },
+      "activeElement": "dialog-title"
+    },
+    {
+      "label": "phone360-initial-performance",
+      "note": "Local Chromium, warm OS cache, no throttling; dev module sizes are not production bundle sizes.",
+      "lcp": 184,
+      "cls": 0,
+      "longTasks": 0,
+      "resourceCount": 23,
+      "encodedBytes": 1656980,
+      "imageBytes": 82790,
+      "fontBytes": 53708,
+      "imageRequests": [
+        {
+          "path": "/cofein/terrace-640.webp",
+          "bytes": 82790
+        }
+      ],
+      "lazyMenuLoaded": false,
+      "lazyBookingLoaded": false
+    },
+    {
+      "label": "phone360-hero",
+      "width": 360,
+      "height": 740,
+      "documentWidth": 360,
+      "scrollY": 0,
+      "bodyOverflow": "visible",
+      "dialog": null,
+      "activeElement": "BODY"
+    },
+    {
+      "label": "phone360-menu",
+      "width": 360,
+      "height": 740,
+      "documentWidth": 360,
+      "scrollY": 0,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 8,
+        "y": 8,
+        "width": 344,
+        "height": 724,
+        "scrollWidth": 342,
+        "clientWidth": 342
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "phone360-gallery",
+      "width": 360,
+      "height": 740,
+      "documentWidth": 360,
+      "scrollY": 2289,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 12,
+        "y": 198.25,
+        "width": 336,
+        "height": 343.5,
+        "scrollWidth": 334,
+        "clientWidth": 334
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "phone360-footer",
+      "width": 360,
+      "height": 740,
+      "documentWidth": 360,
+      "scrollY": 3795,
+      "bodyOverflow": "visible",
+      "dialog": null,
+      "activeElement": "BUTTON"
+    },
+    {
+      "label": "phone360-booking",
+      "width": 360,
+      "height": 740,
+      "documentWidth": 360,
+      "scrollY": 3795,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 740,
+        "scrollWidth": 360,
+        "clientWidth": 360
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "phone360-contact",
+      "width": 360,
+      "height": 740,
+      "documentWidth": 360,
+      "scrollY": 3795,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 740,
+        "scrollWidth": 360,
+        "clientWidth": 360
+      },
+      "activeElement": "dialog-title"
+    },
+    {
+      "label": "phone320-initial-performance",
+      "note": "Local Chromium, warm OS cache, no throttling; dev module sizes are not production bundle sizes.",
+      "lcp": 176,
+      "cls": 0,
+      "longTasks": 0,
+      "resourceCount": 23,
+      "encodedBytes": 1656980,
+      "imageBytes": 82790,
+      "fontBytes": 53708,
+      "imageRequests": [
+        {
+          "path": "/cofein/terrace-640.webp",
+          "bytes": 82790
+        }
+      ],
+      "lazyMenuLoaded": false,
+      "lazyBookingLoaded": false
+    },
+    {
+      "label": "phone320-hero",
+      "width": 320,
+      "height": 740,
+      "documentWidth": 320,
+      "scrollY": 0,
+      "bodyOverflow": "visible",
+      "dialog": null,
+      "activeElement": "BODY"
+    },
+    {
+      "label": "phone320-menu",
+      "width": 320,
+      "height": 740,
+      "documentWidth": 320,
+      "scrollY": 0,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 8,
+        "y": 8,
+        "width": 304,
+        "height": 724,
+        "scrollWidth": 302,
+        "clientWidth": 302
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "phone320-gallery",
+      "width": 320,
+      "height": 740,
+      "documentWidth": 320,
+      "scrollY": 2344,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 12,
+        "y": 213.25,
+        "width": 296,
+        "height": 313.5,
+        "scrollWidth": 294,
+        "clientWidth": 294
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "phone320-footer",
+      "width": 320,
+      "height": 740,
+      "documentWidth": 320,
+      "scrollY": 3871,
+      "bodyOverflow": "visible",
+      "dialog": null,
+      "activeElement": "BUTTON"
+    },
+    {
+      "label": "phone320-booking",
+      "width": 320,
+      "height": 740,
+      "documentWidth": 320,
+      "scrollY": 3871,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 740,
+        "scrollWidth": 320,
+        "clientWidth": 320
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "phone320-contact",
+      "width": 320,
+      "height": 740,
+      "documentWidth": 320,
+      "scrollY": 3871,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 740,
+        "scrollWidth": 320,
+        "clientWidth": 320
+      },
+      "activeElement": "dialog-title"
+    },
+    {
+      "label": "landscape-initial-performance",
+      "note": "Local Chromium, warm OS cache, no throttling; dev module sizes are not production bundle sizes.",
+      "lcp": 212,
+      "cls": 0,
+      "longTasks": 0,
+      "resourceCount": 23,
+      "encodedBytes": 1656980,
+      "imageBytes": 82790,
+      "fontBytes": 53708,
+      "imageRequests": [
+        {
+          "path": "/cofein/terrace-640.webp",
+          "bytes": 82790
+        }
+      ],
+      "lazyMenuLoaded": false,
+      "lazyBookingLoaded": false
+    },
+    {
+      "label": "landscape-hero",
+      "width": 844,
+      "height": 390,
+      "documentWidth": 844,
+      "scrollY": 0,
+      "bodyOverflow": "visible",
+      "dialog": null,
+      "activeElement": "BODY"
+    },
+    {
+      "label": "landscape-menu",
+      "width": 844,
+      "height": 390,
+      "documentWidth": 844,
+      "scrollY": 200,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 24,
+        "y": 20,
+        "width": 796,
+        "height": 350,
+        "scrollWidth": 794,
+        "clientWidth": 794
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "landscape-gallery",
+      "width": 844,
+      "height": 390,
+      "documentWidth": 844,
+      "scrollY": 2168,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 24,
+        "y": 39.296875,
+        "width": 796,
+        "height": 311.390625,
+        "scrollWidth": 794,
+        "clientWidth": 794
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "landscape-footer",
+      "width": 844,
+      "height": 390,
+      "documentWidth": 844,
+      "scrollY": 3390,
+      "bodyOverflow": "visible",
+      "dialog": null,
+      "activeElement": "BUTTON"
+    },
+    {
+      "label": "landscape-booking",
+      "width": 844,
+      "height": 390,
+      "documentWidth": 844,
+      "scrollY": 3390,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 0,
+        "y": 0,
+        "width": 844,
+        "height": 390,
+        "scrollWidth": 844,
+        "clientWidth": 844
+      },
+      "activeElement": "Затвори прозореца"
+    },
+    {
+      "label": "landscape-contact",
+      "width": 844,
+      "height": 390,
+      "documentWidth": 844,
+      "scrollY": 3390,
+      "bodyOverflow": "hidden",
+      "dialog": {
+        "x": 0,
+        "y": 0,
+        "width": 844,
+        "height": 390,
+        "scrollWidth": 844,
+        "clientWidth": 844
+      },
+      "activeElement": "dialog-title"
+    }
+  ],
+  "writes": 0,
+  "origin": "http://127.0.0.1:5176",
+  "expectedBookingMode": "workspace/contact",
+  "visualReview": {
+    "inspected": [
+      "desktop-01-hero.png",
+      "phone390-01-hero.png",
+      "phone320-07-booking.png",
+      "phone390-08-contact.png",
+      "desktop-07-booking.png",
+      "phone320-03-menu.png",
+      "landscape-08-contact.png"
+    ],
+    "result": "No blocking layout issue observed. Branding, hero CTAs, mobile menu and booking/contact forms are readable; narrow portrait controls fit. Landscape contact content continues through the dialog scroll area above the fixed action footer. No booking was submitted.",
+    "introScope": "Main audit uses reduced-motion for complete site flows and explicit skip in its separate normal-motion scenario; full scroll intro audit is owned separately."
+  }
+}

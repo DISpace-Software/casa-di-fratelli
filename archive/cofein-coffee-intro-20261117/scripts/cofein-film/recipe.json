@@ -1,0 +1,580 @@
+{
+  "version": 2,
+  "status": "locally-integrated-and-verified",
+  "purpose": "Offline Cofein cup, saucer and finite coffee pour for native scroll playback",
+  "renderer": {
+    "application": "Blender",
+    "version": "4.2.23 LTS",
+    "engine": "Cycles",
+    "device": "AMD Radeon Pro 560X / Metal",
+    "width": 1024,
+    "height": 768,
+    "format": "PNG RGBA 8-bit",
+    "samples": 24,
+    "samplesStatus": "24 beauty samples and 8 dry-layer samples, accepted on actual full-resolution keyframes and integrated browser views",
+    "persistentData": true,
+    "animatedSeed": false,
+    "buildHash": "d0cbe84903e8",
+    "cpuPathTracing": false,
+    "cpuDenoising": "OpenImageDenoise",
+    "metalRT": false,
+    "verification": "All 100 final PNGs validated; selected all-stage frames and desktop/mobile browser compositions visually reviewed",
+    "singleProcessVisualReview": {
+      "reason": "AMD Metal cold shader compilation may repeat between processes; keep one process for proofs and remaining frames",
+      "order": "--frames 21,55,80,105,120 followed by every remaining frame 21..120 once",
+      "arguments": "--review-after 5 --review-signal OUTPUT/frames/continue.json",
+      "decision": "After viewing the actual five proof PNGs, atomically write {requestSha256: matching review-request.json SHA256, decision: continue}; no decision is generated automatically",
+      "resume": "Source, world manifest, code, backend, build, settings and PNG hashes must match",
+      "completedRequestSha256": "0fd4992f7fbed0fcc628c3d24c0c0a79f9566257e81c83383c45736b7119f827"
+    },
+    "completedRun": {
+      "report": "output/cofein-photoreal-20261116/render/final-film-r1/render-report.json",
+      "reportSha256": "3ab9beaf1bf62caca5885e192e53b2c168d7194988aa06882c4c6ea6c1320cd2",
+      "frameCount": 100,
+      "first": 21,
+      "last": 120,
+      "seconds": 3032.669,
+      "pngBytes": 69933732,
+      "integrityReport": "output/cofein-photoreal-20261116/render/final-film-integrity.json"
+    }
+  },
+  "sourceScene": {
+    "builder": "coffee_scene.py",
+    "motionFraming": true,
+    "artifact": "OUTPUT/v5.blend",
+    "workingArtifact": "output/cofein-photoreal-20261116/render/v5.blend",
+    "workingArtifactSha256": "a516cc1a0a195e3801c98f76d0570aff3af9f91ebc33c007204b2daaffed9912",
+    "tracked": false,
+    "renderInput": "Original moving world scene with guarded appearance changes; never render the frozen-cup simulation scene directly"
+  },
+  "brand": {
+    "source": "frontend/public/cofein/brand/cofein-lockup.svg",
+    "lettering": "Existing vector outlines traced from the owner's menu; no font substitution",
+    "preparation": "node scripts/prepare-cofein-coffee-logo.mjs OUTPUT/logo-decal.png SHARP_MODULE"
+  },
+  "simulation": {
+    "units": "metres",
+    "fps": 24,
+    "first": 1,
+    "last": 120,
+    "deliveryFirst": 21,
+    "deliveryLast": 120,
+    "solver": "Mantaflow FLIP",
+    "driver": "coffee_liquid_cup_frame_bake.py",
+    "resolution": 118,
+    "targetCellM": 0.0035437829792499542,
+    "actualCellM": 0.0035210590241319044,
+    "finiteGeometrySource": true,
+    "resumableCache": true,
+    "fractionalObstacles": false,
+    "deleteInObstacle": true,
+    "conservativeWall": true,
+    "sourceInsetCells": 1.25,
+    "meshSmoothing": 3,
+    "meshScale": 2,
+    "minimumAdaptiveTimesteps": 1,
+    "maximumAdaptiveTimesteps": 12,
+    "cfl": 2.0,
+    "surfaceTension": 0.0,
+    "spray": true,
+    "domainMin": [
+      -0.18346916139125824,
+      -0.13650000095367432,
+      -0.20779713988304138
+    ],
+    "domainMax": [
+      0.22466018795967102,
+      0.13650000095367432,
+      0.20768781006336212
+    ],
+    "referenceFrame": {
+      "method": "CupRig fixed at original frame-1 world pose",
+      "motionSamplesEveryFrames": 0.25,
+      "planningRange": [
+        1,
+        120
+      ],
+      "gravity": "rotation(M_reference @ inverse(M_world(t))) @ (world_gravity - cup_origin_acceleration)",
+      "gravitySampling": "Animated scene gravity is sampled once per Blender animation frame, held across adaptive substeps",
+      "movingColliders": [
+        "Finite world-floor ROI",
+        "Original saucer collision proxy"
+      ],
+      "artificialDomainBorderCollisions": false,
+      "omittedInertialForces": [
+        "Coriolis",
+        "Euler",
+        "centrifugal"
+      ],
+      "physicalEquivalenceToWorldSolve": false,
+      "limitation": "A rotating-frame approximation. Fast outflow and distant floor liquid require numerical and visual review; geometric remapping does not restore the omitted dynamics."
+    },
+    "pressureBridge": {
+      "helper": "coffee_pressure_wrapper.py",
+      "processLocal": true,
+      "argument": "Actual native phi_s level-set supplied to the corresponding liquid solvePressure call",
+      "surfaceTensionDuringBake": 0.0,
+      "capillaryAccuracyValidated": false,
+      "verification": "Every liquid pressure call must inject its own actual level-set and return from the native solver successfully; handle restored after bake"
+    },
+    "notes": [
+      "The cup's interior remains exact; its hidden collision guard expands outwards for grid stability.",
+      "Full-120 transformed finite ROI is planned before configuring collider thickness and source inset, including during short diagnostics.",
+      "Secondary-particle flags are set only when values change; Blender 4.5 callbacks are not idempotent.",
+      "Neither the pressure bridge nor a successful bake is a claim of validated physical accuracy."
+    ],
+    "applicationVersion": "Blender 4.5.9 LTS",
+    "completedRun": {
+      "status": "native-data-mesh-and-secondary-cache-complete",
+      "sourceScene": "output/cofein-photoreal-20261116/render/v5.blend",
+      "sourceSceneSha256": "a516cc1a0a195e3801c98f76d0570aff3af9f91ebc33c007204b2daaffed9912",
+      "bakedScene": "output/cofein-photoreal-20261116/render/coffee-fluid-cupframe120.blend",
+      "bakedSceneSha256": "27f84e3f1cf262fbcbaff89e57f1a3237fbd4db9e16f709f5605c32be81161d0",
+      "cacheDirectory": "output/cofein-photoreal-20261116/render/cache-cupframe120",
+      "report": "output/cofein-photoreal-20261116/render/coffee-fluid-cupframe120.json",
+      "reportSha256": "a90701a77ac127fe0584623a7f98815fa24354a5622388a96173abc2719c9a9f",
+      "verifiedCacheFrames": 120,
+      "cacheFileCount": 2400,
+      "cacheBytes": 280198069,
+      "seconds": {
+        "data": 5289.450162321038,
+        "mesh": 108.2755106179975,
+        "secondary": 15.216798558016308
+      },
+      "pressureCalls": 560,
+      "actualLevelsetInjections": 560,
+      "nativePressureCallsSucceeded": 560,
+      "pressureFailures": 0,
+      "secondaryVariantUsed": false,
+      "finalFilmReview": "Selected actual full-run frames and integrated desktop/mobile views reviewed; numerical limitations below remain applicable"
+    }
+  },
+  "worldExport": {
+    "helper": "coffee_world_fluid.py",
+    "format": "One hashed NPZ per actual integer frame plus manifest.json",
+    "coordinateSpace": "Original world metres",
+    "meshMap": "M_world(t) @ inverse(M_reference) @ evaluated_domain.matrix_world @ local_vertex",
+    "sprayMap": "M_world(t) @ inverse(M_reference) @ native_particle.location (already simulation-world)",
+    "interpolatedDeliveryFrames": false,
+    "nativeParticleVelocityUsed": false,
+    "inventedParticlesOrContacts": false,
+    "sprayDiameters": "Actual native size clipped to 1–3 mm for rendering; visual approximation, not measured physical diameter or mass",
+    "cacheProvenance": "NPZ content hashes and source blend hash; cache inventory digest covers relative path, size and mtime, not every cache byte",
+    "completedRun": {
+      "status": "complete",
+      "directory": "output/cofein-photoreal-20261116/render/world-cupframe120",
+      "manifest": "output/cofein-photoreal-20261116/render/world-cupframe120/manifest.json",
+      "manifestSha256": "dff57367a0179928d958caf3c142bf284de1cac98458360ef1b86c9da5c713e2",
+      "sourceBlendSha256": "27f84e3f1cf262fbcbaff89e57f1a3237fbd4db9e16f709f5605c32be81161d0",
+      "nativeCacheIndexSha256": "665183b8a99a9701ea17209f971721f9df22613d0cd54e7fa266c4effbf00af7",
+      "cacheIndexDigestBasis": "relative path, size and mtime; not a hash of all original cache contents",
+      "first": 21,
+      "last": 120,
+      "frameCount": 100,
+      "npzBytes": 17690625,
+      "peakSprayParticles": 88,
+      "sprayObservations": 2052,
+      "exportSeconds": 9.360066175460815
+    }
+  },
+  "floorCompositing": {
+    "helper": "coffee_liquid_aov_composite.py",
+    "method": "Separate dry Cycles layer plus coffee coverage/removal AOVs; blend premultiplied RGB and alpha",
+    "drySamples": 8,
+    "floorZ": 0.0,
+    "fadeStartAboveFloorM": 0.0005,
+    "fadeEndAboveFloorM": 0.008,
+    "simulationOrContactsChanged": false,
+    "physicalAbsorptionModel": false,
+    "purpose": "Intentional website transition; restore dry scenery behind near-floor coffee without modifying the simulated trajectory"
+  },
+  "delivery": {
+    "framing": {
+      "maxWidth": 1100,
+      "maxWidthFraction": 1.4,
+      "maxHeightFraction": 0.8,
+      "centerY": 0.42,
+      "fadeStart": 0.86,
+      "fadeEnd": 0.99
+    },
+    "framingStatus": "Verified in Chromium and WebKit at desktop 1440px and phone 390/320px, including rotation and reverse scrolling",
+    "filmExit": "Opacity fade in place; no translation of the floor pool",
+    "variants": [
+      {
+        "id": "mobile",
+        "width": 720,
+        "height": 540,
+        "frameCount": 100,
+        "totalBytes": 4682754
+      },
+      {
+        "id": "desktop",
+        "width": 1024,
+        "height": 768,
+        "frameCount": 100,
+        "totalBytes": 7129436
+      }
+    ],
+    "assetsTrackedNow": false,
+    "edgeTreatment": {
+      "version": 1,
+      "method": "product-cubic-smoothstep-alpha",
+      "coordinates": "u=x/(width-1),v=y/(height-1)",
+      "top": 0.025,
+      "right": 0.035,
+      "bottom": 0.06,
+      "left": 0.035,
+      "stage": "After resize and before WebP encoding; changes alpha only, preserves source PNGs",
+      "purpose": "Soften the finite image boundary of the shadow catcher and off-frame floor liquid",
+      "fingerprintIncludesTreatment": true
+    },
+    "assetsGenerated": true,
+    "manifest": "frontend/public/cofein/intro/film/manifest.json",
+    "manifestSha256": "3259eb09178388efb67adbb3bf10a59f03757e4826a2f6582d5b6d4e0b48ba2e",
+    "transfer": "These are full-sequence byte totals; the player requests only the current frame neighborhood, with separate mobile and desktop variants",
+    "integrityReport": "output/cofein-photoreal-20261116/render/final-delivery-integrity.json",
+    "productionBuildAssetsMatch": true
+  },
+  "parameters": {
+    "BLENDER": "Blender 4.5.9 executable for scene preparation, simulation and exports",
+    "OUTPUT": "Fresh local artifact directory; generated blend/cache/NPZ/frames are not included in this curated source folder",
+    "SHARP_MODULE": "Explicit local sharp module entry point",
+    "RENDER_SAMPLES": "24; selected production setting after actual proof-frame review",
+    "RENDER_BLENDER": "Blender 4.2.23 LTS executable with the verified Radeon Metal backend"
+  },
+  "commands": {
+    "scene": "BLENDER -b --threads 8 --python scripts/cofein-film/coffee_scene.py -- --logo OUTPUT/logo-decal.png --output-dir OUTPUT --save-blend OUTPUT/v5.blend --motion-framing --transparent --width 1024 --height 768 --no-render",
+    "simulation": "BLENDER -b --threads 6 --python scripts/cofein-film/coffee_liquid_cup_frame_bake.py -- --input OUTPUT/v5.blend --output OUTPUT/baked.blend --cache OUTPUT/cache --resolution 118 --frames 120 --spray --surface-tension 0",
+    "worldExport": "BLENDER -b --threads 2 --python scripts/cofein-film/coffee_world_fluid.py -- --input OUTPUT/baked.blend --output-directory OUTPUT/world --start 21 --end 120",
+    "primaryContacts": "BLENDER -b OUTPUT/baked.blend --threads 2 --python scripts/cofein-film/coffee_liquid_impacts.py -- --output OUTPUT/primary.json --first 21 --last 120 --camera-blend OUTPUT/v5.blend --include-primary-contact",
+    "sprayContacts": "BLENDER -b OUTPUT/baked.blend --threads 2 --python scripts/cofein-film/coffee_spray_impacts.py -- --output OUTPUT/spray.json --first 21 --last 120 --camera-blend OUTPUT/v5.blend",
+    "render": "RENDER_BLENDER --factory-startup -b --threads 6 --python scripts/cofein-film/coffee_render_frames.py -- --input OUTPUT/v5-optics-lit-motion.blend --world-sequence OUTPUT/world --aov-floor-composite --output OUTPUT/frames --first 21 --last 120 --width 1024 --height 768 --samples 24 --device METAL --device-name \"AMD Radeon Pro 560X\"",
+    "assembleContacts": "node scripts/assemble-cofein-coffee-impacts.mjs OUTPUT/primary.json OUTPUT/spray.json OUTPUT/frames/impacts.json",
+    "pack": "node scripts/pack-cofein-coffee-film.mjs OUTPUT/frames frontend/public/cofein/intro/film SHARP_MODULE --fade-start 0.86 --fade-end 0.99 --max-width-fraction 1.4",
+    "coffeeOptics": "BLENDER -b --threads 1 --python scripts/cofein-film/coffee_optics_variant.py -- --input OUTPUT/v5.blend --output OUTPUT/v5-optics.blend",
+    "reflectionLighting": "BLENDER -b --threads 1 --python scripts/cofein-film/coffee_lighting_variant.py -- --input OUTPUT/v5-optics.blend --output OUTPUT/v5-optics-lit.blend",
+    "reflectionMotion": "BLENDER -b --threads 1 --python scripts/cofein-film/coffee_lighting_motion_variant.py -- --input OUTPUT/v5-optics-lit.blend --output OUTPUT/v5-optics-lit-motion.blend"
+  },
+  "reviewBeforePackaging": [
+    "Review full-run volume/containment and boundary escape; a short diagnostic does not approve the full film.",
+    "Review the original moving cup against remapped liquid, saucer/floor contacts, separate drops, camera bounds and shadows.",
+    "Export only observed landings; empty detections cannot be replaced with invented events.",
+    "Review AOV compositing for wet-shadow/alpha artifacts and preserve dark coffee and original branding.",
+    "Validate RGBA transparency, handset cropping, actual contact timing and late fade across the entire final sequence.",
+    "Run real browser QA after integration, including seek, reverse, skip, failures, cleanup and entry to the restaurant."
+  ],
+  "curatedHelpersSha256": {
+    "coffee_scene.py": "0334d485470f54f23ae9836f3929f501b95133145e2b82b3774f5b327f9c8707",
+    "coffee_liquid_bake.py": "777433a0fa38efe5c284f16a844b4fffe5714c67070d7f48b3894070ff76073c",
+    "coffee_pressure_wrapper.py": "3011f50d6f6295ff06ac36e7abf18b385b64e48696be04a6ab6af5fc235dceeb",
+    "coffee_liquid_cup_frame_bake.py": "1cdfd1a7aa196a7d61d303f82321dc0f2a1c1ba50d0d6cb3a02d891604d140ae",
+    "coffee_cup_frame.py": "24dfbd5cd512b68b1e5e9b37f477b0a0e527de13f4e31bece83f193d8a448889",
+    "coffee_world_fluid.py": "cb108588449c84f5a0f7d6af22fe5cd736e65c334d520bd327caa2b39216aac6",
+    "coffee_liquid_impacts.py": "302417fa8283898e7f301c2e27a4cf0e61156d835b7a6eb1ba7068d1514306bc",
+    "coffee_spray_impacts.py": "dbe94a66347b733156677980dfe10d2ab4593c6a059ffdcc537ab9b3fa423a2f",
+    "coffee_liquid_aov_composite.py": "611a757cf1b8ec5d9b7737a665e72ac17ba2654f0070f1303bc38776de8a751a",
+    "coffee_render_frames.py": "20514bfe8093034ea5041cc635e449f0a7c2fe3763a83a3eec9b62145ba4c18e",
+    "test_pressure_wrapper.py": "e91a45baf6da51cd48fa29245ddc47f3d659d0efbedeee4d2de3789519a18f18",
+    "test_coffee_cup_frame.py": "7de0740ae38d9436de43e93a788f736e3bb13a46aa2d783e40f4adcb64928f86",
+    "test_world_fluid.py": "cd0b1eacb1973fc53d8dd4aecc2674d78fe27ddfd94f22aa251be31d00b7e459",
+    "test_coffee_liquid_impacts.py": "ac241e65c153111e1d83ab08e8cf29fa0d6b5369b1f70367ad328f686bce8219",
+    "test_spray_impacts.py": "b85313c769dd367f0a832114b44a9d31b99e445e0acd37dd1c1af5576fff11b0",
+    "test_liquid_aov_composite.py": "64ac8b1ffbdf99428c18bb2ad2e7a55142a6ef6e3c65189c79be1f659dfbbcd3",
+    "coffee_optics_variant.py": "7320ee24ff5d2380b0de07f2b89039978117bdf74f29a1320345a8c00026632c",
+    "coffee_lighting_variant.py": "5db47f4ee00b4b0f662be4a58eaec12bd8a6be7fa0ad617edbbf90078a251f8d",
+    "coffee_lighting_motion_variant.py": "00b51115fed01518cb72846953f87b89bb07a2843fcf79ca0f0f86fc45ee0485"
+  },
+  "excludedArtifacts": [
+    ".blend scenes",
+    "Mantaflow cache directories",
+    "NPZ world frames",
+    "rendered frames",
+    "diagnostic reports/scripts",
+    "legacy material-opacity compositor",
+    "legacy direct native-spray render setup"
+  ],
+  "appearance": {
+    "status": "Final full-run keyframes, 21-frame contact sheet and integrated desktop/mobile compositions reviewed",
+    "input": "OUTPUT/v5.blend",
+    "output": "OUTPUT/v5-optics-lit-motion.blend",
+    "workingArtifactSha256": "82761329785d0ef0ac766d0e7197356ea5098458388500b5f542a6e9280932f9",
+    "steps": [
+      "coffee_optics_variant.py",
+      "coffee_lighting_variant.py",
+      "coffee_lighting_motion_variant.py"
+    ],
+    "coffee": {
+      "baseColorLinear": [
+        0.98,
+        0.98,
+        0.98
+      ],
+      "transmission": 1,
+      "roughness": 0.04,
+      "ior": 1.333,
+      "volumeAbsorptionColor": [
+        0.46,
+        0.15,
+        0.035
+      ],
+      "volumeAbsorptionDensity": 140,
+      "measuredCoffeeOptics": false
+    },
+    "reflectionLight": {
+      "name": "Coffee softbox reflection",
+      "shape": "DISK",
+      "untilFrame21": {
+        "diameterM": 0.075,
+        "powerW": 0.140625
+      },
+      "fromFrame55": {
+        "diameterM": 0.12,
+        "powerW": 0.36
+      },
+      "interpolation": "Smoothstep diameter at every integer frame; power = .36 * (diameter / .12)^2",
+      "purpose": "Compact initial reflection, broader reflection during the pour; artistic photographic lighting"
+    },
+    "unchanged": [
+      "ceramic material",
+      "geometry",
+      "rig motion",
+      "camera",
+      "other lights",
+      "physics cache"
+    ],
+    "sourceGuard": "Each helper verifies input SHA and all scene/shader/light channels outside its explicitly allowed changes"
+  },
+  "validation": {
+    "status": "passed-local-integration",
+    "finalFilmReview": "Rendered sequence integrity passed; selected actual frames and integrated browser stages visually reviewed",
+    "browserIntegrationReview": "passed with documented browser-keyboard and local-configuration harness corrections",
+    "reports": {
+      "postBake": "output/cofein-photoreal-20261116/render/cupframe120-post-bake.json",
+      "primaryContacts": "output/cofein-photoreal-20261116/render/primary-cupframe120.json",
+      "secondaryContacts": "output/cofein-photoreal-20261116/render/spray-cupframe120.json",
+      "selectedMeshQuality": "output/cofein-photoreal-20261116/render/cupframe120-mesh-quality.json",
+      "finiteFloor": "output/cofein-photoreal-20261116/render/cupframe120-finite-floor-audit.json",
+      "filmContactSheet": "output/cofein-photoreal-20261116/render/final-film-contact-sheet.png",
+      "renderIntegrity": "output/cofein-photoreal-20261116/render/final-film-integrity.json",
+      "deliveryIntegrity": "output/cofein-photoreal-20261116/render/final-delivery-integrity.json"
+    },
+    "preContactMeshVolumes": {
+      "referenceFrame": 20,
+      "firstConfirmedFloorContactFrame": 54,
+      "samples": [
+        {
+          "frame": 20,
+          "volumeM3": 0.00019499813002945622,
+          "relativeChangeFrom20": 0.0
+        },
+        {
+          "frame": 35,
+          "volumeM3": 0.00019026241915195874,
+          "relativeChangeFrom20": -0.02428592969984944
+        },
+        {
+          "frame": 40,
+          "volumeM3": 0.00018968320966143758,
+          "relativeChangeFrom20": -0.02725626326373376
+        }
+      ],
+      "initialPourFrame55VolumeM3": 0.00019183519672510301,
+      "interpretation": "The pre-contact cup keeps its liquid during the initial lift; frame 55 is already in the initial pour, after the first confirmed contact at frame 54."
+    },
+    "lateOutflow": {
+      "sampledMeshVolumes": [
+        {
+          "frame": 80,
+          "totalVolumeM3": 9.985415949361903e-05,
+          "cupConnectedVolumeM3": 9.9654567696162e-05
+        },
+        {
+          "frame": 100,
+          "totalVolumeM3": 2.5252043195505988e-05,
+          "cupConnectedVolumeM3": 2.467864226384169e-05
+        },
+        {
+          "frame": 120,
+          "totalVolumeM3": 3.997759909596922e-06,
+          "cupConnectedVolumeM3": 2.5037530774531707e-06
+        }
+      ],
+      "allFrameDomainClearanceM": {
+        "low": [
+          0.059508778154850006,
+          0.0030251741409301758,
+          0.13971135020256042
+        ],
+        "high": [
+          0.18143119663000107,
+          0.0029846280813217163,
+          0.10638496279716492
+        ],
+        "coordinates": "simulation-world (before optional cup-frame remap)",
+        "note": "An open-side clearance below two cells can indicate already clipped liquid. Do not tighten that side based on this bake."
+      },
+      "outflowMassBudgetMeasured": false,
+      "interpretation": "The open Y domain is reached after floor contact. Late reconstructed totals include the cup, attached streams and floor liquid; boundary escape and mesh reconstruction affect these totals. Their decrease is not a measured flux budget or a claim that all missing volume was poured from the cup. Cup-connected volume includes attached streams."
+    },
+    "contacts": {
+      "primaryObservedLandings": 18,
+      "primaryDistinctBeforeQuota": 16,
+      "primarySelected": 12,
+      "secondaryConfirmed": 0,
+      "firstFrame": 54,
+      "lastFrame": 118,
+      "atRange": [
+        0.3333333333333333,
+        0.9797979797979798
+      ],
+      "peakLiveSprayParticles": 88,
+      "observedSprayTracks": 959,
+      "interpretation": "Twelve observed primary landings are exported. Native SPRAY is visible, but its tracker confirmed no additional landings; ambiguous or unconfirmed contacts are not invented."
+    },
+    "finiteFloor": {
+      "status": "pass",
+      "bounds": [
+        [
+          -0.19431421160697937,
+          -0.148499995470047,
+          -0.019999999552965164
+        ],
+        [
+          0.18588893115520477,
+          0.148499995470047,
+          0.0
+        ]
+      ],
+      "allSelectedContactsInsideColliderXY": true,
+      "allPrimaryMeshInsideColliderXY": true,
+      "allFrameVerticesBelowFloorByMoreThanOneCell": 0,
+      "toleranceM": 0.0035210590241319044,
+      "worldMeshBounds": [
+        [
+          -0.14540430903434753,
+          -0.13347482681274414,
+          -0.0021871011704206467
+        ],
+        [
+          0.043173693120479584,
+          0.1335153728723526,
+          0.09684392064809799
+        ]
+      ]
+    },
+    "limitations": [
+      "Rotating-frame dynamics omit Coriolis, Euler and centrifugal forces; world remapping is geometrically exact but does not restore those forces.",
+      "Surface tension is zero; measured capillary physics has not been validated.",
+      "SPRAY rendering sizes are visual approximations, not measured droplet diameters or masses.",
+      "Mobile viewport and touch behavior were checked in real desktop browser engines; a physical iPhone/Android device was not used."
+    ],
+    "alphaEdgeConditioning": {
+      "status": "passed-on-actual-proofs",
+      "frames": [
+        21,
+        105
+      ],
+      "sizes": [
+        [
+          720,
+          540
+        ],
+        [
+          1024,
+          768
+        ]
+      ],
+      "unchangedRGB": true,
+      "unchangedInteriorAlpha": true,
+      "unchangedCeramicBoundsAlpha": true,
+      "outerPixelRingAlpha": 0,
+      "losslessWebPAlphaVerified": true,
+      "report": "output/cofein-photoreal-20261116/render/alpha-edge-pack-check.json",
+      "staticCompositions": "output/cofein-photoreal-20261116/render/proof-stage/alpha-border/report.json",
+      "fullFilmBrowserReview": "passed: final WebP composition inspected on desktop and phone, with no finite shadow-image edge"
+    },
+    "checks": {
+      "unitTests": {
+        "passed": 391,
+        "failed": 0,
+        "report": "output/cofein-photoreal-20261116/frontend-tests-final.log"
+      },
+      "frontendLint": {
+        "status": "pass",
+        "report": "output/cofein-photoreal-20261116/frontend-lint-final.log",
+        "integrationReport": "output/cofein-photoreal-20261116/integration-lint-final.log"
+      },
+      "productionBuild": {
+        "status": "pass",
+        "report": "output/cofein-photoreal-20261116/frontend-build-final.log"
+      },
+      "browser": {
+        "chromiumBooking": {
+          "report": "output/cofein-photoreal-20261116/render/final-chromium-booking-verified/report.json",
+          "origin": "http://127.0.0.1:5176",
+          "passed": 13,
+          "total": 13,
+          "writes": 0
+        },
+        "webkitBooking": {
+          "report": "output/cofein-photoreal-20261116/render/final-webkit-booking-verified/report.json",
+          "origin": "http://127.0.0.1:5176",
+          "passed": 13,
+          "total": 13,
+          "writes": 0
+        },
+        "webkitKeyboard": {
+          "report": "output/cofein-photoreal-20261116/render/final-webkit-keyboard/report.json",
+          "origin": "http://127.0.0.1:5177",
+          "passed": 11,
+          "total": 11,
+          "writes": 0
+        },
+        "mainAndBooking": {
+          "report": "output/cofein-photoreal-20261116/browser/main-final-booking/report.json",
+          "origin": "http://127.0.0.1:5176",
+          "passed": 168,
+          "total": 168,
+          "writes": 0
+        },
+        "publicTelephoneMode": {
+          "report": "output/cofein-photoreal-20261116/browser/main-final-public-notice/report.json",
+          "origin": "http://127.0.0.1:5177",
+          "passed": 21,
+          "total": 21,
+          "writes": []
+        },
+        "introSuite": {
+          "status": "passed after targeted resolution of harness assumptions",
+          "chromium": {
+            "version": "157.0.8103.79",
+            "report": "output/cofein-photoreal-20261116/render/final-chromium/report.json",
+            "initialPassed": 370,
+            "initialTotal": 372
+          },
+          "webkit": {
+            "version": "26.5",
+            "report": "output/cofein-photoreal-20261116/render/final-webkit/report.json",
+            "initialPassed": 356,
+            "initialTotal": 360,
+            "nativeTouchPan": "Chromium CDP gesture tested in Chromium; explicitly skipped in WebKit"
+          },
+          "resolvedFindings": [
+            "Public preview on 5177 intentionally shows telephone-only booking notice; booking workspace was verified on the existing enabled preview on 5176. No product flags were changed.",
+            "WebKit native keyboard navigation uses Option+Tab in this environment; actual button focus, Enter activation and cleanup passed. Chromium uses Tab.",
+            "React StrictMode cancels the first local branding/floor-plan GETs. Known cancellations are accepted only with later same-URL fully completed successful requests and ready booking UI; original records and evidence are retained."
+          ],
+          "observedMaxConcurrentFetches": 3,
+          "observedMaxConcurrentDecodes": 1,
+          "observedPeakDecodedMiB": {
+            "desktop": 66.0,
+            "mobile": 25.21
+          },
+          "memoryNote": "Peak includes one transient decoded image before cache trimming; persistent decoded-cache budgets are 64/24 MiB.",
+          "productErrorsRemaining": 0,
+          "qaScriptSha256": "df0b0fc6a039b630893a6f50eb227d326eb60f083b0f390e503aaa2c6f4b2ef6"
+        }
+      }
+    }
+  }
+}

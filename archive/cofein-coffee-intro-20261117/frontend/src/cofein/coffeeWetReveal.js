@@ -107,7 +107,7 @@ export function coffeeWetFront(width, height, progress, impacts, pageTop = 0) {
       + Math.cos(across * TAU * 8.1 - 1.2) * 0.002;
     const irregularity = height * wave * Math.sin(t * Math.PI);
     const downstream = smooth(t / 0.84);
-    // The cup rises out of the scene before this late backfill opens the header.
+    // The cup fades from the scene as this late backfill opens the header.
     // Earlier waterlines stay at the physical floor while the page moves below.
     const upstream = smooth((progress - 0.84) / (0.988 - 0.84));
     top.push({ x, y: origin - (origin - pageTop + height * 0.08) * upstream + irregularity });
@@ -144,7 +144,7 @@ function frontPath(context, front, begin = true) {
  * If screenY is omitted, pageY measures from the page top in viewport heights.
  * The real page can enter behind a fixed landing without lifting old holes.
  * Secondary splash beads open tiny local spots and do not drive the broad film.
- * The caller clears this canvas before each draw; the WebGL scene draws the
+ * The caller clears this canvas before each draw; the separate object layer draws the
  * ceramic, liquid and falling drops separately above this surface.
  */
 export function drawCoffeeWetReveal(context, width, height, progress, {

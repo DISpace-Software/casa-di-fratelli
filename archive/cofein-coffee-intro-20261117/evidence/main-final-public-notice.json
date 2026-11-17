@@ -1,0 +1,104 @@
+{
+  "origin": "http://127.0.0.1:5177",
+  "expectedBookingMode": "notice",
+  "localOnly": true,
+  "checks": [
+    {
+      "name": "Desktop uses actual ready photoreal frame renderer before handoff",
+      "passed": true
+    },
+    {
+      "name": "Explicit skip removes player and leaves normal accessible page",
+      "passed": true
+    },
+    {
+      "name": "1440: hero visible and no overflow",
+      "passed": true
+    },
+    {
+      "name": "1440: menu remains functional after intro bypass/handoff",
+      "passed": true
+    },
+    {
+      "name": "1440: public mode explicitly shows telephone notice",
+      "passed": true
+    },
+    {
+      "name": "1440: notice modal fits viewport",
+      "passed": true
+    },
+    {
+      "name": "1440: notice closes and restores trigger focus",
+      "passed": true
+    },
+    {
+      "name": "390: reduced-motion bypass",
+      "passed": true
+    },
+    {
+      "name": "390: hero visible and no overflow",
+      "passed": true
+    },
+    {
+      "name": "390: menu remains functional after intro bypass/handoff",
+      "passed": true
+    },
+    {
+      "name": "390: public mode explicitly shows telephone notice",
+      "passed": true
+    },
+    {
+      "name": "390: notice modal fits viewport",
+      "passed": true
+    },
+    {
+      "name": "390: notice closes and restores trigger focus",
+      "passed": true
+    },
+    {
+      "name": "320: reduced-motion bypass",
+      "passed": true
+    },
+    {
+      "name": "320: hero visible and no overflow",
+      "passed": true
+    },
+    {
+      "name": "320: menu remains functional after intro bypass/handoff",
+      "passed": true
+    },
+    {
+      "name": "320: public mode explicitly shows telephone notice",
+      "passed": true
+    },
+    {
+      "name": "320: notice modal fits viewport",
+      "passed": true
+    },
+    {
+      "name": "320: notice closes and restores trigger focus",
+      "passed": true
+    },
+    {
+      "name": "No page/console/HTTP/request errors",
+      "passed": true
+    },
+    {
+      "name": "No write requests",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [],
+  "failedResponses": [],
+  "failedRequests": [],
+  "writes": [],
+  "screenshots": [
+    "1440-hero.png",
+    "1440-notice.png",
+    "390-hero.png",
+    "390-notice.png",
+    "320-hero.png",
+    "320-notice.png"
+  ]
+}

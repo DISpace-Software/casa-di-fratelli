@@ -1,0 +1,761 @@
+{
+  "input": "/Users/macbookpro/casa-di-fratelli/output/cofein-photoreal-20261116/render/v5-optics-lit-motion.blend",
+  "blender": "4.2.23 LTS",
+  "buildHash": "d0cbe84903e8",
+  "renderDevice": {
+    "backend": "METAL",
+    "devices": [
+      {
+        "name": "AMD Radeon Pro 560X",
+        "type": "METAL",
+        "id": "METAL_AMD Radeon Pro 560X"
+      }
+    ],
+    "metalrt": "OFF",
+    "preferencesSaved": false
+  },
+  "denoisingBackend": "CPU OpenImageDenoise",
+  "inputSha256": "82761329785d0ef0ac766d0e7197356ea5098458388500b5f542a6e9280932f9",
+  "worldSequenceSha256": "dff57367a0179928d958caf3c142bf284de1cac98458360ef1b86c9da5c713e2",
+  "floorComposite": {
+    "version": 1,
+    "owner": "cofein_dry_layer_floor_composite_v1",
+    "beautyLayer": "ViewLayer",
+    "dryLayer": "CoffeeDryScenery",
+    "drySamples": 8,
+    "material": "CoffeeMaterial",
+    "liquidObjects": [
+      "CoffeeSource",
+      "CoffeeWorldFluid",
+      "CoffeeWorldSpray_0000",
+      "CoffeeWorldSpray_0001",
+      "CoffeeWorldSpray_0002",
+      "CoffeeWorldSpray_0003",
+      "CoffeeWorldSpray_0004",
+      "CoffeeWorldSpray_0005",
+      "CoffeeWorldSpray_0006",
+      "CoffeeWorldSpray_0007",
+      "CoffeeWorldSpray_0008",
+      "CoffeeWorldSpray_0009",
+      "CoffeeWorldSpray_0010",
+      "CoffeeWorldSpray_0011",
+      "CoffeeWorldSpray_0012",
+      "CoffeeWorldSpray_0013",
+      "CoffeeWorldSpray_0014",
+      "CoffeeWorldSpray_0015",
+      "CoffeeWorldSpray_0016",
+      "CoffeeWorldSpray_0017",
+      "CoffeeWorldSpray_0018",
+      "CoffeeWorldSpray_0019",
+      "CoffeeWorldSpray_0020",
+      "CoffeeWorldSpray_0021",
+      "CoffeeWorldSpray_0022",
+      "CoffeeWorldSpray_0023",
+      "CoffeeWorldSpray_0024",
+      "CoffeeWorldSpray_0025",
+      "CoffeeWorldSpray_0026",
+      "CoffeeWorldSpray_0027",
+      "CoffeeWorldSpray_0028",
+      "CoffeeWorldSpray_0029",
+      "CoffeeWorldSpray_0030",
+      "CoffeeWorldSpray_0031",
+      "CoffeeWorldSpray_0032",
+      "CoffeeWorldSpray_0033",
+      "CoffeeWorldSpray_0034",
+      "CoffeeWorldSpray_0035",
+      "CoffeeWorldSpray_0036",
+      "CoffeeWorldSpray_0037",
+      "CoffeeWorldSpray_0038",
+      "CoffeeWorldSpray_0039",
+      "CoffeeWorldSpray_0040",
+      "CoffeeWorldSpray_0041",
+      "CoffeeWorldSpray_0042",
+      "CoffeeWorldSpray_0043",
+      "CoffeeWorldSpray_0044",
+      "CoffeeWorldSpray_0045",
+      "CoffeeWorldSpray_0046",
+      "CoffeeWorldSpray_0047",
+      "CoffeeWorldSpray_0048",
+      "CoffeeWorldSpray_0049",
+      "CoffeeWorldSpray_0050",
+      "CoffeeWorldSpray_0051",
+      "CoffeeWorldSpray_0052",
+      "CoffeeWorldSpray_0053",
+      "CoffeeWorldSpray_0054",
+      "CoffeeWorldSpray_0055",
+      "CoffeeWorldSpray_0056",
+      "CoffeeWorldSpray_0057",
+      "CoffeeWorldSpray_0058",
+      "CoffeeWorldSpray_0059",
+      "CoffeeWorldSpray_0060",
+      "CoffeeWorldSpray_0061",
+      "CoffeeWorldSpray_0062",
+      "CoffeeWorldSpray_0063",
+      "CoffeeWorldSpray_0064",
+      "CoffeeWorldSpray_0065",
+      "CoffeeWorldSpray_0066",
+      "CoffeeWorldSpray_0067",
+      "CoffeeWorldSpray_0068",
+      "CoffeeWorldSpray_0069",
+      "CoffeeWorldSpray_0070",
+      "CoffeeWorldSpray_0071",
+      "CoffeeWorldSpray_0072",
+      "CoffeeWorldSpray_0073",
+      "CoffeeWorldSpray_0074",
+      "CoffeeWorldSpray_0075",
+      "CoffeeWorldSpray_0076",
+      "CoffeeWorldSpray_0077",
+      "CoffeeWorldSpray_0078",
+      "CoffeeWorldSpray_0079",
+      "CoffeeWorldSpray_0080",
+      "CoffeeWorldSpray_0081",
+      "CoffeeWorldSpray_0082",
+      "CoffeeWorldSpray_0083",
+      "CoffeeWorldSpray_0084",
+      "CoffeeWorldSpray_0085",
+      "CoffeeWorldSpray_0086",
+      "CoffeeWorldSpray_0087"
+    ],
+    "floorZ": 0.0,
+    "fadeStartAboveFloorM": 0.0005,
+    "fadeEndAboveFloorM": 0.008,
+    "aovs": [
+      "CoffeeCoverage",
+      "CoffeeFloorRemoval"
+    ],
+    "coverageNormalized": true,
+    "blend": "premultiplied beauty RGBA*(1-mask) + dry RGBA*mask",
+    "originalSurfaceAndVolumePreserved": true,
+    "constantVolumeDensityPreserved": true,
+    "simulationChanged": false,
+    "trajectoriesChanged": false,
+    "physicalContactsChanged": false,
+    "physicalAbsorptionModel": false,
+    "purpose": "Artistic website reveal; dry scenery restores pixels behind removed near-floor coffee",
+    "limitations": [
+      "Dry view layer incurs an additional low-sample Cycles render",
+      "Visible-surface AOV blending is not physical volumetric absorption",
+      "Reflections/refraction and shadows at the transition are composited, not re-simulated",
+      "Shadow-catcher or indirect effects outside visible coffee are not removed by this surface AOV"
+    ]
+  },
+  "width": 1024,
+  "height": 768,
+  "samples": 24,
+  "first": 21,
+  "last": 120,
+  "frames": [
+    {
+      "frame": 21,
+      "seconds": 23.067,
+      "bytes": 618747,
+      "sha256": "01bcd6ec611f3b78e99dd32e5245fe0415cea38e0ddba5e9fdacffd1b07559fa"
+    },
+    {
+      "frame": 55,
+      "seconds": 23.835,
+      "bytes": 674445,
+      "sha256": "8c7ff43a4d8a927d2c4c61e8b09966943692eaa3778a37bb62f50a4baa9b09e8"
+    },
+    {
+      "frame": 80,
+      "seconds": 31.379,
+      "bytes": 743168,
+      "sha256": "7bd56178313d1ffe2817a6ea5a2f6d62298cee3f3cb14dcf4be3a1c94be8632b"
+    },
+    {
+      "frame": 105,
+      "seconds": 34.125,
+      "bytes": 738660,
+      "sha256": "3883f80e1d00a3a2e1c9d3385fb3815d1f7169726051be3c3cfb8edeb7a26d97"
+    },
+    {
+      "frame": 120,
+      "seconds": 31.901,
+      "bytes": 694281,
+      "sha256": "21a2da83c622252cce2addbd02fe966e851e21319bbb9fe73accb15a5244735b"
+    },
+    {
+      "frame": 22,
+      "seconds": 21.181,
+      "bytes": 620288,
+      "sha256": "a90b672b3bc46d3013e16e52987552d97e3dcece8fa5ec9078a440635a47cdbe"
+    },
+    {
+      "frame": 23,
+      "seconds": 22.328,
+      "bytes": 621665,
+      "sha256": "08e8ba90919fe1bbafd17ae688be612eae77b25b6f046db06641806545a79158"
+    },
+    {
+      "frame": 24,
+      "seconds": 23.599,
+      "bytes": 623634,
+      "sha256": "495a642ae48c0dd11ca18ef88577a73d67c22d94b7e4a138004fad065db562f2"
+    },
+    {
+      "frame": 25,
+      "seconds": 31.332,
+      "bytes": 623427,
+      "sha256": "6859e5025f8abf203aac4c162c5f6ee9c95801b07d9c51843ca54b6498e9a51d"
+    },
+    {
+      "frame": 26,
+      "seconds": 31.575,
+      "bytes": 625059,
+      "sha256": "a087612a93a99a9525aff3f22c23c539dc05aba85bd1adfa423121cba22ad83a"
+    },
+    {
+      "frame": 27,
+      "seconds": 30.893,
+      "bytes": 628030,
+      "sha256": "fafbf264d68d787d39d85ab2116a6003f6f16a9563a8a77ecfdf9c5ae10270ce"
+    },
+    {
+      "frame": 28,
+      "seconds": 30.269,
+      "bytes": 628774,
+      "sha256": "49b933a1b4f03a36d0edc8eba27a2f3363dc4730c81f821e86766a24e650b5b0"
+    },
+    {
+      "frame": 29,
+      "seconds": 29.874,
+      "bytes": 627508,
+      "sha256": "5fdb40959008c6520a2b8e4bb3463dce22ccdf6b60e8d2f899ba9e24cda95728"
+    },
+    {
+      "frame": 30,
+      "seconds": 27.799,
+      "bytes": 629095,
+      "sha256": "b3cea92f8e0cbdd0f49a7ea73174a7cf206693aed1c535d90e465dd7137830de"
+    },
+    {
+      "frame": 31,
+      "seconds": 27.8,
+      "bytes": 630091,
+      "sha256": "99e34bcd26cf32a0e0882afca9a78b125a0652561afd5ebce17ff91fc6dffc00"
+    },
+    {
+      "frame": 32,
+      "seconds": 28.631,
+      "bytes": 629142,
+      "sha256": "a266262fbb24842073fb18b000b1c39f41eb09579f2062ec48f19943450c4886"
+    },
+    {
+      "frame": 33,
+      "seconds": 30.104,
+      "bytes": 631286,
+      "sha256": "025dfbb3b65ca96c2e16abdb671ce0fa84850613b3eaa6339a7c0b6593ac1c76"
+    },
+    {
+      "frame": 34,
+      "seconds": 33.018,
+      "bytes": 631760,
+      "sha256": "cb70de472735c2fd432b93bf225fe96f5bca801f4e09cee009e298cdcfd9e866"
+    },
+    {
+      "frame": 35,
+      "seconds": 36.124,
+      "bytes": 632307,
+      "sha256": "322f443983c3b942d7f965bef9ffda5b4bb09d117c77d0d6d61a0650200d184a"
+    },
+    {
+      "frame": 36,
+      "seconds": 29.864,
+      "bytes": 634057,
+      "sha256": "d629ecd00a1f3eba52f8081db803b0db974901282420ab016a33337a9c62b7a0"
+    },
+    {
+      "frame": 37,
+      "seconds": 35.154,
+      "bytes": 633734,
+      "sha256": "693ef5a5bb6bf8055704d7578e73c09cd6369ab3d2f9e3c477f58307c082a0ba"
+    },
+    {
+      "frame": 38,
+      "seconds": 27.746,
+      "bytes": 635805,
+      "sha256": "020f66ed5faa2e1522afe49550394900bdccb539cc86f8be7697262830b5a613"
+    },
+    {
+      "frame": 39,
+      "seconds": 28.782,
+      "bytes": 638489,
+      "sha256": "eb2e6b14f99153e43ca273d1d00a63446859e2e35dc62a15282b032f3440818b"
+    },
+    {
+      "frame": 40,
+      "seconds": 28.187,
+      "bytes": 641123,
+      "sha256": "c32c341ad9fa0c961fc78e476d8475c91afb04990421202109e73d916279d60c"
+    },
+    {
+      "frame": 41,
+      "seconds": 35.14,
+      "bytes": 640759,
+      "sha256": "efb58e50c2affb5c2d03e4cdc275daa15a703d94937768c2891b326215a1c4a4"
+    },
+    {
+      "frame": 42,
+      "seconds": 33.085,
+      "bytes": 642198,
+      "sha256": "d16b867227e92dff88a06deb667e849637a64ebea466dbac7ae3fe9301cf4980"
+    },
+    {
+      "frame": 43,
+      "seconds": 32.459,
+      "bytes": 644836,
+      "sha256": "95e36fe4f1a6180090a420642760185f06c8a1ef2d0042801ac018ae144db625"
+    },
+    {
+      "frame": 44,
+      "seconds": 29.356,
+      "bytes": 646469,
+      "sha256": "aaaebca21a8e254747530295e6982170e1299e1612bc47541689a857bc54353f"
+    },
+    {
+      "frame": 45,
+      "seconds": 28.696,
+      "bytes": 646510,
+      "sha256": "7badb19137f04b3b2d8cbbdf05918ea86316919de4ade4f8ef546f1feb2c9630"
+    },
+    {
+      "frame": 46,
+      "seconds": 30.615,
+      "bytes": 647694,
+      "sha256": "5ea70cf84d569232d064831325c1016ec7352358aeaab7b13256b1dc86680a1f"
+    },
+    {
+      "frame": 47,
+      "seconds": 29.525,
+      "bytes": 648519,
+      "sha256": "ea29307857be42f7e77cbda753b3194e820e1c6f3f37a92d8260a5e00bf5d581"
+    },
+    {
+      "frame": 48,
+      "seconds": 36.065,
+      "bytes": 649837,
+      "sha256": "7923c4c83c1c83338a22734e333d5b7d0644578f7ae165913420511308ac3e11"
+    },
+    {
+      "frame": 49,
+      "seconds": 30.004,
+      "bytes": 652026,
+      "sha256": "7cd460b91eadad400363246e0b22c8a8011fdbaf4f14f23710373fe79fd1cfa6"
+    },
+    {
+      "frame": 50,
+      "seconds": 28.821,
+      "bytes": 654922,
+      "sha256": "d32e64a8cdac61efa93f63baae9e50d0b9bec90da37d1a1d021cbf0d4c9f643d"
+    },
+    {
+      "frame": 51,
+      "seconds": 40.201,
+      "bytes": 658919,
+      "sha256": "bf9958ca0e28c1794ec611e93b20f73a6fb83bfddc541f3f918ffeff779b87ee"
+    },
+    {
+      "frame": 52,
+      "seconds": 30.574,
+      "bytes": 661487,
+      "sha256": "fe1be7d5120d260be3d6f2ee30413d8d1c98e699b051b941a5da47ea88bbc157"
+    },
+    {
+      "frame": 53,
+      "seconds": 32.185,
+      "bytes": 665996,
+      "sha256": "e3ec071623b81c8f42f90aaffb09b7e0b24d02c1797d390bdd1eb633684eda6a"
+    },
+    {
+      "frame": 54,
+      "seconds": 31.772,
+      "bytes": 669855,
+      "sha256": "6f2a71f17f7beba57c13af7d80c50d20c99af2aa78530fd77ffd511e32b96409"
+    },
+    {
+      "frame": 56,
+      "seconds": 28.221,
+      "bytes": 681682,
+      "sha256": "19bdc13975adfcbda2db1f75f3e58bc39f0c940569f01d0e1422f1b432aa61b6"
+    },
+    {
+      "frame": 57,
+      "seconds": 29.493,
+      "bytes": 689123,
+      "sha256": "26165ab14a59cd2f50dd47dbcbf321c247cb542710813543d83488657284c8ee"
+    },
+    {
+      "frame": 58,
+      "seconds": 29.177,
+      "bytes": 701419,
+      "sha256": "ab83ce845de0227e129049580988f3272d9cd6f7d5a97fe7d86943d1db7a646e"
+    },
+    {
+      "frame": 59,
+      "seconds": 30.046,
+      "bytes": 707638,
+      "sha256": "f9a0fef0194f6182320ecba048d2404b1ef31b2e13e35c4c88f54c95590d92c0"
+    },
+    {
+      "frame": 60,
+      "seconds": 29.55,
+      "bytes": 712612,
+      "sha256": "8532fcc1585f5d5403105229053ba4298d42df0ef9b0471284f6187424164f94"
+    },
+    {
+      "frame": 61,
+      "seconds": 29.168,
+      "bytes": 719033,
+      "sha256": "26585757feb5bbb681ef0a3c813d6292a13e3f7d8c96601b1431519720777230"
+    },
+    {
+      "frame": 62,
+      "seconds": 29.359,
+      "bytes": 725975,
+      "sha256": "e79b1725ac2f02d22ef1df7ee1b6a95a08a3d94cca5b092ddafaeaf60f46f92d"
+    },
+    {
+      "frame": 63,
+      "seconds": 28.581,
+      "bytes": 728449,
+      "sha256": "b1e69e562867e6944b36429ec6a09047a57817f4697bb0a09a350c59b74c90b7"
+    },
+    {
+      "frame": 64,
+      "seconds": 28.152,
+      "bytes": 735163,
+      "sha256": "1fa03fb91dcc1cebd5212a71859cf4470e14886c358e9cb26c94413cb8ffde7e"
+    },
+    {
+      "frame": 65,
+      "seconds": 32.437,
+      "bytes": 749976,
+      "sha256": "6430d0d0282e84fe303afc7c4535d82072ac0336d4ff3217bf4dc735b55e450c"
+    },
+    {
+      "frame": 66,
+      "seconds": 33.821,
+      "bytes": 757528,
+      "sha256": "9ede954baf44c10f5f238855966add9e99f0500589b2827438ac6d604e0e2f14"
+    },
+    {
+      "frame": 67,
+      "seconds": 32.356,
+      "bytes": 763625,
+      "sha256": "fcac7059133aca3b340123fd2ba6e597f402eafa8d450208951b55c629723242"
+    },
+    {
+      "frame": 68,
+      "seconds": 31.36,
+      "bytes": 763748,
+      "sha256": "fe9b5380eb7ab9d151fb469379ee411e6c13b31b4ce89a99c2853bec175ec73f"
+    },
+    {
+      "frame": 69,
+      "seconds": 29.424,
+      "bytes": 766026,
+      "sha256": "0ccab563599a8a8e762c63068e137881c989a00d8627e8db143f749ec782da50"
+    },
+    {
+      "frame": 70,
+      "seconds": 27.825,
+      "bytes": 768097,
+      "sha256": "7c3389b89e2f92da874a7fc9d0ca7c2009acb792bd19f65ef0fdfd1c3a25bba7"
+    },
+    {
+      "frame": 71,
+      "seconds": 30.46,
+      "bytes": 759077,
+      "sha256": "96779886739cfaefa4570dff07947fd8d2027773b2d84e9f7fa466911d35b5b1"
+    },
+    {
+      "frame": 72,
+      "seconds": 30.8,
+      "bytes": 744302,
+      "sha256": "f9c46d2dbe982dd2d808636a86ddcc8cee426faef667f661bdce127350d63e59"
+    },
+    {
+      "frame": 73,
+      "seconds": 32.925,
+      "bytes": 737447,
+      "sha256": "d91b13c0c075a43d8b6bee343a0196ae4923a5bdd04a1c7c80566dac0147ef9c"
+    },
+    {
+      "frame": 74,
+      "seconds": 75.026,
+      "bytes": 738801,
+      "sha256": "86593de251cff92698e42a530b3f8fa0bb964015abfa6962bb18c2cf4cf4ccdd"
+    },
+    {
+      "frame": 75,
+      "seconds": 29.449,
+      "bytes": 730575,
+      "sha256": "fb1c7cc69d2584eb07a126ec42de508b1470662850258fd44ff2383738d2b21f"
+    },
+    {
+      "frame": 76,
+      "seconds": 22.509,
+      "bytes": 735246,
+      "sha256": "02f09d45a0a46b6e40c031d55c50c2d6da2c0315b20e2682c17adb75663a78a0"
+    },
+    {
+      "frame": 77,
+      "seconds": 22.546,
+      "bytes": 739460,
+      "sha256": "13e7834abe8fdec4123e8c206f50f8a629d961bf42c6775c52f96f8183aa21d6"
+    },
+    {
+      "frame": 78,
+      "seconds": 24.443,
+      "bytes": 744888,
+      "sha256": "1881e74efdafc3d547907b547589b6f0d22d9cc3990134c971ac36cf1c38626f"
+    },
+    {
+      "frame": 79,
+      "seconds": 22.663,
+      "bytes": 745605,
+      "sha256": "3c170f0b0e3edeccaa459c7b95dc71307d70cec1a6816897d4a39145fc474294"
+    },
+    {
+      "frame": 81,
+      "seconds": 22.867,
+      "bytes": 741808,
+      "sha256": "61cdc65c27265d2089f9dfe444ec2dd44701e0f1ffa5b856eea5ac2bfa3689e4"
+    },
+    {
+      "frame": 82,
+      "seconds": 22.925,
+      "bytes": 742159,
+      "sha256": "f1a19266dc070c1eb3d6890c8f60522158691ae388e8ea5ce8e49fed1c528f6b"
+    },
+    {
+      "frame": 83,
+      "seconds": 22.747,
+      "bytes": 746317,
+      "sha256": "ff2f06d629f7dc64559214e01d56bc421f54dbe75c9fac9ad2ac9114ea873d39"
+    },
+    {
+      "frame": 84,
+      "seconds": 22.955,
+      "bytes": 745400,
+      "sha256": "8375cc8a51ed3aef15846d47e50c6c6652fdec63fec7c86ee0bd139c71b2af27"
+    },
+    {
+      "frame": 85,
+      "seconds": 23.875,
+      "bytes": 737949,
+      "sha256": "82ff52d020e79174acc8dd7bdb87bd780287011228bd675156b94f9956a239b6"
+    },
+    {
+      "frame": 86,
+      "seconds": 24.784,
+      "bytes": 734329,
+      "sha256": "ac644152852a08203aa83e24b77f821201b0b7e320e71bac3a63fe061b458db0"
+    },
+    {
+      "frame": 87,
+      "seconds": 24.725,
+      "bytes": 741201,
+      "sha256": "5c1ec9908015aa49ce0b9b6eadd6e8d70cfbbe25a857c9fdd86bb14c223b8f3d"
+    },
+    {
+      "frame": 88,
+      "seconds": 26.033,
+      "bytes": 741366,
+      "sha256": "04773aaaac8f94392199a25a0ecaa4057603b38242d0dc4ee55451517054e317"
+    },
+    {
+      "frame": 89,
+      "seconds": 29.984,
+      "bytes": 748155,
+      "sha256": "54a17319116fb4c8c7b138fd6e16de6680a3c04756e5c8ceed698287478a5ba4"
+    },
+    {
+      "frame": 90,
+      "seconds": 27.506,
+      "bytes": 743421,
+      "sha256": "fe9007949eec055bc9c9b39167d506f802afb9ece5ae4e0f74ba6fc2b356c984"
+    },
+    {
+      "frame": 91,
+      "seconds": 27.073,
+      "bytes": 742152,
+      "sha256": "0531e71d476b7c846d100ef13e853e9e6834f69ae7bdaffb5a7f32627d5033f3"
+    },
+    {
+      "frame": 92,
+      "seconds": 26.083,
+      "bytes": 738845,
+      "sha256": "6cf1787842369660daa28e03ae1c3a44f0971c880ea78682aff4105e0e735de6"
+    },
+    {
+      "frame": 93,
+      "seconds": 31.339,
+      "bytes": 741294,
+      "sha256": "d4cce943a1ca45b541ba3e1ca454b0520293fe9f3a5b48696bc010499f0ed724"
+    },
+    {
+      "frame": 94,
+      "seconds": 30.738,
+      "bytes": 738340,
+      "sha256": "3d00ac07a01646a779fb2d0da71a0fa8260cfefd508aad7fd8e374f1eb22e481"
+    },
+    {
+      "frame": 95,
+      "seconds": 29.142,
+      "bytes": 737183,
+      "sha256": "4501291e7709553d643c802cfaf594967d2aa9f15ef15b757129c75055667acc"
+    },
+    {
+      "frame": 96,
+      "seconds": 28.26,
+      "bytes": 733448,
+      "sha256": "3b44eb14266743d4a0b00d5d424344d9728e667f168d349d16f44323b853ee04"
+    },
+    {
+      "frame": 97,
+      "seconds": 25.623,
+      "bytes": 737272,
+      "sha256": "0ebd0d1de6e2058dfe8d0e2e5e29ddcf426d08d63c0303a17700a3d49ec0fa2f"
+    },
+    {
+      "frame": 98,
+      "seconds": 25.409,
+      "bytes": 737582,
+      "sha256": "1117ceee5f1fc23b7816a79d90a6030f4862ccec3a945e9507a7d89de0977da6"
+    },
+    {
+      "frame": 99,
+      "seconds": 27.88,
+      "bytes": 735936,
+      "sha256": "f4dc6919961adbf3238bd3d8c8496a88918d6fa965aae60c39ffac24efd3ffe6"
+    },
+    {
+      "frame": 100,
+      "seconds": 27.339,
+      "bytes": 734285,
+      "sha256": "1b9dee3736c3ae5c52ad517c21cbe53eeec6eff8641283f0be878043edfee5e8"
+    },
+    {
+      "frame": 101,
+      "seconds": 28.227,
+      "bytes": 731827,
+      "sha256": "a72f520041d603cd8c42346dd7d962eee9a42d00f72e8946c7f3f8f2129a1568"
+    },
+    {
+      "frame": 102,
+      "seconds": 34.186,
+      "bytes": 730159,
+      "sha256": "36b03fc503ce3bb50196d1088276376e98886430ef143daef145e6d819aba623"
+    },
+    {
+      "frame": 103,
+      "seconds": 34.597,
+      "bytes": 733931,
+      "sha256": "947d6c13b19858940d71166651cf075fe907caa9fbcc74c09b516ebb24276aa4"
+    },
+    {
+      "frame": 104,
+      "seconds": 28.772,
+      "bytes": 737614,
+      "sha256": "2daef709026cd52112a84508faac1790b35b400162f1df721458544b896535bc"
+    },
+    {
+      "frame": 106,
+      "seconds": 26.945,
+      "bytes": 734522,
+      "sha256": "34f0385ba6c039c2c5e913b0b4a18953cb3afc9bf36ebfd20d929d6417b5803c"
+    },
+    {
+      "frame": 107,
+      "seconds": 27.287,
+      "bytes": 729929,
+      "sha256": "ab978714d18bf71a7845bdad4ddba17f72590f010722835dc6edddb560521f5c"
+    },
+    {
+      "frame": 108,
+      "seconds": 27.998,
+      "bytes": 728015,
+      "sha256": "d45d5c3337cd5eb5d232ef7ab0342268e03031668874d077f1bb0be97766baa6"
+    },
+    {
+      "frame": 109,
+      "seconds": 27.388,
+      "bytes": 727724,
+      "sha256": "e6f1ba7ce25bd81de23f46bf587cdc30ca3b9996006b1e4176450cc14adb27f0"
+    },
+    {
+      "frame": 110,
+      "seconds": 27.174,
+      "bytes": 723722,
+      "sha256": "56821a3b5b9122922f1ed8c594d6183082943c459ad1991036bccd0fb62e0610"
+    },
+    {
+      "frame": 111,
+      "seconds": 37.691,
+      "bytes": 720247,
+      "sha256": "59340d8d7811c10344026dc4945c916bdd1bad370dd8685ea36aa0bc1a4c60c4"
+    },
+    {
+      "frame": 112,
+      "seconds": 30.764,
+      "bytes": 714809,
+      "sha256": "4d74e7be8946e1c76d8b1421cd1c9f7beeab1167f562afb82ef4709d3b95af66"
+    },
+    {
+      "frame": 113,
+      "seconds": 25.635,
+      "bytes": 707512,
+      "sha256": "10b1f1eb18f5bbbdfb676467288b5cc941bb31a88030e202e3ebc4d3f9c2afab"
+    },
+    {
+      "frame": 114,
+      "seconds": 25.827,
+      "bytes": 705315,
+      "sha256": "801d6077af9bccc1818611a33a60d5e7e402f44c6745cf4b53cf240e0090c500"
+    },
+    {
+      "frame": 115,
+      "seconds": 27.018,
+      "bytes": 703713,
+      "sha256": "69a1d3801df20ef6dcfc7c7ffc08e269527346a9d33051bc920b5302e7c34f72"
+    },
+    {
+      "frame": 116,
+      "seconds": 29.61,
+      "bytes": 702026,
+      "sha256": "70ad18a7bb8ecc89743f29663f4eac67c8527a325d8fcd2cb16de17b949ed662"
+    },
+    {
+      "frame": 117,
+      "seconds": 27.433,
+      "bytes": 699952,
+      "sha256": "cc7cd7f15fbe60d07f1972c786295b39bf0119a756997489c824d33d22750792"
+    },
+    {
+      "frame": 118,
+      "seconds": 26.951,
+      "bytes": 699582,
+      "sha256": "d6c041c511f6d451a01d68d56b08e27e44dc7ee97df6dcab79d62b4aa71b241b"
+    },
+    {
+      "frame": 119,
+      "seconds": 28.429,
+      "bytes": 694594,
+      "sha256": "4434c3eef909b2f07e67b7bfb28061d679bd24b752efcf01d9621b64366a5c68"
+    }
+  ],
+  "status": "completed",
+  "codeSha256": {
+    "coffee_render_frames.py": "20514bfe8093034ea5041cc635e449f0a7c2fe3763a83a3eec9b62145ba4c18e",
+    "coffee_world_fluid.py": "cb108588449c84f5a0f7d6af22fe5cd736e65c334d520bd327caa2b39216aac6",
+    "coffee_liquid_aov_composite.py": "611a757cf1b8ec5d9b7737a665e72ac17ba2654f0070f1303bc38776de8a751a"
+  },
+  "seconds": 3032.669,
+  "reviewRequestSha256": "0fd4992f7fbed0fcc628c3d24c0c0a79f9566257e81c83383c45736b7119f827",
+  "visualReview": {
+    "requestSha256": "0fd4992f7fbed0fcc628c3d24c0c0a79f9566257e81c83383c45736b7119f827",
+    "decision": "continue"
+  }
+}

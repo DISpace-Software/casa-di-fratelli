@@ -1,7 +1,7 @@
 import { useEffect, useImperativeHandle, useRef } from 'react';
 import './cofein-coffee-scene.css';
 
-/** The WebGL engine is fetched only when this optional opening is mounted. */
+/** The frame player and its manifest load only while this optional opening is mounted. */
 export default function CofeinCoffeeScene({ ref, onReady, onError }) {
   const wrapperRef = useRef(null);
   const objectsRef = useRef(null);
@@ -18,10 +18,20 @@ export default function CofeinCoffeeScene({ ref, onReady, onError }) {
     let cancelled = false;
     const controller = new AbortController();
     let engine;
-    import('./coffeeWebGLScene.js')
-      .then(module => {
+    import('./coffeePhotorealScene.js')
+      .then(async module => {
         if (cancelled) return null;
-        return module.createCoffeeWebGLScene(objectsRef.current, revealRef.current, wrapperRef.current, onError, controller.signal);
+        const response = await fetch('/cofein/intro/film/manifest.json', {
+          signal: controller.signal,
+          cache: 'no-cache',
+        });
+        if (cancelled) return null;
+        if (!response.ok) throw new Error(`Coffee film manifest request failed (${response.status})`);
+        const manifest = await response.json();
+        if (cancelled) return null;
+        return module.createCoffeePhotorealScene(
+          objectsRef.current, revealRef.current, wrapperRef.current, onError, controller.signal, manifest,
+        );
       })
       .then(result => {
         if (!result) return;

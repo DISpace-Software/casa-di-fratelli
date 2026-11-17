@@ -1,0 +1,271 @@
+{
+  "frameRange": {
+    "first": 21,
+    "last": 120,
+    "fps": 24,
+    "settlingExcluded": 20
+  },
+  "coordinateConvention": "imageX/imageY normalized, origin at top left; world in metres, Z up; at=(frame-first)/(last-first)",
+  "impacts": [
+    {
+      "id": "physical-drop-2",
+      "frame": 54,
+      "at": 0.3333333333333333,
+      "world": [
+        -0.07440417259931564,
+        -0.0019153818720951676,
+        0
+      ],
+      "imageX": 0.3115551173686981,
+      "imageY": 0.7684352397918701,
+      "cameraDepth": 0.4915362000465393,
+      "volumeM3": 2.6838320774102995e-8,
+      "diameterEquivalentM": 0.0037146586006402463,
+      "observedAirborneFrames": 3,
+      "method": "detached-component-merged-with-floor-liquid",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-6",
+      "frame": 59,
+      "at": 0.3838383838383838,
+      "world": [
+        -0.06341266632080078,
+        0.04841456189751625,
+        0
+      ],
+      "imageX": 0.37406623363494873,
+      "imageY": 0.6870306730270386,
+      "cameraDepth": 0.5372318029403687,
+      "volumeM3": 3.350222910665966e-8,
+      "diameterEquivalentM": 0.003999677982474056,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-16",
+      "frame": 70,
+      "at": 0.494949494949495,
+      "world": [
+        -0.05894619971513748,
+        -0.008238343521952629,
+        0
+      ],
+      "imageX": 0.3519204258918762,
+      "imageY": 0.7837715893983841,
+      "cameraDepth": 0.4837837815284729,
+      "volumeM3": 4.4764297319847325e-8,
+      "diameterEquivalentM": 0.004405322593029001,
+      "observedAirborneFrames": 2,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-13",
+      "frame": 71,
+      "at": 0.5050505050505051,
+      "world": [
+        -0.041682012379169464,
+        0.007552800700068474,
+        0
+      ],
+      "imageX": 0.4113563597202301,
+      "imageY": 0.7589235454797745,
+      "cameraDepth": 0.4964703917503357,
+      "volumeM3": 0.0000024439373307643457,
+      "diameterEquivalentM": 0.01671207903960095,
+      "observedAirborneFrames": 7,
+      "method": "detached-component-merged-with-floor-liquid",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-17",
+      "frame": 71,
+      "at": 0.5050505050505051,
+      "world": [
+        -0.04077773168683052,
+        -0.02232685312628746,
+        0
+      ],
+      "imageX": 0.39713171124458313,
+      "imageY": 0.8155913054943085,
+      "cameraDepth": 0.4684544503688812,
+      "volumeM3": 2.51765759652171e-8,
+      "diameterEquivalentM": 0.0036363528199956064,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-20",
+      "frame": 72,
+      "at": 0.5151515151515151,
+      "world": [
+        -0.0419158898293972,
+        -0.010983693413436413,
+        0
+      ],
+      "imageX": 0.4003702998161316,
+      "imageY": 0.7931036055088043,
+      "cameraDepth": 0.4791850447654724,
+      "volumeM3": 1.4030419129942794e-7,
+      "diameterEquivalentM": 0.00644699511079712,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-21",
+      "frame": 72,
+      "at": 0.5151515151515151,
+      "world": [
+        -0.055131714791059494,
+        0.0037367199547588825,
+        0
+      ],
+      "imageX": 0.3706229031085968,
+      "imageY": 0.7626742571592331,
+      "cameraDepth": 0.4945129156112671,
+      "volumeM3": 7.922914747766444e-8,
+      "diameterEquivalentM": 0.005328792223247868,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-22",
+      "frame": 73,
+      "at": 0.5252525252525253,
+      "world": [
+        -0.05221058428287506,
+        -0.005131986457854509,
+        0
+      ],
+      "imageX": 0.37359315156936646,
+      "imageY": 0.779575526714325,
+      "cameraDepth": 0.48588046431541443,
+      "volumeM3": 4.3262484002622496e-8,
+      "diameterEquivalentM": 0.00435549590544709,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-23",
+      "frame": 73,
+      "at": 0.5252525252525253,
+      "world": [
+        -0.05443991348147392,
+        0.01769542507827282,
+        0
+      ],
+      "imageX": 0.38091984391212463,
+      "imageY": 0.7383891046047211,
+      "cameraDepth": 0.5074678659439087,
+      "volumeM3": 1.8625072007819937e-8,
+      "diameterEquivalentM": 0.0032887670508003047,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-27",
+      "frame": 84,
+      "at": 0.6363636363636364,
+      "world": [
+        -0.0693075954914093,
+        -0.035230327397584915,
+        0
+      ],
+      "imageX": 0.30115607380867004,
+      "imageY": 0.8344686776399612,
+      "cameraDepth": 0.4598108232021332,
+      "volumeM3": 2.6242768920899485e-8,
+      "diameterEquivalentM": 0.003686976289017962,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-31",
+      "frame": 88,
+      "at": 0.6767676767676768,
+      "world": [
+        -0.05041921138763428,
+        0.018391933292150497,
+        0
+      ],
+      "imageX": 0.39255934953689575,
+      "imageY": 0.7380783259868622,
+      "cameraDepth": 0.5076380372047424,
+      "volumeM3": 1.3096291442971073e-7,
+      "diameterEquivalentM": 0.0063006192581715826,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-37",
+      "frame": 118,
+      "at": 0.9797979797979798,
+      "world": [
+        -0.09254500269889832,
+        -0.024203477427363396,
+        0
+      ],
+      "imageX": 0.2405216544866562,
+      "imageY": 0.8061803430318832,
+      "cameraDepth": 0.4728861153125763,
+      "volumeM3": 1.8373395071583964e-8,
+      "diameterEquivalentM": 0.0032738863339021548,
+      "observedAirborneFrames": 2,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    }
+  ],
+  "provenance": {
+    "primary": "/Users/macbookpro/casa-di-fratelli/output/cofein-photoreal-20261116/render/primary-cupframe120.json",
+    "spray": "/Users/macbookpro/casa-di-fratelli/output/cofein-photoreal-20261116/render/spray-cupframe120.json",
+    "primaryCount": 12,
+    "sprayCount": 0,
+    "primaryVolume": "reconstructed liquid mesh",
+    "sprayVolume": "explicit visual approximation from rendered diameter; positions and contacts from solver cache"
+  }
+}

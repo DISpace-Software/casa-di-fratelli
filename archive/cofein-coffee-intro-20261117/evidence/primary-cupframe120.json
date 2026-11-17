@@ -1,0 +1,4134 @@
+{
+  "blender": "4.5.9 LTS",
+  "blend": "/Users/macbookpro/casa-di-fratelli/output/cofein-photoreal-20261116/render/coffee-fluid-cupframe120.blend",
+  "camera": "ProductCamera.001",
+  "cameraBlend": "/Users/macbookpro/casa-di-fratelli/output/cofein-photoreal-20261116/render/v5.blend",
+  "frameRange": {
+    "first": 21,
+    "last": 120,
+    "fps": 24.0,
+    "settlingExcluded": 20
+  },
+  "coordinateConvention": "imageX/imageY normalized, origin at top left; world in metres, Z up; at=(frame-first)/(last-first)",
+  "cupFrameRemap": {
+    "applied": true,
+    "physicalEquivalence": false,
+    "note": "Exact rigid geometric remap of native cached positions; rotating-frame simulation omits Coriolis, Euler and centrifugal forces."
+  },
+  "floorZ": 0.0,
+  "cellSizeM": 0.0035210590241319044,
+  "minimumTrackedVolumeM3": 1.091339626059467e-08,
+  "minimumTrackedDiameterM": 0.0027520338245936205,
+  "observedTracks": 37,
+  "observedLandings": 18,
+  "impacts": [
+    {
+      "id": "physical-drop-2",
+      "frame": 54,
+      "at": 0.3333333333333333,
+      "world": [
+        -0.07440417259931564,
+        -0.0019153818720951676,
+        0.0
+      ],
+      "imageX": 0.3115551173686981,
+      "imageY": 0.7684352397918701,
+      "cameraDepth": 0.4915362000465393,
+      "volumeM3": 2.6838320774102995e-08,
+      "diameterEquivalentM": 0.0037146586006402463,
+      "observedAirborneFrames": 3,
+      "method": "detached-component-merged-with-floor-liquid",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-6",
+      "frame": 59,
+      "at": 0.3838383838383838,
+      "world": [
+        -0.06341266632080078,
+        0.04841456189751625,
+        0.0
+      ],
+      "imageX": 0.37406623363494873,
+      "imageY": 0.6870306730270386,
+      "cameraDepth": 0.5372318029403687,
+      "volumeM3": 3.350222910665966e-08,
+      "diameterEquivalentM": 0.003999677982474056,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-16",
+      "frame": 70,
+      "at": 0.494949494949495,
+      "world": [
+        -0.05894619971513748,
+        -0.008238343521952629,
+        0.0
+      ],
+      "imageX": 0.3519204258918762,
+      "imageY": 0.7837715893983841,
+      "cameraDepth": 0.4837837815284729,
+      "volumeM3": 4.4764297319847325e-08,
+      "diameterEquivalentM": 0.004405322593029001,
+      "observedAirborneFrames": 2,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-13",
+      "frame": 71,
+      "at": 0.5050505050505051,
+      "world": [
+        -0.041682012379169464,
+        0.007552800700068474,
+        0.0
+      ],
+      "imageX": 0.4113563597202301,
+      "imageY": 0.7589235454797745,
+      "cameraDepth": 0.4964703917503357,
+      "volumeM3": 2.4439373307643457e-06,
+      "diameterEquivalentM": 0.01671207903960095,
+      "observedAirborneFrames": 7,
+      "method": "detached-component-merged-with-floor-liquid",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-17",
+      "frame": 71,
+      "at": 0.5050505050505051,
+      "world": [
+        -0.04077773168683052,
+        -0.02232685312628746,
+        0.0
+      ],
+      "imageX": 0.39713171124458313,
+      "imageY": 0.8155913054943085,
+      "cameraDepth": 0.4684544503688812,
+      "volumeM3": 2.51765759652171e-08,
+      "diameterEquivalentM": 0.0036363528199956064,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-20",
+      "frame": 72,
+      "at": 0.5151515151515151,
+      "world": [
+        -0.0419158898293972,
+        -0.010983693413436413,
+        0.0
+      ],
+      "imageX": 0.4003702998161316,
+      "imageY": 0.7931036055088043,
+      "cameraDepth": 0.4791850447654724,
+      "volumeM3": 1.4030419129942794e-07,
+      "diameterEquivalentM": 0.00644699511079712,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-21",
+      "frame": 72,
+      "at": 0.5151515151515151,
+      "world": [
+        -0.055131714791059494,
+        0.0037367199547588825,
+        0.0
+      ],
+      "imageX": 0.3706229031085968,
+      "imageY": 0.7626742571592331,
+      "cameraDepth": 0.4945129156112671,
+      "volumeM3": 7.922914747766444e-08,
+      "diameterEquivalentM": 0.005328792223247868,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-22",
+      "frame": 73,
+      "at": 0.5252525252525253,
+      "world": [
+        -0.05221058428287506,
+        -0.005131986457854509,
+        0.0
+      ],
+      "imageX": 0.37359315156936646,
+      "imageY": 0.779575526714325,
+      "cameraDepth": 0.48588046431541443,
+      "volumeM3": 4.3262484002622496e-08,
+      "diameterEquivalentM": 0.00435549590544709,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-23",
+      "frame": 73,
+      "at": 0.5252525252525253,
+      "world": [
+        -0.05443991348147392,
+        0.01769542507827282,
+        0.0
+      ],
+      "imageX": 0.38091984391212463,
+      "imageY": 0.7383891046047211,
+      "cameraDepth": 0.5074678659439087,
+      "volumeM3": 1.8625072007819937e-08,
+      "diameterEquivalentM": 0.0032887670508003047,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-27",
+      "frame": 84,
+      "at": 0.6363636363636364,
+      "world": [
+        -0.0693075954914093,
+        -0.035230327397584915,
+        0.0
+      ],
+      "imageX": 0.30115607380867004,
+      "imageY": 0.8344686776399612,
+      "cameraDepth": 0.4598108232021332,
+      "volumeM3": 2.6242768920899485e-08,
+      "diameterEquivalentM": 0.003686976289017962,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-31",
+      "frame": 88,
+      "at": 0.6767676767676768,
+      "world": [
+        -0.05041921138763428,
+        0.018391933292150497,
+        0.0
+      ],
+      "imageX": 0.39255934953689575,
+      "imageY": 0.7380783259868622,
+      "cameraDepth": 0.5076380372047424,
+      "volumeM3": 1.3096291442971073e-07,
+      "diameterEquivalentM": 0.0063006192581715826,
+      "observedAirborneFrames": 1,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    },
+    {
+      "id": "physical-drop-37",
+      "frame": 118,
+      "at": 0.9797979797979798,
+      "world": [
+        -0.09254500269889832,
+        -0.024203477427363396,
+        0.0
+      ],
+      "imageX": 0.2405216544866562,
+      "imageY": 0.8061803430318832,
+      "cameraDepth": 0.4728861153125763,
+      "volumeM3": 1.8373395071583964e-08,
+      "diameterEquivalentM": 0.0032738863339021548,
+      "observedAirborneFrames": 2,
+      "method": "detached-component-contact",
+      "uncertainty": {
+        "worldM": 0.0035210590241319044,
+        "frames": 1
+      }
+    }
+  ],
+  "discarded": [
+    {
+      "id": "physical-drop-primary",
+      "reason": "same-observed-landing-footprint"
+    },
+    {
+      "id": "physical-drop-19",
+      "reason": "same-observed-landing-footprint"
+    }
+  ],
+  "quality": {
+    "frames": [
+      {
+        "frame": 21,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019460860908435468,
+        "inCupVolumeM3": 0.00019460860908435468,
+        "meshMin": [
+          -0.04237901791930199,
+          -0.04364748299121857,
+          0.017448456957936287
+        ],
+        "meshMax": [
+          0.043173693120479584,
+          0.044043514877557755,
+          0.07021186500787735
+        ],
+        "simulationMeshMin": [
+          -0.042326830327510834,
+          -0.04364748299121857,
+          0.017331382259726524
+        ],
+        "simulationMeshMax": [
+          0.04322899132966995,
+          0.044043514877557755,
+          0.07008447498083115
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.37205010652542114,
+          "right": 0.6696078181266785,
+          "top": 0.45599985122680664,
+          "bottom": 0.8162396103143692
+        },
+        "lowestMeshZ": 0.017448456957936287,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 22,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.0001933681698733267,
+        "inCupVolumeM3": 0.0001933681698733267,
+        "meshMin": [
+          -0.04262582212686539,
+          -0.04360993579030037,
+          0.01779521256685257
+        ],
+        "meshMax": [
+          0.042839858680963516,
+          0.04386446624994278,
+          0.0702749714255333
+        ],
+        "simulationMeshMin": [
+          -0.04242062568664551,
+          -0.04360993579030037,
+          0.017341094091534615
+        ],
+        "simulationMeshMax": [
+          0.04305749386548996,
+          0.04386446624994278,
+          0.06978029757738113
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.3712475597858429,
+          "right": 0.6686294078826904,
+          "top": 0.4559473991394043,
+          "bottom": 0.814697191119194
+        },
+        "lowestMeshZ": 0.01779521256685257,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 23,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019300934386601691,
+        "inCupVolumeM3": 0.00019300934386601691,
+        "meshMin": [
+          -0.042969927191734314,
+          -0.043344300240278244,
+          0.01833607442677021
+        ],
+        "meshMax": [
+          0.04210396483540535,
+          0.043414801359176636,
+          0.07056893408298492
+        ],
+        "simulationMeshMin": [
+          -0.04250731319189072,
+          -0.043344300240278244,
+          0.017346251755952835
+        ],
+        "simulationMeshMax": [
+          0.04257671907544136,
+          0.043414801359176636,
+          0.0694715604186058
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.37026044726371765,
+          "right": 0.6664848923683167,
+          "top": 0.4553682804107666,
+          "bottom": 0.8117840141057968
+        },
+        "lowestMeshZ": 0.01833607442677021,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 24,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019274091055641526,
+        "inCupVolumeM3": 0.00019274091055641526,
+        "meshMin": [
+          -0.0432884618639946,
+          -0.04286707937717438,
+          0.01905527524650097
+        ],
+        "meshMax": [
+          0.04179538041353226,
+          0.0431806817650795,
+          0.07172469049692154
+        ],
+        "simulationMeshMin": [
+          -0.04248085618019104,
+          -0.04286707937717438,
+          0.017352432012557983
+        ],
+        "simulationMeshMax": [
+          0.04262220114469528,
+          0.0431806817650795,
+          0.06979142129421234
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.3694221079349518,
+          "right": 0.6656980514526367,
+          "top": 0.45142000913619995,
+          "bottom": 0.8078311383724213
+        },
+        "lowestMeshZ": 0.01905527524650097,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 25,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019246347073434582,
+        "inCupVolumeM3": 0.00019246347073434582,
+        "meshMin": [
+          -0.04372946545481682,
+          -0.04258328303694725,
+          0.019930178299546242
+        ],
+        "meshMax": [
+          0.041329365223646164,
+          0.04291140288114548,
+          0.07183379679918289
+        ],
+        "simulationMeshMin": [
+          -0.04249100387096405,
+          -0.04258328303694725,
+          0.017358366400003433
+        ],
+        "simulationMeshMax": [
+          0.04260022193193436,
+          0.04291140288114548,
+          0.06909304857254028
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.3681461811065674,
+          "right": 0.6643284559249878,
+          "top": 0.4512767791748047,
+          "bottom": 0.8036382794380188
+        },
+        "lowestMeshZ": 0.019930178299546242,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 26,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019250571915415432,
+        "inCupVolumeM3": 0.00019250571915415432,
+        "meshMin": [
+          -0.044287849217653275,
+          -0.04259021580219269,
+          0.02093636803328991
+        ],
+        "meshMax": [
+          0.040058527141809464,
+          0.04307558014988899,
+          0.07316697388887405
+        ],
+        "simulationMeshMin": [
+          -0.042538538575172424,
+          -0.04259021580219269,
+          0.01736104115843773
+        ],
+        "simulationMeshMax": [
+          0.04180312901735306,
+          0.04307558014988899,
+          0.0696653500199318
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.366141676902771,
+          "right": 0.6607602834701538,
+          "top": 0.446170449256897,
+          "bottom": 0.7993268817663193
+        },
+        "lowestMeshZ": 0.02093636803328991,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 27,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019202083987215126,
+        "inCupVolumeM3": 0.00019202083987215126,
+        "meshMin": [
+          -0.04507380723953247,
+          -0.04281429946422577,
+          0.022064516320824623
+        ],
+        "meshMax": [
+          0.03944184258580208,
+          0.04253646731376648,
+          0.07420440763235092
+        ],
+        "simulationMeshMin": [
+          -0.04273965209722519,
+          -0.04281429946422577,
+          0.01737253926694393
+        ],
+        "simulationMeshMax": [
+          0.041712746024131775,
+          0.04253646731376648,
+          0.0697052925825119
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.3632480204105377,
+          "right": 0.6590269207954407,
+          "top": 0.44291985034942627,
+          "bottom": 0.7951673716306686
+        },
+        "lowestMeshZ": 0.022064516320824623,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 28,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019173204625606496,
+        "inCupVolumeM3": 0.00019173204625606496,
+        "meshMin": [
+          -0.045818910002708435,
+          -0.0428239144384861,
+          0.02328537032008171
+        ],
+        "meshMax": [
+          0.03887739032506943,
+          0.04283807799220085,
+          0.07538755238056183
+        ],
+        "simulationMeshMin": [
+          -0.04283187538385391,
+          -0.0428239144384861,
+          0.017385030165314674
+        ],
+        "simulationMeshMax": [
+          0.041793860495090485,
+          0.04283807799220085,
+          0.069931760430336
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.3606266677379608,
+          "right": 0.6575188040733337,
+          "top": 0.4381580948829651,
+          "bottom": 0.7901895046234131
+        },
+        "lowestMeshZ": 0.02328537032008171,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 29,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.0001911695954936529,
+        "inCupVolumeM3": 0.0001911695954936529,
+        "meshMin": [
+          -0.04650947451591492,
+          -0.04248820245265961,
+          0.024610985070466995
+        ],
+        "meshMax": [
+          0.03812594711780548,
+          0.04276272654533386,
+          0.07684437185525894
+        ],
+        "simulationMeshMin": [
+          -0.04280751198530197,
+          -0.04248820245265961,
+          0.01741158403456211
+        ],
+        "simulationMeshMax": [
+          0.04175464063882828,
+          0.04276272654533386,
+          0.06959432363510132
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.35840946435928345,
+          "right": 0.6554614305496216,
+          "top": 0.43284159898757935,
+          "bottom": 0.7840094119310379
+        },
+        "lowestMeshZ": 0.024610985070466995,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 30,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019101996675954114,
+        "inCupVolumeM3": 0.00019101996675954114,
+        "meshMin": [
+          -0.04736902564764023,
+          -0.04245368763804436,
+          0.025944940745830536
+        ],
+        "meshMax": [
+          0.03732174634933472,
+          0.04263287037611008,
+          0.07814265042543411
+        ],
+        "simulationMeshMin": [
+          -0.0428963229060173,
+          -0.04245368763804436,
+          0.017410213127732277
+        ],
+        "simulationMeshMax": [
+          0.04172487556934357,
+          0.04263287037611008,
+          0.07020149379968643
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.3554198443889618,
+          "right": 0.6532239317893982,
+          "top": 0.428131103515625,
+          "bottom": 0.7784106880426407
+        },
+        "lowestMeshZ": 0.025944940745830536,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 31,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019101734422151168,
+        "inCupVolumeM3": 0.00019101734422151168,
+        "meshMin": [
+          -0.04835640639066696,
+          -0.042409200221300125,
+          0.027301497757434845
+        ],
+        "meshMax": [
+          0.036513470113277435,
+          0.042513299733400345,
+          0.07938176393508911
+        ],
+        "simulationMeshMin": [
+          -0.0429571270942688,
+          -0.042409200221300125,
+          0.01740597002208233
+        ],
+        "simulationMeshMax": [
+          0.04174881428480148,
+          0.042513299733400345,
+          0.07068229466676712
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.3520136773586273,
+          "right": 0.6509650945663452,
+          "top": 0.42359817028045654,
+          "bottom": 0.7726915031671524
+        },
+        "lowestMeshZ": 0.027301497757434845,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 32,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.0001907438660487149,
+        "inCupVolumeM3": 0.0001907438660487149,
+        "meshMin": [
+          -0.04929453879594803,
+          -0.04235200211405754,
+          0.028683852404356003
+        ],
+        "meshMax": [
+          0.035634927451610565,
+          0.042452868074178696,
+          0.08086366951465607
+        ],
+        "simulationMeshMin": [
+          -0.04301254451274872,
+          -0.04235200211405754,
+          0.01743296906352043
+        ],
+        "simulationMeshMax": [
+          0.04175563529133797,
+          0.042452868074178696,
+          0.0710066482424736
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.34874841570854187,
+          "right": 0.6485253572463989,
+          "top": 0.4181091785430908,
+          "bottom": 0.7668157815933228
+        },
+        "lowestMeshZ": 0.028683852404356003,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 33,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019065067880302047,
+        "inCupVolumeM3": 0.00019065067880302047,
+        "meshMin": [
+          -0.0501999631524086,
+          -0.042582251131534576,
+          0.030039850622415543
+        ],
+        "meshMax": [
+          0.03463948145508766,
+          0.04253607988357544,
+          0.0823107585310936
+        ],
+        "simulationMeshMin": [
+          -0.042996831238269806,
+          -0.042582251131534576,
+          0.01743645966053009
+        ],
+        "simulationMeshMax": [
+          0.04169388860464096,
+          0.04253607988357544,
+          0.0709012895822525
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.34536898136138916,
+          "right": 0.6457469463348389,
+          "top": 0.4125823378562927,
+          "bottom": 0.7615988701581955
+        },
+        "lowestMeshZ": 0.030039850622415543,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 34,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019040068456177,
+        "inCupVolumeM3": 0.00019040068456177,
+        "meshMin": [
+          -0.05116678774356842,
+          -0.04311215505003929,
+          0.03135425224900246
+        ],
+        "meshMax": [
+          0.033676326274871826,
+          0.04252897575497627,
+          0.08382211625576019
+        ],
+        "simulationMeshMin": [
+          -0.042952440679073334,
+          -0.04311215505003929,
+          0.017435990273952484
+        ],
+        "simulationMeshMax": [
+          0.04170850291848183,
+          0.04252897575497627,
+          0.07120401412248611
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.341531366109848,
+          "right": 0.643057644367218,
+          "top": 0.40690410137176514,
+          "bottom": 0.7571599185466766
+        },
+        "lowestMeshZ": 0.03135425224900246,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 35,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019026237708131424,
+        "inCupVolumeM3": 0.00019026237708131424,
+        "meshMin": [
+          -0.05219089612364769,
+          -0.04280625283718109,
+          0.03260594606399536
+        ],
+        "meshMax": [
+          0.03259750455617905,
+          0.04251117631793022,
+          0.08504578471183777
+        ],
+        "simulationMeshMin": [
+          -0.04305415600538254,
+          -0.04280625283718109,
+          0.01743549294769764
+        ],
+        "simulationMeshMax": [
+          0.041646167635917664,
+          0.04251117631793022,
+          0.07136908918619156
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.3381861448287964,
+          "right": 0.6399940848350525,
+          "top": 0.4022793769836426,
+          "bottom": 0.7512153834104538
+        },
+        "lowestMeshZ": 0.03260594606399536,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 36,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019022579250846473,
+        "inCupVolumeM3": 0.00019022579250846473,
+        "meshMin": [
+          -0.05407403036952019,
+          -0.04236292093992233,
+          0.033777881413698196
+        ],
+        "meshMax": [
+          0.0315203033387661,
+          0.04241440072655678,
+          0.0865175798535347
+        ],
+        "simulationMeshMin": [
+          -0.04352811723947525,
+          -0.04236292093992233,
+          0.017430845648050308
+        ],
+        "simulationMeshMax": [
+          0.04162072390317917,
+          0.04241440072655678,
+          0.072440005838871
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.33204302191734314,
+          "right": 0.6369459629058838,
+          "top": 0.39670073986053467,
+          "bottom": 0.7453133463859558
+        },
+        "lowestMeshZ": 0.033777881413698196,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 37,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019025869848669883,
+        "inCupVolumeM3": 0.00019025869848669883,
+        "meshMin": [
+          -0.056600116193294525,
+          -0.04231009632349014,
+          0.03485051169991493
+        ],
+        "meshMax": [
+          0.030314944684505463,
+          0.04225075989961624,
+          0.08755872398614883
+        ],
+        "simulationMeshMin": [
+          -0.044772252440452576,
+          -0.04231009632349014,
+          0.017431262880563736
+        ],
+        "simulationMeshMax": [
+          0.041501156985759735,
+          0.04225075989961624,
+          0.0733446404337883
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.32349371910095215,
+          "right": 0.633466362953186,
+          "top": 0.39268720149993896,
+          "bottom": 0.7405709028244019
+        },
+        "lowestMeshZ": 0.03485051169991493,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 38,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019012993705981278,
+        "inCupVolumeM3": 0.00019012993705981278,
+        "meshMin": [
+          -0.05833582207560539,
+          -0.04231876879930496,
+          0.035877931863069534
+        ],
+        "meshMax": [
+          0.02918209694325924,
+          0.04218965768814087,
+          0.08886346220970154
+        ],
+        "simulationMeshMin": [
+          -0.04540850967168808,
+          -0.04231876879930496,
+          0.017429528757929802
+        ],
+        "simulationMeshMax": [
+          0.04126577824354172,
+          0.04218965768814087,
+          0.07430855184793472
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.3174959719181061,
+          "right": 0.6302322149276733,
+          "top": 0.3876948952674866,
+          "bottom": 0.7361496984958649
+        },
+        "lowestMeshZ": 0.035877931863069534,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 39,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00018980100265749236,
+        "inCupVolumeM3": 0.00018980100265749236,
+        "meshMin": [
+          -0.05975538119673729,
+          -0.042311571538448334,
+          0.03684636950492859
+        ],
+        "meshMax": [
+          0.027659717947244644,
+          0.04224448651075363,
+          0.08964581787586212
+        ],
+        "simulationMeshMin": [
+          -0.04562833160161972,
+          -0.042311571538448334,
+          0.017430603504180908
+        ],
+        "simulationMeshMax": [
+          0.040844596922397614,
+          0.04224448651075363,
+          0.07421571761369705
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.3126402795314789,
+          "right": 0.6258130073547363,
+          "top": 0.38454902172088623,
+          "bottom": 0.7318308651447296
+        },
+        "lowestMeshZ": 0.03684636950492859,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 40,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.0001896832113151951,
+        "inCupVolumeM3": 0.0001896832113151951,
+        "meshMin": [
+          -0.061025649309158325,
+          -0.042316991835832596,
+          0.03772988170385361
+        ],
+        "meshMax": [
+          0.02579030767083168,
+          0.042268235236406326,
+          0.09142182767391205
+        ],
+        "simulationMeshMin": [
+          -0.045692749321460724,
+          -0.042316991835832596,
+          0.01743408292531967
+        ],
+        "simulationMeshMax": [
+          0.04013437777757645,
+          0.042268235236406326,
+          0.07499682158231735
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.3081185817718506,
+          "right": 0.6204467415809631,
+          "top": 0.37777572870254517,
+          "bottom": 0.7277896702289581
+        },
+        "lowestMeshZ": 0.03772988170385361,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 41,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00018939806456660485,
+        "inCupVolumeM3": 0.00018939806456660485,
+        "meshMin": [
+          -0.062469325959682465,
+          -0.0423848032951355,
+          0.038541071116924286
+        ],
+        "meshMax": [
+          0.024227477610111237,
+          0.042266085743904114,
+          0.09135288745164871
+        ],
+        "simulationMeshMin": [
+          -0.04579553008079529,
+          -0.0423848032951355,
+          0.0174251776188612
+        ],
+        "simulationMeshMax": [
+          0.039441097527742386,
+          0.042266085743904114,
+          0.07502204924821854
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.30324262380599976,
+          "right": 0.6158275604248047,
+          "top": 0.3778383135795593,
+          "bottom": 0.7242418825626373
+        },
+        "lowestMeshZ": 0.038541071116924286,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 42,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00018927652998719676,
+        "inCupVolumeM3": 0.00018927652998719676,
+        "meshMin": [
+          -0.06403530389070511,
+          -0.042392756789922714,
+          0.03930570185184479
+        ],
+        "meshMax": [
+          0.023146051913499832,
+          0.04227001965045929,
+          0.09257122129201889
+        ],
+        "simulationMeshMin": [
+          -0.0461655855178833,
+          -0.042392756789922714,
+          0.01741688884794712
+        ],
+        "simulationMeshMax": [
+          0.039266228675842285,
+          0.04227001965045929,
+          0.07603275775909424
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.29780617356300354,
+          "right": 0.6127324104309082,
+          "top": 0.3731068968772888,
+          "bottom": 0.720883846282959
+        },
+        "lowestMeshZ": 0.03930570185184479,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 43,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.000189180589014612,
+        "inCupVolumeM3": 0.000189180589014612,
+        "meshMin": [
+          -0.06583380699157715,
+          -0.042380109429359436,
+          0.040008723735809326
+        ],
+        "meshMax": [
+          0.022064287215471268,
+          0.04224780574440956,
+          0.09296204894781113
+        ],
+        "simulationMeshMin": [
+          -0.04637549817562103,
+          -0.042380109429359436,
+          0.017418045550584793
+        ],
+        "simulationMeshMax": [
+          0.039214879274368286,
+          0.04224780574440956,
+          0.0770195946097374
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.29174262285232544,
+          "right": 0.6095660328865051,
+          "top": 0.37143945693969727,
+          "bottom": 0.7177329659461975
+        },
+        "lowestMeshZ": 0.040008723735809326,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 44,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.0001890476900632182,
+        "inCupVolumeM3": 0.0001890476900632182,
+        "meshMin": [
+          -0.06737305223941803,
+          -0.04230692610144615,
+          0.0406469888985157
+        ],
+        "meshMax": [
+          0.020952356979250908,
+          0.042164258658885956,
+          0.09397821128368378
+        ],
+        "simulationMeshMin": [
+          -0.04661493003368378,
+          -0.04230692610144615,
+          0.017408601939678192
+        ],
+        "simulationMeshMax": [
+          0.03875576704740524,
+          0.042164258658885956,
+          0.07779447734355927
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.2864956855773926,
+          "right": 0.6063455939292908,
+          "top": 0.3675490617752075,
+          "bottom": 0.7147170007228851
+        },
+        "lowestMeshZ": 0.0406469888985157,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 45,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00018884599684147846,
+        "inCupVolumeM3": 0.00018884599684147846,
+        "meshMin": [
+          -0.06861777603626251,
+          -0.04238811507821083,
+          0.041236888617277145
+        ],
+        "meshMax": [
+          0.019716206938028336,
+          0.04227977618575096,
+          0.0944187268614769
+        ],
+        "simulationMeshMin": [
+          -0.04663320630788803,
+          -0.04238811507821083,
+          0.01740087941288948
+        ],
+        "simulationMeshMax": [
+          0.03880928084254265,
+          0.04227977618575096,
+          0.07764272391796112
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.2821885347366333,
+          "right": 0.6027494072914124,
+          "top": 0.36562788486480713,
+          "bottom": 0.7121691107749939
+        },
+        "lowestMeshZ": 0.041236888617277145,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 46,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00018868641179408904,
+        "inCupVolumeM3": 0.00018868641179408904,
+        "meshMin": [
+          -0.07032421231269836,
+          -0.042324233800172806,
+          0.04178323969244957
+        ],
+        "meshMax": [
+          0.018466368317604065,
+          0.04236935079097748,
+          0.0952494665980339
+        ],
+        "simulationMeshMin": [
+          -0.04681652784347534,
+          -0.042324233800172806,
+          0.01740347221493721
+        ],
+        "simulationMeshMax": [
+          0.03828215226531029,
+          0.04236935079097748,
+          0.0783330574631691
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.27640384435653687,
+          "right": 0.5991361737251282,
+          "top": 0.3622232675552368,
+          "bottom": 0.7095094323158264
+        },
+        "lowestMeshZ": 0.04178323969244957,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 47,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00018837926439057225,
+        "inCupVolumeM3": 0.00018837926439057225,
+        "meshMin": [
+          -0.07333377748727798,
+          -0.042355671525001526,
+          0.04231380671262741
+        ],
+        "meshMax": [
+          0.01721516065299511,
+          0.042565371841192245,
+          0.09554639458656311
+        ],
+        "simulationMeshMin": [
+          -0.04806148260831833,
+          -0.042355671525001526,
+          0.017399078235030174
+        ],
+        "simulationMeshMax": [
+          0.037889137864112854,
+          0.042565371841192245,
+          0.07896950840950012
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.2662813663482666,
+          "right": 0.5955036282539368,
+          "top": 0.36052364110946655,
+          "bottom": 0.707099974155426
+        },
+        "lowestMeshZ": 0.04231380671262741,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 48,
+        "componentCount": 2,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 2,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 0.00018833231308898644,
+        "inCupVolumeM3": 0.00018831422829180812,
+        "meshMin": [
+          -0.08215006440877914,
+          -0.0422728955745697,
+          0.04279312491416931
+        ],
+        "meshMax": [
+          0.016087371855974197,
+          0.04242832958698273,
+          0.095993772149086
+        ],
+        "simulationMeshMin": [
+          -0.05617992579936981,
+          -0.0422728955745697,
+          0.0173952654004097
+        ],
+        "simulationMeshMax": [
+          0.03773660585284233,
+          0.04242832958698273,
+          0.08021804690361023
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.23695817589759827,
+          "right": 0.5921815633773804,
+          "top": 0.35785114765167236,
+          "bottom": 0.7047068178653717
+        },
+        "lowestMeshZ": 0.04279312491416931,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 49,
+        "componentCount": 1,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.0001885843596818152,
+        "inCupVolumeM3": 0.0001885843596818152,
+        "meshMin": [
+          -0.08553224802017212,
+          -0.042194925248622894,
+          0.0432254821062088
+        ],
+        "meshMax": [
+          0.014954674988985062,
+          0.04245414212346077,
+          0.09610459208488464
+        ],
+        "simulationMeshMin": [
+          -0.059531666338443756,
+          -0.042194925248622894,
+          0.017394311726093292
+        ],
+        "simulationMeshMax": [
+          0.037560999393463135,
+          0.04245414212346077,
+          0.08072542399168015
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.225806325674057,
+          "right": 0.5888558626174927,
+          "top": 0.3569740653038025,
+          "bottom": 0.702513575553894
+        },
+        "lowestMeshZ": 0.0432254821062088,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 50,
+        "componentCount": 2,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 1.1366370807527829e-13,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00018880063507314192,
+        "inCupVolumeM3": 0.00018880063518680564,
+        "meshMin": [
+          -0.09198309481143951,
+          -0.042154353111982346,
+          0.043643295764923096
+        ],
+        "meshMax": [
+          0.013772055506706238,
+          0.04237023741006851,
+          0.09658359736204147
+        ],
+        "simulationMeshMin": [
+          -0.07366111874580383,
+          -0.042154353111982346,
+          0.017395667731761932
+        ],
+        "simulationMeshMax": [
+          0.037438154220581055,
+          0.04237023741006851,
+          0.08133651316165924
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.20442043244838715,
+          "right": 0.5853831768035889,
+          "top": 0.35444772243499756,
+          "bottom": 0.7004402577877045
+        },
+        "lowestMeshZ": 0.043643295764923096,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 51,
+        "componentCount": 6,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 3,
+        "detachedAirborneCount": 2,
+        "liquidVolumeM3": 0.00018892035906962915,
+        "inCupVolumeM3": 0.00018886374425781453,
+        "meshMin": [
+          -0.09672887623310089,
+          -0.04215487837791443,
+          0.009148383513092995
+        ],
+        "meshMax": [
+          0.01254761591553688,
+          0.04229351133108139,
+          0.09684392064809799
+        ],
+        "simulationMeshMin": [
+          -0.0929822325706482,
+          -0.04215487837791443,
+          0.007854527793824673
+        ],
+        "simulationMeshMax": [
+          0.03728591650724411,
+          0.04229351133108139,
+          0.08184939622879028
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.18871769309043884,
+          "right": 0.5817752480506897,
+          "top": 0.35294872522354126,
+          "bottom": 0.836878091096878
+        },
+        "lowestMeshZ": 0.009148383513092995,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 52,
+        "componentCount": 4,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 2,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 0.00018950576916069488,
+        "inCupVolumeM3": 0.00018948520170443826,
+        "meshMin": [
+          -0.08821530640125275,
+          -0.04211840406060219,
+          0.029648881405591965
+        ],
+        "meshMax": [
+          0.011310039088129997,
+          0.042265333235263824,
+          0.09681769460439682
+        ],
+        "simulationMeshMin": [
+          -0.07013464719057083,
+          -0.04211840406060219,
+          0.0174039825797081
+        ],
+        "simulationMeshMax": [
+          0.03702801465988159,
+          0.042265333235263824,
+          0.08230327814817429
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.21685081720352173,
+          "right": 0.5781239867210388,
+          "top": 0.3541720509529114,
+          "bottom": 0.7560995221138
+        },
+        "lowestMeshZ": 0.029648881405591965,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 53,
+        "componentCount": 4,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 3,
+        "detachedAirborneCount": 2,
+        "liquidVolumeM3": 0.0001896227948036655,
+        "inCupVolumeM3": 0.00018956347233118953,
+        "meshMin": [
+          -0.08983439207077026,
+          -0.04206230491399765,
+          0.010395136661827564
+        ],
+        "meshMax": [
+          0.01005654875189066,
+          0.042243827134370804,
+          0.09669715911149979
+        ],
+        "simulationMeshMin": [
+          -0.07652388513088226,
+          -0.04206230491399765,
+          0.0038574738427996635
+        ],
+        "simulationMeshMax": [
+          0.03665173798799515,
+          0.042243827134370804,
+          0.08257339149713516
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.21158678829669952,
+          "right": 0.5744246244430542,
+          "top": 0.35443180799484253,
+          "bottom": 0.8311716020107269
+        },
+        "lowestMeshZ": 0.010395136661827564,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 54,
+        "componentCount": 3,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.0001902402558055024,
+        "inCupVolumeM3": 0.00019023016790234605,
+        "meshMin": [
+          -0.09107420593500137,
+          -0.042062241584062576,
+          0.0002073659561574459
+        ],
+        "meshMax": [
+          0.008773400448262691,
+          0.04210890829563141,
+          0.09657155722379684
+        ],
+        "simulationMeshMin": [
+          -0.07572881132364273,
+          -0.042062241584062576,
+          -0.006567356642335653
+        ],
+        "simulationMeshMax": [
+          0.03623419255018234,
+          0.04210890829563141,
+          0.08247187733650208
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.2075221836566925,
+          "right": 0.5706132054328918,
+          "top": 0.35487377643585205,
+          "bottom": 0.8698695749044418
+        },
+        "lowestMeshZ": 0.0002073659561574459,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 55,
+        "componentCount": 4,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 3,
+        "detachedAirborneCount": 2,
+        "liquidVolumeM3": 0.00019183510162897602,
+        "inCupVolumeM3": 0.00019177593678896962,
+        "meshMin": [
+          -0.09244164824485779,
+          -0.042005449533462524,
+          0.0020265383645892143
+        ],
+        "meshMax": [
+          0.00745586771517992,
+          0.04198545590043068,
+          0.09638701379299164
+        ],
+        "simulationMeshMin": [
+          -0.08429461717605591,
+          -0.042005449533462524,
+          -0.00478893518447876
+        ],
+        "simulationMeshMax": [
+          0.03564178943634033,
+          0.04198545590043068,
+          0.08277667313814163
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.20311588048934937,
+          "right": 0.5667020082473755,
+          "top": 0.3555060625076294,
+          "bottom": 0.8624415546655655
+        },
+        "lowestMeshZ": 0.0020265383645892143,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 56,
+        "componentCount": 3,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.0001929989412817625,
+        "inCupVolumeM3": 0.00019299886641981713,
+        "meshMin": [
+          -0.09387257695198059,
+          -0.04191117733716965,
+          0.006109949201345444
+        ],
+        "meshMax": [
+          0.006062437780201435,
+          0.04185354337096214,
+          0.09603859484195709
+        ],
+        "simulationMeshMin": [
+          -0.08514049649238586,
+          -0.04191117733716965,
+          -0.004575088154524565
+        ],
+        "simulationMeshMax": [
+          0.03529922291636467,
+          0.04185354337096214,
+          0.08301670104265213
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.1985866129398346,
+          "right": 0.5625603795051575,
+          "top": 0.35674577951431274,
+          "bottom": 0.8462284803390503
+        },
+        "lowestMeshZ": 0.006109949201345444,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 57,
+        "componentCount": 7,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 2,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 0.00019506348902720384,
+        "inCupVolumeM3": 0.00019502826628158145,
+        "meshMin": [
+          -0.09570842236280441,
+          -0.0450100339949131,
+          -0.0008819822687655687
+        ],
+        "meshMax": [
+          0.004729095846414566,
+          0.041707202792167664,
+          0.0956633985042572
+        ],
+        "simulationMeshMin": [
+          -0.09404531121253967,
+          -0.0450100339949131,
+          -0.0068365284241735935
+        ],
+        "simulationMeshMax": [
+          0.035029299557209015,
+          0.041707202792167664,
+          0.0834432914853096
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.18917898833751678,
+          "right": 0.5585929155349731,
+          "top": 0.3580458164215088,
+          "bottom": 0.8794657289981842
+        },
+        "lowestMeshZ": -0.0008819822687655687,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 58,
+        "componentCount": 3,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019562310409506218,
+        "inCupVolumeM3": 0.00019561865835664356,
+        "meshMin": [
+          -0.09703807532787323,
+          -0.0418018214404583,
+          -0.0015554202254861593
+        ],
+        "meshMax": [
+          0.0035059452056884766,
+          0.050575654953718185,
+          0.09525503218173981
+        ],
+        "simulationMeshMin": [
+          -0.0846140906214714,
+          -0.0418018214404583,
+          -0.013347433879971504
+        ],
+        "simulationMeshMax": [
+          0.034723080694675446,
+          0.050575654953718185,
+          0.08347831666469574
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.18848787248134613,
+          "right": 0.557332456111908,
+          "top": 0.35050487518310547,
+          "bottom": 0.8744794875383377
+        },
+        "lowestMeshZ": -0.0015554202254861593,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 59,
+        "componentCount": 11,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 6,
+        "detachedAirborneCount": 3,
+        "liquidVolumeM3": 0.0001956740198728666,
+        "inCupVolumeM3": 0.00019552014360336384,
+        "meshMin": [
+          -0.09835847467184067,
+          -0.05301693454384804,
+          -0.0012959721498191357
+        ],
+        "meshMax": [
+          0.002267499454319477,
+          0.053095266222953796,
+          0.09504231065511703
+        ],
+        "simulationMeshMin": [
+          -0.0876852422952652,
+          -0.05301693454384804,
+          -0.013365727849304676
+        ],
+        "simulationMeshMax": [
+          0.034325338900089264,
+          0.053095266222953796,
+          0.08370950818061829
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.17127232253551483,
+          "right": 0.5544223189353943,
+          "top": 0.34864163398742676,
+          "bottom": 0.8987067863345146
+        },
+        "lowestMeshZ": -0.0012959721498191357,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 60,
+        "componentCount": 7,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 2.697379356912311e-14,
+        "significantComponentCount": 2,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019724439159071543,
+        "inCupVolumeM3": 0.00019721742385702225,
+        "meshMin": [
+          -0.09983433783054352,
+          -0.06780969351530075,
+          -0.0018009443301707506
+        ],
+        "meshMax": [
+          0.0011205784976482391,
+          0.07101678848266602,
+          0.09478875994682312
+        ],
+        "simulationMeshMin": [
+          -0.08854144811630249,
+          -0.06780969351530075,
+          -0.014221841469407082
+        ],
+        "simulationMeshMax": [
+          0.03385639563202858,
+          0.07101678848266602,
+          0.08390162885189056
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.14813332259655,
+          "right": 0.5558064579963684,
+          "top": 0.3324105739593506,
+          "bottom": 0.9360006898641586
+        },
+        "lowestMeshZ": -0.0018009443301707506,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 61,
+        "componentCount": 3,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 1,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00019777658391890068,
+        "inCupVolumeM3": 0.00019777409237690483,
+        "meshMin": [
+          -0.10143105685710907,
+          -0.0681605190038681,
+          -0.0018946744967252016
+        ],
+        "meshMax": [
+          1.594237983226776e-05,
+          0.0859457477927208,
+          0.09491398930549622
+        ],
+        "simulationMeshMin": [
+          -0.09244675189256668,
+          -0.0681605190038681,
+          -0.015310634858906269
+        ],
+        "simulationMeshMax": [
+          0.032938871532678604,
+          0.0859457477927208,
+          0.083903007209301
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.14210982620716095,
+          "right": 0.556501030921936,
+          "top": 0.3184647560119629,
+          "bottom": 0.9368936717510223
+        },
+        "lowestMeshZ": -0.0018946744967252016,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 62,
+        "componentCount": 10,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 5,
+        "detachedAirborneCount": 3,
+        "liquidVolumeM3": 0.00019227311975961666,
+        "inCupVolumeM3": 0.0001891042043776601,
+        "meshMin": [
+          -0.10302304476499557,
+          -0.08386927098035812,
+          -0.001792450319044292
+        ],
+        "meshMax": [
+          -0.0010950416326522827,
+          0.09151293337345123,
+          0.09409697353839874
+        ],
+        "simulationMeshMin": [
+          -0.0953756645321846,
+          -0.08386927098035812,
+          -0.017711255699396133
+        ],
+        "simulationMeshMax": [
+          0.032037802040576935,
+          0.09151293337345123,
+          0.08405634760856628
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.11562027782201767,
+          "right": 0.5548508763313293,
+          "top": 0.3162822127342224,
+          "bottom": 0.9766982905566692
+        },
+        "lowestMeshZ": -0.001792450319044292,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 63,
+        "componentCount": 6,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 4,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.0001924185080210843,
+        "inCupVolumeM3": 0.0001922758923719694,
+        "meshMin": [
+          -0.10400492697954178,
+          -0.07474584877490997,
+          -0.0019408646039664745
+        ],
+        "meshMax": [
+          -0.0022131362929940224,
+          0.10757779330015182,
+          0.09284715354442596
+        ],
+        "simulationMeshMin": [
+          -0.09828009456396103,
+          -0.07474584877490997,
+          -0.0229555182158947
+        ],
+        "simulationMeshMax": [
+          0.03110438585281372,
+          0.10757779330015182,
+          0.08412307500839233
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.12508855760097504,
+          "right": 0.5557330846786499,
+          "top": 0.30693501234054565,
+          "bottom": 0.9530172497034073
+        },
+        "lowestMeshZ": -0.0019408646039664745,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 64,
+        "componentCount": 6,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 3,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 0.0001909403490780602,
+        "inCupVolumeM3": 0.0001822929309981097,
+        "meshMin": [
+          -0.10543974488973618,
+          -0.08305459469556808,
+          -0.0018307939171791077
+        ],
+        "meshMax": [
+          -0.003343738615512848,
+          0.0967876985669136,
+          0.09233052283525467
+        ],
+        "simulationMeshMin": [
+          -0.10045914351940155,
+          -0.08305459469556808,
+          -0.02388349175453186
+        ],
+        "simulationMeshMax": [
+          0.030296504497528076,
+          0.0967876985669136,
+          0.08437805622816086
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.10871656984090805,
+          "right": 0.5501227974891663,
+          "top": 0.3175034523010254,
+          "bottom": 0.9739121533930302
+        },
+        "lowestMeshZ": -0.0018307939171791077,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 65,
+        "componentCount": 8,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 2,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 0.00019601421007838123,
+        "inCupVolumeM3": 0.00018753484743625127,
+        "meshMin": [
+          -0.10697437077760696,
+          -0.12683150172233582,
+          -0.0019088835688307881
+        ],
+        "meshMax": [
+          -0.004504519514739513,
+          0.12317383289337158,
+          0.09189975261688232
+        ],
+        "simulationMeshMin": [
+          -0.10285549610853195,
+          -0.12683150172233582,
+          -0.024018051102757454
+        ],
+        "simulationMeshMax": [
+          0.02944251149892807,
+          0.12317383289337158,
+          0.08464304357767105
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.03370019048452377,
+          "right": 0.5535018444061279,
+          "top": 0.2972763776779175,
+          "bottom": 1.103289633989334
+        },
+        "lowestMeshZ": -0.0019088835688307881,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 66,
+        "componentCount": 10,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 4.552747068231635e-13,
+        "significantComponentCount": 4,
+        "detachedAirborneCount": 3,
+        "liquidVolumeM3": 0.0001934842465470449,
+        "inCupVolumeM3": 0.0001859835539790611,
+        "meshMin": [
+          -0.11218363046646118,
+          -0.13051925599575043,
+          -0.0018641119822859764
+        ],
+        "meshMax": [
+          -0.005679761059582233,
+          0.12880085408687592,
+          0.09117396920919418
+        ],
+        "simulationMeshMin": [
+          -0.10735020786523819,
+          -0.13051925599575043,
+          -0.025113560259342194
+        ],
+        "simulationMeshMax": [
+          0.02887040004134178,
+          0.12880085408687592,
+          0.08456236869096756
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.006641850341111422,
+          "right": 0.5518411993980408,
+          "top": 0.2947392463684082,
+          "bottom": 1.1148232519626617
+        },
+        "lowestMeshZ": -0.0018641119822859764,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 67,
+        "componentCount": 9,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 4,
+        "detachedAirborneCount": 2,
+        "liquidVolumeM3": 0.00018809161028754973,
+        "inCupVolumeM3": 0.00018179029553056422,
+        "meshMin": [
+          -0.11524386703968048,
+          -0.11740665882825851,
+          -0.0019644545391201973
+        ],
+        "meshMax": [
+          -0.006903008557856083,
+          0.1322707086801529,
+          0.09019607305526733
+        ],
+        "simulationMeshMin": [
+          -0.10986616462469101,
+          -0.11740665882825851,
+          -0.02627207711338997
+        ],
+        "simulationMeshMax": [
+          0.02764630876481533,
+          0.1322707086801529,
+          0.08459591865539551
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.018936118111014366,
+          "right": 0.5495774745941162,
+          "top": 0.2949046492576599,
+          "bottom": 1.07231867313385
+        },
+        "lowestMeshZ": -0.0019644545391201973,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 68,
+        "componentCount": 17,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 6,
+        "detachedAirborneCount": 3,
+        "liquidVolumeM3": 0.00018424532385296886,
+        "inCupVolumeM3": 0.0001786710790290602,
+        "meshMin": [
+          -0.12140931189060211,
+          -0.12977616488933563,
+          -0.001970199868083
+        ],
+        "meshMax": [
+          -0.00808501522988081,
+          0.12158452719449997,
+          0.0890490859746933
+        ],
+        "simulationMeshMin": [
+          -0.11363092809915543,
+          -0.12977616488933563,
+          -0.027769438922405243
+        ],
+        "simulationMeshMax": [
+          0.026778092607855797,
+          0.12158452719449997,
+          0.08477810770273209
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.02741452306509018,
+          "right": 0.5439829230308533,
+          "top": 0.30628472566604614,
+          "bottom": 1.1117842644453049
+        },
+        "lowestMeshZ": -0.001970199868083,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 69,
+        "componentCount": 20,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 6.802862671332821e-14,
+        "significantComponentCount": 9,
+        "detachedAirborneCount": 3,
+        "liquidVolumeM3": 0.0001791676185240201,
+        "inCupVolumeM3": 0.00017570921069988535,
+        "meshMin": [
+          -0.11993882060050964,
+          -0.13157352805137634,
+          -0.0020356709137558937
+        ],
+        "meshMax": [
+          -0.009445346891880035,
+          0.13269959390163422,
+          0.08729866147041321
+        ],
+        "simulationMeshMin": [
+          -0.11198381334543228,
+          -0.13157352805137634,
+          -0.027523433789610863
+        ],
+        "simulationMeshMax": [
+          0.02556915208697319,
+          0.13269959390163422,
+          0.08460752665996552
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.024210019037127495,
+          "right": 0.543290376663208,
+          "top": 0.30331432819366455,
+          "bottom": 1.11750029027462
+        },
+        "lowestMeshZ": -0.0020356709137558937,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 70,
+        "componentCount": 16,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 8.340550472496448e-14,
+        "significantComponentCount": 6,
+        "detachedAirborneCount": 2,
+        "liquidVolumeM3": 0.0001876779495958046,
+        "inCupVolumeM3": 0.00018423967886026346,
+        "meshMin": [
+          -0.13172785937786102,
+          -0.13160954415798187,
+          -0.0019874870777130127
+        ],
+        "meshMax": [
+          -0.010835155844688416,
+          0.1335153728723526,
+          0.08616648614406586
+        ],
+        "simulationMeshMin": [
+          -0.11986354738473892,
+          -0.13160954415798187,
+          -0.019315022975206375
+        ],
+        "simulationMeshMax": [
+          0.02481791190803051,
+          0.1335153728723526,
+          0.08502388745546341
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.07008983194828033,
+          "right": 0.5400251746177673,
+          "top": 0.30509406328201294,
+          "bottom": 1.116811715066433
+        },
+        "lowestMeshZ": -0.0019874870777130127,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 71,
+        "componentCount": 25,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 13,
+        "detachedAirborneCount": 4,
+        "liquidVolumeM3": 0.00015905086288680762,
+        "inCupVolumeM3": 0.00014754828113289846,
+        "meshMin": [
+          -0.1341269165277481,
+          -0.13176067173480988,
+          -0.002073870738968253
+        ],
+        "meshMax": [
+          -0.012287111021578312,
+          0.13249868154525757,
+          0.0848049595952034
+        ],
+        "simulationMeshMin": [
+          -0.12007077783346176,
+          -0.13176067173480988,
+          -0.02038353495299816
+        ],
+        "simulationMeshMax": [
+          0.022724812850356102,
+          0.13249868154525757,
+          0.08476217836141586
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.0790359303355217,
+          "right": 0.5361465215682983,
+          "top": 0.3099387288093567,
+          "bottom": 1.1170772910118103
+        },
+        "lowestMeshZ": -0.002073870738968253,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 72,
+        "componentCount": 30,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 18,
+        "detachedAirborneCount": 4,
+        "liquidVolumeM3": 0.00014916982017210286,
+        "inCupVolumeM3": 0.00014152122463281588,
+        "meshMin": [
+          -0.1356232464313507,
+          -0.13288931548595428,
+          -0.0021871011704206467
+        ],
+        "meshMax": [
+          -0.013282328844070435,
+          0.13323433697223663,
+          0.08387695252895355
+        ],
+        "simulationMeshMin": [
+          -0.12111275643110275,
+          -0.13288931548595428,
+          -0.020233850926160812
+        ],
+        "simulationMeshMax": [
+          0.021720102056860924,
+          0.13323433697223663,
+          0.08483897894620895
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.08672140538692474,
+          "right": 0.5338595509529114,
+          "top": 0.31213462352752686,
+          "bottom": 1.1209461390972137
+        },
+        "lowestMeshZ": -0.0021871011704206467,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 73,
+        "componentCount": 37,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 19,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 0.00013953826290621674,
+        "inCupVolumeM3": 0.00013598127853923375,
+        "meshMin": [
+          -0.1401139795780182,
+          -0.13121309876441956,
+          -0.0018920684233307838
+        ],
+        "meshMax": [
+          -0.014617272652685642,
+          0.1316891759634018,
+          0.08287590742111206
+        ],
+        "simulationMeshMin": [
+          -0.12246536463499069,
+          -0.13121309876441956,
+          -0.013260368257761002
+        ],
+        "simulationMeshMax": [
+          0.01993953250348568,
+          0.1316891759634018,
+          0.08488965034484863
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.10011094808578491,
+          "right": 0.5301371216773987,
+          "top": 0.3160468339920044,
+          "bottom": 1.1134449020028114
+        },
+        "lowestMeshZ": -0.0018920684233307838,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 74,
+        "componentCount": 19,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 7,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 0.00013121660821848653,
+        "inCupVolumeM3": 0.00013085183659209378,
+        "meshMin": [
+          -0.1424364596605301,
+          -0.13269878923892975,
+          -0.00177832692861557
+        ],
+        "meshMax": [
+          -0.015676576644182205,
+          0.13020582497119904,
+          0.08152750879526138
+        ],
+        "simulationMeshMin": [
+          -0.12396038323640823,
+          -0.13269878923892975,
+          -0.009964816272258759
+        ],
+        "simulationMeshMax": [
+          0.01817743107676506,
+          0.13020582497119904,
+          0.08484193682670593
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.11151929944753647,
+          "right": 0.5270959138870239,
+          "top": 0.3212313652038574,
+          "bottom": 1.1174651980400085
+        },
+        "lowestMeshZ": -0.00177832692861557,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 75,
+        "componentCount": 22,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 8.083811398029707e-16,
+        "significantComponentCount": 4,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 0.0001292534986780391,
+        "inCupVolumeM3": 0.00012904877878155242,
+        "meshMin": [
+          -0.1437302827835083,
+          -0.11722712963819504,
+          -0.0019805356860160828
+        ],
+        "meshMax": [
+          -0.01788989081978798,
+          0.1237810030579567,
+          0.07976659387350082
+        ],
+        "simulationMeshMin": [
+          -0.12393052130937576,
+          -0.11722712963819504,
+          -0.008547131903469563
+        ],
+        "simulationMeshMax": [
+          0.015452809631824493,
+          0.1237810030579567,
+          0.0850631594657898
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.08338715136051178,
+          "right": 0.5197797417640686,
+          "top": 0.33186906576156616,
+          "bottom": 1.0674465373158455
+        },
+        "lowestMeshZ": -0.0019805356860160828,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 76,
+        "componentCount": 16,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 5,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 0.0001232161220393728,
+        "inCupVolumeM3": 0.00012280631574429623,
+        "meshMin": [
+          -0.1445235311985016,
+          -0.12487930804491043,
+          -0.0017992295324802399
+        ],
+        "meshMax": [
+          -0.021465621888637543,
+          0.10845588147640228,
+          0.07861323654651642
+        ],
+        "simulationMeshMin": [
+          -0.12364371865987778,
+          -0.12487930804491043,
+          -0.010478433221578598
+        ],
+        "simulationMeshMax": [
+          0.011322901584208012,
+          0.10845588147640228,
+          0.08495728671550751
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.1013089269399643,
+          "right": 0.5061373710632324,
+          "top": 0.34844696521759033,
+          "bottom": 1.089407093822956
+        },
+        "lowestMeshZ": -0.0017992295324802399,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 77,
+        "componentCount": 16,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 4,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 0.00012163566035583845,
+        "inCupVolumeM3": 0.0001214214510134384,
+        "meshMin": [
+          -0.14249473810195923,
+          -0.11011198908090591,
+          -0.0019384599290788174
+        ],
+        "meshMax": [
+          -0.02379509061574936,
+          0.09090627729892731,
+          0.07766424119472504
+        ],
+        "simulationMeshMin": [
+          -0.12063024193048477,
+          -0.11011198908090591,
+          -0.011420243419706821
+        ],
+        "simulationMeshMax": [
+          0.008653349243104458,
+          0.09090627729892731,
+          0.08485287427902222
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.06384718418121338,
+          "right": 0.49457859992980957,
+          "top": 0.3675518035888672,
+          "bottom": 1.0432916022837162
+        },
+        "lowestMeshZ": -0.0019384599290788174,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 78,
+        "componentCount": 16,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 5,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 0.00011301384312149975,
+        "inCupVolumeM3": 0.00011283191011054294,
+        "meshMin": [
+          -0.14180734753608704,
+          -0.13071505725383759,
+          -0.0018537528812885284
+        ],
+        "meshMax": [
+          -0.02539747953414917,
+          0.11730790883302689,
+          0.07633727788925171
+        ],
+        "simulationMeshMin": [
+          -0.11998245865106583,
+          -0.13071505725383759,
+          -0.010554444044828415
+        ],
+        "simulationMeshMax": [
+          0.006778743118047714,
+          0.11730790883302689,
+          0.08466705679893494
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.10184536129236221,
+          "right": 0.49905791878700256,
+          "top": 0.34840840101242065,
+          "bottom": 1.1070401817560196
+        },
+        "lowestMeshZ": -0.0018537528812885284,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 79,
+        "componentCount": 14,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 4,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 0.00010722899057116007,
+        "inCupVolumeM3": 0.00010708945253091868,
+        "meshMin": [
+          -0.14535947144031525,
+          -0.12810394167900085,
+          -0.0018852800130844116
+        ],
+        "meshMax": [
+          -0.026766924187541008,
+          0.10627203434705734,
+          0.07535656541585922
+        ],
+        "simulationMeshMin": [
+          -0.12032794207334518,
+          -0.12810394167900085,
+          -0.010490024462342262
+        ],
+        "simulationMeshMax": [
+          0.005035595037043095,
+          0.10627203434705734,
+          0.08466896414756775
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.10938207805156708,
+          "right": 0.49225977063179016,
+          "top": 0.3608042597770691,
+          "bottom": 1.0980305150151253
+        },
+        "lowestMeshZ": -0.0018852800130844116,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 80,
+        "componentCount": 21,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 6,
+        "detachedAirborneCount": 2,
+        "liquidVolumeM3": 9.985415949361903e-05,
+        "inCupVolumeM3": 9.9654567696162e-05,
+        "meshMin": [
+          -0.14174887537956238,
+          -0.13168418407440186,
+          -0.0018014106899499893
+        ],
+        "meshMax": [
+          -0.02793540433049202,
+          0.09486663341522217,
+          0.07429143041372299
+        ],
+        "simulationMeshMin": [
+          -0.11754695326089859,
+          -0.13168418407440186,
+          -0.01059187762439251
+        ],
+        "simulationMeshMax": [
+          0.0035266969352960587,
+          0.09486663341522217,
+          0.08468499779701233
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.1024913489818573,
+          "right": 0.485594242811203,
+          "top": 0.37509071826934814,
+          "bottom": 1.1089442521333694
+        },
+        "lowestMeshZ": -0.0018014106899499893,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 81,
+        "componentCount": 22,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 7,
+        "detachedAirborneCount": 2,
+        "liquidVolumeM3": 9.160310310970969e-05,
+        "inCupVolumeM3": 8.930769444252585e-05,
+        "meshMin": [
+          -0.14328034222126007,
+          -0.13154730200767517,
+          -0.0018171202391386032
+        ],
+        "meshMax": [
+          -0.029437584802508354,
+          0.0995878204703331,
+          0.07293233275413513
+        ],
+        "simulationMeshMin": [
+          -0.1170123890042305,
+          -0.13154730200767517,
+          -0.008492492139339447
+        ],
+        "simulationMeshMax": [
+          0.0012576412409543991,
+          0.0995878204703331,
+          0.08435662090778351
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.10730930417776108,
+          "right": 0.48349499702453613,
+          "top": 0.3749731779098511,
+          "bottom": 1.107923001050949
+        },
+        "lowestMeshZ": -0.0018171202391386032,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 82,
+        "componentCount": 22,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 8,
+        "detachedAirborneCount": 2,
+        "liquidVolumeM3": 8.8773069322115e-05,
+        "inCupVolumeM3": 8.64938081106863e-05,
+        "meshMin": [
+          -0.14374025166034698,
+          -0.13203242421150208,
+          -0.001772923395037651
+        ],
+        "meshMax": [
+          -0.030994946137070656,
+          0.11570536345243454,
+          0.07212230563163757
+        ],
+        "simulationMeshMin": [
+          -0.11706032603979111,
+          -0.13203242421150208,
+          -0.009427826851606369
+        ],
+        "simulationMeshMax": [
+          -0.0008536335080862045,
+          0.11570536345243454,
+          0.0844000056385994
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.10963708162307739,
+          "right": 0.48512646555900574,
+          "top": 0.3629946708679199,
+          "bottom": 1.10867590457201
+        },
+        "lowestMeshZ": -0.001772923395037651,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 83,
+        "componentCount": 12,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 5,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 8.298070867284524e-05,
+        "inCupVolumeM3": 8.178423518111104e-05,
+        "meshMin": [
+          -0.14540430903434753,
+          -0.12991391122341156,
+          -0.0017169544007629156
+        ],
+        "meshMax": [
+          -0.03205946460366249,
+          0.11822934448719025,
+          0.07087904959917068
+        ],
+        "simulationMeshMin": [
+          -0.11721814423799515,
+          -0.12991391122341156,
+          -0.00918745156377554
+        ],
+        "simulationMeshMax": [
+          -0.002601912245154381,
+          0.11822934448719025,
+          0.08593326807022095
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.11079603433609009,
+          "right": 0.4834144115447998,
+          "top": 0.3645275831222534,
+          "bottom": 1.1009971275925636
+        },
+        "lowestMeshZ": -0.0017169544007629156,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 84,
+        "componentCount": 17,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 9,
+        "detachedAirborneCount": 2,
+        "liquidVolumeM3": 7.725119311699787e-05,
+        "inCupVolumeM3": 7.572732746977801e-05,
+        "meshMin": [
+          -0.143739715218544,
+          -0.12609103322029114,
+          -0.001689663389697671
+        ],
+        "meshMax": [
+          -0.0328248031437397,
+          0.11782006174325943,
+          0.06997612118721008
+        ],
+        "simulationMeshMin": [
+          -0.11544754356145859,
+          -0.12609103322029114,
+          -0.008289176039397717
+        ],
+        "simulationMeshMax": [
+          -0.0038586296141147614,
+          0.11782006174325943,
+          0.08549421280622482
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.09600002318620682,
+          "right": 0.4814501404762268,
+          "top": 0.36792856454849243,
+          "bottom": 1.0881545469164848
+        },
+        "lowestMeshZ": -0.001689663389697671,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 85,
+        "componentCount": 19,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 10,
+        "detachedAirborneCount": 3,
+        "liquidVolumeM3": 7.098867247625896e-05,
+        "inCupVolumeM3": 6.972170371558912e-05,
+        "meshMin": [
+          -0.14371782541275024,
+          -0.12745413184165955,
+          -0.0017732633277773857
+        ],
+        "meshMax": [
+          -0.02665247768163681,
+          0.12502916157245636,
+          0.06915822625160217
+        ],
+        "simulationMeshMin": [
+          -0.1139802411198616,
+          -0.12745413184165955,
+          -0.013932562433183193
+        ],
+        "simulationMeshMax": [
+          -0.005037335678935051,
+          0.12502916157245636,
+          0.08784934133291245
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.09826753288507462,
+          "right": 0.4984360933303833,
+          "top": 0.36418741941452026,
+          "bottom": 1.0954737216234207
+        },
+        "lowestMeshZ": -0.0017732633277773857,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 86,
+        "componentCount": 34,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 13,
+        "detachedAirborneCount": 4,
+        "liquidVolumeM3": 6.090152210409267e-05,
+        "inCupVolumeM3": 5.584614696638917e-05,
+        "meshMin": [
+          -0.14223256707191467,
+          -0.12832225859165192,
+          -0.0017605191096663475
+        ],
+        "meshMax": [
+          -0.026381149888038635,
+          0.13258114457130432,
+          0.0674758329987526
+        ],
+        "simulationMeshMin": [
+          -0.11264311522245407,
+          -0.12832225859165192,
+          -0.013670884072780609
+        ],
+        "simulationMeshMax": [
+          -0.006253862753510475,
+          0.13258114457130432,
+          0.08713117241859436
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.09348413348197937,
+          "right": 0.5014041066169739,
+          "top": 0.363070011138916,
+          "bottom": 1.098357804119587
+        },
+        "lowestMeshZ": -0.0017605191096663475,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 87,
+        "componentCount": 24,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 4.122396868311365e-14,
+        "significantComponentCount": 8,
+        "detachedAirborneCount": 3,
+        "liquidVolumeM3": 6.400592703214629e-05,
+        "inCupVolumeM3": 6.0737854446706895e-05,
+        "meshMin": [
+          -0.13876107335090637,
+          -0.13021960854530334,
+          -0.0017692521214485168
+        ],
+        "meshMax": [
+          -0.025899652391672134,
+          0.12999309599399567,
+          0.06665688753128052
+        ],
+        "simulationMeshMin": [
+          -0.11050549894571304,
+          -0.13021960854530334,
+          -0.013756807893514633
+        ],
+        "simulationMeshMax": [
+          -0.00768018513917923,
+          0.12999309599399567,
+          0.08589190244674683
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.08370139449834824,
+          "right": 0.501776933670044,
+          "top": 0.3682122826576233,
+          "bottom": 1.1048211380839348
+        },
+        "lowestMeshZ": -0.0017692521214485168,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 88,
+        "componentCount": 30,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 12,
+        "detachedAirborneCount": 2,
+        "liquidVolumeM3": 5.961697648549491e-05,
+        "inCupVolumeM3": 5.7136766410375325e-05,
+        "meshMin": [
+          -0.14458999037742615,
+          -0.12948985397815704,
+          -0.001812933012843132
+        ],
+        "meshMax": [
+          -0.02389049157500267,
+          0.13151051104068756,
+          0.06608350574970245
+        ],
+        "simulationMeshMin": [
+          -0.11152706295251846,
+          -0.12948985397815704,
+          -0.015394247137010098
+        ],
+        "simulationMeshMax": [
+          -0.009166838601231575,
+          0.13151051104068756,
+          0.09238459914922714
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.1040651723742485,
+          "right": 0.5071425437927246,
+          "top": 0.36802685260772705,
+          "bottom": 1.1034562587738037
+        },
+        "lowestMeshZ": -0.001812933012843132,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 89,
+        "componentCount": 30,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 17,
+        "detachedAirborneCount": 3,
+        "liquidVolumeM3": 5.5156113096494916e-05,
+        "inCupVolumeM3": 5.337528940954993e-05,
+        "meshMin": [
+          -0.14011554419994354,
+          -0.13013792037963867,
+          -0.0018385499715805054
+        ],
+        "meshMax": [
+          -0.023107659071683884,
+          0.1311950385570526,
+          0.06553240120410919
+        ],
+        "simulationMeshMin": [
+          -0.10996469110250473,
+          -0.13013792037963867,
+          -0.015471682883799076
+        ],
+        "simulationMeshMax": [
+          -0.010579781606793404,
+          0.1311950385570526,
+          0.08914094418287277
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.08808023482561111,
+          "right": 0.5089552402496338,
+          "top": 0.37049585580825806,
+          "bottom": 1.10603416711092
+        },
+        "lowestMeshZ": -0.0018385499715805054,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 90,
+        "componentCount": 36,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 12,
+        "detachedAirborneCount": 3,
+        "liquidVolumeM3": 5.0630749058697564e-05,
+        "inCupVolumeM3": 4.951059912425604e-05,
+        "meshMin": [
+          -0.1382884830236435,
+          -0.1320602297782898,
+          -0.0016917828470468521
+        ],
+        "meshMax": [
+          -0.022498641163110733,
+          0.13195772469043732,
+          0.06477728486061096
+        ],
+        "simulationMeshMin": [
+          -0.10816215723752975,
+          -0.1320602297782898,
+          -0.01538041327148676
+        ],
+        "simulationMeshMax": [
+          -0.011706948280334473,
+          0.13195772469043732,
+          0.08876112103462219
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.0846211165189743,
+          "right": 0.5106616616249084,
+          "top": 0.37236517667770386,
+          "bottom": 1.1120242401957512
+        },
+        "lowestMeshZ": -0.0016917828470468521,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 91,
+        "componentCount": 47,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 17,
+        "detachedAirborneCount": 3,
+        "liquidVolumeM3": 4.490499268394912e-05,
+        "inCupVolumeM3": 4.403162253076206e-05,
+        "meshMin": [
+          -0.1370535045862198,
+          -0.1312456876039505,
+          -0.0017186328768730164
+        ],
+        "meshMax": [
+          -0.017222270369529724,
+          0.13141554594039917,
+          0.06442342698574066
+        ],
+        "simulationMeshMin": [
+          -0.10707638412714005,
+          -0.1312456876039505,
+          -0.020344877615571022
+        ],
+        "simulationMeshMax": [
+          -0.01231575757265091,
+          0.13141554594039917,
+          0.08897782117128372
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.07803865522146225,
+          "right": 0.5233777761459351,
+          "top": 0.37406617403030396,
+          "bottom": 1.1116772070527077
+        },
+        "lowestMeshZ": -0.0017186328768730164,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 92,
+        "componentCount": 44,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 7.222000775186154e-14,
+        "significantComponentCount": 11,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 4.340981963174161e-05,
+        "inCupVolumeM3": 4.242042333123259e-05,
+        "meshMin": [
+          -0.14001990854740143,
+          -0.12885785102844238,
+          -0.0016862787306308746
+        ],
+        "meshMax": [
+          -0.01619555428624153,
+          0.13197214901447296,
+          0.06400494277477264
+        ],
+        "simulationMeshMin": [
+          -0.10742571204900742,
+          -0.12885785102844238,
+          -0.02071535214781761
+        ],
+        "simulationMeshMax": [
+          -0.01292482390999794,
+          0.13197214901447296,
+          0.09228435158729553
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.08426563441753387,
+          "right": 0.5260312557220459,
+          "top": 0.37453848123550415,
+          "bottom": 1.1040595099329948
+        },
+        "lowestMeshZ": -0.0016862787306308746,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 93,
+        "componentCount": 36,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 1.4139060292943018e-12,
+        "significantComponentCount": 11,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 3.897654905681381e-05,
+        "inCupVolumeM3": 3.828853430435096e-05,
+        "meshMin": [
+          -0.13920077681541443,
+          -0.1312442123889923,
+          -0.0017298683524131775
+        ],
+        "meshMax": [
+          -0.010526705533266068,
+          0.13096746802330017,
+          0.0628872811794281
+        ],
+        "simulationMeshMin": [
+          -0.10705835372209549,
+          -0.1312442123889923,
+          -0.02605798840522766
+        ],
+        "simulationMeshMax": [
+          -0.013652555644512177,
+          0.13096746802330017,
+          0.09288185089826584
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.08539426326751709,
+          "right": 0.539612889289856,
+          "top": 0.3789515495300293,
+          "bottom": 1.1145817264914513
+        },
+        "lowestMeshZ": -0.0017298683524131775,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 94,
+        "componentCount": 28,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 9,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 3.767102307763361e-05,
+        "inCupVolumeM3": 3.666850284693515e-05,
+        "meshMin": [
+          -0.138068288564682,
+          -0.13253958523273468,
+          -0.0017656534910202026
+        ],
+        "meshMax": [
+          -0.009512217715382576,
+          0.12612995505332947,
+          0.06253718584775925
+        ],
+        "simulationMeshMin": [
+          -0.10629453510046005,
+          -0.13253958523273468,
+          -0.02642110176384449
+        ],
+        "simulationMeshMax": [
+          -0.015396740287542343,
+          0.12612995505332947,
+          0.0924641489982605
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.08352190256118774,
+          "right": 0.5408941507339478,
+          "top": 0.3844568133354187,
+          "bottom": 1.119527392089367
+        },
+        "lowestMeshZ": -0.0017656534910202026,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 95,
+        "componentCount": 28,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 7.026237230922741e-14,
+        "significantComponentCount": 11,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 3.669440520925596e-05,
+        "inCupVolumeM3": 3.550915851689416e-05,
+        "meshMin": [
+          -0.13259774446487427,
+          -0.13252128660678864,
+          -0.0018115006387233734
+        ],
+        "meshMax": [
+          -0.00606081448495388,
+          0.1306268274784088,
+          0.062473125755786896
+        ],
+        "simulationMeshMin": [
+          -0.10350073128938675,
+          -0.13252128660678864,
+          -0.029377073049545288
+        ],
+        "simulationMeshMax": [
+          -0.015988074243068695,
+          0.1306268274784088,
+          0.08868157118558884
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.062471888959407806,
+          "right": 0.5504711270332336,
+          "top": 0.3812738060951233,
+          "bottom": 1.121158890426159
+        },
+        "lowestMeshZ": -0.0018115006387233734,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 96,
+        "componentCount": 18,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 9,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 2.890244860568401e-05,
+        "inCupVolumeM3": 2.8478857195336252e-05,
+        "meshMin": [
+          -0.13410188257694244,
+          -0.12519828975200653,
+          -0.0014742612838745117
+        ],
+        "meshMax": [
+          -0.002042418345808983,
+          0.12354537844657898,
+          0.062024425715208054
+        ],
+        "simulationMeshMin": [
+          -0.10325179994106293,
+          -0.12519828975200653,
+          -0.0329216904938221
+        ],
+        "simulationMeshMax": [
+          -0.016336478292942047,
+          0.12354537844657898,
+          0.0910271629691124
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.05359211936593056,
+          "right": 0.5587760210037231,
+          "top": 0.3888348937034607,
+          "bottom": 1.0970691069960594
+        },
+        "lowestMeshZ": -0.0014742612838745117,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 97,
+        "componentCount": 16,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 7,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 3.1087668501098244e-05,
+        "inCupVolumeM3": 3.0724267312806485e-05,
+        "meshMin": [
+          -0.13554640114307404,
+          -0.13180352747440338,
+          -0.001755453646183014
+        ],
+        "meshMax": [
+          -0.010793844237923622,
+          0.13242918252944946,
+          0.062029387801885605
+        ],
+        "simulationMeshMin": [
+          -0.10339456796646118,
+          -0.13180352747440338,
+          -0.024172678589820862
+        ],
+        "simulationMeshMax": [
+          -0.01689741760492325,
+          0.13242918252944946,
+          0.09329579025506973
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.07210056483745575,
+          "right": 0.5393041968345642,
+          "top": 0.3807142376899719,
+          "bottom": 1.1164547726511955
+        },
+        "lowestMeshZ": -0.001755453646183014,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 98,
+        "componentCount": 17,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 5,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 2.866652334877203e-05,
+        "inCupVolumeM3": 2.8343343433682056e-05,
+        "meshMin": [
+          -0.13440492749214172,
+          -0.13160033524036407,
+          -0.0018950924277305603
+        ],
+        "meshMax": [
+          -0.00870852917432785,
+          0.132355734705925,
+          0.06158021092414856
+        ],
+        "simulationMeshMin": [
+          -0.10289695858955383,
+          -0.13160033524036407,
+          -0.025674188509583473
+        ],
+        "simulationMeshMax": [
+          -0.017205029726028442,
+          0.132355734705925,
+          0.0928492322564125
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.06708503514528275,
+          "right": 0.5443705320358276,
+          "top": 0.38228756189346313,
+          "bottom": 1.1172855198383331
+        },
+        "lowestMeshZ": -0.0018950924277305603,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 99,
+        "componentCount": 17,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 4,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 2.7268072760379977e-05,
+        "inCupVolumeM3": 2.676830061195866e-05,
+        "meshMin": [
+          -0.13378092646598816,
+          -0.1332836151123047,
+          -0.0017814282327890396
+        ],
+        "meshMax": [
+          -0.00583636574447155,
+          0.13179200887680054,
+          0.06041739881038666
+        ],
+        "simulationMeshMin": [
+          -0.10226532816886902,
+          -0.1332836151123047,
+          -0.027996018528938293
+        ],
+        "simulationMeshMax": [
+          -0.017803538590669632,
+          0.13179200887680054,
+          0.09295269101858139
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.06744006276130676,
+          "right": 0.551230788230896,
+          "top": 0.38642895221710205,
+          "bottom": 1.1237041801214218
+        },
+        "lowestMeshZ": -0.0017814282327890396,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 100,
+        "componentCount": 27,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 10,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 2.5252043195505988e-05,
+        "inCupVolumeM3": 2.467864226384169e-05,
+        "meshMin": [
+          -0.12849706411361694,
+          -0.13206668198108673,
+          -0.0018886066973209381
+        ],
+        "meshMax": [
+          2.4197623133659363e-05,
+          0.13298627734184265,
+          0.06013902276754379
+        ],
+        "simulationMeshMin": [
+          -0.10004457831382751,
+          -0.13206668198108673,
+          -0.033414505422115326
+        ],
+        "simulationMeshMax": [
+          -0.01967829093337059,
+          0.13298627734184265,
+          0.08920911699533463
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.04460515081882477,
+          "right": 0.5658291578292847,
+          "top": 0.38682156801223755,
+          "bottom": 1.1225957348942757
+        },
+        "lowestMeshZ": -0.0018886066973209381,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 101,
+        "componentCount": 25,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 6.653676452398536e-15,
+        "significantComponentCount": 10,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 2.554446128119342e-05,
+        "inCupVolumeM3": 2.486679764720668e-05,
+        "meshMin": [
+          -0.12854059040546417,
+          -0.12983761727809906,
+          -0.0019644834101200104
+        ],
+        "meshMax": [
+          0.005090875551104546,
+          0.13323640823364258,
+          0.0604928620159626
+        ],
+        "simulationMeshMin": [
+          -0.09982769936323166,
+          -0.12983761727809906,
+          -0.0379846915602684
+        ],
+        "simulationMeshMax": [
+          -0.01986904814839363,
+          0.13323640823364258,
+          0.08999178558588028
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.040646061301231384,
+          "right": 0.5783100128173828,
+          "top": 0.38550901412963867,
+          "bottom": 1.1176000088453293
+        },
+        "lowestMeshZ": -0.0019644834101200104,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 102,
+        "componentCount": 14,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 8,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 2.1128028754343092e-05,
+        "inCupVolumeM3": 2.0609741137550882e-05,
+        "meshMin": [
+          -0.12993687391281128,
+          -0.13342730700969696,
+          -0.0017072968184947968
+        ],
+        "meshMax": [
+          -0.04086385667324066,
+          0.13044002652168274,
+          0.060768116265535355
+        ],
+        "simulationMeshMin": [
+          -0.09987770020961761,
+          -0.13342730700969696,
+          0.019637685269117355
+        ],
+        "simulationMeshMax": [
+          -0.02011459693312645,
+          0.13044002652168274,
+          0.09217673540115356
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.05313209816813469,
+          "right": 0.4667886793613434,
+          "top": 0.38699567317962646,
+          "bottom": 1.1088267266750336
+        },
+        "lowestMeshZ": -0.0017072968184947968,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 103,
+        "componentCount": 22,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 7,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 2.2516811409015277e-05,
+        "inCupVolumeM3": 2.19099554346321e-05,
+        "meshMin": [
+          -0.12999078631401062,
+          -0.1310373842716217,
+          -0.0018990058451890945
+        ],
+        "meshMax": [
+          -0.03491215035319328,
+          0.13247081637382507,
+          0.06108958274126053
+        ],
+        "simulationMeshMin": [
+          -0.10008420050144196,
+          -0.1310373842716217,
+          0.00027460159617476165
+        ],
+        "simulationMeshMax": [
+          -0.020229961723089218,
+          0.13247081637382507,
+          0.0929822102189064
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.04882078617811203,
+          "right": 0.4813750982284546,
+          "top": 0.38419246673583984,
+          "bottom": 1.1042873039841652
+        },
+        "lowestMeshZ": -0.0018990058451890945,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 104,
+        "componentCount": 19,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 7,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 2.201221180449347e-05,
+        "inCupVolumeM3": 2.157808095197169e-05,
+        "meshMin": [
+          -0.1295798271894455,
+          -0.13300108909606934,
+          -0.002004716545343399
+        ],
+        "meshMax": [
+          -0.01493002474308014,
+          0.13304507732391357,
+          0.06150473281741142
+        ],
+        "simulationMeshMin": [
+          -0.1000882014632225,
+          -0.13300108909606934,
+          -0.01864784024655819
+        ],
+        "simulationMeshMax": [
+          -0.020236503332853317,
+          0.13304507732391357,
+          0.09332313388586044
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.05130354315042496,
+          "right": 0.5293643474578857,
+          "top": 0.3824555277824402,
+          "bottom": 1.119805485010147
+        },
+        "lowestMeshZ": -0.002004716545343399,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 105,
+        "componentCount": 19,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 8,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 2.0417233742174465e-05,
+        "inCupVolumeM3": 1.9856079353376735e-05,
+        "meshMin": [
+          -0.12936533987522125,
+          -0.13245154917240143,
+          -0.002024332992732525
+        ],
+        "meshMax": [
+          -0.01042917650192976,
+          0.13338254392147064,
+          0.062110185623168945
+        ],
+        "simulationMeshMin": [
+          -0.09946752339601517,
+          -0.13245154917240143,
+          -0.022471947595477104
+        ],
+        "simulationMeshMax": [
+          -0.020222265273332596,
+          0.13338254392147064,
+          0.09388235211372375
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.04971471056342125,
+          "right": 0.5404325127601624,
+          "top": 0.3803226947784424,
+          "bottom": 1.1199804469943047
+        },
+        "lowestMeshZ": -0.002024332992732525,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 106,
+        "componentCount": 13,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 6,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 1.8971545022449307e-05,
+        "inCupVolumeM3": 1.6625290060702997e-05,
+        "meshMin": [
+          -0.12819835543632507,
+          -0.13347482681274414,
+          -0.002020562067627907
+        ],
+        "meshMax": [
+          -0.004370804876089096,
+          0.13282251358032227,
+          0.062687449157238
+        ],
+        "simulationMeshMin": [
+          -0.0990084558725357,
+          -0.13347482681274414,
+          -0.027862951159477234
+        ],
+        "simulationMeshMax": [
+          -0.020372148603200912,
+          0.13282251358032227,
+          0.09348786622285843
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.047523487359285355,
+          "right": 0.555121660232544,
+          "top": 0.37917250394821167,
+          "bottom": 1.1260523349046707
+        },
+        "lowestMeshZ": -0.002020562067627907,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 107,
+        "componentCount": 17,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 11,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 1.716532979760738e-05,
+        "inCupVolumeM3": 1.3381500611910766e-05,
+        "meshMin": [
+          -0.12684907019138336,
+          -0.13324983417987823,
+          -0.0019631804898381233
+        ],
+        "meshMax": [
+          -0.01310576219111681,
+          0.13236992061138153,
+          0.0632740780711174
+        ],
+        "simulationMeshMin": [
+          -0.09849300980567932,
+          -0.13324983417987823,
+          -0.01883986033499241
+        ],
+        "simulationMeshMax": [
+          -0.02056184783577919,
+          0.13236992061138153,
+          0.09292501956224442
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.04217315465211868,
+          "right": 0.5336687564849854,
+          "top": 0.37791627645492554,
+          "bottom": 1.1212479993700981
+        },
+        "lowestMeshZ": -0.0019631804898381233,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 108,
+        "componentCount": 16,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 8,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 1.560172703695223e-05,
+        "inCupVolumeM3": 1.242571914557953e-05,
+        "meshMin": [
+          -0.11665928363800049,
+          -0.13147537410259247,
+          -0.0019729556515812874
+        ],
+        "meshMax": [
+          -0.005487020127475262,
+          0.13326746225357056,
+          0.0638684406876564
+        ],
+        "simulationMeshMin": [
+          -0.09666381031274796,
+          -0.13147537410259247,
+          -0.02576967515051365
+        ],
+        "simulationMeshMax": [
+          -0.020749986171722412,
+          0.13326746225357056,
+          0.08400648087263107
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.00034631957532837987,
+          "right": 0.552526593208313,
+          "top": 0.37644028663635254,
+          "bottom": 1.1185946613550186
+        },
+        "lowestMeshZ": -0.0019729556515812874,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 109,
+        "componentCount": 14,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 8,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 1.5183351819476482e-05,
+        "inCupVolumeM3": 1.2181744350510254e-05,
+        "meshMin": [
+          -0.11495845019817352,
+          -0.1315392404794693,
+          -0.0019656140357255936
+        ],
+        "meshMax": [
+          0.0022242963314056396,
+          0.1330229490995407,
+          0.06448165327310562
+        ],
+        "simulationMeshMin": [
+          -0.09659125655889511,
+          -0.1315392404794693,
+          -0.032784461975097656
+        ],
+        "simulationMeshMax": [
+          -0.02094212919473648,
+          0.1330229490995407,
+          0.08307050913572311
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.006541752256453037,
+          "right": 0.5714030861854553,
+          "top": 0.3749525547027588,
+          "bottom": 1.1221045851707458
+        },
+        "lowestMeshZ": -0.0019656140357255936,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 110,
+        "componentCount": 15,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 10,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 1.4242883570798761e-05,
+        "inCupVolumeM3": 5.891749826613758e-06,
+        "meshMin": [
+          -0.11444318294525146,
+          -0.13052135705947876,
+          -0.0020536091178655624
+        ],
+        "meshMax": [
+          -0.044802676886320114,
+          0.13338437676429749,
+          0.064019575715065
+        ],
+        "simulationMeshMin": [
+          -0.09663175046443939,
+          -0.13052135705947876,
+          0.023057468235492706
+        ],
+        "simulationMeshMax": [
+          -0.022220928221940994,
+          0.13338437676429749,
+          0.08332428336143494
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.010603082366287708,
+          "right": 0.4586707651615143,
+          "top": 0.37612009048461914,
+          "bottom": 1.099127158522606
+        },
+        "lowestMeshZ": -0.0020536091178655624,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 111,
+        "componentCount": 13,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 7,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 1.2786521320187149e-05,
+        "inCupVolumeM3": 5.85069213099658e-06,
+        "meshMin": [
+          -0.11565752327442169,
+          -0.13337881863117218,
+          -0.0019248677417635918
+        ],
+        "meshMax": [
+          0.025073830038309097,
+          0.13330213725566864,
+          0.062197547405958176
+        ],
+        "simulationMeshMin": [
+          -0.09660135209560394,
+          -0.13337881863117218,
+          -0.05432874336838722
+        ],
+        "simulationMeshMax": [
+          -0.02499321848154068,
+          0.13330213725566864,
+          0.08530033379793167
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.0015354433562606573,
+          "right": 0.6276601552963257,
+          "top": 0.381672739982605,
+          "bottom": 1.138228952884674
+        },
+        "lowestMeshZ": -0.0019248677417635918,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 112,
+        "componentCount": 19,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 13,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 1.079731696939736e-05,
+        "inCupVolumeM3": 5.411458324919408e-06,
+        "meshMin": [
+          -0.11324810981750488,
+          -0.13217714428901672,
+          -0.0019317707046866417
+        ],
+        "meshMax": [
+          0.039442483335733414,
+          0.13346995413303375,
+          0.06165950000286102
+        ],
+        "simulationMeshMin": [
+          -0.096519835293293,
+          -0.13217714428901672,
+          -0.06808578968048096
+        ],
+        "simulationMeshMax": [
+          -0.02680281549692154,
+          0.13346995413303375,
+          0.08358851075172424
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.01334783248603344,
+          "right": 0.6632886528968811,
+          "top": 0.38345372676849365,
+          "bottom": 1.1404687017202377
+        },
+        "lowestMeshZ": -0.0019317707046866417,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 113,
+        "componentCount": 22,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 12,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 9.297769122457016e-06,
+        "inCupVolumeM3": 4.778897334212275e-06,
+        "meshMin": [
+          -0.12031407654285431,
+          -0.13221292197704315,
+          -0.0018667816184461117
+        ],
+        "meshMax": [
+          -0.03941504284739494,
+          0.13198955357074738,
+          0.06221423298120499
+        ],
+        "simulationMeshMin": [
+          -0.09665653854608536,
+          -0.13221292197704315,
+          0.010758679360151291
+        ],
+        "simulationMeshMax": [
+          -0.026911627501249313,
+          0.13198955357074738,
+          0.09137187898159027
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.014382104389369488,
+          "right": 0.47070983052253723,
+          "top": 0.3822566270828247,
+          "bottom": 1.1061225160956383
+        },
+        "lowestMeshZ": -0.0018667816184461117,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 114,
+        "componentCount": 13,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 8,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 8.50884746972402e-06,
+        "inCupVolumeM3": 4.831671751911381e-06,
+        "meshMin": [
+          -0.12147082388401031,
+          -0.1333400458097458,
+          -0.0018631890416145325
+        ],
+        "meshMax": [
+          -0.048833154141902924,
+          0.13150779902935028,
+          0.06271737068891525
+        ],
+        "simulationMeshMin": [
+          -0.0966787040233612,
+          -0.1333400458097458,
+          0.026871420443058014
+        ],
+        "simulationMeshMax": [
+          -0.027025282382965088,
+          0.13150779902935028,
+          0.09314675629138947
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.02123621478676796,
+          "right": 0.44861117005348206,
+          "top": 0.3810006380081177,
+          "bottom": 1.1058507859706879
+        },
+        "lowestMeshZ": -0.0018631890416145325,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 115,
+        "componentCount": 22,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 14,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 7.229169718409825e-06,
+        "inCupVolumeM3": 4.2697587175061e-06,
+        "meshMin": [
+          -0.12405935674905777,
+          -0.12775671482086182,
+          -0.0019311136566102505
+        ],
+        "meshMax": [
+          -0.02242576889693737,
+          0.1314070224761963,
+          0.060487981885671616
+        ],
+        "simulationMeshMin": [
+          -0.09656026214361191,
+          -0.12775671482086182,
+          -0.005121237598359585
+        ],
+        "simulationMeshMax": [
+          -0.03046075627207756,
+          0.1314070224761963,
+          0.09629327803850174
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.01960911974310875,
+          "right": 0.5106509327888489,
+          "top": 0.38766545057296753,
+          "bottom": 1.0989095568656921
+        },
+        "lowestMeshZ": -0.0019311136566102505,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 116,
+        "componentCount": 17,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 14,
+        "detachedAirborneCount": 1,
+        "liquidVolumeM3": 6.2623866007982016e-06,
+        "inCupVolumeM3": 3.863929660242088e-06,
+        "meshMin": [
+          -0.12715373933315277,
+          -0.12525048851966858,
+          -0.001881143543869257
+        ],
+        "meshMax": [
+          -0.05180324614048004,
+          0.1328309029340744,
+          0.06071601063013077
+        ],
+        "simulationMeshMin": [
+          -0.0961926281452179,
+          -0.12525048851966858,
+          0.024547940120100975
+        ],
+        "simulationMeshMax": [
+          -0.030969567596912384,
+          0.1328309029340744,
+          0.09986897557973862
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.026803316548466682,
+          "right": 0.4422227740287781,
+          "top": 0.3853420615196228,
+          "bottom": 1.0785683691501617
+        },
+        "lowestMeshZ": -0.001881143543869257,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 117,
+        "componentCount": 25,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 11,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 5.901353159799107e-06,
+        "inCupVolumeM3": 3.633648666843034e-06,
+        "meshMin": [
+          -0.1282014101743698,
+          -0.12943120300769806,
+          -0.0020607472397387028
+        ],
+        "meshMax": [
+          -0.046252064406871796,
+          0.13001301884651184,
+          0.06107296422123909
+        ],
+        "simulationMeshMin": [
+          -0.09640967100858688,
+          -0.12943120300769806,
+          0.019378505647182465
+        ],
+        "simulationMeshMax": [
+          -0.03096460923552513,
+          0.13001301884651184,
+          0.1013028472661972
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": -0.03886497765779495,
+          "right": 0.4540679156780243,
+          "top": 0.3866368532180786,
+          "bottom": 1.0950091853737831
+        },
+        "lowestMeshZ": -0.0020607472397387028,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 118,
+        "componentCount": 21,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 10,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 5.646528074565042e-06,
+        "inCupVolumeM3": 3.454189569339059e-06,
+        "meshMin": [
+          -0.10348350554704666,
+          -0.1329924762248993,
+          -0.0018913564272224903
+        ],
+        "meshMax": [
+          -0.04065931960940361,
+          0.1312112659215927,
+          0.06132227182388306
+        ],
+        "simulationMeshMin": [
+          -0.096574567258358,
+          -0.1329924762248993,
+          0.014068979769945145
+        ],
+        "simulationMeshMax": [
+          -0.030949387699365616,
+          0.1312112659215927,
+          0.07874424010515213
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.05016684904694557,
+          "right": 0.467538982629776,
+          "top": 0.3876277804374695,
+          "bottom": 1.108282133936882
+        },
+        "lowestMeshZ": -0.0018913564272224903,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 119,
+        "componentCount": 26,
+        "cavityComponentCount": 1,
+        "cavityVolumeM3": 4.221160458237157e-17,
+        "significantComponentCount": 14,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 4.443842008395161e-06,
+        "inCupVolumeM3": 3.0944566616317604e-06,
+        "meshMin": [
+          -0.10178209096193314,
+          -0.1313243955373764,
+          -0.0018401555716991425
+        ],
+        "meshMax": [
+          -0.03540609031915665,
+          0.12844638526439667,
+          0.06142614036798477
+        ],
+        "simulationMeshMin": [
+          -0.09605225175619125,
+          -0.1313243955373764,
+          0.009112130850553513
+        ],
+        "simulationMeshMax": [
+          -0.031004421412944794,
+          0.12844638526439667,
+          0.07865279167890549
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.05961354076862335,
+          "right": 0.4788892865180969,
+          "top": 0.3899989724159241,
+          "bottom": 1.1047661527991295
+        },
+        "lowestMeshZ": -0.0018401555716991425,
+        "belowFloorVertexCount": 0
+      },
+      {
+        "frame": 120,
+        "componentCount": 19,
+        "cavityComponentCount": 0,
+        "cavityVolumeM3": 0,
+        "significantComponentCount": 6,
+        "detachedAirborneCount": 0,
+        "liquidVolumeM3": 3.997759909596922e-06,
+        "inCupVolumeM3": 2.5037530774531707e-06,
+        "meshMin": [
+          -0.10142581164836884,
+          -0.13196074962615967,
+          -0.0018512359820306301
+        ],
+        "meshMax": [
+          -0.034826185554265976,
+          0.12968748807907104,
+          0.061507437378168106
+        ],
+        "simulationMeshMin": [
+          -0.0959693044424057,
+          -0.13196074962615967,
+          0.008596096187829971
+        ],
+        "simulationMeshMax": [
+          -0.030978616327047348,
+          0.12968748807907104,
+          0.07843605428934097
+        ],
+        "imageBoundsFromWorldAABB": {
+          "left": 0.05990083888173103,
+          "right": 0.4806610643863678,
+          "top": 0.3886646032333374,
+          "bottom": 1.1071603000164032
+        },
+        "lowestMeshZ": -0.0018512359820306301,
+        "belowFloorVertexCount": 0
+      }
+    ],
+    "initialMeshVolumeM3": 0.00019460860908435468,
+    "finalMeshVolumeM3": 3.997759909596922e-06,
+    "finalVolumeFraction": 0.02054256452685534,
+    "peakDetachedAirborneComponents": 4,
+    "allFrameMeshMin": [
+      -0.14540430903434753,
+      -0.13347482681274414,
+      -0.0021871011704206467
+    ],
+    "allFrameMeshMax": [
+      0.043173693120479584,
+      0.1335153728723526,
+      0.09684392064809799
+    ],
+    "allFrameSimulationMeshMin": [
+      -0.12396038323640823,
+      -0.13347482681274414,
+      -0.06808578968048096
+    ],
+    "allFrameSimulationMeshMax": [
+      0.04322899132966995,
+      0.1335153728723526,
+      0.1013028472661972
+    ],
+    "boundaryClearanceM": {
+      "low": [
+        0.059508778154850006,
+        0.0030251741409301758,
+        0.13971135020256042
+      ],
+      "high": [
+        0.18143119663000107,
+        0.0029846280813217163,
+        0.10638496279716492
+      ],
+      "coordinates": "simulation-world (before optional cup-frame remap)",
+      "note": "An open-side clearance below two cells can indicate already clipped liquid. Do not tighten that side based on this bake."
+    },
+    "inCupVolumeDefinition": "Volume of complete connected components touching the cup interior. A still-connected pouring stream is included; this is not exact spatial integration inside the bowl.",
+    "imageBoundsDefinition": "Conservative normalized image bounds from all eight world-axis-aligned mesh bounding-box corners; top-left origin. Can overestimate silhouette extent.",
+    "interpretation": "Volume can leave the open domain. Surface reconstruction and voxel size limit contact accuracy. Zero impacts means this bake did not resolve suitable detached drops; increase resolution or revise real cup motion rather than adding synthetic impacts."
+  },
+  "elapsedSeconds": 17.51362058002269
+}

@@ -1,0 +1,48 @@
+{
+  "status": "pass",
+  "renderReport": "final-film-r1/render-report.json",
+  "renderReportSha256": "3ab9beaf1bf62caca5885e192e53b2c168d7194988aa06882c4c6ea6c1320cd2",
+  "rendererStatus": "completed",
+  "frameFirst": 21,
+  "frameLast": 120,
+  "uniqueFrameCount": 100,
+  "png": {
+    "width": 1024,
+    "height": 768,
+    "bitDepth": 8,
+    "colorType": "RGBA",
+    "totalBytes": 69933732,
+    "allBytesAndSha256Match": true,
+    "allChunkCrcAndDecodedScanlinesValid": true
+  },
+  "sourceSha256": "82761329785d0ef0ac766d0e7197356ea5098458388500b5f542a6e9280932f9",
+  "worldManifestSha256": "dff57367a0179928d958caf3c142bf284de1cac98458360ef1b86c9da5c713e2",
+  "worldFramesVerified": 100,
+  "worldNpzBytes": 17690625,
+  "codeSha256": {
+    "coffee_render_frames.py": "20514bfe8093034ea5041cc635e449f0a7c2fe3763a83a3eec9b62145ba4c18e",
+    "coffee_world_fluid.py": "cb108588449c84f5a0f7d6af22fe5cd736e65c334d520bd327caa2b39216aac6",
+    "coffee_liquid_aov_composite.py": "611a757cf1b8ec5d9b7737a665e72ac17ba2654f0070f1303bc38776de8a751a"
+  },
+  "localAndCuratedHelpersMatch": true,
+  "blender": "4.2.23 LTS",
+  "buildHash": "d0cbe84903e8",
+  "renderDevice": {
+    "backend": "METAL",
+    "devices": [
+      {
+        "name": "AMD Radeon Pro 560X",
+        "type": "METAL",
+        "id": "METAL_AMD Radeon Pro 560X"
+      }
+    ],
+    "metalrt": "OFF",
+    "preferencesSaved": false
+  },
+  "samples": 24,
+  "drySamples": 8,
+  "denoisingBackend": "CPU OpenImageDenoise",
+  "scope": "Read-only file/provenance integrity. This does not replace visual review or browser QA.",
+  "verificationSeconds": 1.248,
+  "verifiedAtUtc": "2026-11-17T01:39:11.292329+00:00"
+}

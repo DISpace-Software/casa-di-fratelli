@@ -1,0 +1,450 @@
+{
+  "blender": "4.5.9 LTS",
+  "blend": "/Users/macbookpro/casa-di-fratelli/output/cofein-photoreal-20261116/render/coffee-fluid-cupframe120.blend",
+  "camera": "ProductCamera.001",
+  "cameraBlend": "/Users/macbookpro/casa-di-fratelli/output/cofein-photoreal-20261116/render/v5.blend",
+  "frameRange": {
+    "first": 21,
+    "last": 120,
+    "fps": 24.0,
+    "settlingExcluded": 20
+  },
+  "coordinateConvention": "imageX/imageY normalized, top-left origin; world metres, Z up; at=(frame-first)/(last-first)",
+  "cupFrameRemap": {
+    "applied": true,
+    "mapping": "CupRig_world(frame) @ inverse(CupRig_world(reference))",
+    "nativeParticleDomainTransformAppliedAgain": false,
+    "trackingCoordinateSpace": "original world after exact rigid remap",
+    "physicalEquivalence": false,
+    "note": "Actual solver observations remapped before tracking; rotating-frame simulation omits Coriolis, Euler and centrifugal forces."
+  },
+  "floorZ": 0.0,
+  "cellSizeM": 0.0035210590241319044,
+  "nativeSpraySystems": [
+    "Spray"
+  ],
+  "realSprayCacheObserved": true,
+  "status": "observed-cache",
+  "minimumObservedAirborneSeconds": 0.08,
+  "minimumObservedAirborneSamples": 3,
+  "observedTracks": 959,
+  "observedLandings": 0,
+  "impacts": [],
+  "discarded": [],
+  "quality": {
+    "frames": [
+      {
+        "frame": 20,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 21,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 22,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 23,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 24,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 25,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 26,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 27,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 28,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 29,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 30,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 31,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 32,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 33,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 34,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 35,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 36,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 37,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 38,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 39,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 40,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 41,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 42,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 43,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 44,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 45,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 46,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 47,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 48,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 49,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 50,
+        "liveSprayParticles": 0
+      },
+      {
+        "frame": 51,
+        "liveSprayParticles": 4
+      },
+      {
+        "frame": 52,
+        "liveSprayParticles": 18
+      },
+      {
+        "frame": 53,
+        "liveSprayParticles": 29
+      },
+      {
+        "frame": 54,
+        "liveSprayParticles": 32
+      },
+      {
+        "frame": 55,
+        "liveSprayParticles": 31
+      },
+      {
+        "frame": 56,
+        "liveSprayParticles": 38
+      },
+      {
+        "frame": 57,
+        "liveSprayParticles": 57
+      },
+      {
+        "frame": 58,
+        "liveSprayParticles": 65
+      },
+      {
+        "frame": 59,
+        "liveSprayParticles": 75
+      },
+      {
+        "frame": 60,
+        "liveSprayParticles": 77
+      },
+      {
+        "frame": 61,
+        "liveSprayParticles": 88
+      },
+      {
+        "frame": 62,
+        "liveSprayParticles": 82
+      },
+      {
+        "frame": 63,
+        "liveSprayParticles": 71
+      },
+      {
+        "frame": 64,
+        "liveSprayParticles": 70
+      },
+      {
+        "frame": 65,
+        "liveSprayParticles": 58
+      },
+      {
+        "frame": 66,
+        "liveSprayParticles": 46
+      },
+      {
+        "frame": 67,
+        "liveSprayParticles": 55
+      },
+      {
+        "frame": 68,
+        "liveSprayParticles": 55
+      },
+      {
+        "frame": 69,
+        "liveSprayParticles": 47
+      },
+      {
+        "frame": 70,
+        "liveSprayParticles": 45
+      },
+      {
+        "frame": 71,
+        "liveSprayParticles": 46
+      },
+      {
+        "frame": 72,
+        "liveSprayParticles": 43
+      },
+      {
+        "frame": 73,
+        "liveSprayParticles": 31
+      },
+      {
+        "frame": 74,
+        "liveSprayParticles": 36
+      },
+      {
+        "frame": 75,
+        "liveSprayParticles": 39
+      },
+      {
+        "frame": 76,
+        "liveSprayParticles": 40
+      },
+      {
+        "frame": 77,
+        "liveSprayParticles": 39
+      },
+      {
+        "frame": 78,
+        "liveSprayParticles": 54
+      },
+      {
+        "frame": 79,
+        "liveSprayParticles": 44
+      },
+      {
+        "frame": 80,
+        "liveSprayParticles": 46
+      },
+      {
+        "frame": 81,
+        "liveSprayParticles": 41
+      },
+      {
+        "frame": 82,
+        "liveSprayParticles": 36
+      },
+      {
+        "frame": 83,
+        "liveSprayParticles": 43
+      },
+      {
+        "frame": 84,
+        "liveSprayParticles": 41
+      },
+      {
+        "frame": 85,
+        "liveSprayParticles": 39
+      },
+      {
+        "frame": 86,
+        "liveSprayParticles": 33
+      },
+      {
+        "frame": 87,
+        "liveSprayParticles": 31
+      },
+      {
+        "frame": 88,
+        "liveSprayParticles": 34
+      },
+      {
+        "frame": 89,
+        "liveSprayParticles": 23
+      },
+      {
+        "frame": 90,
+        "liveSprayParticles": 30
+      },
+      {
+        "frame": 91,
+        "liveSprayParticles": 15
+      },
+      {
+        "frame": 92,
+        "liveSprayParticles": 21
+      },
+      {
+        "frame": 93,
+        "liveSprayParticles": 22
+      },
+      {
+        "frame": 94,
+        "liveSprayParticles": 23
+      },
+      {
+        "frame": 95,
+        "liveSprayParticles": 12
+      },
+      {
+        "frame": 96,
+        "liveSprayParticles": 19
+      },
+      {
+        "frame": 97,
+        "liveSprayParticles": 14
+      },
+      {
+        "frame": 98,
+        "liveSprayParticles": 8
+      },
+      {
+        "frame": 99,
+        "liveSprayParticles": 5
+      },
+      {
+        "frame": 100,
+        "liveSprayParticles": 12
+      },
+      {
+        "frame": 101,
+        "liveSprayParticles": 11
+      },
+      {
+        "frame": 102,
+        "liveSprayParticles": 11
+      },
+      {
+        "frame": 103,
+        "liveSprayParticles": 9
+      },
+      {
+        "frame": 104,
+        "liveSprayParticles": 4
+      },
+      {
+        "frame": 105,
+        "liveSprayParticles": 5
+      },
+      {
+        "frame": 106,
+        "liveSprayParticles": 3
+      },
+      {
+        "frame": 107,
+        "liveSprayParticles": 5
+      },
+      {
+        "frame": 108,
+        "liveSprayParticles": 3
+      },
+      {
+        "frame": 109,
+        "liveSprayParticles": 3
+      },
+      {
+        "frame": 110,
+        "liveSprayParticles": 4
+      },
+      {
+        "frame": 111,
+        "liveSprayParticles": 7
+      },
+      {
+        "frame": 112,
+        "liveSprayParticles": 4
+      },
+      {
+        "frame": 113,
+        "liveSprayParticles": 3
+      },
+      {
+        "frame": 114,
+        "liveSprayParticles": 2
+      },
+      {
+        "frame": 115,
+        "liveSprayParticles": 6
+      },
+      {
+        "frame": 116,
+        "liveSprayParticles": 1
+      },
+      {
+        "frame": 117,
+        "liveSprayParticles": 1
+      },
+      {
+        "frame": 118,
+        "liveSprayParticles": 2
+      },
+      {
+        "frame": 119,
+        "liveSprayParticles": 5
+      },
+      {
+        "frame": 120,
+        "liveSprayParticles": 0
+      }
+    ],
+    "peakLiveSprayParticles": 88,
+    "ambiguousAssociationLinks": 622,
+    "rejectedAmbiguousLandings": 0,
+    "actualFloorMeshChecks": 0,
+    "floorMeshUnavailable": [],
+    "sizeInterpretation": "Diameter and visualVolumeApproxM3 are render approximations, not solver-measured mass/volume. volumeM3 is deliberately absent.",
+    "trackingInterpretation": "No particle index identity or ballistic landing extrapolation. Ambiguous or unconfirmed contacts are omitted. Zero events is valid."
+  },
+  "elapsedSeconds": 3.325102964998223
+}

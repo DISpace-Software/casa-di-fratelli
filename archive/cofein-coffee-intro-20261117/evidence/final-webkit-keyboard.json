@@ -1,0 +1,188 @@
+{
+  "localOnly": true,
+  "realBrowser": true,
+  "selectedScenarios": [
+    "skip-keyboard"
+  ],
+  "browserEngine": "webkit",
+  "browserVersion": "26.5",
+  "browserExecutable": "/Users/macbookpro/Library/Caches/ms-playwright/webkit-2359/pw_run.sh",
+  "keyboardNavigationKey": "Alt+Tab",
+  "skippedScenarios": [],
+  "checks": [
+    {
+      "name": "Keyboard skip is reachable with Alt+Tab before inert content",
+      "passed": true
+    },
+    {
+      "name": "skip-keyboard: no horizontal overflow",
+      "passed": true
+    },
+    {
+      "name": "skip-keyboard: intro canvases and overlay are removed",
+      "passed": true
+    },
+    {
+      "name": "skip-keyboard: real content is unlocked without runway or transform",
+      "passed": true
+    },
+    {
+      "name": "skip-keyboard: native scroll position is preserved",
+      "passed": true
+    },
+    {
+      "name": "skip-keyboard: skip restores focus to the restaurant",
+      "passed": true
+    },
+    {
+      "name": "skip-keyboard: disposal releases every decoded bitmap and stops scene drawing",
+      "passed": true
+    },
+    {
+      "name": "No unexpected JavaScript exceptions or scenario failures",
+      "passed": true
+    },
+    {
+      "name": "No unexpected browser console errors",
+      "passed": true
+    },
+    {
+      "name": "No unexpected HTTP failures",
+      "passed": true
+    },
+    {
+      "name": "The audit sent no write requests",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "consoleErrors": [],
+  "expectedFailures": [],
+  "failedResources": [],
+  "failedRequests": [],
+  "cancelledResources": [],
+  "screenshots": [],
+  "metrics": [
+    {
+      "label": "skip-keyboard",
+      "width": 390,
+      "height": 844,
+      "documentWidth": 390,
+      "scrollY": 0,
+      "state": "complete",
+      "progress": 1,
+      "pageTop": 0,
+      "runway": 0,
+      "contentTop": 0,
+      "contentInert": false,
+      "contentTransform": "none",
+      "overlayCount": 0,
+      "canvasCount": 0,
+      "displayed": null,
+      "target": null,
+      "decodedBytes": 0,
+      "blobBytes": 0,
+      "renderCount": 0,
+      "objectPixels": null,
+      "clearFraction": 0,
+      "clearAbovePage": 0,
+      "bodyOverflow": "visible",
+      "activeElement": "top",
+      "draws": 3,
+      "pending": 0,
+      "fetches": 3,
+      "decodes": 3,
+      "activeFetches": 0,
+      "activeBodies": 0,
+      "activeDecodes": 0,
+      "maxFetches": 3,
+      "maxDecodes": 1,
+      "liveBitmaps": 0,
+      "liveBytes": 0,
+      "maxLiveBytes": 4665600,
+      "closedBitmaps": 3,
+      "firstSource": {
+        "width": 720,
+        "height": 540,
+        "bytes": 1555200,
+        "signature": 4270072456,
+        "clearFraction": 0.6542483660130719,
+        "visibleFraction": 0.2449346405228758,
+        "url": "http://127.0.0.1:5177/cofein/intro/film/mobile/0000-058323645b43.webp"
+      },
+      "sources": [
+        {
+          "width": 720,
+          "height": 540,
+          "bytes": 1555200,
+          "signature": 4270072456,
+          "clearFraction": 0.6542483660130719,
+          "visibleFraction": 0.2449346405228758,
+          "url": "http://127.0.0.1:5177/cofein/intro/film/mobile/0000-058323645b43.webp"
+        },
+        {
+          "width": 720,
+          "height": 540,
+          "bytes": 1555200,
+          "signature": 2651682776,
+          "clearFraction": 0.6522875816993464,
+          "visibleFraction": 0.2465686274509804,
+          "url": "http://127.0.0.1:5177/cofein/intro/film/mobile/0001-7d5aa76e9140.webp"
+        },
+        {
+          "width": 720,
+          "height": 540,
+          "bytes": 1555200,
+          "signature": 404638734,
+          "clearFraction": 0.6511437908496732,
+          "visibleFraction": 0.24722222222222223,
+          "url": "http://127.0.0.1:5177/cofein/intro/film/mobile/0002-a2c039eb317f.webp"
+        }
+      ],
+      "introActiveAt": 1794880317330,
+      "introEndedAt": 1794880317818,
+      "naturalHandoff": null
+    },
+    {
+      "label": "skip-keyboard-cleanup",
+      "initialDraws": 3,
+      "finalDraws": 3,
+      "pending": 0,
+      "liveBitmaps": 0,
+      "liveBytes": 0
+    }
+  ],
+  "manifests": [
+    {
+      "label": "skip-keyboard",
+      "url": "http://127.0.0.1:5177/cofein/intro/film/manifest.json",
+      "frameCount": 100,
+      "fps": 24,
+      "variants": [
+        {
+          "id": "mobile",
+          "width": 720,
+          "height": 540,
+          "frames": 100
+        },
+        {
+          "id": "desktop",
+          "width": 1024,
+          "height": 768,
+          "frames": 100
+        }
+      ],
+      "impactCount": 12,
+      "firstImpact": 0.3333333333333333,
+      "framing": {
+        "maxWidth": 1100,
+        "maxWidthFraction": 1.4,
+        "centerY": 0.42,
+        "maxHeightFraction": 0.8,
+        "fadeStart": 0.86,
+        "fadeEnd": 0.99
+      }
+    }
+  ],
+  "writes": 0
+}

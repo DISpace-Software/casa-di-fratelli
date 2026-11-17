@@ -1,5 +1,6 @@
 import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import useCofeinMotion from './useCofeinMotion';
+import useCofeinInitialAnchor from './useCofeinInitialAnchor.js';
 import { cofeinContact } from './contact.js';
 import CofeinBrand from './CofeinBrand.jsx';
 // Keep the lightweight dialog shell styled while the form or menu loads.
@@ -102,6 +103,7 @@ function CofeinDialog({ modal, onClose, onPhotoChange, returnFocus, bookingBusy,
 
 export default function CofeinPage() {
   const rootRef = useRef(null);
+  useCofeinInitialAnchor(rootRef);
   const menuRef = useRef(null);
   const tabRefs = useRef([]);
   const momentRefs = useRef([]);
