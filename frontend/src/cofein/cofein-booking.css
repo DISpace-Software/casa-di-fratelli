@@ -115,7 +115,7 @@
 .cofein-booking-footer-summary { display: grid; gap: 4px; min-width: 0; }
 .cofein-booking-footer-summary strong { overflow: hidden; color: #eedcc0; font-size: 14px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
 .cofein-booking-footer-summary span { color: #b9ab9d; font-size: 11px; line-height: 1.4; }
-.cofein-booking-footer .cofein-booking-primary { justify-content: space-between; width: 100%; margin: 0; }
+.cofein-booking-footer .cofein-booking-primary { justify-content: center; width: 100%; margin: 0; }
 .cofein-booking-mobile-summary, .cofein-booking-footer .cofein-booking-mobile-next { display: none; }
 .cofein-booking-selection, .cofein-booking-visit-summary { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #cfb18130; border-radius: 10px; background: #171310; }
 .cofein-booking-selection { margin-bottom: 20px; }

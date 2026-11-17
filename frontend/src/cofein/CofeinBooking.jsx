@@ -359,9 +359,9 @@ export default function CofeinBooking({ onClose, onBusyChange }) {
     {!finished && setup.status === 'ready' && <footer className="cofein-booking-footer">
       <div className="cofein-booking-footer-summary" aria-live="polite"><strong>{selected ? choiceLabel(selected) : areaTitle || 'Вашето посещение'}</strong><span>{selected ? `${zoneName(selected.area)} · ${guestsLabel(guests)}` : visitSummary}</span></div>
       {step === 'workspace' ? <>
-        <button key="mobile-map" type="button" className="cofein-booking-primary cofein-booking-mobile-next" disabled={!canExplore} onClick={showTables}>Виж масите <span aria-hidden="true">→</span></button>
-        <button key="workspace-contact" type="button" className="cofein-booking-primary cofein-booking-continue" disabled={!canContinue} onClick={showContact}>{!isSearchValid ? 'Изберете час' : selected ? 'Вашите данни' : 'Изберете маса'} <span aria-hidden="true">→</span></button>
-      </> : <button key="contact-submit" type="submit" form={`${id}-contact-form`} className="cofein-booking-primary" disabled={submitting || !canContinue}>{submitting ? <><span className="cofein-booking-spinner" />Изпращаме…</> : <>Резервирай маса <span aria-hidden="true">→</span></>}</button>}
+        <button key="mobile-map" type="button" className="cofein-booking-primary cofein-booking-mobile-next" disabled={!canExplore} onClick={showTables}>Виж масите</button>
+        <button key="workspace-contact" type="button" className="cofein-booking-primary cofein-booking-continue" disabled={!canContinue} onClick={showContact}>{!isSearchValid ? 'Изберете час' : selected ? 'Вашите данни' : 'Изберете маса'}</button>
+      </> : <button key="contact-submit" type="submit" form={`${id}-contact-form`} className="cofein-booking-primary" disabled={submitting || !canContinue}>{submitting ? <><span className="cofein-booking-spinner" />Изпращаме…</> : 'Резервирай маса'}</button>}
     </footer>}
   </section>;
 }

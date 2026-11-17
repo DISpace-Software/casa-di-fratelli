@@ -30,9 +30,6 @@ const spaces = [
   { ...photographs[2], title: 'Още един разговор.', detail: 'ТОПЛО ДЪРВО · МЕСТА КРАЙ ПРОЗОРЦИТЕ', text: 'Топлината на дървото и спокойният кът, който избираш отново.' },
 ];
 
-function Arrow({ direction = 'diagonal', className = '' }) {
-  return <svg className={`arrow arrow-${direction} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19 19 5M5 5h14v14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>;
-}
 function Photo({ id, alt, className = '', eager = false, sizes = '100vw' }) {
   return <img className={className} src={`/cofein/${id}-1280.webp`} srcSet={`/cofein/${id}-640.webp 640w, /cofein/${id}-1280.webp 1280w, /cofein/${id}-1920.webp 1920w`} sizes={sizes} alt={alt} width="1920" height="1440" loading={eager ? 'eager' : 'lazy'} fetchPriority={eager ? 'high' : 'auto'} decoding="async" />;
 }
@@ -93,7 +90,7 @@ function CofeinDialog({ modal, onClose, onPhotoChange, returnFocus, bookingBusy,
       {modal.type === 'booking' ? <div className="cofein-booking-toolbar"><span className="booking-brand-label"><CofeinBrand compact /><span aria-live="polite" role="status">{bookingBusy ? 'Бронираме…' : 'РЕЗЕРВАЦИИ'}</span></span>{closeButton}</div> : closeButton}
       {photo ? <>
         <div className="modal-image"><Photo key={photo.id} id={photo.id} alt={photo.alt} eager /></div>
-        <div className="modal-caption"><div aria-live="polite"><p className="eyebrow"><CofeinBrand compact /> · {String(modal.index + 1).padStart(2, '0')} / 05</p><h2 id="dialog-title">{photo.label}</h2></div><div className="gallery-controls"><button type="button" className="icon-button" aria-label="Предишна снимка" onClick={() => onPhotoChange(-1)}><Arrow direction="left" /></button><button type="button" className="icon-button" aria-label="Следваща снимка" onClick={() => onPhotoChange(1)}><Arrow direction="right" /></button></div></div>
+        <div className="modal-caption"><div aria-live="polite"><p className="eyebrow"><CofeinBrand compact /> · {String(modal.index + 1).padStart(2, '0')} / 05</p><h2 id="dialog-title">{photo.label}</h2></div><div className="gallery-controls"><button type="button" className="gallery-navigation" aria-label="Предишна снимка" onClick={() => onPhotoChange(-1)}>Предишна</button><button type="button" className="gallery-navigation" aria-label="Следваща снимка" onClick={() => onPhotoChange(1)}>Следваща</button></div></div>
       </> : <DialogContentBoundary key={modal.type}><Suspense fallback={<DialogLoading type={modal.type} />}>
         {modal.type === 'menu' ? <CofeinMenu initialDepartment={modal.department} /> : <CofeinBooking onClose={onClose} onBusyChange={onBookingBusyChange} />}
       </Suspense></DialogContentBoundary>}
@@ -236,7 +233,7 @@ export default function CofeinPage() {
             <a href="#visit" onClick={navigate}>Контакти</a>
             <p className="mobile-nav-note">Пловдив · ул. „Орфей“ 24<br />Всеки ден, 07:30 — 23:00</p>
           </nav>
-          <button className="header-book" type="button" onClick={event => openModal({ type: 'booking' }, event)}>Резервация <Arrow /></button>
+          <button className="header-book" type="button" onClick={event => openModal({ type: 'booking' }, event)}>Резервация</button>
           <button ref={menuRef} className={`menu-toggle ${mobileOpen ? 'is-open' : ''}`} type="button" aria-label={mobileOpen ? 'Затвори навигацията' : 'Отвори навигацията'} aria-expanded={mobileOpen} aria-controls="site-navigation" onClick={() => setMobileOpen(current => !current)}><span /><span /></button>
         </div>
       </header>
@@ -251,8 +248,8 @@ export default function CofeinPage() {
               <p className="hero-title">Време за вас.<br /><em>Място за разговор.</em></p>
               <p className="hero-description">От първото кафе до вечерята.<br />С добра храна и любимата компания.</p>
               <div className="hero-actions">
-                <button className="button button-gold" type="button" onClick={event => openModal({ type: 'booking' }, event)}>Резервирай маса <Arrow /></button>
-                <button className="text-link" type="button" onClick={event => openModal({ type: 'menu' }, event)}>Разгледай менюто <Arrow direction="right" /></button>
+                <button className="button button-gold" type="button" onClick={event => openModal({ type: 'booking' }, event)}>Резервирай маса</button>
+                <button className="text-link" type="button" onClick={event => openModal({ type: 'menu' }, event)}>Разгледай менюто</button>
               </div>
             </div>
             <div className="hero-visual">
@@ -270,9 +267,9 @@ export default function CofeinPage() {
         </section>
 
         <div className="visit-strip section-wrap" aria-label="Cofein накратко">
-          <a href={directionsUrl} target="_blank" rel="noreferrer"><span>НАШИЯТ АДРЕС</span><strong>Пловдив, ул. „Орфей“ 24</strong><Arrow /></a>
+          <a href={directionsUrl} target="_blank" rel="noreferrer"><span>НАШИЯТ АДРЕС</span><strong>Пловдив, ул. „Орфей“ 24</strong></a>
           <div><span>ВСЕКИ ДЕН</span><strong>07:30 — 23:00</strong></div>
-          <a href={`tel:${cofeinContact.telephone}`}><span>ЧУЙ СЕ С НАС</span><strong>{cofeinContact.phone}</strong><Arrow /></a>
+          <a href={`tel:${cofeinContact.telephone}`}><span>ЧУЙ СЕ С НАС</span><strong>{cofeinContact.phone}</strong></a>
         </div>
 
         <section className="character section-wrap" id="atmosphere" tabIndex={-1} aria-labelledby="character-title">
@@ -283,8 +280,8 @@ export default function CofeinPage() {
           <div className="character-detail" data-reveal>
             <p className="body-copy">Кафе на светлата тераса, обяд с приятели или вечеря в уюта на салона. Разгледайте менюто и изберете как да прекарате времето си при нас.</p>
             <div className="menu-preview-links">
-              <button type="button" onClick={event => openModal({ type: 'menu', department: 'food' }, event)}><span className="menu-preview-number">01</span><span><strong>От кухнята</strong><small>Салати, основни ястия и още</small></span><Arrow /></button>
-              <button type="button" onClick={event => openModal({ type: 'menu', department: 'drinks' }, event)}><span className="menu-preview-number">02</span><span><strong>От бара</strong><small>Кафе, напитки и твоят любим вкус</small></span><Arrow /></button>
+              <button type="button" onClick={event => openModal({ type: 'menu', department: 'food' }, event)}><span className="menu-preview-number">01</span><span><strong>От кухнята</strong><small>Салати, основни ястия и още</small></span></button>
+              <button type="button" onClick={event => openModal({ type: 'menu', department: 'drinks' }, event)}><span className="menu-preview-number">02</span><span><strong>От бара</strong><small>Кафе, напитки и твоят любим вкус</small></span></button>
             </div>
           </div>
         </section>
@@ -293,35 +290,35 @@ export default function CofeinPage() {
           <div className="section-wrap">
             <div className="section-heading" data-reveal><SectionLabel number="02">ПРОСТРАНСТВАТА</SectionLabel><div className="heading-row"><h2 id="spaces-title">За всяка компания.<br />За всеки момент.</h2><p className="section-aside">От светлата тераса<br /> до уюта на салона.</p></div></div>
             <div className="spaces-layout" data-reveal>
-              <div className="space-tabs" role="tablist" aria-label="Пространства в Cofein">{spaces.map((space, index) => <button key={space.id} ref={node => { tabRefs.current[index] = node; }} id={`tab-${space.id}`} type="button" role="tab" aria-selected={activeSpace === index} aria-controls={`panel-${space.id}`} tabIndex={activeSpace === index ? 0 : -1} className={`space-tab ${activeSpace === index ? 'is-active' : ''}`} onClick={() => setActiveSpace(index)} onKeyDown={event => handleSpaceKeys(event, index)}><span className="tab-number">0{index + 1}</span><span>{space.label}<small>{index === 0 ? 'Приглушена светлина' : index === 1 ? 'Светлина и зеленина' : 'Топлина и спокойствие'}</small></span><Arrow direction="right" /></button>)}</div>
+              <div className="space-tabs" role="tablist" aria-label="Пространства в Cofein">{spaces.map((space, index) => <button key={space.id} ref={node => { tabRefs.current[index] = node; }} id={`tab-${space.id}`} type="button" role="tab" aria-selected={activeSpace === index} aria-controls={`panel-${space.id}`} tabIndex={activeSpace === index ? 0 : -1} className={`space-tab ${activeSpace === index ? 'is-active' : ''}`} onClick={() => setActiveSpace(index)} onKeyDown={event => handleSpaceKeys(event, index)}><span className="tab-number">0{index + 1}</span><span>{space.label}<small>{index === 0 ? 'Приглушена светлина' : index === 1 ? 'Светлина и зеленина' : 'Топлина и спокойствие'}</small></span></button>)}</div>
               <div className="space-stage">{spaces.map((space, index) => <div key={space.id} id={`panel-${space.id}`} role="tabpanel" aria-labelledby={`tab-${space.id}`} hidden={activeSpace !== index} tabIndex={0}>
-                {activeSpace === index && <><button className={`photo-button space-photo space-photo-${space.id}`} type="button" aria-label={`Разгледай снимка: ${space.label}`} onClick={event => openModal({ type: 'photo', index }, event)}><Photo id={space.id} alt={space.alt} sizes="(max-width: 760px) 100vw, (max-width: 1440px) 70vw, 960px" /><span className="photo-open" aria-hidden="true"><Arrow /></span></button><div className="space-caption"><h3>{space.title}</h3><p>{space.text}</p></div></>}
+                {activeSpace === index && <><button className={`photo-button space-photo space-photo-${space.id}`} type="button" aria-label={`Разгледай снимка: ${space.label}`} onClick={event => openModal({ type: 'photo', index }, event)}><Photo id={space.id} alt={space.alt} sizes="(max-width: 760px) 100vw, (max-width: 1440px) 70vw, 960px" /></button><div className="space-caption"><h3>{space.title}</h3><p>{space.text}</p></div></>}
               </div>)}</div>
             </div>
-            <div className="spaces-booking-link"><span>Вече имаш любим кът?</span><button type="button" className="text-link" onClick={event => openModal({ type: 'booking' }, event)}>Избери маса на картата <Arrow /></button></div>
+            <div className="spaces-booking-link"><span>Вече имаш любим кът?</span><button type="button" className="text-link" onClick={event => openModal({ type: 'booking' }, event)}>Избери маса на картата</button></div>
           </div>
         </section>
 
         <section className="gallery-section section-wrap" id="gallery" tabIndex={-1} aria-labelledby="gallery-title">
-          <div className="gallery-heading" data-reveal><div><SectionLabel number="03">АТМОСФЕРАТА</SectionLabel><h2 id="gallery-title">Поглед отвътре.</h2></div><button className="text-link" type="button" onClick={event => openModal({ type: 'photo', index: 0 }, event)}>Всички снимки <span className="photo-count">05</span><Arrow /></button></div>
+          <div className="gallery-heading" data-reveal><div><SectionLabel number="03">АТМОСФЕРАТА</SectionLabel><h2 id="gallery-title">Поглед отвътре.</h2></div><button className="text-link" type="button" onClick={event => openModal({ type: 'photo', index: 0 }, event)}>Всички снимки <span className="photo-count">05</span></button></div>
           <div className="gallery-composition">
-            <figure className="gallery-large" data-reveal><button className="photo-button" type="button" aria-label="Отвори снимка: Уютните кътове" onClick={event => openModal({ type: 'photo', index: 2 }, event)}><Photo id="wooden-room" alt={photographs[2].alt} sizes="(max-width: 760px) 100vw, 54vw" /><span className="photo-open" aria-hidden="true"><Arrow /></span></button><figcaption><span>ДЪРВО, СВЕТЛИНА, СПОКОЙСТВИЕ</span><span>01</span></figcaption></figure>
-            <figure className="gallery-small" data-reveal><button className="photo-button" type="button" aria-label="Отвори снимка: Барът" onClick={event => openModal({ type: 'photo', index: 3 }, event)}><Photo id="bar" alt={photographs[3].alt} sizes="(max-width: 760px) 100vw, 35vw" /><span className="photo-open" aria-hidden="true"><Arrow /></span></button><figcaption><span>БАРЪТ · ВЕЧЕРНО НАСТРОЕНИЕ</span><span>02</span></figcaption></figure>
+            <figure className="gallery-large" data-reveal><button className="photo-button" type="button" aria-label="Отвори снимка: Уютните кътове" onClick={event => openModal({ type: 'photo', index: 2 }, event)}><Photo id="wooden-room" alt={photographs[2].alt} sizes="(max-width: 760px) 100vw, 54vw" /></button><figcaption><span>ДЪРВО, СВЕТЛИНА, СПОКОЙСТВИЕ</span><span>01</span></figcaption></figure>
+            <figure className="gallery-small" data-reveal><button className="photo-button" type="button" aria-label="Отвори снимка: Барът" onClick={event => openModal({ type: 'photo', index: 3 }, event)}><Photo id="bar" alt={photographs[3].alt} sizes="(max-width: 760px) 100vw, 35vw" /></button><figcaption><span>БАРЪТ · ВЕЧЕРНО НАСТРОЕНИЕ</span><span>02</span></figcaption></figure>
           </div>
         </section>
 
         <section className="booking-section" id="visit" tabIndex={-1} aria-labelledby="booking-title">
           <div className="booking-content section-wrap">
-            <div className="booking-invitation" data-reveal><SectionLabel number="04">ВАШЕТО ПОСЕЩЕНИЕ</SectionLabel><h2 id="booking-title">Очакваме ви<br />на вашата маса.</h2><p>Изберете дата, час и място на картата.<br />Останалото оставете на нас.</p><button className="button button-gold" type="button" onClick={event => openModal({ type: 'booking' }, event)}>Резервирай маса <Arrow /></button><span className="booking-status">{bookingsEnabled ? 'Резервация с избор на маса.' : 'За резервация се свържете с нас по телефона.'}</span></div>
+            <div className="booking-invitation" data-reveal><SectionLabel number="04">ВАШЕТО ПОСЕЩЕНИЕ</SectionLabel><h2 id="booking-title">Очакваме ви<br />на вашата маса.</h2><p>Изберете дата, час и място на картата.<br />Останалото оставете на нас.</p><button className="button button-gold" type="button" onClick={event => openModal({ type: 'booking' }, event)}>Резервирай маса</button><span className="booking-status">{bookingsEnabled ? 'Резервация с избор на маса.' : 'За резервация се свържете с нас по телефона.'}</span></div>
             <div className="visit-card" data-reveal>
               <Photo id="garden" alt={photographs[4].alt} sizes="(max-width: 760px) 100vw, 460px" />
-              <div className="visit-card-details"><p className="eyebrow">НАШЕТО МЯСТО В ПЛОВДИВ</p><address>ул. „Орфей“ 24</address><p>Всеки ден · 07:30 — 23:00</p><div><a href={directionsUrl} target="_blank" rel="noreferrer" className="text-link">Как да стигнеш <Arrow /></a><a href={`tel:${cofeinContact.telephone}`} className="visit-phone">{cofeinContact.phone}</a></div></div>
+              <div className="visit-card-details"><p className="eyebrow">НАШЕТО МЯСТО В ПЛОВДИВ</p><address>ул. „Орфей“ 24</address><p>Всеки ден · 07:30 — 23:00</p><div><a href={directionsUrl} target="_blank" rel="noreferrer" className="text-link">Как да стигнеш</a><a href={`tel:${cofeinContact.telephone}`} className="visit-phone">{cofeinContact.phone}</a></div></div>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="site-footer" inert={mobileOpen}><div className="section-wrap"><div className="footer-top"><a className="brand-link" href="#top" aria-label="Cofein — начало" onClick={navigate}><Wordmark /></a><p>Кафе. Кухня. Компания.<br />Всеки ден в Пловдив.</p><a className="back-top" href="#top" onClick={navigate}>Нагоре <Arrow direction="up" /></a></div><div className="footer-bottom"><span>ПЛОВДИВ · ОРФЕЙ 24</span><button type="button" onClick={event => openModal({ type: 'menu' }, event)}>Разгледай менюто <Arrow /></button><span>RESERVATIONS BY <strong>SeatMap</strong></span></div></div></footer>
+      <footer className="site-footer" inert={mobileOpen}><div className="section-wrap"><div className="footer-top"><a className="brand-link" href="#top" aria-label="Cofein — начало" onClick={navigate}><Wordmark /></a><p>Кафе. Кухня. Компания.<br />Всеки ден в Пловдив.</p><a className="back-top" href="#top" onClick={navigate}>Нагоре</a></div><div className="footer-bottom"><span>ПЛОВДИВ · ОРФЕЙ 24</span><button type="button" onClick={event => openModal({ type: 'menu' }, event)}>Разгледай менюто</button><span>RESERVATIONS BY <strong>SeatMap</strong></span></div></div></footer>
       {modal && <CofeinDialog modal={modal} onClose={closeModal} onPhotoChange={changePhoto} returnFocus={modal.returnFocus} bookingBusy={bookingBusy} onBookingBusyChange={onBookingBusyChange} />}
     </div>
   );
