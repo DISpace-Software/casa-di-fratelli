@@ -2,8 +2,10 @@
 
 Updated: 2026-11-18. The shared administration application is in production.
 The API-owned on-device dictation policy is live in backend commit `af01a5a`.
-The shared frontend consuming it is live from `f6ca33f`, Vercel deployment
-`dpl_7dzuTeG6J2ce1oRfpJi6Af6bs6EP`.
+The first shared frontend consuming it was released from `f6ca33f`, Vercel
+deployment `dpl_7dzuTeG6J2ce1oRfpJi6Af6bs6EP`. These are the historical initial
+release identifiers. The phone/caching follow-up is live from `85d78c0`, deployment
+`dpl_FhiJQxQqjbjnRrWgyL1td2YegeyM`; see the [follow-up report](reservation-dictation-fix-2026-11-18.md).
 
 Production uses one application at `https://seatmap-admin-eight.vercel.app`:
 
@@ -104,13 +106,34 @@ available without enabling another recognition service. A disabled response
 cancels dictation and disposes the prepared model. Environment changes require
 an API restart; an already open tab observes rollback on its next policy fetch.
 
-Model preparation requires an explicit click. The pinned Bulgarian Zipformer
+Model preparation starts automatically when an authenticated admin opens a
+reservation form with the API policy enabled. The large download/preparation
+banner has been removed; a compact loading status and error retry remain.
+Opening the dashboard alone does not load the model. The pinned Bulgarian Zipformer
 model and sherpa-onnx WASM runtime are served from the same frontend origin and
 run in a dedicated Worker. Audio is processed in memory on the device, with no
 upload to Render or an external ASR provider. There are no calls to the server
 voice capabilities/transcription endpoints and no WebSpeech fallback. Only name
-and phone have microphones; a proposed phone must be confirmed before it changes
-the field. Date, time, guest count and email remain manual.
+and phone have microphones. Model preparation never requests microphone access;
+recording starts only from the microphone button. Phone recording requires Stop
+or the 20-second cap, so pauses between digits do not truncate it. Names also
+support stopping after silence. Date, time, guest count and email remain manual.
+
+A proposed phone appears as an editable draft and must pass strict validation
+before explicit confirmation changes the reservation field. Partial recognized
+digits remain available for correction; missing digits or country codes are
+never guessed. The confirmation handler validates the latest edited value.
+Editing the reservation's main phone field, cancellation, a new dictation or
+closing the form discards the draft.
+
+The preferred local capture path uses a same-origin AudioWorklet and an in-memory
+PCM/WAV recording without AAC compression. An unavailable worklet falls back to
+browser MediaRecorder before recording starts, with no automatic replay after an
+active capture fails. Decode errors and cancellation before inference preserve a
+healthy prepared worker. The model is shared between the map and list forms.
+Versioned static assets use immutable HTTP caching; large files are also stored
+in CacheStorage using bounded chunks of the existing buffer rather than a cloned
+network response. Cache quota failures leave dictation usable without persistence.
 
 On 2026-11-18, read-only production checks confirmed the new policy and
 `no-store` for Casa and Cofein, and `404 TENANT_NOT_FOUND` for an unknown tenant.
@@ -124,9 +147,29 @@ The model has been tested with synthetic Bulgarian audio in desktop Chrome and
 WebKit, not with a physical iPad microphone or restaurant noise. It can recognize
 wrong phone digits; confirmation is mandatory. The initial assets are about
 86 MB, and the tested WASM heap reserves 512 MiB in addition to other tab memory.
-Older devices may be unsupported; persistent WebKit cache and iPad airplane-mode
-operation are unverified. See [the on-device guide](reservation-dictation-ondevice.md)
+Older devices may be unsupported; persistent cache on a physical iPad and iPad
+airplane-mode operation are unverified. See [the on-device guide](reservation-dictation-ondevice.md)
 for accuracy evidence, lifecycle checks and reproduction instructions.
+
+### Phone and repeated-preparation follow-up (2026-11-18)
+
+The fix passed 544 domain tests and a final 35 controlled UI scenarios; an earlier
+51-scenario run in the same fix cycle covered Casa, Cofein and a future tenant.
+These are separate, overlapping runs. UI fixtures use controlled capture and
+recognition to test behavior, not model accuracy. Real AudioWorklet capture,
+decoding and ASR matched all 6 synthetic PCM probes in desktop Chrome/WebKit,
+including phone audio with a 300 ms leading pause. In the earlier real WebKit
+MediaRecorder/AAC test, the model heard “осемстотин…” instead of the initial
+digits; injecting a ready-made WAV did not expose that path.
+
+Controlled warm-reload checks with the actual model made zero network requests
+and transferred zero bytes for model/runtime assets in both Chrome and WebKit.
+Preparing the model in memory still took time; operating systems may evict cache.
+These results do not establish physical iPad microphone accuracy, persistence or
+restaurant-noise performance. Historical production evidence above remains
+unchanged. All four production Cofein map/list name/phone probes passed through
+native PCM capture and real ASR without reservation writes; see the
+[follow-up release report](reservation-dictation-fix-2026-11-18.md).
 
 ## Restaurant policies
 
@@ -217,8 +260,10 @@ assets, writes restaurant-path rewrites and no-index headers, and prints file
 hashes. It includes the versioned `speech/bg-zipformer/8d2f8f4-sherpa-1.12.36/`
 manifest allowlist: model, WASM/JavaScript runtime and licenses. It checks the
 pinned source/revision, file sizes and SHA256 hashes, rejects missing or altered
-files, and sets WASM/ONNX content types. These assets are loaded only when the
-administrator prepares dictation; browser audio never goes to the API.
+files, sets WASM/ONNX content types and immutable headers for the pinned speech
+directory. These assets load automatically when the administrator opens a
+reservation form; microphone capture still requires its own click, and browser
+audio never goes to the API.
 Packaging does not publish anything. The ordinary frontend Vercel config
 is not the standalone package's routing configuration.
 
