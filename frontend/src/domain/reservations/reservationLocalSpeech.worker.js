@@ -33,9 +33,8 @@ async function prepare(id, assetBase) {
     let response;
     try { response = await cache?.match(url); } catch { /* Fall back to same-origin static files. */ }
     const cached = Boolean(response);
-    response ||= await fetch(url, { credentials: 'omit', cache: 'force-cache', redirect: 'error' });
+    response ||= await fetch(url, { credentials: 'omit', mode: 'same-origin', cache: 'force-cache', redirect: 'error' });
     if (!response.ok) throw new Error('Asset unavailable');
-    const copy = !cached && cache ? response.clone() : null;
     const reader = response.body?.getReader();
     let bytes;
     if (reader) {
@@ -48,6 +47,9 @@ async function prepare(id, assetBase) {
           if (offset + value.length > expectedBytes) throw new Error('Asset length mismatch');
           bytes.set(value, offset); offset += value.length; progress(file, value.length);
         }
+      } catch (error) {
+        try { await reader.cancel(); } catch { /* The stream may already be closed. */ }
+        throw error;
       } finally { reader.releaseLock(); }
       if (offset !== expectedBytes) throw new Error('Asset length mismatch');
     } else {
@@ -55,8 +57,25 @@ async function prepare(id, assetBase) {
       if (bytes.byteLength !== expectedBytes) throw new Error('Asset length mismatch');
       progress(file, bytes.byteLength);
     }
-    if (copy) {
-      try { await cache.put(url, copy); } catch { /* Recognition also works without disk cache. */ }
+    if (!cached && cache) {
+      try {
+        // HTTP caches may omit large model files. Retain validated weights in
+        // CacheStorage without cloning the network response or copying its
+        // entire 73 MB body. Pull small views from the buffer we already own.
+        let offset = 0;
+        const body = new ReadableStream({
+          pull(controller) {
+            if (offset === bytes.byteLength) { controller.close(); return; }
+            const end = Math.min(offset + 64 * 1024, bytes.byteLength);
+            controller.enqueue(bytes.subarray(offset, end));
+            offset = end;
+          },
+        });
+        await cache.put(url, new Response(body, { headers: {
+          'Content-Type': response.headers.get('Content-Type') || 'application/octet-stream',
+          'Content-Length': String(bytes.byteLength),
+        } }));
+      } catch { /* Quota/private-mode failures must not prevent dictation. */ }
     }
     progress(file, 0, true);
     return bytes;

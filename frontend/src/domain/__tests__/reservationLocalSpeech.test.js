@@ -132,6 +132,29 @@ test('digital silence never reaches model inference and preserves the prepared w
   h.adapter.dispose();
 });
 
+test('AAC decode/length failures preserve the healthy model for the next recording', async () => {
+  let errorCode = 'audio-decode';
+  const h = harness({ decode: async () => {
+    if (errorCode) throw Object.assign(new Error(errorCode), { code: errorCode });
+    return new Float32Array([0.1]);
+  } });
+  const worker = await h.ready();
+  for (const code of ['audio-decode', 'audio-too-long']) {
+    errorCode = code;
+    await assert.rejects(h.adapter.transcribe(input()), { code });
+    assert.equal(h.adapter.getSnapshot().status, 'ready');
+    assert.equal(worker.terminated, false);
+    assert.equal(worker.messages.length, 1);
+  }
+  errorCode = null;
+  const retry = h.adapter.transcribe(input());
+  await flush();
+  worker.emit({ type: 'result', id: worker.messages.at(-1).data.id, text: 'нула осем осем осем едно две три четири пет шест' });
+  assert.ok(await retry);
+  assert.equal(h.workers.length, 1);
+  h.adapter.dispose();
+});
+
 test('cancel during capability inspection never starts a late worker', async () => {
   let finishProbe;
   const h = harness({ probe: () => new Promise(resolve => { finishProbe = resolve; }) });
@@ -187,7 +210,7 @@ test('cancel transcription terminates actual worker inference and requires expli
   assert.equal(h.workers.length, 1);
 });
 
-test('late decoding after abort cannot send audio to a new worker', async () => {
+test('cancel before inference preserves the ready worker and ignores late decoded audio', async () => {
   let finishDecode;
   const h = harness({ decode: () => new Promise(resolve => { finishDecode = resolve; }) });
   const worker = await h.ready();
@@ -197,11 +220,14 @@ test('late decoding after abort cannot send audio to a new worker', async () => 
   await flush();
   controller.abort();
   await rejection;
+  assert.equal(worker.terminated, false);
+  assert.equal(h.adapter.getSnapshot().status, 'ready');
   const next = await h.ready();
   finishDecode(new Float32Array([0.2]));
   await flush();
   assert.equal(worker.messages.length, 1);
   assert.equal(next.messages.length, 1);
+  assert.equal(next, worker);
   h.adapter.dispose();
 });
 

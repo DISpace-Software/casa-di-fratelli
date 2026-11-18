@@ -27,30 +27,45 @@ const context = await browser.newContext({
 await context.addInitScript(() => {
   delete window.SpeechRecognition;
   delete window.webkitSpeechRecognition;
-  // Retain real OfflineAudioContext and Worker. No actual microphone is opened.
-  window.AudioContext = undefined;
-  window.webkitAudioContext = undefined;
+  // Supply a synthetic MediaStream, retaining native AudioContext, worklet,
+  // WAV encoding, PCM decoding and model inference. Never open a physical mic.
   window.qaTracks = [];
-  Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
-    getUserMedia: async () => {
-      const track = { ended: false, stop() { this.ended = true; } };
-      window.qaTracks.push(track);
-      return { getTracks: () => [track] };
-    },
-  } });
-  window.MediaRecorder = class {
-    static isTypeSupported() { return false; }
-    constructor() { this.state = 'inactive'; this.mimeType = 'audio/wav'; }
-    start() { this.state = 'recording'; queueMicrotask(() => this.onstart?.()); }
-    stop() {
-      this.state = 'inactive';
-      const bytes = Uint8Array.from(atob(window.qaWave), character => character.charCodeAt(0));
-      queueMicrotask(() => {
-        this.ondataavailable?.({ data: new Blob([bytes], { type: this.mimeType }) });
-        this.onstop?.();
-      });
+  window.qaPcmNodes = 0;
+  window.qaPcmErrors = 0;
+  window.qaMediaRecorders = 0;
+  const NativeWorklet = window.AudioWorkletNode;
+  window.AudioWorkletNode = class extends NativeWorklet {
+    constructor(...args) {
+      super(...args); window.qaPcmNodes++;
+      this.addEventListener('processorerror', () => { window.qaPcmErrors++; });
     }
   };
+  const NativeRecorder = window.MediaRecorder;
+  window.MediaRecorder = class extends NativeRecorder {
+    constructor(...args) { super(...args); window.qaMediaRecorders++; }
+  };
+  Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: {
+    getUserMedia: async () => {
+      const sourceContext = new AudioContext();
+      await sourceContext.resume();
+      const bytes = Uint8Array.from(atob(window.qaWave), character => character.charCodeAt(0));
+      const audio = await sourceContext.decodeAudioData(bytes.buffer);
+      const source = sourceContext.createBufferSource();
+      source.buffer = audio;
+      const destination = sourceContext.createMediaStreamDestination();
+      source.connect(destination);
+      window.qaPlay = () => new Promise(resolve => {
+        source.onended = resolve;
+        source.start();
+      });
+      for (const track of destination.stream.getTracks()) {
+        window.qaTracks.push(track);
+        const stop = track.stop.bind(track);
+        track.stop = () => { stop(); void sourceContext.close(); };
+      }
+      return destination.stream;
+    },
+  } });
 });
 const results = [], checks = [], errors = [], blockedWrites = [], voiceRequests = [], modelRequests = [], externalRuntimeRequests = [];
 let loginPosts = 0, preparationSeconds, tier, activeForm;
@@ -100,6 +115,7 @@ async function dictate(form, mode, field, file, expected) {
   await page.evaluate(wave => { window.qaWave = wave; }, bytes.toString('base64'));
   await mic(form, field).click();
   await form.locator('[data-voice-phase="listening"]').waitFor();
+  await page.evaluate(() => window.qaPlay());
   const started = Date.now();
   await mic(form, field).click();
   await form.locator('[data-voice-phase="idle"]').waitFor();
@@ -113,7 +129,7 @@ async function dictate(form, mode, field, file, expected) {
   const next = await values(form);
   assert.equal(next[field], expected);
   for (const key of Object.keys(previous)) if (key !== field) assert.equal(next[key], previous[key]);
-  assert.equal(await page.evaluate(() => window.qaTracks.every(track => track.ended)), true);
+  assert.equal(await page.evaluate(() => window.qaTracks.every(track => track.readyState === 'ended')), true);
   const row = { mode, field, expected, value: next[field], seconds: processingSeconds, matches: true };
   results.push(row);
   console.log(JSON.stringify({ mode, field, passed: true, seconds: row.seconds }));
@@ -133,14 +149,13 @@ try {
   assert.equal(tier.isPro, tier.tier === 'Pro');
   await page.getByRole('button', { name: /^Карта на резервациите/ }).click();
   await page.locator('.cofein-map-table-button').first().click();
+  assert.equal(modelRequests.length, 0, 'Dashboard/map alone must not load the model');
+  const preparing = Date.now();
   await page.getByRole('button', { name: 'Създай резервация', exact: true }).click();
   activeForm = page.getByRole('form', { name: 'Резервация', exact: true });
-  await activeForm.locator('[data-voice-prepare]').waitFor();
   await assertFields(activeForm);
-  assert.equal(modelRequests.length, 0, 'No model requests are allowed before explicit preparation');
-  checks.push('Actual Cofein tier verified; map contains only name/phone microphones and makes no eager model requests');
-  const preparing = Date.now();
-  await activeForm.locator('[data-voice-prepare]').click();
+  assert.equal(await activeForm.locator('[data-voice-prepare]').count(), 0, 'Model prepares automatically without an initial button');
+  checks.push('Actual Cofein tier verified; map contains only name/phone microphones and no initial preparation button');
   await page.waitForFunction(() => document.querySelector('[data-voice-field="guestName"]')?.disabled === false,
     null, { timeout: 180000 });
   preparationSeconds = (Date.now() - preparing) / 1000;
@@ -165,6 +180,9 @@ try {
   assert.equal(modelRequests.length, preparedRequestCount, 'Ready-model reuse must not download assets again');
   await activeForm.screenshot({ path: outputRoot + '/list-filled.png' });
   checks.push('Real same-origin model recognizes name/phone in both forms, confirms phones and reuses preparation across map/list');
+  assert.equal(await page.evaluate(() => window.qaPcmNodes), 4, 'Each field must use the real PCM worklet');
+  assert.equal(await page.evaluate(() => window.qaPcmErrors), 0);
+  assert.equal(await page.evaluate(() => window.qaMediaRecorders), 0, 'No lossy MediaRecorder fallback in this check');
   assert.equal(loginPosts, 1);
   assert.deepEqual(blockedWrites, []);
   assert.deepEqual(voiceRequests, []);
@@ -181,7 +199,7 @@ try {
   await browser.close();
   const report = {
     passed: results.length === 4 && errors.length === 0, production: true, tenantId,
-    syntheticAudio: true, mockedMediaCapture: true, mockedAsr: false, physicalIpadTested: false,
+    syntheticAudio: true, mockedMediaCapture: true, nativePcmCapture: true, mockedAsr: false, physicalIpadTested: false,
     screenshotsContainOnlyDraftForm: true, preparationSeconds, tier, checks, results, errors,
     loginPosts, blockedWrites, voiceRequests, externalRuntimeRequests, modelRequests,
   };

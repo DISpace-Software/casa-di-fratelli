@@ -49,7 +49,7 @@ async function open(browser, engine, orientation, options = {}) {
   const viewport = orientation === 'portrait' ? { width: 820, height: 1180 } : { width: 1180, height: 820 };
   const context = await browser.newContext({ viewport, isMobile: true, hasTouch: true, timezoneId: 'Europe/Sofia' });
   await context.addInitScript(({ options, speech }) => {
-    const qa = window.qaLocalSpeech = { workers: [], messages: [], streams: [], audioContexts: [], decoders: [], permissions: 0, gpuProbes: 0, autoReady: true, autoResult: true, nextText: null };
+    const qa = window.qaLocalSpeech = { workers: [], messages: [], streams: [], audioContexts: [], decoders: [], permissions: 0, gpuProbes: 0, autoReady: !options.holdPrepare, autoResult: true, nextText: null, failNextDecode: false };
     delete window.SpeechRecognition; delete window.webkitSpeechRecognition;
     Object.defineProperty(navigator, 'gpu', { configurable: true, value: { requestAdapter: async () => {
       qa.gpuProbes++; throw new Error('WASM dictation must not request a GPU');
@@ -99,6 +99,7 @@ async function open(browser, engine, orientation, options = {}) {
       constructor(channels, length, sampleRate) { this.sampleRate = sampleRate; qa.decoders.push(this); }
       async decodeAudioData(encoded) {
         this.byteLength = encoded.byteLength;
+        if (qa.failNextDecode) { qa.failNextDecode = false; throw new Error('Synthetic unsupported audio container'); }
         return { duration: 1, sampleRate: 16000, numberOfChannels: 1, length: 16000, getChannelData: () => new Float32Array(16000).fill(0.05) };
       }
     };
@@ -139,6 +140,7 @@ async function open(browser, engine, orientation, options = {}) {
   assert.equal(tier.isPro, tier.tier === 'Pro');
   verifiedTiers.push({ engine, tenantId, tier: tier.tier, responseMocked: false });
   await page.getByRole('button', { name: /^Карта на резервациите/ }).waitFor();
+  assert.deepEqual(await page.evaluate(() => ({ workers: window.qaLocalSpeech.workers.length, permissions: window.qaLocalSpeech.permissions })), { workers: 0, permissions: 0 }, 'The dashboard must not prepare the model or open a microphone');
   return { page, context, viewport };
 }
 async function formFor(page, mode, tenantId = 'casa-di-fratelli') {
@@ -154,7 +156,6 @@ async function formFor(page, mode, tenantId = 'casa-di-fratelli') {
   return page.locator('form').filter({ has: page.locator('input[name="reservationCreate.tableIds"]') });
 }
 async function prepare(page, form) {
-  await prepareButton(form).click();
   await page.waitForFunction(() => window.qaLocalSpeech.worker?.message?.type === 'prepare');
   await mic(form, 'guestName').evaluate(element => new Promise((resolve, reject) => {
     const start = Date.now(); const check = () => {
@@ -186,14 +187,17 @@ try {
     if (scenario !== 'policy') for (const tenantId of tenantIds) for (const orientation of ['portrait', 'landscape']) for (const mode of ['map', 'list']) {
       const { page, context, viewport } = await open(browser, engine, orientation, { tenantId });
       const form = await formFor(page, mode, tenantId);
-      await prepareButton(form).waitFor();
+      await prepare(page, form);
+      assert.equal(await prepareButton(form).count(), 0, 'Initial preparation has no action button');
       assert.equal(await form.locator('[data-voice-field]').count(), 2);
       for (const field of manualFields) assert.equal(await mic(form, field).count(), 0);
       assert.equal(await form.locator('select[name=reservationDictationLanguage]').count(), 0);
-      for (const key of fields) assert.equal(await mic(form, key).isDisabled(), true);
-      assert.deepEqual(await page.evaluate(() => ({ workers: window.qaLocalSpeech.workers.length, gpuProbes: window.qaLocalSpeech.gpuProbes, permissions: window.qaLocalSpeech.permissions })), { workers: 0, gpuProbes: 0, permissions: 0 });
-      assert.match(await status(form).innerText(), /не се изпраща към сървър/);
-      await page.screenshot({ path: `${outputRoot}/${engine}-${tenantId}-${orientation}-${mode}-before-prepare.png`, fullPage: true });
+      for (const key of fields) assert.equal(await mic(form, key).isEnabled(), true);
+      assert.deepEqual(await page.evaluate(() => ({ workers: window.qaLocalSpeech.workers.length, gpuProbes: window.qaLocalSpeech.gpuProbes, permissions: window.qaLocalSpeech.permissions })), { workers: 1, gpuProbes: 0, permissions: 0 });
+      assert.doesNotMatch(await status(form).innerText(), /100 МВ|100 MB|Подготви диктовката|използвай Wi-Fi/);
+      assert.equal((await status(form).locator(':scope > :not(.sr-only)').allInnerTexts()).join('').trim(), '', 'Ready local dictation adds no visible instruction banner');
+      if (tenantId === 'cofein' && orientation === 'portrait') await form.screenshot({ path: `${outputRoot}/${engine}-cofein-${mode}-empty-ready-form.png` });
+      await page.screenshot({ path: `${outputRoot}/${engine}-${tenantId}-${orientation}-${mode}-auto-prepared.png`, fullPage: true });
       await prepare(page, form);
       assert.equal(await page.evaluate(() => window.qaLocalSpeech.permissions), 0);
       assert.equal(await page.evaluate(() => window.qaLocalSpeech.worker.workerType), 'classic');
@@ -213,7 +217,7 @@ try {
         if (field === 'phone') {
           await form.locator('[data-voice-accept-phone]').waitFor();
           assert.deepEqual(await values(form), previous);
-          assert.match(await status(form).innerText(), /0888123456/);
+          assert.equal(await form.locator('[data-voice-phone-review]').inputValue(), '0888123456');
           await page.screenshot({ path: `${outputRoot}/${engine}-${tenantId}-${orientation}-${mode}-phone-review.png`, fullPage: true });
           await form.locator('[data-voice-accept-phone]').click();
         }
@@ -227,9 +231,20 @@ try {
       const messages = await page.evaluate(() => window.qaLocalSpeech.messages.filter(message => message.type === 'transcribe').map(message => ({ field: message.field, language: message.language, length: message.audio.length, float: message.audio instanceof Float32Array })));
       assert.deepEqual(messages, fields.map(field => ({ field, language: 'bg', length: 16000, float: true })));
       await assertMicClosed(page);
+      if (tenantId === 'cofein' && orientation === 'portrait' && mode === 'map') {
+        await page.evaluate(() => { window.qaLocalSpeech.nextText = 'Телефонче нула осем осем осем едно две'; });
+        await phoneCandidate(form);
+        assert.equal(await form.locator('[data-voice-phone-review]').inputValue(), '088812');
+        assert.equal(await form.locator('[data-voice-accept-phone]').isDisabled(), true);
+        assert.equal(await input(form, 'phone').inputValue(), expected.phone);
+        await form.screenshot({ path: `${outputRoot}/${engine}-cofein-map-partial-phone-review.png` });
+        await form.locator('[data-voice-phone-review]').fill(expected.phone);
+        await form.locator('[data-voice-accept-phone]').click();
+        assert.deepEqual(await values(form), expected);
+      }
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1));
       await page.screenshot({ path: `${outputRoot}/${engine}-${tenantId}-${orientation}-${mode}-filled.png`, fullPage: true });
-      passed(`${engine} ${tenantId} ${orientation} ${mode}: real tier verified; no eager worker/model/mic, same-origin preparation, name and phone only; date/time/count/email remain manual and unchanged, explicit phone confirmation, classic worker PCM transfer, readable tablet layout`);
+      passed(`${engine} ${tenantId} ${orientation} ${mode}: real tier verified; no dashboard model/mic; form auto-prepares without a button or microphone permission, same-origin preparation, name and phone only; date/time/count/email remain manual and unchanged, explicit phone confirmation, classic worker PCM transfer, readable tablet layout`);
       await context.close();
     }
     if (scenario === 'matrix') continue;
@@ -265,30 +280,50 @@ try {
     passed(engine + ' ' + disabledTenant + ': runtime API disable on focus disposes the prepared worker, removes microphones and preserves all six manual values');
     await rollback.context.close();
     if (scenario === 'policy') continue;
-    const { page, context } = await open(browser, engine, 'portrait'); const form = await formFor(page, 'map');
+    const { page, context } = await open(browser, engine, 'portrait', { holdPrepare: true });
+    let form = await formFor(page, 'map');
     await input(form, 'guestName').fill('Проверено Име');
-    await page.evaluate(() => { window.qaLocalSpeech.autoReady = false; });
-    await prepareButton(form).click(); await form.getByRole('progressbar').waitFor();
+    await page.waitForFunction(() => window.qaLocalSpeech.worker?.message?.type === 'prepare');
+    assert.equal(await prepareButton(form).count(), 0);
+    assert.match(await status(form).innerText(), /Подготвям|Зареждам/);
+    assert.equal(await mic(form, 'guestName').isDisabled(), true);
+    assert.equal(await page.evaluate(() => window.qaLocalSpeech.permissions), 0);
     await page.evaluate(() => { const qa = window.qaLocalSpeech; qa.latePrepare = qa.worker.onmessage; qa.oldPrepareId = qa.worker.message.id; });
-    await status(form).getByRole('button', { name: 'Отмени', exact: true }).click();
-    await prepareButton(form).waitFor();
+    await page.getByRole('button', { name: 'Close reservation form', exact: true }).click();
     assert.equal(await page.evaluate(() => window.qaLocalSpeech.worker.terminated), 1);
     await page.evaluate(() => window.qaLocalSpeech.latePrepare({ data: { type: 'ready', id: window.qaLocalSpeech.oldPrepareId } }));
-    assert.equal(await mic(form, 'guestName').isDisabled(), true);
-    assert.equal(await input(form, 'guestName').inputValue(), 'Проверено Име');
-    passed(`${engine}: preparation cancellation terminates the worker and ignores a late ready response without touching the draft`);
-    await page.evaluate(() => { window.qaLocalSpeech.autoReady = true; }); await prepare(page, form);
+    await page.evaluate(() => { window.qaLocalSpeech.autoReady = true; });
+    form = await reopenMapForm(page);
+    await prepare(page, form);
+    assert.equal(await prepareButton(form).count(), 0);
+    assert.equal(await page.evaluate(() => window.qaLocalSpeech.workers.length), 2);
+    passed(`${engine}: model preparation starts with the form, never the microphone; close cancels preparation, ignores late readiness, and reopening prepares automatically`);
     await page.evaluate(() => { window.qaLocalSpeech.autoResult = false; });
     await mic(form, 'guestName').click(); await waitPhase(form, 'listening'); await mic(form, 'guestName').click(); await waitPhase(form, 'processing');
     await page.waitForFunction(() => window.qaLocalSpeech.worker.message.type === 'transcribe');
-    await page.evaluate(() => { const qa = window.qaLocalSpeech; qa.lateResult = qa.worker.onmessage; qa.oldTranscribeId = qa.worker.message.id; });
+    await page.evaluate(() => { const qa = window.qaLocalSpeech; qa.inferenceWorker = qa.worker; qa.lateResult = qa.worker.onmessage; qa.oldTranscribeId = qa.worker.message.id; });
     await input(form, 'guestName').fill('Ръчно Проверено'); await waitPhase(form, 'idle');
-    assert.equal(await page.evaluate(() => window.qaLocalSpeech.worker.terminated), 1);
+    assert.equal(await page.evaluate(() => window.qaLocalSpeech.inferenceWorker.terminated), 1);
     await page.evaluate(() => window.qaLocalSpeech.lateResult({ data: { type: 'result', id: window.qaLocalSpeech.oldTranscribeId, text: 'Нежелана Промяна' } }));
     assert.equal(await input(form, 'guestName').inputValue(), 'Ръчно Проверено'); await assertMicClosed(page);
-    await prepareButton(form).waitFor();
-    passed(`${engine}: typing during local inference cancels/terminates it; stale result cannot overwrite a field and preparation is required again`);
-    await page.evaluate(() => { window.qaLocalSpeech.autoResult = true; }); await prepare(page, form);
+    await page.evaluate(() => { window.qaLocalSpeech.autoResult = true; });
+    await prepare(page, form);
+    assert.equal(await prepareButton(form).count(), 0);
+    passed(`${engine}: typing during local inference cancels/terminates it; stale result cannot overwrite a field and automatic model recovery needs no preparation button`);
+    const healthyWorkerCount = await page.evaluate(() => window.qaLocalSpeech.workers.length);
+    await page.evaluate(() => { window.qaLocalSpeech.failNextDecode = true; });
+    await mic(form, 'phone').click(); await waitPhase(form, 'listening');
+    await mic(form, 'phone').click(); await waitPhase(form, 'idle');
+    assert.match(await status(form).getByRole('alert').innerText(), /прочета записа/);
+    assert.equal(await mic(form, 'phone').isEnabled(), true);
+    assert.equal(await prepareButton(form).count(), 0);
+    assert.equal(await page.evaluate(() => window.qaLocalSpeech.workers.length), healthyWorkerCount);
+    assert.equal(await page.evaluate(() => window.qaLocalSpeech.worker.terminated), 0);
+    await phoneCandidate(form);
+    await form.locator('[data-voice-accept-phone]').click();
+    assert.equal(await input(form, 'phone').inputValue(), expected.phone);
+    assert.equal(await page.evaluate(() => window.qaLocalSpeech.workers.length), healthyWorkerCount);
+    passed(`${engine}: an audio container decode failure keeps the healthy model; the next phone recording works without another preparation`);
     await mic(form, 'phone').click(); await waitPhase(form, 'listening');
     const count = await page.evaluate(() => window.qaLocalSpeech.messages.length);
     await page.getByRole('button', { name: 'Close reservation form', exact: true }).click();
@@ -300,6 +335,19 @@ try {
     let reopened = await reopenMapForm(page);
     assert.equal(await prepareButton(reopened).count(), 0);
     assert.equal(await mic(reopened, 'guestName').isEnabled(), true);
+    await input(reopened, 'phone').fill('0899123456');
+    await page.evaluate(() => { window.qaLocalSpeech.nextText = 'Телефонче нула осем осем осем едно две'; });
+    await phoneCandidate(reopened);
+    assert.equal(await input(reopened, 'phone').inputValue(), '0899123456');
+    assert.equal(await reopened.locator('[data-voice-phone-review]').inputValue(), '088812');
+    assert.equal(await reopened.locator('[data-voice-accept-phone]').isDisabled(), true);
+    await reopened.locator('[data-voice-phone-review]').fill('0888123456');
+    assert.equal(await reopened.locator('[data-voice-accept-phone]').isEnabled(), true);
+    assert.equal(await input(reopened, 'phone').inputValue(), '0899123456');
+    await reopened.locator('[data-voice-accept-phone]').click();
+    assert.equal(await input(reopened, 'phone').inputValue(), '0888123456');
+    assert.equal(await reopened.locator('[data-voice-phone-review]').count(), 0);
+    passed(`${engine}: an incomplete phone result stays editable, cannot be accepted until corrected, and never replaces the existing contact before confirmation`);
     await input(reopened, 'phone').fill('0899123456');
     await phoneCandidate(reopened);
     assert.equal(await input(reopened, 'phone').inputValue(), '0899123456');
@@ -342,7 +390,7 @@ try {
     passed(`${engine}: logout disposes the parent-owned model and leaves no active worker or microphone`);
     await context.close();
     const unsupported = await open(browser, engine, 'landscape', { unsupportedWasm: true });
-    const unsupportedForm = await formFor(unsupported.page, 'list'); await prepareButton(unsupportedForm).click();
+    const unsupportedForm = await formFor(unsupported.page, 'list');
     await unsupportedForm.getByRole('alert').waitFor();
     assert.match(await unsupportedForm.getByRole('alert').innerText(), /не поддържа локалната/);
     assert.deepEqual(await unsupported.page.evaluate(() => ({ workers: window.qaLocalSpeech.workers.length, permissions: window.qaLocalSpeech.permissions })), { workers: 0, permissions: 0 });
@@ -351,9 +399,9 @@ try {
     passed(`${engine}: unsupported WebAssembly reports manual entry before any worker or microphone starts, with no server fallback`);
     await unsupported.context.close();
     const noAudio = await open(browser, engine, 'portrait', { unsupportedAudio: true });
-    const noAudioForm = await formFor(noAudio.page, 'map'); await prepareButton(noAudioForm).click();
-    await noAudioForm.getByRole('alert').waitFor();
-    assert.match(await noAudioForm.getByRole('alert').innerText(), /ръчно/);
+    const noAudioForm = await formFor(noAudio.page, 'map');
+    assert.match(await status(noAudioForm).innerText(), /ръчно/);
+    assert.equal(await prepareButton(noAudioForm).count(), 0);
     assert.deepEqual(await noAudio.page.evaluate(() => ({ workers: window.qaLocalSpeech.workers.length, gpuProbes: window.qaLocalSpeech.gpuProbes, permissions: window.qaLocalSpeech.permissions })), { workers: 0, gpuProbes: 0, permissions: 0 });
     await input(noAudioForm, 'guestName').fill('Ръчно Име'); assert.equal(await input(noAudioForm, 'guestName').inputValue(), 'Ръчно Име');
     passed(`${engine}: missing microphone APIs reject preparation without creating a worker; manual fields remain usable`);

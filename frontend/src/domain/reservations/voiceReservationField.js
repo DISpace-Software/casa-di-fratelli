@@ -16,6 +16,16 @@ const introductions = {
   email: /^(?:имейл(?:ът|а)?(?: е)?|електронна поща|email(?: address)?(?: is)?|e-mail|почта)(?!\p{L})[\s,.;:!?—-]*/iu,
 };
 const uncertain = /(?<!\p{L})(?:или|or|може би|не съм сигур(?:ен|на)|не знам|не знаю|не уверен|maybe|not sure|don't know)(?!\p{L})/iu;
+const phoneDigitNames = { нула: '0', единица: '1', двойка: '2', тройка: '3', четворка: '4', петица: '5', шестица: '6', седмица: '7', осмица: '8', деветка: '9' };
+const phoneDigitPlurals = { нули: '0', единици: '1', двойки: '2', тройки: '3', четворки: '4', петици: '5', шестици: '6', седмици: '7', осмици: '8', деветки: '9' };
+const phoneDigitWords = { ...phoneDigitNames, едно: '1', един: '1', една: '1', две: '2', два: '2', три: '3', четири: '4', пет: '5', шест: '6', седем: '7', осем: '8', девет: '9' };
+const phoneRepeatCounts = { две: 2, два: 2, три: 3, четири: 4, пет: 5, шест: 6, седем: 7, осем: 8, девет: 9 };
+const phoneRepeatCount = `(?:[2-9]|${Object.keys(phoneRepeatCounts).join('|')})`;
+const phoneDigitWord = `(?:[0-9]|${Object.keys(phoneDigitWords).join('|')})`;
+const phoneRepeatedPlural = new RegExp(`(?<![\\p{L}\\d])(${phoneRepeatCount})\\s+(${Object.keys(phoneDigitPlurals).join('|')})(?![\\p{L}\\d])`, 'giu');
+const phoneRepeatedTimes = new RegExp(`(?<![\\p{L}\\d])(${phoneRepeatCount})\\s+пъти\\s+(${phoneDigitWord})(?![\\p{L}\\d])`, 'giu');
+const phoneDoubleTriple = new RegExp(`(?<![\\p{L}\\d])(двойна|двойно|двоен|тройна|тройно|троен)\\s+(${phoneDigitWord})(?![\\p{L}\\d])`, 'giu');
+const phoneNamedDigit = new RegExp(`(?<![\\p{L}\\d])(${Object.keys(phoneDigitNames).join('|')})(?![\\p{L}\\d])`, 'giu');
 const numberWords = 'нула|ноль|нуль|zero|oh|едно|един|една|один|одна|one|две|два|двама|двое|two|три|трима|трое|three|четири|четирима|четыре|four|пет|петима|пять|five|шест|шестима|шесть|six|седем|семь|seven|осем|восемь|eight|девет|девять|nine|десет|десять|ten|единадесет|одиннадцать|eleven|дванадесет|двенадцать|twelve|тринадесет|тринадцать|thirteen|четиринадесет|четырнадцать|fourteen|петнадесет|пятнадцать|fifteen|шестнадесет|шестнадцать|sixteen|седемнадесет|семнадцать|seventeen|осемнадесет|восемнадцать|eighteen|деветнадесет|девятнадцать|nineteen|двадесет|двадцать|twenty|тридесет|тридцать|thirty|четиридесет|сорок|forty|петдесет|пятьдесят|fifty';
 const number = `(?:\\d+|(?:${numberWords})(?:\\s+(?:(?:и|and)\\s+)?(?:${numberWords}))?)`;
 const month = '(?:януари|января|january|февруари|февраля|february|март|марта|march|април|апреля|april|май|мая|may|юни|июня|june|юли|июля|july|август|августа|august|септември|сентября|september|октомври|октября|october|ноември|ноября|november|декември|декабря|december)';
@@ -80,6 +90,21 @@ function parseEmail(value, bulgarian) {
 }
 
 function normalizeFieldNotation(field, value) {
+  if (field === 'phone') {
+    // Expand only explicit repetition. "Две осмици" means 88, while "две
+    // осем" remains the ordinary 28; missing digits are never supplied.
+    value = value.replace(phoneRepeatedPlural, (_whole, count, digit) => phoneDigitPlurals[digit.toLowerCase()].repeat(phoneRepeatCounts[count.toLowerCase()] || Number(count)))
+      .replace(phoneRepeatedTimes, (_whole, count, digit) => (phoneDigitWords[digit.toLowerCase()] || digit).repeat(phoneRepeatCounts[count.toLowerCase()] || Number(count)))
+      .replace(phoneDoubleTriple, (_whole, count, digit) => (phoneDigitWords[digit.toLowerCase()] || digit).repeat(count.toLowerCase().startsWith('д') ? 2 : 3))
+      .replace(phoneNamedDigit, (_whole, digit) => phoneDigitNames[digit.toLowerCase()]);
+    // ASR can format phone groups without spaces. The conversation parser
+    // otherwise treats a dot as a date/time boundary. Do not turn a literal
+    // calendar date into a phone number, or join arbitrary surrounding text.
+    if (/^\+?\d+(?:[\s()./—–-]+\d+)+$/u.test(value) && !/^\d{1,2}[./]\d{1,2}[./]\d{4}$/u.test(value)) {
+      value = value.replace(/(?<=\d)[./](?=\d)|[—–]/gu, ' ');
+    }
+    return value;
+  }
   if (field === 'reservedDate') {
     return value.replace(/^(\d{1,2})-(?:ви|ри|ти)(?=\s+\p{L})/iu, '$1')
       .replace(/(\d{4})\s*г(?:одина)?\.?$/iu, '$1');
@@ -93,6 +118,14 @@ function normalizeFieldNotation(field, value) {
   return value;
 }
 
+function hasUnsafePhoneMagnitude(value) {
+  // Short-clip ASR has confused "осем" with "осемстотин". Do not guess
+  // whether a hundred was spoken or hallucinated; retain only the explicitly
+  // spoken Bulgarian international country code as an allowed magnitude.
+  const subscriber = value.replace(/^плюс\s+триста\s+(?:и\s+)?петдесет\s+(?:и\s+)?девет\s+/iu, '');
+  return /(?<!\p{L})(?:сто|двеста|триста|четиристотин|петстотин|шестстотин|седемстотин|осемстотин|деветстотин|хиляда|хиляди)(?!\p{L})/iu.test(subscriber);
+}
+
 function parseCompleteField(field, transcript, now, language) {
   const issue = issues[field] || 'field';
   const failure = { value: null, issue };
@@ -101,13 +134,7 @@ function parseCompleteField(field, transcript, now, language) {
   const cleaned = cleanValue(field, transcript);
   const value = bulgarian ? normalizeFieldNotation(field, cleaned) : cleaned;
   if (!value || uncertain.test(value)) return failure;
-  if (bulgarian && field === 'phone') {
-    // Actual short-clip ASR confused "осем" with "осемстотин", creating
-    // plausible 080… contacts. Ask for digits rather than inventing a grouping.
-    // Preserve the explicitly spoken Bulgarian international country code.
-    const subscriber = value.replace(/^плюс\s+триста\s+(?:и\s+)?петдесет\s+(?:и\s+)?девет\s+/iu, '');
-    if (/(?<!\p{L})(?:сто|двеста|триста|четиристотин|петстотин|шестстотин|седемстотин|осемстотин|деветстотин|хиляда|хиляди)(?!\p{L})/iu.test(subscriber)) return failure;
-  }
+  if (bulgarian && field === 'phone' && hasUnsafePhoneMagnitude(value)) return failure;
   // A decimal headcount is invalid even when its two digits happen to match;
   // it must not be mistaken for an identical read-back ("2,2" -> "2").
   if (field === 'guestCount' && /^\d+\s*[.,]\s*\d+(?:\s+\p{L}+)?$/u.test(value)) return failure;
@@ -124,9 +151,11 @@ function parseCompleteField(field, transcript, now, language) {
   if (!result || parsed.issues.includes(issue)) return failure;
   // Bulgarian 87/88/89 mobile numbers have nine national significant digits.
   // Reject missing AND extra digits: ASR can turn "пет" into "петстотин".
+  // A bare 87/88/89 prefix can also mean ASR dropped the leading zero. Keep
+  // that as a review draft; neither accept it nor silently add a country code.
   // Other/international prefixes retain the shared checks; never trim a number.
   if (bulgarian && field === 'phone' && ((/^08[789]/u.test(result) && result.length !== 10)
-    || (/^\+3598[789]/u.test(result) && result.length !== 13))) return failure;
+    || (/^\+3598[789]/u.test(result) && result.length !== 13) || /^8[789]/u.test(result))) return failure;
 
   if (field === 'guestName') {
     // The shared parser may stop at a second field or chatter. A field dictation
@@ -175,4 +204,22 @@ export function parseVoiceReservationField(field, transcript, now = new Date(), 
     }
   }
   return parse(value);
+}
+
+/** A review-only draft, never a valid contact by itself. Keep recognized digits
+ * visible when ASR omits a zero, so an admin can edit rather than start again.
+ * The caller must validate the edited value and require explicit confirmation. */
+export function extractVoicePhoneReview(transcript, { language = 'bg-BG' } = {}) {
+  const complete = parseVoiceReservationField('phone', transcript, new Date(), { language });
+  if (complete.value) return complete.value;
+  if (language !== 'bg' && language !== 'bg-BG') return null;
+  const value = normalizeFieldNotation('phone', cleanValue('phone', transcript));
+  if (!value || uncertain.test(value) || hasUnsafePhoneMagnitude(value)
+    || /(?<!\p{L})(?:не|поправка|корекция)(?!\p{L})/iu.test(value)) return null;
+  const labelled = `телефон ${value}`;
+  const normalized = normalizeBulgarianReservationTranscript(labelled);
+  const digits = normalized.slice('телефон'.length).replace(edgePunctuation, '');
+  // Every part of the utterance must be a number. No prefix-only extraction,
+  // trimming of extra digits, implicit country code or unknown-word repair.
+  return normalized.startsWith('телефон ') && /^\+?\d{3,15}$/u.test(digits) ? digits : null;
 }

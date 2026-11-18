@@ -60,13 +60,12 @@ try {
   await page.locator('.admin-map-table-node').filter({ hasText: /^23$/ }).click();
   await page.getByRole('button', { name: 'Създай резервация', exact: true }).click();
   const form = page.getByRole('form', { name: 'Резервация', exact: true });
-  assert.equal(modelRequests.length, 0, 'Model assets must wait for explicit preparation');
+  assert.equal(await form.locator('[data-voice-prepare]').count(), 0, 'Model prepares automatically with the form');
   assert.equal(await form.locator('[data-voice-field]').count(), 2, 'Only name and phone have microphones');
   for (const field of ['reservedDate', 'reservedTime', 'guestCount', 'email']) {
     assert.equal(await mic(form, field).count(), 0, `${field} remains manual`);
   }
   const preparing = Date.now();
-  await form.locator('[data-voice-prepare]').click();
   await page.waitForFunction(() => !document.querySelector('[data-voice-field="guestName"]')?.disabled, null, { timeout: 180000 });
   preparationSeconds = (Date.now() - preparing) / 1000;
   const cases = [

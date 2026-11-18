@@ -90,6 +90,8 @@ for name in [*speech_files, 'manifest.json']:
         {'key': 'X-Robots-Tag', 'value': 'noindex, nofollow, noarchive'},
         {'key': 'X-Content-Type-Options', 'value': 'nosniff'},
         {'key': 'X-Frame-Options', 'value': 'DENY'},
+    ]}, {'source': f'/{speech_path.as_posix()}/:asset', 'headers': [
+        {'key': 'Cache-Control', 'value': 'public, max-age=31536000, immutable'},
     ]}] + [
         {'source': f'/{speech_path.as_posix()}/{name}', 'headers': [
             {'key': 'Content-Type', 'value': 'application/wasm' if name.endswith('.wasm') else 'application/octet-stream'},

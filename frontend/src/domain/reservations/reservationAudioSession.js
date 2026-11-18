@@ -1,18 +1,25 @@
-// Short, explicitly started recording for server transcription. Audio stays in
+// Short, explicitly started recording. Audio stays in
 // memory and is handed only to the injected transcribe adapter after capture ends.
+import { createReservationPcmRecorder } from './reservationPcmRecorder.js';
+
 export function startReservationAudioSession({
   mediaDevices, MediaRecorder, AudioContext, language, field, transcribe,
   onStart, onProcessing, onTranscript, onError, onEnd, onLimit,
+  preferPcm = false, createPcmRecorder = createReservationPcmRecorder,
 }) {
   const maxBytes = 5 * 1024 * 1024;
   const maxRecordingMs = 20000;
   const sampleMs = 100;
-  const silenceMs = field === 'phone' ? 2000 : 1800;
+  // Pauses between phone digit groups do not mean the number is complete.
+  // Only an explicit Stop (or the recording limit) completes phone capture.
+  const autoStopOnSilence = field !== 'phone';
+  const silenceMs = 1800;
   let finished = false;
   let phase = 'starting';
   let stream = null;
   let recorder = null;
   let audioContext = null;
+  let audioReady = null;
   let source = null;
   let analyser = null;
   let samples = null;
@@ -62,6 +69,7 @@ export function startReservationAudioSession({
     if (recorder && recorder.state !== 'inactive') {
       try { recorder.stop(); } catch { /* stop may have raced a device failure. */ }
     }
+    recorder?.dispose?.();
     recorder = null;
     closeAudio();
     chunks = [];
@@ -87,8 +95,11 @@ export function startReservationAudioSession({
     stopTimer = setTimeout(() => fail('stop-timeout'), 2000);
     try { recorder.stop(); }
     catch { fail('recording'); }
-    // Closing tracks is immediate, even when final Blob/stop events are delayed.
-    closeAudio();
+    // PCM flush needs its AudioWorklet alive until the final buffer arrives.
+    // Stop microphone tracks immediately; keep only its silent graph briefly.
+    if (recorder?.mimeType === 'audio/wav' && recorder?.dispose) {
+      stopTracks(stream); stream = null;
+    } else closeAudio();
   }
   function sampleAudio() {
     if (finished || phase !== 'recording' || !analyser) return;
@@ -105,7 +116,7 @@ export function startReservationAudioSession({
       if (loudSamples >= 2) hasSpeech = true;
       if (loud) lastSpeechAt = Date.now();
       if (!hasSpeech && Date.now() - recordingStartedAt >= 6000) { fail('no-speech'); return; }
-      if (hasSpeech && Date.now() - lastSpeechAt >= silenceMs) { stop(); return; }
+      if (autoStopOnSilence && hasSpeech && Date.now() - lastSpeechAt >= silenceMs) { stop(); return; }
     } catch { fail('audio-capture'); return; }
     sampleTimer = setTimeout(sampleAudio, sampleMs);
   }
@@ -167,12 +178,31 @@ export function startReservationAudioSession({
     if (finished) { stopTracks(granted); return; }
     stream = granted;
     try {
-      const candidates = ['audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
-      const mimeType = candidates.find(type => MediaRecorder.isTypeSupported?.(type));
-      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      if (preferPcm && audioReady) {
+        await audioReady;
+        if (finished) return;
+      }
+      if (preferPcm && audioContext?.state === 'running') {
+        try {
+          const pcm = await createPcmRecorder({ stream, audioContext, maxRecordingMs, signal: controller.signal });
+          if (finished) { pcm.dispose(); return; }
+          recorder = pcm;
+        } catch {
+          // Older engines may lack AudioWorklet. Fall back only before capture
+          // starts; a failed active recording must never be silently retried.
+          if (finished) return;
+        }
+      }
+      if (!recorder) {
+        const candidates = ['audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
+        const mimeType = candidates.find(type => MediaRecorder.isTypeSupported?.(type));
+        recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      }
       const current = recorder;
       const isCurrent = () => !finished && recorder === current;
-      const silenceDetection = prepareAnalysis();
+      // Phone digits may be quiet or widely separated. Explicit Stop and the
+      // cap bound capture; the local recognizer detects empty audio afterwards.
+      const silenceDetection = autoStopOnSilence && prepareAnalysis();
       current.onstart = () => {
         if (!isCurrent() || phase !== 'starting') return;
         clearTimeout(startTimer);
@@ -183,7 +213,7 @@ export function startReservationAudioSession({
           onLimit?.();
           stop();
         }, maxRecordingMs);
-        onStart?.({ silenceDetection });
+        onStart?.({ silenceDetection: silenceDetection && autoStopOnSilence });
         if (isCurrent() && phase === 'recording' && silenceDetection) sampleAudio();
       };
       current.ondataavailable = event => {
@@ -211,8 +241,9 @@ export function startReservationAudioSession({
     // async boundary. A suspended/unavailable analyser uses explicit tap-stop.
     if (typeof AudioContext === 'function') {
       try {
-        audioContext = new AudioContext();
-        Promise.resolve(audioContext.resume?.()).catch(() => {});
+        try { audioContext = new AudioContext(preferPcm ? { sampleRate: 16000 } : undefined); }
+        catch { audioContext = new AudioContext(); }
+        audioReady = Promise.resolve(audioContext.resume?.()).catch(() => {});
       } catch {
         try { Promise.resolve(audioContext?.close()).catch(() => {}); } catch { /* Already closed. */ }
         audioContext = null;

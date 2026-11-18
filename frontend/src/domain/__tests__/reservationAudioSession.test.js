@@ -73,6 +73,8 @@ function setup(t, options = {}) {
     },
     MediaRecorder: Recorder,
     AudioContext: options.noAnalysis ? undefined : Audio,
+    preferPcm: options.preferPcm,
+    ...(options.createPcmRecorder ? { createPcmRecorder: config => options.createPcmRecorder(config, Recorder) } : {}),
     language: 'bg-BG', field: options.field || 'guestName',
     transcribe: async request => {
       assert.equal(track.stopped, 1, 'microphone must close before upload');
@@ -134,23 +136,95 @@ test('an unsupported preferred MIME uses the browser default', async t => {
   assert.equal(state.uploads[0].blob.type, 'audio/webm');
 });
 
-test('phone pauses under two seconds retain recording; trailing silence completes it', async t => {
+test('phone pauses between digit groups keep recording until explicit Stop', async t => {
+  const state = setup(t, { field: 'phone' });
+  await settle();
+  assert.deepEqual(state.events[0], ['start', { silenceDetection: false }]);
+  state.setLevel(0.04);
+  advance(t, 300);
+  state.setLevel(0);
+  advance(t, 4000);
+  assert.equal(state.recorders[0].stopped, 0);
+  state.setLevel(0.04);
+  advance(t, 300);
+  state.setLevel(0);
+  advance(t, 6000);
+  assert.equal(state.recorders[0].stopped, 0);
+  assert.equal(state.uploads.length, 0);
+  state.session.stop();
+  await settle();
+  assert.equal(state.recorders[0].stopped, 1);
+  assert.equal(state.uploads.length, 1);
+});
+
+test('phone capture retains the twenty-second cap when Stop is forgotten', async t => {
   const state = setup(t, { field: 'phone' });
   await settle();
   state.setLevel(0.04);
   advance(t, 300);
   state.setLevel(0);
-  advance(t, 1800);
-  assert.equal(state.recorders[0].stopped, 0);
-  state.setLevel(0.04);
-  advance(t, 300);
-  state.setLevel(0);
-  advance(t, 1900);
+  advance(t, 19600);
   assert.equal(state.recorders[0].stopped, 0);
   advance(t, 100);
   await settle();
   assert.equal(state.recorders[0].stopped, 1);
   assert.equal(state.uploads.length, 1);
+  assert.equal(state.events.filter(event => event[0] === 'limit').length, 1);
+  assert.deepEqual(state.errors, []);
+});
+
+test('quiet phone recording survives six seconds without an analyser false-negative', async t => {
+  const state = setup(t, { field: 'phone' });
+  await settle();
+  state.setLevel(0.001); advance(t, 6500);
+  assert.equal(state.recorders[0].stopped, 0);
+  assert.deepEqual(state.errors, []);
+  state.session.stop(); await settle();
+  assert.equal(state.uploads.length, 1, 'Phone audio reaches recognition even below the name VAD threshold');
+});
+
+test('PCM Stop closes the microphone immediately but retains the graph until final buffer flush', async t => {
+  let flush, disposed = 0;
+  const state = setup(t, { preferPcm: true, noAnalysis: false, createPcmRecorder: async (_config, Recorder) => {
+    const recorder = new Recorder({}, { mimeType: 'audio/wav' });
+    recorder.dispose = () => { disposed++; };
+    recorder.stop = () => {
+      recorder.state = 'inactive'; recorder.stopped++;
+      flush = () => { recorder.ondataavailable?.({ data: new Blob(['pcm'], { type: 'audio/wav' }) }); recorder.onstop?.(); };
+    };
+    return recorder;
+  } });
+  await settle();
+  state.setLevel(0.04); advance(t, 300);
+  state.session.stop();
+  assert.equal(state.track.stopped, 1);
+  assert.equal(state.contexts[0].closed, 0);
+  assert.equal(state.uploads.length, 0);
+  flush(); await settle();
+  assert.equal(state.contexts[0].closed, 1);
+  assert.equal(state.uploads.length, 1);
+  assert.equal(state.uploads[0].blob.type, 'audio/wav');
+  assert.equal(disposed, 1);
+});
+
+test('PCM setup failure can use MediaRecorder, while active PCM failure never starts a fallback', async t => {
+  for (const failure of ['setup', 'capture']) await t.test(failure, async t => {
+    let attempts = 0;
+    const state = setup(t, { preferPcm: true, createPcmRecorder: async (_config, Recorder) => {
+      attempts++;
+      if (failure === 'setup') throw new Error('Unsupported worklet');
+      const recorder = new Recorder({}, { mimeType: 'audio/wav' }); recorder.dispose = () => {};
+      return recorder;
+    } });
+    await settle();
+    assert.equal(attempts, 1); assert.equal(state.recorders.length, 1);
+    if (failure === 'setup') assert.match(state.recorders[0].mimeType, /^audio\/mp4/);
+    else {
+      state.recorders[0].onerror(); await settle();
+      assert.deepEqual(state.errors, ['recording']);
+      assert.equal(state.recorders.length, 1); assert.equal(state.uploads.length, 0);
+    }
+  });
 });
 
 test('six seconds of measured silence never uploads audio', async t => {

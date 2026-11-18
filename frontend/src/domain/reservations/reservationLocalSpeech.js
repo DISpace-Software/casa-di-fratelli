@@ -116,7 +116,10 @@ export function createReservationLocalSpeech({
     clearTimeout(operation.timer);
     operation.signal?.removeEventListener('abort', operation.abort);
     if (error) {
-      const keepReady = error.code === 'no-speech' && operation.type === 'transcribe';
+      // A bad/aborted recording does not damage an idle recognizer. Only work
+      // actually dispatched to WASM must be terminated to cancel inference.
+      const keepReady = !disposed && worker && operation.type === 'transcribe'
+        && (error.code === 'no-speech' || (!operation.workerDispatched && !operation.workerFailed));
       if (!keepReady) terminate();
       publish(keepReady ? 'ready' : error.code === 'aborted' ? 'idle' : 'error', error.code === 'aborted' ? null : error.code);
       operation.reject(error);
@@ -177,7 +180,7 @@ export function createReservationLocalSpeech({
         created.onmessage = event => receive(event, created);
         created.onerror = created.onmessageerror = () => {
           if (worker !== created) return;
-          if (pending) settle(pending, failure('recognition-unavailable'));
+          if (pending) { pending.workerFailed = true; settle(pending, failure('recognition-unavailable')); }
           else { terminate(); publish('error', 'recognition-unavailable'); }
         };
         created.postMessage({ type: 'prepare', id: operation.id, assetBase: new URL('/speech/bg-zipformer/8d2f8f4-sherpa-1.12.36/', globalThis.location?.href || 'http://localhost/').href });
@@ -198,6 +201,7 @@ export function createReservationLocalSpeech({
         if (!(audio instanceof Float32Array) || !audio.length || audio.length > MAX_SAMPLES || audio.some(value => !Number.isFinite(value))) throw failure('audio-decode');
         if (audio.every(value => value === 0)) throw failure('no-speech');
         if (audio.byteOffset || audio.byteLength !== audio.buffer.byteLength) audio = audio.slice();
+        operation.workerDispatched = true;
         worker.postMessage({ type: 'transcribe', id: operation.id, audio, language: normalizedLanguage, field }, [audio.buffer]);
       });
     },
