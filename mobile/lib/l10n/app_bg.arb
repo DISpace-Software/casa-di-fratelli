@@ -1,0 +1,545 @@
+{
+  "@@locale": "bg",
+  "msgJan": "яну",
+  "msgFeb": "фев",
+  "msgMar": "мар",
+  "msgApr": "апр",
+  "msgMay": "май",
+  "msgJun": "юни",
+  "msgJul": "юли",
+  "msgAug": "авг",
+  "msgSep": "сеп",
+  "msgOct": "окт",
+  "msgNov": "ное",
+  "msgDec": "дек",
+  "msgToday": "Днес, ",
+  "msgGuest": "гост",
+  "msgGuests": "гости",
+  "msgGuests15": "гости",
+  "msgDiscover": "Начало",
+  "msgSearch": "Търсене",
+  "msgBookings": "Резервации",
+  "msgProfile": "Профил",
+  "msgWhereShallWeDine": "Къде ще вечеряме?",
+  "msgRestaurantTablesInP": "Маси в ресторантите в {p0}",
+  "@msgRestaurantTablesInP": {
+    "description": "Столики в ресторанах {p0}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgSofia": "София",
+  "msgSofia23": "София",
+  "msgPlovdiv": "Пловдив",
+  "msgPlovdiv25": "Пловдив",
+  "msgAllPlaces": "Всички места",
+  "msgForASpecialEvening": "За специална вечер",
+  "msgToday28": "Днес",
+  "msgFindATable": "Намери маса",
+  "msgNew": "Ново",
+  "msgRemoveFromFavourites": "Премахни от любими",
+  "msgAddToFavourites": "Добави в любими",
+  "msgBack": "Назад",
+  "msgAll": "Всички",
+  "msgFavouritePlaces": "Любими места",
+  "msgFindYourPlace": "Да намерим вашето място",
+  "msgRestaurantsWorthReturningTo": "Ресторанти, в които искате да се върнете",
+  "msgAGreatEveningStartsHere": "Хубавата вечер започва тук",
+  "msgRestaurantCuisineOrArea": "Ресторант, кухня или район",
+  "msgBulgarian": "Българска",
+  "msgEuropean": "Европейска",
+  "msgItalian": "Италианска",
+  "msgRestaurant": "ресторант",
+  "msgRestaurants": "ресторанта",
+  "msgFavourites": "Любими",
+  "msgNoPlacesFoundYet": "Няма намерени места",
+  "msgTryAnotherNameOrCuisineYourPlaceIs": "Опитайте друго име или кухня.\nВашето място ви очаква.",
+  "msgTryAgain": "Опитай отново",
+  "msgOf": "1 от 6",
+  "msgOf50": "1 от 1",
+  "msgPCuisine": "{p0} кухня",
+  "@msgPCuisine": {
+    "description": "{p0} кухня",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgBookATable": "Резервирайте маса",
+  "msgAvailableTimes": "Свободни часове",
+  "msgAboutTheRestaurant": "За ресторанта",
+  "msgViewMenu": "Виж менюто",
+  "msgChooseATable": "Изберете маса",
+  "msgPOfP": "{p0} от {p1}",
+  "@msgPOfP": {
+    "description": "{p0} из {p1}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "msgAtmosphereDemoPhotos": "Атмосфера · демонстрационни снимки",
+  "msgMenuP": "Меню · {p0}",
+  "@msgMenuP": {
+    "description": "Меню · {p0}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgCouldNotLoadTheMenuPleaseTryLater": "Менюто не се зареди. Опитайте по-късно.",
+  "msgMenuComingSoon": "Менюто ще бъде достъпно скоро",
+  "msgWhenShallWeMeet": "Кога ще ни посетите?",
+  "msgSelect": "Избери",
+  "msgWhatTimeShallWeExpectYou": "В колко часа да ви очакваме?",
+  "msgHowManyGuests": "Колко ще бъдете?",
+  "msgDone": "Готово",
+  "msgYourCity": "Вашият град",
+  "msgVarna": "Варна",
+  "msgBurgas": "Бургас",
+  "msgJanuary": "януари",
+  "msgFebruary": "февруари",
+  "msgMarch": "март",
+  "msgApril": "април",
+  "msgJune": "юни",
+  "msgJuly": "юли",
+  "msgAugust": "август",
+  "msgSeptember": "септември",
+  "msgOctober": "октомври",
+  "msgNovember": "ноември",
+  "msgDecember": "декември",
+  "msgGotIt": "Разбрах",
+  "msgIncorrectEmailOrPassword": "Невалиден email или парола.",
+  "msgYourTableIsWaiting": "Вашата маса\nви очаква",
+  "msgFavouritePlacesAndEveningPlansAllInOne": "Любими места и планове за вечерта —\nв едно приложение.",
+  "msgEnterAValidEmail": "Въведете валиден email",
+  "msgPassword": "Парола",
+  "msgShowOrHidePassword": "Покажи или скрий паролата",
+  "msgEnterYourPassword": "Въведете парола",
+  "msgSignIn": "Вход",
+  "msgNoAccountSignUp": "Нямате акаунт? Регистрирайте се",
+  "msgEnterTheEmailAndPasswordForYourSeatMap": "Въведете email и парола за вашия акаунт в SeatMap.",
+  "msgTESTACCOUNT": "ТЕСТОВ АКАУНТ",
+  "msgMeetSeatMap": "Запознайте се със SeatMap",
+  "msgDemoSignInWorksOnlyOnThisDevice": "Тестовият вход работи само на това устройство. За регистрация използвайте онлайн режима.",
+  "msgEmailDemoSeatmapAppPasswordSeatMap": "Email: demo@seatmap.app\nПарола: SeatMap2026!",
+  "msgSignInToTheTestAccount": "Влез в тестовия акаунт →",
+  "msgYouCanBrowseRestaurantsAndTablesWithoutSigning": "Можете да разглеждате ресторанти и маси без вход.",
+  "msgSignOutOfYourAccount": "Изход от акаунта?",
+  "msgYourLocalBookingsWillRemainOnThisDevice": "Локалните ви резервации ще останат на това устройство.",
+  "msgStay": "Остани",
+  "msgSignOut": "Изход",
+  "msgFavouritePlacesSpecialMomentsAllHere": "Любими места. Важни срещи. Всичко е тук.",
+  "msgSeatMapGuest": "Гост на SeatMap",
+  "msgYourNextEveningStartsHere": "Следващата ви вечер започва тук",
+  "msgTESTPROFILE": "ТЕСТОВ ПРОФИЛ",
+  "msgSEATMAPACCOUNT": "АКАУНТ В SEATMAP",
+  "msgDataIsSavedOnThisDevice": "Данните са запазени на това устройство.",
+  "msgYourProfileIsSavedOnTheServerYour": "Профилът ви е запазен на сървъра. Контактите са готови за резервация.",
+  "msgSignInToSeatMap": "Влез в SeatMap",
+  "msgYourSeatMap": "Вашият SeatMap",
+  "msgFavouritePlaces111": "Любими места",
+  "msgPSaved": "{p0} запазени",
+  "@msgPSaved": {
+    "description": "{p0} сохранено",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgMyDetails": "Моите данни",
+  "msgPersonalDetailsContactsAndPreferences": "Лични данни, контакти и предпочитания",
+  "msgSecurity": "Сигурност",
+  "msgPasswordAndAccountDeletion": "Парола и изтриване на акаунт",
+  "msgReminders": "Напомняния",
+  "msgDemoNoNotificationsSent": "Демо · без изпращане на известия",
+  "msgHereToHelp": "Ние сме насреща",
+  "msgHelp": "Помощ",
+  "msgHowItWorks": "Как работи",
+  "msgFindARestaurantChooseADateAndTime": "Намерете ресторант, изберете дата и час, а след това свободна маса на схемата. Оставете контактите си — детайлите ще се появят в „Резервации“.\n\nВ демо режим резервациите не се изпращат до ресторанта. В онлайн режим заявката се изпраща след натискане на „Резервирай“.",
+  "msgAboutSeatMap": "За SeatMap",
+  "msgAGreatEveningStartsWithAPlace": "Хубавата вечер започва с мястото",
+  "msgSeatMapHelpsYouFindARestaurantAndChoose": "SeatMap ви помага да намерите ресторант и да изберете конкретна маса преди посещението.\n\nМобилен MVP · 1.0.0\niOS и Android\n\n{p0}\nРегистрацията и профилът са свързани със сървъра. Любимите места и историята на резервациите се пазят на устройството.",
+  "@msgSeatMapHelpsYouFindARestaurantAndChoose": {
+    "description": "SeatMap помогает найти ресторан и выбрать конкретный столик до визита.\n\nМобильный MVP · 1.0.0\niOS и Android\n\n{p0}\nРегистрация и профиль подключены к серверу. Избранное и история броней сохраняются на устройстве.",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgDemoCatalogueAndBookings": "Демо каталог и резервации.",
+  "msgConnectedToTheRestaurantAPI": "Свързано с API на ресторантите.",
+  "msgSignOutOfAccount": "Излез от акаунта",
+  "msgSeatMapMoreThanATable": "SeatMap · повече от маса",
+  "msgContactTheRestaurant": "Свържете се с ресторанта",
+  "msgOnlineCancellationIsNotAvailableYetPleaseCall": "Онлайн отмяна все още не е налична. Моля, обадете се на ресторанта.\n\nРезервацията ви остава активна.",
+  "msgCancelThisBooking": "Отмяна на резервацията?",
+  "msgPPPThisIsADemoBooking": "{p0}\n{p1} · {p2}\n\nТова е тестова резервация.",
+  "@msgPPPThisIsADemoBooking": {
+    "description": "{p0}\n{p1} · {p2}\n\nЭто тестовая бронь.",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "msgKeepBooking": "Запази",
+  "msgCancelBooking": "Отмени резервацията",
+  "msgDemoBookingCancelled": "Тестовата резервация е отменена",
+  "msgMyBookings": "Моите резервации",
+  "msgAllYourPlansForAGreatEvening": "Всичките ви планове за хубава вечер.",
+  "msgUpcoming": "Предстоящи",
+  "msgHistory": "История",
+  "msgNoBookingHistoryYet": "Историята е празна",
+  "msgYourEveningIsStillOpen": "Вечерта още не е планирана",
+  "msgPastAndCancelledBookingsWillAppearHere": "Тук ще се показват минали\nи отменени резервации.",
+  "msgChooseARestaurantAndYourFavouriteTableWe": "Изберете ресторант и любима маса.\nЩе запазим всички детайли тук.",
+  "msgPGuestsTableP": "{p0} гости · маса {p1}",
+  "@msgPGuestsTableP": {
+    "description": "{p0} гостя · стол {p1}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "msgDEMO": "ДЕМО",
+  "msgCancelled": "Отменена",
+  "msgConfirmYourBookingByEmail": "Потвърдете по email",
+  "msgConfirmed": "Потвърдена",
+  "msgCancel": "Отмени",
+  "msgContact": "Свържи се",
+  "msgBookingsAreStoredOnThisDeviceTestBookings": "Резервациите се пазят на това устройство. Тестовите са отбелязани с „Демо“.",
+  "msgPleaseConsentToSharingYourDetailsWithThe": "Потвърдете съгласието за предаване на данни на ресторанта.",
+  "msgAlmostThere": "Почти готово",
+  "msgLeaveYourContactDetailsYourTableAwaits": "Оставете контактите си — и масата е ваша.",
+  "msgPGuests": "{p0} гости",
+  "@msgPGuests": {
+    "description": "{p0} гостя",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgTableP": "Маса {p0}",
+  "@msgTableP": {
+    "description": "Стол {p0}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgDemoModeThisBookingStaysOnYourDevice": "Демо режим. Резервацията остава на устройството и не се изпраща до ресторанта.",
+  "msgYourContactDetails": "Вашите контакти",
+  "msgAlexanderIvanov": "Александър Иванов",
+  "msgFillWithTestDetails": "Попълни с тестови данни",
+  "msgYourName": "Вашето име",
+  "msgEnterYourName": "Въведете име",
+  "msgPhoneNumber": "Телефон",
+  "msgEnterAValidPhoneNumber": "Въведете валиден телефон",
+  "msgRequestsOptional": "Пожелания · незадължително",
+  "msgSpecialOccasionHighChair": "Специален повод, детско столче…",
+  "msgIAgreeToShareMyContactDetailsWith": "Съгласен съм контактните ми данни да бъдат предадени на ресторанта за резервацията.",
+  "msgContactRestaurant": "Свържи се с ресторанта",
+  "msgCreateDemoBooking": "Създай тестова резервация",
+  "msgBook": "Резервирай",
+  "msgCheckYourBookingStatus": "Проверете статуса на резервацията",
+  "msgContactPPDoNotSubmitAnotherRequest": "Свържете се с {p0}{p1}. Не изпращайте нова заявка, преди да разберете дали резервацията е запазена.",
+  "@msgContactPPDoNotSubmitAnotherRequest": {
+    "description": "Свяжитесь с {p0}{p1}. Не отправляйте новый запрос, пока не узнаете, сохранена ли бронь.",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "msgOneStepLeft": "Остава една стъпка",
+  "msgYourDemoTableIsBooked": "Вашата тестова\nмаса е резервирана",
+  "msgYourTableIsBooked": "Масата е ваша!",
+  "msgConfirmUsingTheLinkInYourEmailYour": "Потвърдете чрез линка в email съобщението.\nПреди това масата не е гарантирана.",
+  "msgAllTheDetailsAreSavedOnThisDevice": "Всички детайли са запазени на устройството.\nХубавата вечер започва тук.",
+  "msgPIsExpectingYouYourVisitDetailsAre": "{p0} ви очаква.\nДетайлите за посещението са запазени в приложението.",
+  "@msgPIsExpectingYouYourVisitDetailsAre": {
+    "description": "{p0} ждёт вас.\nДетали визита сохранены в приложении.",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgBookingReference": "Номер на резервация",
+  "msgCopyReference": "Копирай номера",
+  "msgReferenceCopied": "Номерът е копиран",
+  "msgThisIsADemoBookingNoRequestWas": "Това е демонстрационна резервация. Ресторанът не е получил заявка и реална маса не е запазена.",
+  "msgConfirmationOpensOnTheRestaurantWebsiteStatusUpdates": "Потвърждението се отваря на сайта на ресторанта. Статусът в приложението все още не се обновява.",
+  "msgIfYourPlansChangePleaseContactTheRestaurant": "Ако плановете ви се променят, свържете се с ресторанта предварително.",
+  "msgKeepExploring": "Продължи търсенето",
+  "msgViewMyBookings": "Към моите резервации",
+  "msgPersonalDetails": "Лични данни",
+  "msgFirstName": "Име *",
+  "msgLastName": "Фамилия *",
+  "msgEnterYourLastName": "Въведете фамилия",
+  "msgPhoneNumber192": "Телефон *",
+  "msgIncludeTheCountryCodeForExample": "Въведете код на държавата, например +359888123456",
+  "msgAboutYouOptional": "За вас · незадължително",
+  "msgCity": "Град",
+  "msgCountry": "Държава",
+  "msgDateOfBirth": "Дата на раждане",
+  "msgCancel198": "Отказ",
+  "msgRemoveDateOfBirth": "Премахни датата на раждане",
+  "msgCommunicationLanguage": "Език за комуникация",
+  "msg": "Русский",
+  "msg202": "Български",
+  "msgYourCommunicationLanguageIsSavedInYourProfile": "Предпочитаният език се запазва в профила. Езикът на приложението се избира отделно.",
+  "msgOffersAndNews": "Предложения и новини",
+  "msgOptionalYouCanTurnThisOffAtAny": "Незадължително. Можете да изключите по всяко време.",
+  "msgCompleteYourProfile": "Допълнете профила",
+  "msgCityBirthdayAndPreferencesOptional": "Град, дата на раждане и предпочитания · незадължително",
+  "msgShowPassword": "Покажи паролата",
+  "msgHidePassword": "Скрий паролата",
+  "msgPasswordsDoNotMatch": "Паролите не съвпадат",
+  "msgUseAtLeastCharacters": "Използвайте поне 12 символа",
+  "msgDataProcessing": "Обработка на данни",
+  "msgYourNameEmailAndPhoneAreUsedFor": "Името, email и телефонът са нужни за акаунта и попълване на резервации. Градът, държавата и датата на раждане са незадължителни. Паролата се пази само като защитен хеш.\n\nСъгласието за предложения е отделно и по подразбиране изключено. Можете да редактирате профила и да изтриете акаунта от „Сигурност“. Изтриването не отменя резервации и не изтрива записите на ресторантите.\n\nВерсия: seatmap-privacy-v1.",
+  "msgCreateAccount": "Създай акаунт",
+  "msgYourDetailsMakeBookingEasierFieldsMarkedWith": "Вашите данни улесняват резервациите. Полетата със звезда са задължителни.",
+  "msgPassword216": "Парола *",
+  "msgAtLeastCharactersUseALongUniquePassphrase": "Поне 12 символа. Използвайте дълга и уникална фраза.",
+  "msgConfirmPassword": "Повторете паролата *",
+  "msgIConsentToProcessingMyAccountData": "Съгласен съм с обработката на данни за акаунта *",
+  "msgPleaseConsentToProcessingYourData": "Потвърдете съгласието за обработка на данни",
+  "msgHowMyDataIsUsed": "Как се използват данните ми",
+  "msgProfileSaved": "Профилът е запазен",
+  "msgDemoProfileOnThisDevice": "Демонстрационен профил на това устройство.",
+  "msgYourProfileIsSavedOnTheServerYour224": "Профилът се запазва на сървъра. Името и контактите се попълват при резервация.",
+  "msgConfirmEmailChange": "Потвърдете промяната на email",
+  "msgAfterSavingUseYourNewEmailToSign": "След запазване използвайте новия email за вход.",
+  "msgCurrentPassword": "Текуща парола",
+  "msgSaveChanges": "Запази промените",
+  "msgPasswordChangedSignInAgainOnAllYour": "Паролата е променена. Влезте отново на всички устройства.",
+  "msgDeleteYourAccountPermanently": "Да изтрием ли акаунта завинаги?",
+  "msgYourProfileAndSessionsWillBeDeletedRestaurant": "Профилът и сесиите ще бъдат изтрити. Данните на ресторантите остават; съществуващите резервации не се отменят. Акаунтът не може да бъде възстановен.",
+  "msgKeepAccount": "Запази акаунта",
+  "msgDeletePermanently": "Изтрий завинаги",
+  "msgPasswordsAreNotStoredInTheAppChanging": "Паролите не се пазят в приложението. След промяна на паролата всички сесии се прекратяват.",
+  "msgChangePassword": "Промени паролата",
+  "msgNewPassword": "Нова парола",
+  "msgConfirmNewPassword": "Повторете новата парола",
+  "msgDeleteAccount": "Изтрий акаунта",
+  "msgThisDeletesYourGlobalSeatMapProfileContactEach": "Изтрива се глобалният профил в SeatMap. Резервациите трябва да бъдат отменени отделно чрез ресторанта.",
+  "msgPasswordToDeleteAccount": "Парола за изтриване",
+  "msgDeleteMyAccount": "Изтрий моя акаунт",
+  "msgChooseYourTable": "Изберете маса",
+  "msgTable": "Маса",
+  "msgTables": "Маси",
+  "msgRefreshAvailability": "Обнови наличността",
+  "msgTryAgain246": "Опитай пак",
+  "msgThisRoomIsNotSetUpYet": "Залата още не е настроена",
+  "msgChooseAnotherRoomOrContactTheRestaurant": "Изберете друга зала или се свържете с ресторанта.",
+  "msgAvailable": "Свободна",
+  "msgOccupied": "Заета",
+  "msgSelected": "Избрана",
+  "msgForPGuestsPleaseContactTheRestaurant": "За {p0} гости се свържете с ресторанта.",
+  "@msgForPGuestsPleaseContactTheRestaurant": {
+    "description": "Для {p0} гостей свяжитесь с рестораном.",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgChooseALargerTableOrAnAllowedTable": "Изберете по-голяма маса или разрешено съчетание от маси.",
+  "msgTapAnAvailableTableOnTheMap": "Натиснете свободна маса на схемата",
+  "msgPSeatsP": "{p0} места · {p1}",
+  "@msgPSeatsP": {
+    "description": "{p0} мест · {p1}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "msgContinue": "Продължи",
+  "msgFitEntireRoom": "Покажи цялата зала",
+  "msgTablePPSeatsP": "Маса {p0}, {p1} места, {p2}",
+  "@msgTablePPSeatsP": {
+    "description": "Стол {p0}, {p1} места, {p2}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "msgOccupied259": "заета",
+  "msgSelected260": "избрана",
+  "msgAvailable261": "свободна",
+  "msgTablePPSeatsP262": "Маса {p0} · {p1} места{p2}",
+  "@msgTablePPSeatsP262": {
+    "description": "Стол {p0} · {p1} места{p2}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "msgOccupied263": " · заета",
+  "msgTERRACE": "ТЕРАСА",
+  "msgWINDOWS": "ПРОЗОРЦИ",
+  "msgENTRANCE": "ВХОД",
+  "msgBAR": "БАР",
+  "msgAvailableToday": "Свободни маси днес",
+  "msgAvailableTomorrow": "Свободни маси утре",
+  "msgAvailableTables": "Свободни места",
+  "msgAlexander": "Александър",
+  "msgIvanov": "Иванов",
+  "msgCouldNotRestoreSavedDataYouCanContinue": "Запазените данни не се възстановиха. Можете да продължите.",
+  "msgRegistrationIsAvailableInLiveMode": "Регистрацията е достъпна в онлайн режим.",
+  "msgChooseATable275": "Изберете маса.",
+  "msgOnlineCancellationIsNotAvailableYetContactThe": "Онлайн отмяна все още не е налична. Свържете се с ресторанта; резервацията не е отменена.",
+  "msgEnterAValidAPIAddressWithoutCredentialsOr": "Въведете валиден API адрес без пароли или параметри.",
+  "msgCouldNotReachTheRestaurantCheckYourConnection": "Няма връзка с ресторанта. Проверете интернет и опитайте отново.",
+  "msgNoResponseReceivedYourBookingMayHaveBeen": "Няма получен отговор. Резервацията може да е запазена; проверете с ресторанта преди нов опит.",
+  "msgTheRestaurantReturnedAnUnexpectedResponseP": "Неразпознат отговор от ресторанта. {p0}",
+  "@msgTheRestaurantReturnedAnUnexpectedResponseP": {
+    "description": "Ресторан вернул непонятный ответ. {p0}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgPleaseTryLater": "Опитайте по-късно.",
+  "msgCheckWhetherYourBookingWasSavedBeforeTrying": "Преди нов опит проверете дали резервацията е запазена.",
+  "msgThisTableIsAlreadyTakenReturnToThe": "Тази маса вече е заета. Върнете се към схемата и изберете друга.",
+  "msgTheBookingLimitHasBeenReachedPleaseTry": "Достигнат е лимитът за резервации. Опитайте по-късно.",
+  "msgTheRestaurantOrItsDetailsAreNotAvailable": "Ресторанът или данните му още не са достъпни.",
+  "msgCouldNotCompleteTheRequestP": "Заявката не бе изпълнена ({p0}).",
+  "@msgCouldNotCompleteTheRequestP": {
+    "description": "Не удалось выполнить запрос ({p0}).",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgInvalidRestaurantData": "Невалидни данни за ресторанта.",
+  "msgInvalidRestaurantCatalogue": "Невалиден каталог с ресторанти.",
+  "msgThisMapVersionIsNotSupportedYet": "Тази версия на картата още не се поддържа.",
+  "msgUpToPGuests": "До {p0} гости",
+  "@msgUpToPGuests": {
+    "description": "До {p0} гостей",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgInvalidRestaurantOpeningTimes": "Невалидно работно време на ресторанта.",
+  "msgChooseAnAvailableTimeDuringTheRestaurantOpening": "Изберете свободен час в работното време на ресторанта.",
+  "msgEnterYourNamePhoneAndEmail": "Въведете име, телефон и email.",
+  "msgChooseAnAvailableTableWithEnoughSeats": "Изберете свободна маса с подходящ капацитет.",
+  "msgCouldNotVerifyTheResultCheckWithThe": "Резултатът не може да бъде проверен. Свържете се с ресторанта преди нов опит.",
+  "msgShopskaSalad": "Шопска салата",
+  "msgTomatoesCucumberRoastedPepperWhiteCheese": "Домати, краставици, печена чушка, сирене",
+  "msgBurrataWithTomatoes": "Бурата с домати",
+  "msgSeasonalTomatoesAndFreshBasil": "Сезонни домати и пресен босилек",
+  "msgBeefTartare": "Телешки тартар",
+  "msgCapersMustardCreamToast": "Каперси, горчичен крем, препечен хляб",
+  "msgDuckBreast": "Патешко магре",
+  "msgCeleriacSeasonalVegetablesSourCherrySauce": "Целина, сезонни зеленчуци, вишнев сос",
+  "msgMushroomRisotto": "Ризото с гъби",
+  "msgWildMushroomsArborioRiceParmesan": "Горски гъби, ориз арборио, пармезан",
+  "msgChocolateFondant": "Шоколадов фондан",
+  "msgWarmChocolateAndVanillaIceCream": "Топъл шоколад и ванилов сладолед",
+  "msgPleaseSignIn": "Влезте в акаунта.",
+  "msgCouldNotReachTheServerCheckYourConnection": "Няма връзка със сървъра. Проверете интернет и опитайте отново.",
+  "msgCheckTheDetailsYouEntered": "Проверете въведените данни.",
+  "msgYourSessionHasExpiredPleaseSignInAgain": "Сесията е изтекла. Влезте отново.",
+  "msgRegistrationAndProfilesAreNotAvailableOnThis": "Регистрацията и профилът още не са достъпни на този сървър.",
+  "msgThisEmailCannotBeUsedTrySigningIn": "Този email не може да се използва. Опитайте да влезете.",
+  "msgTooManyAttemptsPleaseTryAgainInMinutes": "Твърде много опити. Опитайте след 5 минути.",
+  "msgTheServerIsTemporarilyUnavailablePleaseTryLater": "Сървърът временно не е достъпен. Опитайте по-късно.",
+  "msgTheServerReturnedIncompleteAccountDetails": "Сървърът върна непълни данни за акаунта.",
+  "msgMainRoom": "Основна зала",
+  "msgTerrace": "Тераса",
+  "msgMainRoomSeatsTwo": "В основната зала · за двама",
+  "msgByTheWindowSeatsTwo": "До прозореца · за двама",
+  "msgByTheWindowUpToFourGuests": "До прозореца · до четирима",
+  "msgQuietCornerUpToFourGuests": "Тих кът · до четирима",
+  "msgTerraceSeatsFour": "На терасата · за четирима",
+  "msgTerraceSeatsTwo": "На терасата · за двама",
+  "msgModernBulgarian": "Съвременна българска",
+  "msgLaveleStSofiaCentre": "ул. „Лавеле“ 19 · Център, София",
+  "msgWindowTableAvailable": "Свободна маса до прозореца",
+  "msgAModernTakeOnBulgarianCuisineChooseA": "Българска кухня с модерен прочит. За уютна вечеря изберете маса до прозореца.",
+  "msgM": "850 м",
+  "msgYuriVenelinStSofia": "ул. „Юрий Венелин“ 6 · София",
+  "msgACosyHomeWithCreativeEuropeanCuisineAnd": "Уютно място с авторска европейска кухня и зелен двор.",
+  "msgItalianCuisineHomemadePastaAndWarmGatheringsAround": "Италианска кухня, домашна паста и топли срещи около масата.",
+  "msgCafAndBistro": "Кафе и бистро",
+  "msgSofiaCentre": "София · Център",
+  "msgSpecialtyCoffeeSeasonalDishesAndRelaxedEvenings": "Специално кафе, сезонни ястия и спокойни вечери.",
+  "appLanguage": "Език на приложението",
+  "automaticLanguage": "Автоматично",
+  "languageSelectionHint": "В България езикът по подразбиране е български. Ръчният избор се запазва.",
+  "restaurantLabel": "Ресторант",
+  "currentPasswordRequired": "Въведете правилната текуща парола.",
+  "emailInUse": "Този email вече се използва. Опитайте да влезете.",
+  "invalidCredentials": "Невалиден email или парола. След няколко опита изчакайте 15 минути.",
+  "guestCount": "{count, plural, one{{count} гост} other{{count} гости}}",
+  "@guestCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurantCount": "{count, plural, one{{count} ресторант} other{{count} ресторанта}}",
+  "@restaurantCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "centreLabel": "Център"
+}

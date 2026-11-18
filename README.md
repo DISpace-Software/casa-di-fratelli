@@ -63,6 +63,14 @@ Target model:
 
 The first tenant abstraction exists in `Services/Tenancy`. Current behavior still resolves Casa di Fratelli as the default tenant so production is not disrupted.
 
+## Mobile app
+
+The Flutter app is in [`mobile/`](mobile/README.md), targeting iOS and Android with a browser review build. Live API mode includes Casa di Fratelli and Cofein, server guest registration/profile, seat maps, availability and booking creation. Russian, Bulgarian and English are supported; Bulgaria defaults to Bulgarian with a saved manual override.
+
+- [Run and configuration](mobile/README.md)
+- [Test on an iPhone](mobile/docs/IPHONE_TESTING.md)
+- [Guest accounts and Render rollout](mobile/docs/GUEST_ACCOUNTS.md)
+
 ## Documentation
 
 - [Architecture](docs/architecture.md)

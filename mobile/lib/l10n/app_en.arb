@@ -1,0 +1,545 @@
+{
+  "@@locale": "en",
+  "msgJan": "Jan",
+  "msgFeb": "Feb",
+  "msgMar": "Mar",
+  "msgApr": "Apr",
+  "msgMay": "May",
+  "msgJun": "Jun",
+  "msgJul": "Jul",
+  "msgAug": "Aug",
+  "msgSep": "Sep",
+  "msgOct": "Oct",
+  "msgNov": "Nov",
+  "msgDec": "Dec",
+  "msgToday": "Today, ",
+  "msgGuest": "guest",
+  "msgGuests": "guests",
+  "msgGuests15": "guests",
+  "msgDiscover": "Discover",
+  "msgSearch": "Search",
+  "msgBookings": "Bookings",
+  "msgProfile": "Profile",
+  "msgWhereShallWeDine": "Where shall we dine?",
+  "msgRestaurantTablesInP": "Restaurant tables in {p0}",
+  "@msgRestaurantTablesInP": {
+    "description": "Столики в ресторанах {p0}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgSofia": "Sofia",
+  "msgSofia23": "Sofia",
+  "msgPlovdiv": "Plovdiv",
+  "msgPlovdiv25": "Plovdiv",
+  "msgAllPlaces": "All places",
+  "msgForASpecialEvening": "For a special evening",
+  "msgToday28": "Today",
+  "msgFindATable": "Find a table",
+  "msgNew": "New",
+  "msgRemoveFromFavourites": "Remove from favourites",
+  "msgAddToFavourites": "Add to favourites",
+  "msgBack": "Back",
+  "msgAll": "All",
+  "msgFavouritePlaces": "Favourite places",
+  "msgFindYourPlace": "Find your place",
+  "msgRestaurantsWorthReturningTo": "Restaurants worth returning to",
+  "msgAGreatEveningStartsHere": "A great evening starts here",
+  "msgRestaurantCuisineOrArea": "Restaurant, cuisine or area",
+  "msgBulgarian": "Bulgarian",
+  "msgEuropean": "European",
+  "msgItalian": "Italian",
+  "msgRestaurant": "restaurant",
+  "msgRestaurants": "restaurants",
+  "msgFavourites": "Favourites",
+  "msgNoPlacesFoundYet": "No places found yet",
+  "msgTryAnotherNameOrCuisineYourPlaceIs": "Try another name or cuisine.\nYour place is out there.",
+  "msgTryAgain": "Try again",
+  "msgOf": "1 of 6",
+  "msgOf50": "1 of 1",
+  "msgPCuisine": "{p0} cuisine",
+  "@msgPCuisine": {
+    "description": "{p0} кухня",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgBookATable": "Book a table",
+  "msgAvailableTimes": "Available times",
+  "msgAboutTheRestaurant": "About the restaurant",
+  "msgViewMenu": "View menu",
+  "msgChooseATable": "Choose a table",
+  "msgPOfP": "{p0} of {p1}",
+  "@msgPOfP": {
+    "description": "{p0} из {p1}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "msgAtmosphereDemoPhotos": "Atmosphere · demo photos",
+  "msgMenuP": "Menu · {p0}",
+  "@msgMenuP": {
+    "description": "Меню · {p0}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgCouldNotLoadTheMenuPleaseTryLater": "Could not load the menu. Please try later.",
+  "msgMenuComingSoon": "Menu coming soon",
+  "msgWhenShallWeMeet": "When shall we meet?",
+  "msgSelect": "Select",
+  "msgWhatTimeShallWeExpectYou": "What time shall we expect you?",
+  "msgHowManyGuests": "How many guests?",
+  "msgDone": "Done",
+  "msgYourCity": "Your city",
+  "msgVarna": "Varna",
+  "msgBurgas": "Burgas",
+  "msgJanuary": "January",
+  "msgFebruary": "February",
+  "msgMarch": "March",
+  "msgApril": "April",
+  "msgJune": "June",
+  "msgJuly": "July",
+  "msgAugust": "August",
+  "msgSeptember": "September",
+  "msgOctober": "October",
+  "msgNovember": "November",
+  "msgDecember": "December",
+  "msgGotIt": "Got it",
+  "msgIncorrectEmailOrPassword": "Incorrect email or password.",
+  "msgYourTableIsWaiting": "Your table\nis waiting",
+  "msgFavouritePlacesAndEveningPlansAllInOne": "Favourite places and evening plans —\nall in one app.",
+  "msgEnterAValidEmail": "Enter a valid email",
+  "msgPassword": "Password",
+  "msgShowOrHidePassword": "Show or hide password",
+  "msgEnterYourPassword": "Enter your password",
+  "msgSignIn": "Sign in",
+  "msgNoAccountSignUp": "No account? Sign up",
+  "msgEnterTheEmailAndPasswordForYourSeatMap": "Enter the email and password for your SeatMap account.",
+  "msgTESTACCOUNT": "TEST ACCOUNT",
+  "msgMeetSeatMap": "Meet SeatMap",
+  "msgDemoSignInWorksOnlyOnThisDevice": "Demo sign-in works only on this device. Use live mode to register.",
+  "msgEmailDemoSeatmapAppPasswordSeatMap": "Email: demo@seatmap.app\nPassword: SeatMap2026!",
+  "msgSignInToTheTestAccount": "Sign in to the test account →",
+  "msgYouCanBrowseRestaurantsAndTablesWithoutSigning": "You can browse restaurants and tables without signing in.",
+  "msgSignOutOfYourAccount": "Sign out of your account?",
+  "msgYourLocalBookingsWillRemainOnThisDevice": "Your local bookings will remain on this device.",
+  "msgStay": "Stay",
+  "msgSignOut": "Sign out",
+  "msgFavouritePlacesSpecialMomentsAllHere": "Favourite places. Special moments. All here.",
+  "msgSeatMapGuest": "SeatMap guest",
+  "msgYourNextEveningStartsHere": "Your next evening starts here",
+  "msgTESTPROFILE": "TEST PROFILE",
+  "msgSEATMAPACCOUNT": "SEATMAP ACCOUNT",
+  "msgDataIsSavedOnThisDevice": "Data is saved on this device.",
+  "msgYourProfileIsSavedOnTheServerYour": "Your profile is saved on the server. Your contact details are ready for booking.",
+  "msgSignInToSeatMap": "Sign in to SeatMap",
+  "msgYourSeatMap": "Your SeatMap",
+  "msgFavouritePlaces111": "Favourite places",
+  "msgPSaved": "{p0} saved",
+  "@msgPSaved": {
+    "description": "{p0} сохранено",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgMyDetails": "My details",
+  "msgPersonalDetailsContactsAndPreferences": "Personal details, contacts and preferences",
+  "msgSecurity": "Security",
+  "msgPasswordAndAccountDeletion": "Password and account deletion",
+  "msgReminders": "Reminders",
+  "msgDemoNoNotificationsSent": "Demo · no notifications sent",
+  "msgHereToHelp": "Here to help",
+  "msgHelp": "Help",
+  "msgHowItWorks": "How it works",
+  "msgFindARestaurantChooseADateAndTime": "Find a restaurant, choose a date and time, then a free table on the map. Leave your contact details — your booking appears in Bookings.\n\nDemo bookings are not sent to restaurants. In live mode, the request is sent after you tap Book.",
+  "msgAboutSeatMap": "About SeatMap",
+  "msgAGreatEveningStartsWithAPlace": "A great evening starts with a place",
+  "msgSeatMapHelpsYouFindARestaurantAndChoose": "SeatMap helps you find a restaurant and choose a specific table before your visit.\n\nMobile MVP · 1.0.0\niOS and Android\n\n{p0}\nRegistration and profiles use the server. Favourites and booking history are stored on your device.",
+  "@msgSeatMapHelpsYouFindARestaurantAndChoose": {
+    "description": "SeatMap помогает найти ресторан и выбрать конкретный столик до визита.\n\nМобильный MVP · 1.0.0\niOS и Android\n\n{p0}\nРегистрация и профиль подключены к серверу. Избранное и история броней сохраняются на устройстве.",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgDemoCatalogueAndBookings": "Demo catalogue and bookings.",
+  "msgConnectedToTheRestaurantAPI": "Connected to the restaurant API.",
+  "msgSignOutOfAccount": "Sign out of account",
+  "msgSeatMapMoreThanATable": "SeatMap · more than a table",
+  "msgContactTheRestaurant": "Contact the restaurant",
+  "msgOnlineCancellationIsNotAvailableYetPleaseCall": "Online cancellation is not available yet. Please call the restaurant.\n\nYour booking remains active.",
+  "msgCancelThisBooking": "Cancel this booking?",
+  "msgPPPThisIsADemoBooking": "{p0}\n{p1} · {p2}\n\nThis is a demo booking.",
+  "@msgPPPThisIsADemoBooking": {
+    "description": "{p0}\n{p1} · {p2}\n\nЭто тестовая бронь.",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "msgKeepBooking": "Keep booking",
+  "msgCancelBooking": "Cancel booking",
+  "msgDemoBookingCancelled": "Demo booking cancelled",
+  "msgMyBookings": "My bookings",
+  "msgAllYourPlansForAGreatEvening": "All your plans for a great evening.",
+  "msgUpcoming": "Upcoming",
+  "msgHistory": "History",
+  "msgNoBookingHistoryYet": "No booking history yet",
+  "msgYourEveningIsStillOpen": "Your evening is still open",
+  "msgPastAndCancelledBookingsWillAppearHere": "Past and cancelled bookings\nwill appear here.",
+  "msgChooseARestaurantAndYourFavouriteTableWe": "Choose a restaurant and your favourite table.\nWe will keep all the details here.",
+  "msgPGuestsTableP": "{p0} guests · table {p1}",
+  "@msgPGuestsTableP": {
+    "description": "{p0} гостя · стол {p1}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "msgDEMO": "DEMO",
+  "msgCancelled": "Cancelled",
+  "msgConfirmYourBookingByEmail": "Confirm your booking by email",
+  "msgConfirmed": "Confirmed",
+  "msgCancel": "Cancel",
+  "msgContact": "Contact",
+  "msgBookingsAreStoredOnThisDeviceTestBookings": "Bookings are stored on this device. Test bookings have a Demo badge.",
+  "msgPleaseConsentToSharingYourDetailsWithThe": "Please consent to sharing your details with the restaurant.",
+  "msgAlmostThere": "Almost there",
+  "msgLeaveYourContactDetailsYourTableAwaits": "Leave your contact details — your table awaits.",
+  "msgPGuests": "{p0} guests",
+  "@msgPGuests": {
+    "description": "{p0} гостя",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgTableP": "Table {p0}",
+  "@msgTableP": {
+    "description": "Стол {p0}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgDemoModeThisBookingStaysOnYourDevice": "Demo mode. This booking stays on your device and is not sent to the restaurant.",
+  "msgYourContactDetails": "Your contact details",
+  "msgAlexanderIvanov": "Alexander Ivanov",
+  "msgFillWithTestDetails": "Fill with test details",
+  "msgYourName": "Your name",
+  "msgEnterYourName": "Enter your name",
+  "msgPhoneNumber": "Phone number",
+  "msgEnterAValidPhoneNumber": "Enter a valid phone number",
+  "msgRequestsOptional": "Requests · optional",
+  "msgSpecialOccasionHighChair": "Special occasion, high chair…",
+  "msgIAgreeToShareMyContactDetailsWith": "I agree to share my contact details with the restaurant to arrange this booking.",
+  "msgContactRestaurant": "Contact restaurant",
+  "msgCreateDemoBooking": "Create demo booking",
+  "msgBook": "Book",
+  "msgCheckYourBookingStatus": "Check your booking status",
+  "msgContactPPDoNotSubmitAnotherRequest": "Contact {p0}{p1}. Do not submit another request until you know whether your booking was saved.",
+  "@msgContactPPDoNotSubmitAnotherRequest": {
+    "description": "Свяжитесь с {p0}{p1}. Не отправляйте новый запрос, пока не узнаете, сохранена ли бронь.",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "msgOneStepLeft": "One step left",
+  "msgYourDemoTableIsBooked": "Your demo\ntable is booked",
+  "msgYourTableIsBooked": "Your table is booked!",
+  "msgConfirmUsingTheLinkInYourEmailYour": "Confirm using the link in your email.\nYour table is not secured until confirmation.",
+  "msgAllTheDetailsAreSavedOnThisDevice": "All the details are saved on this device.\nA great evening starts here.",
+  "msgPIsExpectingYouYourVisitDetailsAre": "{p0} is expecting you.\nYour visit details are saved in the app.",
+  "@msgPIsExpectingYouYourVisitDetailsAre": {
+    "description": "{p0} ждёт вас.\nДетали визита сохранены в приложении.",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgBookingReference": "Booking reference",
+  "msgCopyReference": "Copy reference",
+  "msgReferenceCopied": "Reference copied",
+  "msgThisIsADemoBookingNoRequestWas": "This is a demo booking. No request was sent to the restaurant and no real table was reserved.",
+  "msgConfirmationOpensOnTheRestaurantWebsiteStatusUpdates": "Confirmation opens on the restaurant website. Status updates in the app are not available yet.",
+  "msgIfYourPlansChangePleaseContactTheRestaurant": "If your plans change, please contact the restaurant in advance.",
+  "msgKeepExploring": "Keep exploring",
+  "msgViewMyBookings": "View my bookings",
+  "msgPersonalDetails": "Personal details",
+  "msgFirstName": "First name *",
+  "msgLastName": "Last name *",
+  "msgEnterYourLastName": "Enter your last name",
+  "msgPhoneNumber192": "Phone number *",
+  "msgIncludeTheCountryCodeForExample": "Include the country code, for example +359888123456",
+  "msgAboutYouOptional": "About you · optional",
+  "msgCity": "City",
+  "msgCountry": "Country",
+  "msgDateOfBirth": "Date of birth",
+  "msgCancel198": "Cancel",
+  "msgRemoveDateOfBirth": "Remove date of birth",
+  "msgCommunicationLanguage": "Communication language",
+  "msg": "Русский",
+  "msg202": "Български",
+  "msgYourCommunicationLanguageIsSavedInYourProfile": "Your communication language is saved in your profile. Choose the app language separately.",
+  "msgOffersAndNews": "Offers and news",
+  "msgOptionalYouCanTurnThisOffAtAny": "Optional. You can turn this off at any time.",
+  "msgCompleteYourProfile": "Complete your profile",
+  "msgCityBirthdayAndPreferencesOptional": "City, birthday and preferences · optional",
+  "msgShowPassword": "Show password",
+  "msgHidePassword": "Hide password",
+  "msgPasswordsDoNotMatch": "Passwords do not match",
+  "msgUseAtLeastCharacters": "Use at least 12 characters",
+  "msgDataProcessing": "Data processing",
+  "msgYourNameEmailAndPhoneAreUsedFor": "Your name, email and phone are used for your account and booking forms. City, country and date of birth are optional. Your password is stored only as a protected hash.\n\nConsent to offers is separate and off by default. You can edit your profile and delete your account in Security. Deleting your account does not cancel bookings or remove restaurant records.\n\nVersion: seatmap-privacy-v1.",
+  "msgCreateAccount": "Create account",
+  "msgYourDetailsMakeBookingEasierFieldsMarkedWith": "Your details make booking easier. Fields marked with an asterisk are required.",
+  "msgPassword216": "Password *",
+  "msgAtLeastCharactersUseALongUniquePassphrase": "At least 12 characters. Use a long, unique passphrase.",
+  "msgConfirmPassword": "Confirm password *",
+  "msgIConsentToProcessingMyAccountData": "I consent to processing my account data *",
+  "msgPleaseConsentToProcessingYourData": "Please consent to processing your data",
+  "msgHowMyDataIsUsed": "How my data is used",
+  "msgProfileSaved": "Profile saved",
+  "msgDemoProfileOnThisDevice": "Demo profile on this device.",
+  "msgYourProfileIsSavedOnTheServerYour224": "Your profile is saved on the server. Your name and contact details prefill bookings.",
+  "msgConfirmEmailChange": "Confirm email change",
+  "msgAfterSavingUseYourNewEmailToSign": "After saving, use your new email to sign in.",
+  "msgCurrentPassword": "Current password",
+  "msgSaveChanges": "Save changes",
+  "msgPasswordChangedSignInAgainOnAllYour": "Password changed. Sign in again on all your devices.",
+  "msgDeleteYourAccountPermanently": "Delete your account permanently?",
+  "msgYourProfileAndSessionsWillBeDeletedRestaurant": "Your profile and sessions will be deleted. Restaurant records remain and existing bookings are not cancelled. Your account cannot be restored.",
+  "msgKeepAccount": "Keep account",
+  "msgDeletePermanently": "Delete permanently",
+  "msgPasswordsAreNotStoredInTheAppChanging": "Passwords are not stored in the app. Changing your password ends all active sessions.",
+  "msgChangePassword": "Change password",
+  "msgNewPassword": "New password",
+  "msgConfirmNewPassword": "Confirm new password",
+  "msgDeleteAccount": "Delete account",
+  "msgThisDeletesYourGlobalSeatMapProfileContactEach": "This deletes your global SeatMap profile. Contact each restaurant separately to cancel bookings.",
+  "msgPasswordToDeleteAccount": "Password to delete account",
+  "msgDeleteMyAccount": "Delete my account",
+  "msgChooseYourTable": "Choose your table",
+  "msgTable": "Table",
+  "msgTables": "Tables",
+  "msgRefreshAvailability": "Refresh availability",
+  "msgTryAgain246": "Try again",
+  "msgThisRoomIsNotSetUpYet": "This room is not set up yet",
+  "msgChooseAnotherRoomOrContactTheRestaurant": "Choose another room or contact the restaurant.",
+  "msgAvailable": "Available",
+  "msgOccupied": "Occupied",
+  "msgSelected": "Selected",
+  "msgForPGuestsPleaseContactTheRestaurant": "For {p0} guests, please contact the restaurant.",
+  "@msgForPGuestsPleaseContactTheRestaurant": {
+    "description": "Для {p0} гостей свяжитесь с рестораном.",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgChooseALargerTableOrAnAllowedTable": "Choose a larger table or an allowed table combination.",
+  "msgTapAnAvailableTableOnTheMap": "Tap an available table on the map",
+  "msgPSeatsP": "{p0} seats · {p1}",
+  "@msgPSeatsP": {
+    "description": "{p0} мест · {p1}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      }
+    }
+  },
+  "msgContinue": "Continue",
+  "msgFitEntireRoom": "Fit entire room",
+  "msgTablePPSeatsP": "Table {p0}, {p1} seats, {p2}",
+  "@msgTablePPSeatsP": {
+    "description": "Стол {p0}, {p1} места, {p2}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "msgOccupied259": "occupied",
+  "msgSelected260": "selected",
+  "msgAvailable261": "available",
+  "msgTablePPSeatsP262": "Table {p0} · {p1} seats{p2}",
+  "@msgTablePPSeatsP262": {
+    "description": "Стол {p0} · {p1} места{p2}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      },
+      "p1": {
+        "type": "String"
+      },
+      "p2": {
+        "type": "String"
+      }
+    }
+  },
+  "msgOccupied263": " · occupied",
+  "msgTERRACE": "TERRACE",
+  "msgWINDOWS": "WINDOWS",
+  "msgENTRANCE": "ENTRANCE",
+  "msgBAR": "BAR",
+  "msgAvailableToday": "Available today",
+  "msgAvailableTomorrow": "Available tomorrow",
+  "msgAvailableTables": "Available tables",
+  "msgAlexander": "Alexander",
+  "msgIvanov": "Ivanov",
+  "msgCouldNotRestoreSavedDataYouCanContinue": "Could not restore saved data. You can continue using the app.",
+  "msgRegistrationIsAvailableInLiveMode": "Registration is available in live mode.",
+  "msgChooseATable275": "Choose a table.",
+  "msgOnlineCancellationIsNotAvailableYetContactThe": "Online cancellation is not available yet. Contact the restaurant; your booking has not been cancelled.",
+  "msgEnterAValidAPIAddressWithoutCredentialsOr": "Enter a valid API address without credentials or parameters.",
+  "msgCouldNotReachTheRestaurantCheckYourConnection": "Could not reach the restaurant. Check your connection and try again.",
+  "msgNoResponseReceivedYourBookingMayHaveBeen": "No response received. Your booking may have been saved; check with the restaurant before retrying.",
+  "msgTheRestaurantReturnedAnUnexpectedResponseP": "The restaurant returned an unexpected response. {p0}",
+  "@msgTheRestaurantReturnedAnUnexpectedResponseP": {
+    "description": "Ресторан вернул непонятный ответ. {p0}",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgPleaseTryLater": "Please try later.",
+  "msgCheckWhetherYourBookingWasSavedBeforeTrying": "Check whether your booking was saved before trying again.",
+  "msgThisTableIsAlreadyTakenReturnToThe": "This table is already taken. Return to the map and choose another.",
+  "msgTheBookingLimitHasBeenReachedPleaseTry": "The booking limit has been reached. Please try later.",
+  "msgTheRestaurantOrItsDetailsAreNotAvailable": "The restaurant or its details are not available yet.",
+  "msgCouldNotCompleteTheRequestP": "Could not complete the request ({p0}).",
+  "@msgCouldNotCompleteTheRequestP": {
+    "description": "Не удалось выполнить запрос ({p0}).",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgInvalidRestaurantData": "Invalid restaurant data.",
+  "msgInvalidRestaurantCatalogue": "Invalid restaurant catalogue.",
+  "msgThisMapVersionIsNotSupportedYet": "This map version is not supported yet.",
+  "msgUpToPGuests": "Up to {p0} guests",
+  "@msgUpToPGuests": {
+    "description": "До {p0} гостей",
+    "placeholders": {
+      "p0": {
+        "type": "String"
+      }
+    }
+  },
+  "msgInvalidRestaurantOpeningTimes": "Invalid restaurant opening times.",
+  "msgChooseAnAvailableTimeDuringTheRestaurantOpening": "Choose an available time during the restaurant opening hours.",
+  "msgEnterYourNamePhoneAndEmail": "Enter your name, phone and email.",
+  "msgChooseAnAvailableTableWithEnoughSeats": "Choose an available table with enough seats.",
+  "msgCouldNotVerifyTheResultCheckWithThe": "Could not verify the result. Check with the restaurant before retrying.",
+  "msgShopskaSalad": "Shopska salad",
+  "msgTomatoesCucumberRoastedPepperWhiteCheese": "Tomatoes, cucumber, roasted pepper, white cheese",
+  "msgBurrataWithTomatoes": "Burrata with tomatoes",
+  "msgSeasonalTomatoesAndFreshBasil": "Seasonal tomatoes and fresh basil",
+  "msgBeefTartare": "Beef tartare",
+  "msgCapersMustardCreamToast": "Capers, mustard cream, toast",
+  "msgDuckBreast": "Duck breast",
+  "msgCeleriacSeasonalVegetablesSourCherrySauce": "Celeriac, seasonal vegetables, sour cherry sauce",
+  "msgMushroomRisotto": "Mushroom risotto",
+  "msgWildMushroomsArborioRiceParmesan": "Wild mushrooms, arborio rice, parmesan",
+  "msgChocolateFondant": "Chocolate fondant",
+  "msgWarmChocolateAndVanillaIceCream": "Warm chocolate and vanilla ice cream",
+  "msgPleaseSignIn": "Please sign in.",
+  "msgCouldNotReachTheServerCheckYourConnection": "Could not reach the server. Check your connection and try again.",
+  "msgCheckTheDetailsYouEntered": "Check the details you entered.",
+  "msgYourSessionHasExpiredPleaseSignInAgain": "Your session has expired. Please sign in again.",
+  "msgRegistrationAndProfilesAreNotAvailableOnThis": "Registration and profiles are not available on this server yet.",
+  "msgThisEmailCannotBeUsedTrySigningIn": "This email cannot be used. Try signing in instead.",
+  "msgTooManyAttemptsPleaseTryAgainInMinutes": "Too many attempts. Please try again in 5 minutes.",
+  "msgTheServerIsTemporarilyUnavailablePleaseTryLater": "The server is temporarily unavailable. Please try later.",
+  "msgTheServerReturnedIncompleteAccountDetails": "The server returned incomplete account details.",
+  "msgMainRoom": "Main room",
+  "msgTerrace": "Terrace",
+  "msgMainRoomSeatsTwo": "Main room · seats two",
+  "msgByTheWindowSeatsTwo": "By the window · seats two",
+  "msgByTheWindowUpToFourGuests": "By the window · up to four guests",
+  "msgQuietCornerUpToFourGuests": "Quiet corner · up to four guests",
+  "msgTerraceSeatsFour": "Terrace · seats four",
+  "msgTerraceSeatsTwo": "Terrace · seats two",
+  "msgModernBulgarian": "Modern Bulgarian",
+  "msgLaveleStSofiaCentre": "19 Lavele St · Sofia Centre",
+  "msgWindowTableAvailable": "Window table available",
+  "msgAModernTakeOnBulgarianCuisineChooseA": "A modern take on Bulgarian cuisine. Choose a window table for an intimate dinner.",
+  "msgM": "850 m",
+  "msgYuriVenelinStSofia": "6 Yuri Venelin St · Sofia",
+  "msgACosyHomeWithCreativeEuropeanCuisineAnd": "A cosy home with creative European cuisine and a green courtyard.",
+  "msgItalianCuisineHomemadePastaAndWarmGatheringsAround": "Italian cuisine, homemade pasta and warm gatherings around the table.",
+  "msgCafAndBistro": "Café and bistro",
+  "msgSofiaCentre": "Sofia · Centre",
+  "msgSpecialtyCoffeeSeasonalDishesAndRelaxedEvenings": "Specialty coffee, seasonal dishes and relaxed evenings.",
+  "appLanguage": "App language",
+  "automaticLanguage": "Automatic",
+  "languageSelectionHint": "Bulgarian is the default in Bulgaria. Your manual choice is saved.",
+  "restaurantLabel": "Restaurant",
+  "currentPasswordRequired": "Enter your correct current password.",
+  "emailInUse": "This email is already in use. Try signing in.",
+  "invalidCredentials": "Incorrect email or password. After several attempts, please wait 15 minutes.",
+  "guestCount": "{count, plural, one{{count} guest} other{{count} guests}}",
+  "@guestCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurantCount": "{count, plural, one{{count} restaurant} other{{count} restaurants}}",
+  "@restaurantCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "centreLabel": "Centre"
+}
