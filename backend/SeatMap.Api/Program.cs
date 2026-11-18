@@ -1,3 +1,6 @@
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
+using SeatMap.Api.Platform.Auth;
 using SeatMap.Api.Data;
 using SeatMap.Api.Json;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +15,19 @@ using SeatMap.Api.Services.Reservations;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddSingleton<GuestPasswordHasher>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, ct) =>
+    {
+        context.HttpContext.Response.Headers.RetryAfter = "300";
+        await context.HttpContext.Response.WriteAsJsonAsync(new { code = "RATE_LIMITED", message = "Слишком много попыток. Попробуйте через 5 минут." }, ct);
+    };
+    options.AddPolicy("guest-auth", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(5), QueueLimit = 0 }));
+});
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new FlexibleDateOnlyJsonConverter());
@@ -37,6 +53,7 @@ builder.Services.AddOptions<PlatformOptions>().Bind(builder.Configuration.GetSec
     .ValidateOnStart();
 if (platformOptions.Enabled && !EF.IsDesignTime)
 {
+    builder.Services.AddScoped<GuestAuthService>();
     var platformConnection = PlatformDatabaseConfiguration.Resolve(builder.Configuration);
     builder.Services.AddDbContext<PlatformDbContext>(options => options.UseNpgsql(platformConnection));
 }
@@ -105,6 +122,7 @@ var app = builder.Build();
 // Endpoint metadata and restaurantId route values must exist before tenant resolution.
 app.UseRouting();
 app.UseCors("AllowFrontend");
+app.UseRateLimiter();
 app.UseMiddleware<TenantResolutionMiddleware>();
 
 app.Use(async (context, next) =>
