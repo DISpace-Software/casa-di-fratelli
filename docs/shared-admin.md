@@ -30,6 +30,35 @@ The standalone entry is `frontend/admin.html` with
 application reuse the same admin component. The standalone build does not
 include either restaurant's public landing page as an administration interface.
 
+## DEV management (2026-11-19)
+
+Developer accounts now have a dedicated **DEV управление / DEV management**
+section on the dashboard and in navigation. Direct links may append `?tab=dev`
+to either restaurant's admin URL; non-Developer roles return to an allowed page.
+The header displays the selected restaurant name and tenant ID.
+
+- **Services & commission:** Basic/Pro, preorder platform permission, agreed
+  commission, and monthly settlement reports.
+- **Access & history:** existing admin accounts, role management, device login,
+  and audit history.
+- **Restaurant & brand:** existing branding, contacts, timezone, and booking
+  window settings.
+- **Maintenance & data:** archives, backups, recovery, and the existing bulk
+  reservation/order clear action in a collapsed data-tools card. Confirmation
+  and confirmation-code requirements are retained.
+
+For Developer, this replaces the standalone Admins and Maintenance navigation
+entries and the preorder controls in Profile. Owner retains Admins/branding,
+Maintenance, and preorder consent in Profile; Administrator retains Maintenance.
+Normal operational tools remain in their existing sections. API authorization
+and restaurant scoping are unchanged; this relocation does not enable
+preorders, alter commissions, accept owner terms, or connect card payments.
+
+Automated coverage: `scripts/check-dev-management-dom.mjs` mounts the actual
+AdminPage with an isolated simulated DOM and mocked HTTP. It is not visual
+browser verification. The existing preorder-consent DOM checks continue to
+cover stale terms and monthly report state.
+
 ## Routing, identity and isolation
 
 Restaurant links have the form:

@@ -12,6 +12,7 @@ import MapOverlay from "../components/admin/MapOverlay";
 import { buildTimeRange, isHallBlock } from "../domain/reservations/hallBlockRules";
 import { getReservationMinutesFromNow, formatLocalDate, getLiveReservationCandidates, buildReservationsByTableForDate } from "../domain/adminMap/liveReservations";
 import PreorderSettings from "../components/admin/PreorderSettings";
+import DeveloperManagement, { DeveloperDataTools, DeveloperServiceSettings } from "../components/admin/DeveloperManagement";
 import TenantBrandingSettings from "../components/admin/TenantBrandingSettings";
 import { useTenantBranding } from "../context/TenantBrandingContext";
 import React from "react";
@@ -5637,6 +5638,12 @@ function AdminNavIcon({ type, className = "h-6 w-6" }) {
           <path d="M19 20c2.5.5 4.5 2.3 5.5 5" {...common} />
         </>
       )}
+      {type === "dev" && (
+        <>
+          <rect x="3" y="5" width="26" height="22" rx="5" {...common} />
+          <path d="m11 12-4 4 4 4M21 12l4 4-4 4M18 10l-4 12" {...common} />
+        </>
+      )}
       {type === "admins" && (
         <>
           <circle cx="16" cy="11" r="4" {...common} />
@@ -5680,7 +5687,11 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
   const [savingSeasonalArea, setSavingSeasonalArea] = React.useState("");
 
   const { branding } = useTenantBranding();
-  const [activeTab, setActiveTab] = React.useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tab") === "feedback" ? "feedback" : "home");
+  const [activeTab, setActiveTab] = React.useState(() => {
+    const requestedTab = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
+    return ["feedback", "dev"].includes(requestedTab) ? requestedTab : "home";
+  });
+  const [developerSection, setDeveloperSection] = React.useState("service");
   const [adminLanguage, setAdminLanguage] = React.useState("bg");
   const [reservations, setReservations] = React.useState([]);
   const [diningOrders, setDiningOrders] = React.useState([]);
@@ -5817,7 +5828,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
   const isBarRole = currentAdminRole === "Bar";
   const isProductionRole = isKitchenRole || isBarRole;
   const isOperationalRole = isWaiterRole || isProductionRole;
-  const canClearOperationalData = currentAdminRole === "Developer";
+  const isDeveloperRole = currentAdminRole === "Developer";
   const canManageMarketing = ["Owner", "Developer"].includes(currentAdminRole);
   const canUseMaintenance = ["Administrator", "Owner", "Developer"].includes(currentAdminRole);
   const canUseReservationTrash = canUseMaintenance;
@@ -6216,11 +6227,11 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
       loadMenuItems();
     }
 
-    if (activeTab === "admins" && canManageAdmins) {
+    if (canManageAdmins && (activeTab === "admins" || (activeTab === "dev" && isDeveloperRole && developerSection === "access"))) {
       loadAdminUsers();
       loadAuditLogs();
     }
-  }, [activeTab, canManageAdmins, canViewFeedback, isProductionRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadCustomerProfiles, loadDiningOrders, loadEvents, loadFeedbackEntries, loadMenuItems, loadReservations, loadTableLayout]);
+  }, [activeTab, canManageAdmins, canViewFeedback, developerSection, isDeveloperRole, isProductionRole, isProVersion, isWaiterRole, loadAdminUsers, loadAuditLogs, loadBlacklist, loadCustomerProfiles, loadDiningOrders, loadEvents, loadFeedbackEntries, loadMenuItems, loadReservations, loadTableLayout]);
 
   React.useEffect(() => {
     if (activeTab === "liveMap") {
@@ -6233,7 +6244,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
       : isWaiterRole
       ? ["home", "liveMap", "orders"]
       : canManageAdmins
-      ? ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "events", ...(canViewFeedback ? ["feedback"] : []), "layout", "customers", "admins"]
+      ? ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "events", ...(canViewFeedback ? ["feedback"] : []), "layout", "customers", isDeveloperRole ? "dev" : "admins"]
       : ["home", "liveMap", "reservations", "orders", "reports", "block", "menu", "events", ...(canViewFeedback ? ["feedback"] : []), "layout", "customers"];
 
     const handleTouchStart = (event) => {
@@ -6275,7 +6286,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
       window.removeEventListener("touchstart", handleTouchStart);
       window.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [activeTab, canManageAdmins, canViewFeedback, isProductionRole, isWaiterRole]);
+  }, [activeTab, canManageAdmins, canViewFeedback, isDeveloperRole, isProductionRole, isWaiterRole]);
 
   function updateTableLayoutItem(tableId, nextItem) {
     const normalized = normalizeLayoutItem(nextItem);
@@ -6602,9 +6613,12 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     setAdminError("");
 
     const confirmed = window.confirm(
-      adminLanguage === "bg"
-        ? "Да се изтрият ли всички резервации и поръчки? Менюто и настройките няма да бъдат променени."
-        : "Delete all reservations and orders? Menu and settings will not be changed."
+      adminLocalText(
+        adminLanguage,
+        `Да се архивират ли всички резервации и поръчки за ${branding.name} (${tenantContext.tenantId})?`,
+        `Archive all reservations and orders for ${branding.name} (${tenantContext.tenantId})?`,
+        `Архивировать все бронирования и заказы ресторана ${branding.name} (${tenantContext.tenantId})?`
+      )
     );
 
     if (!confirmed) return;
@@ -6633,9 +6647,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
     await Promise.all([loadReservations(), loadDiningOrders()]);
     setAdminNotice(
-      adminLanguage === "bg"
-        ? "Всички резервации и поръчки са изчистени."
-        : "All reservations and orders were cleared."
+      adminLocalText(adminLanguage, "Всички резервации и поръчки са архивирани.", "All reservations and orders were archived.", "Все бронирования и заказы архивированы.")
     );
   }
 
@@ -8404,10 +8416,11 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
           ...(canManageMarketing ? [["marketing", a.tabs.marketing]] : []),
           ["layout", a.tabs.layout],
           ["customers", a.tabs.customers],
-          ...(canUseMaintenance ? [["maintenance", a.tabs.maintenance]] : []),
-          ...(canManageAdmins ? [["admins", adminLanguage === "bg" ? "Админи" : "Admins"]] : []),
+          ...(canUseMaintenance && !isDeveloperRole ? [["maintenance", a.tabs.maintenance]] : []),
+          ...(canManageAdmins && !isDeveloperRole ? [["admins", adminLanguage === "bg" ? "Админи" : "Admins"]] : []),
+          ...(isDeveloperRole ? [["dev", adminLocalText(adminLanguage, "DEV управление", "DEV management", "DEV управление")]] : []),
         ],
-    [a.tabs, adminLanguage, canManageAdmins, canManageMarketing, canUseMaintenance, canViewFeedback, isBarRole, isProductionRole, isProVersion, isWaiterRole]
+    [a.tabs, adminLanguage, canManageAdmins, canManageMarketing, canUseMaintenance, canViewFeedback, isBarRole, isDeveloperRole, isProductionRole, isProVersion, isWaiterRole]
   );
   const readyWaiterItemsCount = React.useMemo(
     () => isWaiterRole
@@ -8425,7 +8438,8 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
   const dashboardNavigationGroups = React.useMemo(() => {
     const operationKeys = new Set(["liveMap", "reservations", "block", "orders"]);
     const operationTabs = tabs.filter(([key]) => operationKeys.has(key));
-    const managementTabs = tabs.filter(([key]) => !operationKeys.has(key));
+    const managementTabs = tabs.filter(([key]) => !operationKeys.has(key) && key !== "dev");
+    const developerTabs = tabs.filter(([key]) => key === "dev");
 
     return [
       {
@@ -8447,6 +8461,13 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
             : "Menu, guests, reports, layout, and admin settings.",
         icon: "layout",
         tabs: managementTabs,
+      },
+      {
+        key: "developer",
+        title: adminLocalText(adminLanguage, "DEV управление", "DEV management", "DEV управление"),
+        subtitle: adminLocalText(adminLanguage, "Услуги, комисиони, достъп и техническа поддръжка.", "Services, commissions, access, and technical maintenance.", "Сервисы, комиссии, доступ и техническое обслуживание."),
+        icon: "dev",
+        tabs: developerTabs,
       },
     ].filter((group) => group.tabs.length > 0);
   }, [adminLanguage, tabs]);
@@ -8505,8 +8526,13 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
       return;
     }
 
-    if (activeTab === "admins" && canManageAdmins) {
+    if (canManageAdmins && (activeTab === "admins" || (activeTab === "dev" && isDeveloperRole && developerSection === "access"))) {
       await Promise.all([loadAdminUsers(), loadAuditLogs()]);
+      return;
+    }
+
+    if (activeTab === "dev" && isDeveloperRole) {
+      if (developerSection === "service") await loadProductTier();
       return;
     }
 
@@ -8527,6 +8553,8 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     activeTab,
     canManageAdmins,
     canViewFeedback,
+    developerSection,
+    isDeveloperRole,
     isProductionRole,
     isProVersion,
     isWaiterRole,
@@ -8537,6 +8565,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     loadEvents,
     loadFeedbackEntries,
     loadMenuItems,
+    loadProductTier,
     loadPublicTableHolds,
     loadReservations,
     loadTableLayout,
@@ -9207,6 +9236,29 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
           <Panel title="Loading">Loading...</Panel>
         ) : !isDashboard ? (
           <>
+            {activeTab === "dev" && isDeveloperRole && (
+              <>
+                <DeveloperManagement
+                  language={adminLanguage}
+                  restaurantName={branding.name}
+                  restaurantId={tenantContext.tenantId}
+                  section={developerSection}
+                  onSectionChange={setDeveloperSection}
+                />
+                {developerSection === "service" && (
+                  <DeveloperServiceSettings
+                    language={adminLanguage}
+                    isProVersion={isProVersion}
+                    onUnlockPro={unlockProVersion}
+                    onLockBasic={lockBasicVersion}
+                    adminFetch={adminFetch}
+                  />
+                )}
+                {developerSection === "restaurant" && (
+                  <TenantBrandingSettings key={JSON.stringify(branding)} adminFetch={adminFetch} />
+                )}
+              </>
+            )}
             {activeTab === "profile" && (
               <Panel
                 title={adminLanguage === "bg" ? "Моят профил" : "My profile"}
@@ -9339,7 +9391,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       {adminLanguage === "bg" ? "Смени паролата" : "Change password"}
                     </button>
                   </form>
-                  {["Owner", "Developer"].includes(currentAdminRole) && <PreorderSettings adminFetch={adminFetch} role={currentAdminRole} language={adminLanguage} />}
+                  {currentAdminRole === "Owner" && <PreorderSettings adminFetch={adminFetch} role={currentAdminRole} language={adminLanguage} />}
                   </div>
                 </div>
               </Panel>
@@ -11797,14 +11849,19 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
               />
             )}
 
-            {activeTab === "maintenance" && canUseMaintenance && (
-              <MaintenanceModule
-                adminLanguage={adminLanguage}
-                adminFetch={adminFetch}
-                loadReservations={loadReservations}
-                loadDiningOrders={loadDiningOrders}
-                isProVersion={isProVersion}
-              />
+            {canUseMaintenance && (activeTab === "maintenance" || (activeTab === "dev" && isDeveloperRole && developerSection === "maintenance")) && (
+              <>
+                <MaintenanceModule
+                  adminLanguage={adminLanguage}
+                  adminFetch={adminFetch}
+                  loadReservations={loadReservations}
+                  loadDiningOrders={loadDiningOrders}
+                  isProVersion={isProVersion}
+                />
+                {activeTab === "dev" && isDeveloperRole && (
+                  <DeveloperDataTools language={adminLanguage} onClearData={clearReservationsAndOrders} />
+                )}
+              </>
             )}
 
             {activeTab === "feedback" && canViewFeedback && (
@@ -12512,7 +12569,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
               </Panel>
             )}
 
-            {activeTab === "admins" && (
+            {canManageAdmins && (activeTab === "admins" || (activeTab === "dev" && isDeveloperRole && developerSection === "access")) && (
               <Panel
                 title={adminLanguage === "bg" ? "Админи и audit" : "Admins and audit"}
                 subtitle={adminLanguage === "bg" ? "Управление на достъпа, бърз вход и история на важните промени." : "Access management, quick login, and history of important changes."}
@@ -12526,71 +12583,9 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                   </button>
                 }
               >
-                {canManageMarketing && <TenantBrandingSettings key={JSON.stringify(branding)} adminFetch={adminFetch} />}
+                {currentAdminRole === "Owner" && <TenantBrandingSettings key={JSON.stringify(branding)} adminFetch={adminFetch} />}
                 <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
                   <div className="space-y-4">
-                    {canClearOperationalData && (
-                      <div className="grid gap-3">
-                        <div className={`rounded-3xl border p-5 ${
-                          isProVersion
-                            ? "border-emerald-300/20 bg-emerald-500/10"
-                            : "border-[#f2d39a]/25 bg-[#c9a56a]/10"
-                        }`}>
-                          <div className="section-kicker">
-                            {adminLanguage === "bg" ? "Версия на системата" : "System version"}
-                          </div>
-                          <div className="mt-2 text-2xl font-semibold text-[#fff4df]">
-                            {isProVersion ? "Pro" : "Basic"}
-                          </div>
-                          <p className="mt-3 text-sm leading-6 text-white/60">
-                            {isProVersion
-                              ? adminLanguage === "bg"
-                                ? "Пълният оперативен модул е активен: сервитьори, кухня, поръчки и дигитално меню."
-                                : "Full operations are active: waiters, kitchen, orders, and digital menu."
-                              : adminLanguage === "bg"
-                                ? "Активни са сайтът и резервациите. Поръчки, кухня и сервитьорски роли са заключени."
-                                : "Website and reservations are active. Orders, kitchen, and waiter roles are locked."}
-                          </p>
-                          {!isProVersion && (
-                            <button
-                              type="button"
-                              onClick={unlockProVersion}
-                              className="luxury-button mt-4 w-full rounded-2xl px-5 py-3 text-sm font-semibold"
-                            >
-                              {adminLanguage === "bg" ? "Отключи Pro версия" : "Unlock Pro version"}
-                            </button>
-                          )}
-                          {isProVersion && (
-                            <button
-                              type="button"
-                              onClick={lockBasicVersion}
-                              className="mt-4 w-full rounded-2xl border border-[#f2d39a]/30 bg-black/20 px-5 py-3 text-sm font-semibold text-[#f2d39a] transition hover:bg-[#c9a56a]/10"
-                            >
-                              {adminLanguage === "bg" ? "Върни Basic версия" : "Return to Basic version"}
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="rounded-3xl border border-red-300/20 bg-red-500/10 p-5">
-                          <div className="section-kicker text-red-100/80">
-                            {adminLanguage === "bg" ? "Developer действие" : "Developer action"}
-                          </div>
-                          <p className="mt-3 text-sm leading-6 text-red-50/75">
-                            {adminLanguage === "bg"
-                              ? "Изчиства само резервации и поръчки. Менюто, масите, клиентските настройки и админите остават."
-                              : "Clears only reservations and orders. Menu, tables, customer settings, and admins stay intact."}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={clearReservationsAndOrders}
-                            className="mt-4 w-full rounded-2xl border border-red-300/30 bg-red-500/20 px-5 py-3 text-sm font-semibold text-red-100 transition hover:bg-red-500/30"
-                          >
-                            {adminLanguage === "bg" ? "Изчисти резервации и поръчки" : "Clear reservations and orders"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
                     <form onSubmit={createAdminUser} className="rounded-3xl border border-white/10 bg-black/20 p-5">
                       <div className="section-kicker">{adminLanguage === "bg" ? "Нов админ" : "New admin"}</div>
                       <div className="mt-4 grid gap-3">

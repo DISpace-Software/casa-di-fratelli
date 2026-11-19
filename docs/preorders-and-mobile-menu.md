@@ -10,7 +10,7 @@ A centered offer after booking opens the preorder menu only when that restaurant
 
 ## Consent and developer control
 
-In the shared administration profile, Developer controls the restaurant's platform master switch and commission in basis points (0–10000). Only Owner can separately opt in and accept the displayed commission and terms. Developer cannot grant owner consent. A changed commission or terms version requires renewed owner consent before the feature becomes enabled again. Consent is bound to the displayed commission and terms version; stale acceptance returns `409 PREORDER_TERMS_CHANGED`, refreshes the displayed terms and clears the acceptance checkbox. Policy changes are audited in the selected restaurant database.
+In the shared administration, **DEV management → Services & commission** lets Developer control the restaurant's platform master switch and commission in basis points (0–10000). Only Owner can separately opt in and accept the displayed commission and terms from **My profile**. Developer cannot grant owner consent. A changed commission or terms version requires renewed owner consent before the feature becomes enabled again. Consent is bound to the displayed commission and terms version; stale acceptance returns `409 PREORDER_TERMS_CHANGED`, refreshes the displayed terms and clears the acceptance checkbox. Policy changes are audited in the selected restaurant database.
 
 Both controls default to off; production rollout must not opt a restaurant in on its behalf.
 
