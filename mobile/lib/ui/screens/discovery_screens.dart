@@ -118,8 +118,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         ),
       ),
       bottomNavigationBar: Container(
-        height: 88,
-        padding: EdgeInsets.fromLTRB(13, 7, 13, 25),
+        key: const ValueKey('app-bottom-navigation'),
+        // Keep the tab content above Android buttons and the iOS home indicator.
+        height: 64 + bottomInset(context),
+        padding: EdgeInsets.fromLTRB(13, 7, 13, bottomInset(context) + 1),
         decoration: BoxDecoration(
           color: SeatMapColors.background,
           border: Border(top: BorderSide(color: SeatMapColors.line)),
@@ -139,6 +141,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     final selected = tab == index;
     return Expanded(
       child: Semantics(
+        key: ValueKey('navigation-tab-$index'),
         selected: selected,
         button: true,
         child: InkWell(

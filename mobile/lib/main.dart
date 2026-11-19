@@ -10,17 +10,20 @@ import 'state/app_controller.dart';
 import 'ui/screens/discovery_screens.dart';
 import 'ui/theme.dart';
 
+const _systemOverlayStyle = SystemUiOverlayStyle(
+  statusBarColor: Colors.transparent,
+  statusBarIconBrightness: Brightness.light,
+  statusBarBrightness: Brightness.dark,
+  systemNavigationBarColor: SeatMapColors.background,
+  systemNavigationBarIconBrightness: Brightness.light,
+  // Android 15+ draws behind system navigation; our dark safe area supplies
+  // contrast, so the default gray three-button scrim is unnecessary.
+  systemNavigationBarContrastEnforced: false,
+);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: SeatMapColors.background,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
+  SystemChrome.setSystemUIOverlayStyle(_systemOverlayStyle);
   runApp(SeatMapApp(controller: AppController()));
 }
 
@@ -63,41 +66,44 @@ class _SeatMapAppState extends State<SeatMapApp> {
           final size = framed
               ? Size(390, math.min(844, constraints.maxHeight - 36))
               : Size(constraints.maxWidth, constraints.maxHeight);
-          final navigator = MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              size: size,
-              padding: widget.previewChrome && !kIsWeb
-                  ? const EdgeInsets.only(top: 44, bottom: 24)
-                  : framed
-                  ? EdgeInsets.zero
-                  : MediaQuery.paddingOf(context),
-            ),
-            child: Stack(
-              children: [
-                Positioned.fill(child: child!),
-                if (widget.previewChrome)
-                  const Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: IgnorePointer(child: _PreviewStatusBar()),
-                  ),
-                if (widget.previewChrome)
-                  Positioned(
-                    bottom: 10,
-                    left: (size.width - 128) / 2,
-                    child: IgnorePointer(
-                      child: Container(
-                        width: 128,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: SeatMapColors.text,
-                          borderRadius: BorderRadius.circular(3),
+          final navigator = AnnotatedRegion<SystemUiOverlayStyle>(
+            value: _systemOverlayStyle,
+            child: MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                size: size,
+                padding: widget.previewChrome && !kIsWeb
+                    ? const EdgeInsets.only(top: 44, bottom: 24)
+                    : framed
+                    ? EdgeInsets.zero
+                    : MediaQuery.paddingOf(context),
+              ),
+              child: Stack(
+                children: [
+                  Positioned.fill(child: child!),
+                  if (widget.previewChrome)
+                    const Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: IgnorePointer(child: _PreviewStatusBar()),
+                    ),
+                  if (widget.previewChrome)
+                    Positioned(
+                      bottom: 10,
+                      left: (size.width - 128) / 2,
+                      child: IgnorePointer(
+                        child: Container(
+                          width: 128,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: SeatMapColors.text,
+                            borderRadius: BorderRadius.circular(3),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           );
           if (!framed) return navigator;

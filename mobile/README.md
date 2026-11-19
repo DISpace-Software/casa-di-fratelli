@@ -18,9 +18,9 @@ On this machine, if Flutter is not on your PATH:
 /Users/macbookpro/develop/flutter/bin/flutter run -d chrome
 ```
 
-For testing on your iPhone, see [the device guide](docs/IPHONE_TESTING.md).
+For testing on your phone, see the [iPhone guide](docs/IPHONE_TESTING.md) or [Android USB guide](docs/ANDROID_TESTING.md).
 
-For a native device, use `flutter devices` and `flutter run -d <device-id>`. Android requires an Android SDK and a compatible JDK. iOS requires full Xcode, its platform SDKs, and signing for a physical device. Xcode 26.3 is selected on this Mac; a signed release has been installed and launched on the user’s iPhone 14 Plus. Android still requires its SDK and device testing.
+For a native device, use `flutter devices` and `flutter run -d <device-id>`. Android requires an Android SDK and a complete JDK, including `javac` and `jlink`. iOS requires full Xcode, its platform SDKs, and signing for a physical device. Xcode 26.3 is selected on this Mac; a signed release has been installed and launched on the user’s iPhone 14 Plus. Android SDK 36 and Temurin JDK 21 are also configured; an ARM64 release was installed and launched over USB on Samsung SM-S948B (Android 16), with the live restaurant catalogue loading successfully.
 
 ## Accounts
 
