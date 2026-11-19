@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import '../../domain/models.dart';
 import '../../state/app_controller.dart';
 import '../../data/seatmap_repository.dart';
+import '../../data/guest_account_repository.dart';
 import '../components.dart';
 import '../theme.dart';
 
@@ -218,7 +219,22 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => error = context.l10n.msgIncorrectEmailOrPassword);
       }
     } catch (exception) {
-      if (mounted) setState(() => error = _error(exception));
+      if (!mounted) return;
+      if (exception is GuestAccountException &&
+          exception.code == 'EMAIL_NOT_VERIFIED') {
+        final verified = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EmailCodeScreen(
+              controller: widget.controller,
+              email: email.text.trim(),
+            ),
+          ),
+        );
+        if (mounted && verified == true) Navigator.pop(context, true);
+      } else {
+        setState(() => error = _error(exception));
+      }
     } finally {
       if (mounted) setState(() => busy = false);
     }
@@ -333,6 +349,21 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           SizedBox(height: 24),
           if (!widget.controller.demoMode) ...[
+            TextButton(
+              onPressed: busy
+                  ? null
+                  : () => Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EmailCodeScreen(
+                          controller: widget.controller,
+                          email: email.text.trim(),
+                          reset: true,
+                        ),
+                      ),
+                    ),
+              child: Text(context.l10n.forgotPassword),
+            ),
             TextButton(
               onPressed: busy
                   ? null

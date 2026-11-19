@@ -21,6 +21,15 @@ public sealed class GuestAccountController(IServiceProvider services) : Controll
     public async Task<IActionResult> Login(GuestLoginRequest request, CancellationToken ct) =>
         Ok(await Auth.LoginAsync(request, ct));
 
+    [HttpPost("email/code"), EnableRateLimiting("guest-auth")]
+    public async Task<IActionResult> EmailCode(GuestEmailRequest request, CancellationToken ct) => Ok(await Auth.SendCodeAsync(request.Email, "verify", ct));
+    [HttpPost("email/verify"), EnableRateLimiting("guest-auth")]
+    public async Task<IActionResult> Verify(GuestCodeRequest request, CancellationToken ct) => Ok(await Auth.VerifyEmailAsync(request, ct));
+    [HttpPost("password/forgot"), EnableRateLimiting("guest-auth")]
+    public async Task<IActionResult> Forgot(GuestEmailRequest request, CancellationToken ct) => Ok(await Auth.SendCodeAsync(request.Email, "reset", ct));
+    [HttpPost("password/reset"), EnableRateLimiting("guest-auth")]
+    public async Task<IActionResult> Reset(GuestResetRequest request, CancellationToken ct) { await Auth.ResetPasswordAsync(request, ct); return NoContent(); }
+
     [HttpGet("me"), GuestAuthorize]
     public IActionResult Me() => Ok(GuestProfileDto.From(Session.Profile));
 

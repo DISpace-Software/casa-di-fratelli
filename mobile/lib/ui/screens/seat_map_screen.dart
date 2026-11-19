@@ -1,6 +1,7 @@
 import '../../l10n/language.dart';
 
 import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
@@ -34,6 +35,9 @@ class _SeatMapScreenState extends State<SeatMapScreen>
   final selected = <String>{};
   bool loading = true;
   String? error;
+  Timer? refreshTimer;
+  bool inFlight = false;
+  bool foreground = true;
   @override
   void initState() {
     super.initState();
@@ -41,22 +45,36 @@ class _SeatMapScreenState extends State<SeatMapScreen>
     plan = widget.restaurant.floorPlan;
     zone = plan.zones.isEmpty ? '' : plan.zones.first.id;
     _load();
+    refreshTimer = Timer.periodic(Duration(seconds: 3), (_) {
+      if (!widget.controller.demoMode &&
+          foreground &&
+          ModalRoute.of(context)?.isCurrent == true) {
+        _load(quiet: true);
+      }
+    });
   }
 
   @override
   void dispose() {
+    refreshTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _load();
+    foreground = state == AppLifecycleState.resumed;
+    if (foreground) _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool quiet = false}) async {
+    if (inFlight || !mounted) return;
+    inFlight = true;
+    final requestKey =
+        '${widget.controller.selectedDate}|${widget.controller.selectedTime}|${widget.controller.guestCount}';
+    bool superseded = false;
     setState(() {
-      loading = true;
+      if (!quiet) loading = true;
       error = null;
     });
     try {
@@ -64,14 +82,20 @@ class _SeatMapScreenState extends State<SeatMapScreen>
         widget.restaurant,
       );
       if (!mounted) return;
+      superseded =
+          requestKey !=
+          '${widget.controller.selectedDate}|${widget.controller.selectedTime}|${widget.controller.guestCount}';
+      if (superseded) return;
       setState(() {
         plan = result;
-        if (!plan.zones.any((item) => item.id == zone)) {
-          zone = plan.zones.isEmpty ? '' : plan.zones.first.id;
+        if (!plan.zones.any((item) => item.id == zone && item.active)) {
+          zone = plan.zones.where((item) => item.active).firstOrNull?.id ?? '';
         }
         selected.removeWhere(
-          (id) =>
-              !plan.tables.any((table) => table.id == id && !table.occupied),
+          (id) => !plan.tables.any(
+            (table) =>
+                table.id == id && table.zoneId == zone && !table.occupied,
+          ),
         );
         if (selected.isEmpty &&
             widget.controller.demoMode &&
@@ -87,7 +111,11 @@ class _SeatMapScreenState extends State<SeatMapScreen>
         );
       }
     } finally {
-      if (mounted) setState(() => loading = false);
+      inFlight = false;
+      if (mounted) {
+        setState(() => loading = false);
+        if (superseded) _load();
+      }
     }
   }
 
@@ -213,17 +241,23 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                       itemCount: plan.zones.length,
                       separatorBuilder: (_, _) => SizedBox(width: 9),
                       itemBuilder: (context, index) => ChoicePill(
-                        plan.zones[index].name,
+                        plan.zones[index].active
+                            ? plan.zones[index].name
+                            : '${plan.zones[index].name} · ${context.l10n.zoneClosed}',
                         selected: zone == plan.zones[index].id,
-                        onTap: () => setState(() {
-                          zone = plan.zones[index].id;
-                          selected.clear();
-                        }),
+                        onTap: !plan.zones[index].active
+                            ? null
+                            : () => setState(() {
+                                zone = plan.zones[index].id;
+                                selected.clear();
+                              }),
                         padding: 20,
                       ),
                     ),
                   ),
                   SizedBox(height: 19),
+                  if (plan.zones.every((item) => !item.active) && error == null)
+                    DemoNotice(context.l10n.allZonesClosed),
                   if (error != null)
                     Container(
                       height: 365,

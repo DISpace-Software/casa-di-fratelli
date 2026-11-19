@@ -362,6 +362,19 @@ class SeatMapRepository {
       }
     }
     return plan.copyWith(
+      zones: plan.zones
+          .map(
+            (zone) => Zone(
+              id: zone.id,
+              name: zone.name,
+              presentation: zone.presentation,
+              active:
+                  zone.active &&
+                  !restaurantClosed &&
+                  !closedZones.contains(zone.id),
+            ),
+          )
+          .toList(),
       tables: plan.tables
           .map(
             (table) => table.copyWith(

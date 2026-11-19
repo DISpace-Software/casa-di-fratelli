@@ -337,7 +337,7 @@
   "msgDemoProfileOnThisDevice": "Demo profile on this device.",
   "msgYourProfileIsSavedOnTheServerYour224": "Your profile is saved on the server. Your name and contact details prefill bookings.",
   "msgConfirmEmailChange": "Confirm email change",
-  "msgAfterSavingUseYourNewEmailToSign": "After saving, use your new email to sign in.",
+  "msgAfterSavingUseYourNewEmailToSign": "After saving, verify your new email before signing in.",
   "msgCurrentPassword": "Current password",
   "msgSaveChanges": "Save changes",
   "msgPasswordChangedSignInAgainOnAllYour": "Password changed. Sign in again on all your devices.",
@@ -591,5 +591,40 @@
   "mapRestaurantEntrance": "To restaurant",
   "mapTv": "TV",
   "mapWall": "Partition",
-  "mapBar": "Bar"
+  "mapBar": "Bar",
+  "zoneClosed": "Closed",
+  "allZonesClosed": "No rooms are open on this date. Choose another date or contact the restaurant.",
+  "emailNotVerified": "Verify your email before signing in.",
+  "invalidEmailCode": "Invalid or expired code. Request a new code.",
+  "emailDeliveryFailed": "Could not send the email. Try again in a minute.",
+  "forgotPassword": "Forgot password?",
+  "resetPasswordTitle": "Reset password",
+  "verifyEmailTitle": "Verify email",
+  "verifyEmailIntro": "We will send a code to confirm that this email belongs to you.",
+  "resetEmailIntro": "Enter your account email. If an account exists, you will receive a password reset code.",
+  "emailCodeSent": "If eligible, a code has been sent to {email}. Check your inbox and spam folder.",
+  "emailCodeLabel": "6-digit code",
+  "emailCodeExpiry": "Valid for 10 minutes · 5 attempts",
+  "passwordLengthHint": "At least 12 characters",
+  "confirmNewPassword": "Confirm new password",
+  "passwordsMustMatch": "Passwords must match.",
+  "sendEmailCode": "Send code",
+  "resendEmailCode": "Send a new code",
+  "resendIn": "Send again in {seconds}s",
+  "changeEmailAddress": "Use another email",
+  "passwordResetComplete": "Password changed. Sign in with your new password. All previous sessions have been signed out.",
+  "@emailCodeSent": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "@resendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  }
 }

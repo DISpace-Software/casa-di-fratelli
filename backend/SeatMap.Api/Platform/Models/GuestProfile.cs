@@ -19,6 +19,8 @@ public sealed class GuestProfile
     public DateTime? UpdatedAtUtc { get; set; }
     public string? Phone { get; set; }
     public string? Email { get; set; }
+    public DateTime? EmailVerifiedAtUtc { get; set; }
+    public DateTime? LastEmailSentAtUtc { get; set; }
     public DateTime? PhoneVerifiedAtUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }

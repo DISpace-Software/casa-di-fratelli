@@ -13,6 +13,8 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
     public DbSet<GuestCredential> GuestCredentials => Set<GuestCredential>();
     public DbSet<GuestSession> GuestSessions => Set<GuestSession>();
 
+    public DbSet<GuestEmailChallenge> GuestEmailChallenges => Set<GuestEmailChallenge>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<GuestProfile>(entity =>
@@ -48,6 +50,15 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
             entity.HasIndex(x => new { x.GuestProfileId, x.ExpiresAtUtc });
             entity.HasOne(x => x.Profile).WithMany().HasForeignKey(x => x.GuestProfileId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<GuestEmailChallenge>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Email).HasMaxLength(254).IsRequired();
+            entity.Property(x => x.Purpose).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.CodeHash).HasMaxLength(64).IsRequired();
+            entity.HasIndex(x => new { x.GuestProfileId, x.CreatedAtUtc });
+            entity.HasOne(x => x.Profile).WithMany().HasForeignKey(x => x.GuestProfileId).OnDelete(DeleteBehavior.Cascade);
         });
         modelBuilder.Entity<GuestFavorite>(entity =>
         {

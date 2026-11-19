@@ -145,6 +145,9 @@ class GuestAccountRepository {
   }
 
   String? _messageForCode(String? code) => switch (code) {
+    'EMAIL_NOT_VERIFIED' => appStrings.emailNotVerified,
+    'INVALID_EMAIL_CODE' => appStrings.invalidEmailCode,
+    'EMAIL_DELIVERY_FAILED' => appStrings.emailDeliveryFailed,
     'INVALID_CREDENTIALS' => appStrings.invalidCredentials,
     'CURRENT_PASSWORD_REQUIRED' => appStrings.currentPasswordRequired,
     'EMAIL_IN_USE' => appStrings.emailInUse,
@@ -166,17 +169,60 @@ class GuestAccountRepository {
   );
   Future<GuestProfile> login(String email, String password) async =>
       _authenticate('login', {'email': email.trim(), 'password': password});
-  Future<GuestProfile> register(
+  Future<Map<String, dynamic>> register(
     GuestProfile profile,
     String password,
     String confirmation, {
     required bool privacyConsent,
-  }) => _authenticate('register', {
-    ...profile.toJson(),
-    'password': password,
-    'confirmPassword': confirmation,
-    'privacyConsent': privacyConsent,
-  });
+  }) async => Map<String, dynamic>.from(
+    await _request(
+      'register',
+      method: 'POST',
+      authenticated: false,
+      body: {
+        ...profile.toJson(),
+        'password': password,
+        'confirmPassword': confirmation,
+        'privacyConsent': privacyConsent,
+      },
+    ) as Map,
+  );
+
+  Future<Map<String, dynamic>> sendEmailCode(
+    String email, {
+    bool reset = false,
+  }) async => Map<String, dynamic>.from(
+    await _request(
+      reset ? 'password/forgot' : 'email/code',
+      method: 'POST',
+      authenticated: false,
+      body: {'email': email.trim()},
+    ) as Map,
+  );
+
+  Future<GuestProfile> verifyEmail(String challengeId, String code) =>
+      _authenticate('email/verify', {'challengeId': challengeId, 'code': code});
+
+  Future<void> resetPassword(
+    String challengeId,
+    String code,
+    String password,
+    String confirmation,
+  ) async {
+    await _request(
+      'password/reset',
+      method: 'POST',
+      authenticated: false,
+      body: {
+        'challengeId': challengeId,
+        'code': code,
+        'newPassword': password,
+        'confirmPassword': confirmation,
+      },
+    );
+    await forgetSession();
+  }
+
   Future<GuestProfile> _authenticate(
     String path,
     Map<String, dynamic> body,

@@ -753,7 +753,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get msgAfterSavingUseYourNewEmailToSign =>
-      'После сохранения используйте новый email для входа.';
+      'После сохранения подтвердите новый email перед входом.';
 
   @override
   String get msgCurrentPassword => 'Текущий пароль';
@@ -1270,4 +1270,76 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get mapBar => 'Бар';
+
+  @override
+  String get zoneClosed => 'Закрыто';
+
+  @override
+  String get allZonesClosed =>
+      'На выбранную дату нет открытых залов. Выберите другую дату или свяжитесь с рестораном.';
+
+  @override
+  String get emailNotVerified => 'Подтвердите почту перед входом.';
+
+  @override
+  String get invalidEmailCode => 'Неверный или истёкший код. Запросите новый.';
+
+  @override
+  String get emailDeliveryFailed =>
+      'Не удалось отправить письмо. Попробуйте через минуту.';
+
+  @override
+  String get forgotPassword => 'Забыли пароль?';
+
+  @override
+  String get resetPasswordTitle => 'Восстановить пароль';
+
+  @override
+  String get verifyEmailTitle => 'Подтвердить почту';
+
+  @override
+  String get verifyEmailIntro =>
+      'Отправим код, чтобы подтвердить, что этот адрес принадлежит вам.';
+
+  @override
+  String get resetEmailIntro =>
+      'Введите почту аккаунта. Если аккаунт существует, вы получите код для восстановления пароля.';
+
+  @override
+  String emailCodeSent(String email) {
+    return 'Если для адреса доступна эта операция, код отправлен на $email. Проверьте входящие и спам.';
+  }
+
+  @override
+  String get emailCodeLabel => 'Код из 6 цифр';
+
+  @override
+  String get emailCodeExpiry => 'Действует 10 минут · 5 попыток';
+
+  @override
+  String get passwordLengthHint => 'Не менее 12 символов';
+
+  @override
+  String get confirmNewPassword => 'Повторите новый пароль';
+
+  @override
+  String get passwordsMustMatch => 'Пароли должны совпадать.';
+
+  @override
+  String get sendEmailCode => 'Отправить код';
+
+  @override
+  String get resendEmailCode => 'Отправить новый код';
+
+  @override
+  String resendIn(String seconds) {
+    return 'Повторить через $seconds сек.';
+  }
+
+  @override
+  String get changeEmailAddress => 'Указать другую почту';
+
+  @override
+  String get passwordResetComplete =>
+      'Пароль изменён. Войдите с новым паролем. Предыдущие сеансы на всех устройствах завершены.';
 }

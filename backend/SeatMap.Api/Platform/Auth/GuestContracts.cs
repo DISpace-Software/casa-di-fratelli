@@ -50,15 +50,28 @@ public sealed class GuestPasswordRequest
 public sealed record GuestDeleteRequest([Required, StringLength(128)] string CurrentPassword);
 public sealed record GuestProfileDto(Guid Id, string FirstName, string LastName, string Name,
     string Email, string Phone, string City, string Country, DateOnly? DateOfBirth,
-    string PreferredLanguage, bool MarketingConsent, DateTime CreatedAtUtc)
+    string PreferredLanguage, bool MarketingConsent, DateTime CreatedAtUtc, bool EmailVerified)
 {
     public static GuestProfileDto From(GuestProfile profile) => new(profile.Id, profile.FirstName,
         profile.LastName, profile.DisplayName, profile.Email ?? "", profile.Phone ?? "", profile.City,
-        profile.Country, profile.DateOfBirth, profile.PreferredLanguage, profile.MarketingConsent, profile.CreatedAtUtc);
+        profile.Country, profile.DateOfBirth, profile.PreferredLanguage, profile.MarketingConsent, profile.CreatedAtUtc, profile.EmailVerifiedAtUtc.HasValue);
 }
 public sealed record GuestAuthResult(string Token, DateTime ExpiresAtUtc, GuestProfileDto Profile);
 public sealed class GuestAuthException(int status, string code, string message) : Exception(message)
 {
     public int Status { get; } = status;
     public string Code { get; } = code;
+}
+
+public sealed record GuestEmailRequest([Required, EmailAddress, StringLength(254)] string Email);
+public sealed record GuestChallengeResult(Guid ChallengeId, DateTime ExpiresAtUtc, int ResendAfterSeconds = 60);
+public class GuestCodeRequest
+{
+    public Guid ChallengeId { get; set; }
+    [Required, RegularExpression(@"^\d{6}$")] public string Code { get; set; } = "";
+}
+public sealed class GuestResetRequest : GuestCodeRequest
+{
+    [Required, StringLength(128, MinimumLength = 12)] public string NewPassword { get; set; } = "";
+    [Required, Compare(nameof(NewPassword))] public string ConfirmPassword { get; set; } = "";
 }

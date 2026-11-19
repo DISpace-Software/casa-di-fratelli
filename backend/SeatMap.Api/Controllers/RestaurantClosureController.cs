@@ -19,6 +19,7 @@ public class RestaurantClosureController : ControllerBase
     [HttpGet("~/api/v1/restaurants/{restaurantId}/closure")]
     public async Task<IActionResult> Get()
     {
+        Response.Headers.CacheControl = "no-store";
         var settings = await _closures.GetAsync();
         return Ok(ToResponse(settings));
     }

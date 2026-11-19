@@ -337,7 +337,7 @@
   "msgDemoProfileOnThisDevice": "Демонстрационен профил на това устройство.",
   "msgYourProfileIsSavedOnTheServerYour224": "Профилът се запазва на сървъра. Името и контактите се попълват при резервация.",
   "msgConfirmEmailChange": "Потвърдете промяната на email",
-  "msgAfterSavingUseYourNewEmailToSign": "След запазване използвайте новия email за вход.",
+  "msgAfterSavingUseYourNewEmailToSign": "След запазване потвърдете новия имейл преди вход.",
   "msgCurrentPassword": "Текуща парола",
   "msgSaveChanges": "Запази промените",
   "msgPasswordChangedSignInAgainOnAllYour": "Паролата е променена. Влезте отново на всички устройства.",
@@ -591,5 +591,40 @@
   "mapRestaurantEntrance": "Към ресторанта",
   "mapTv": "Телевизор",
   "mapWall": "Преградна стена",
-  "mapBar": "Бар"
+  "mapBar": "Бар",
+  "zoneClosed": "Затворено",
+  "allZonesClosed": "Няма отворени зони за избраната дата. Изберете друга дата или се свържете с ресторанта.",
+  "emailNotVerified": "Потвърдете имейла си преди вход.",
+  "invalidEmailCode": "Невалиден или изтекъл код. Поискайте нов код.",
+  "emailDeliveryFailed": "Имейлът не беше изпратен. Опитайте отново след минута.",
+  "forgotPassword": "Забравена парола?",
+  "resetPasswordTitle": "Нова парола",
+  "verifyEmailTitle": "Потвърдете имейла",
+  "verifyEmailIntro": "Ще изпратим код, за да потвърдите, че този имейл е ваш.",
+  "resetEmailIntro": "Въведете имейла на профила си. Ако има такъв профил, ще получите код за нова парола.",
+  "emailCodeSent": "Ако имейлът отговаря на условията, кодът е изпратен до {email}. Проверете входящата поща и спам.",
+  "emailCodeLabel": "6-цифрен код",
+  "emailCodeExpiry": "Валиден 10 минути · 5 опита",
+  "passwordLengthHint": "Поне 12 символа",
+  "confirmNewPassword": "Потвърдете новата парола",
+  "passwordsMustMatch": "Паролите трябва да съвпадат.",
+  "sendEmailCode": "Изпрати код",
+  "resendEmailCode": "Изпрати нов код",
+  "resendIn": "Нов код след {seconds} сек.",
+  "changeEmailAddress": "Друг имейл",
+  "passwordResetComplete": "Паролата е променена. Влезте с новата парола. Всички предишни сесии са прекратени.",
+  "@emailCodeSent": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "@resendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  }
 }

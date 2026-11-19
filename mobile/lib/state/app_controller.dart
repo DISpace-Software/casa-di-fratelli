@@ -221,7 +221,7 @@ class AppController extends ChangeNotifier {
     return true;
   }
 
-  Future<void> register(
+  Future<Map<String, dynamic>> register(
     GuestProfile value,
     String password,
     String confirmation, {
@@ -232,14 +232,30 @@ class AppController extends ChangeNotifier {
         appStrings.msgRegistrationIsAvailableInLiveMode,
       );
     }
-    profile = await accounts.register(
+    return accounts.register(
       value,
       password,
       confirmation,
       privacyConsent: privacyConsent,
     );
+  }
+
+  Future<void> verifyEmail(String challengeId, String code) async {
+    profile = await accounts.verifyEmail(challengeId, code);
     isLoggedIn = true;
     accountError = null;
+    notifyListeners();
+  }
+
+  Future<void> resetPassword(
+    String challengeId,
+    String code,
+    String password,
+    String confirmation,
+  ) async {
+    await accounts.resetPassword(challengeId, code, password, confirmation);
+    isLoggedIn = false;
+    profile = GuestProfile();
     notifyListeners();
   }
 
@@ -308,9 +324,16 @@ class AppController extends ChangeNotifier {
         jsonEncode(profile.toJson()),
       );
     } else {
+      final emailChanged =
+          value.email.trim().toLowerCase() !=
+          profile.email.trim().toLowerCase();
       profile = await _authenticated(
         () => accounts.update(value, currentPassword: currentPassword),
       );
+      if (emailChanged) {
+        await accounts.forgetSession();
+        isLoggedIn = false;
+      }
     }
     notifyListeners();
   }

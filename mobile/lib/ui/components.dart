@@ -78,6 +78,7 @@ class ChoicePill extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
     button: true,
     selected: selected,
+    enabled: onTap != null,
     child: Material(
       color: selected ? SeatMapColors.lavenderSoft : SeatMapColors.elevated,
       shape: StadiumBorder(

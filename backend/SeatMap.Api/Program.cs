@@ -57,6 +57,7 @@ builder.Services.AddOptions<PlatformOptions>().Bind(builder.Configuration.GetSec
 if (platformOptions.Enabled && !EF.IsDesignTime)
 {
     builder.Services.AddScoped<GuestAuthService>();
+    builder.Services.AddHttpClient<IGuestEmailSender, GuestEmailSender>(client => client.Timeout = TimeSpan.FromSeconds(10));
     var platformConnection = PlatformDatabaseConfiguration.Resolve(builder.Configuration);
     builder.Services.AddDbContext<PlatformDbContext>(options => options.UseNpgsql(platformConnection));
 }

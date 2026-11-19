@@ -41,7 +41,8 @@ Only offline demo mode shows a one-tap test account button. This is local demo a
 - Date, time and party-size selection; restaurant menu; six-image demo photo gallery; favourites.
 - Table status, zones, windows/entrances/TV/partition landmarks from the restaurant plan, capacity and allowed combination checks; selected-table summary and booking contact form with explicit privacy consent.
 - Booking result, email confirmation status refresh, device booking history, and real guest cancellation at least three hours before the reservation. Restaurant contact and tap-to-call after the cutoff.
-- Real guest registration/login, full editable server profile, password change, session revocation and account deletion.
+- Real guest registration with email code verification, login, full editable server profile, email password recovery, password change, session revocation and account deletion.
+- Foreground seat maps refresh every three seconds, including table edits, seasonal room closures and dated restaurant closures. See [email and live-map behavior](../docs/guest-email-and-live-map.md).
 - Persisted local favourites, an offline test account and a labelled demo reminder preference.
 - Loading, empty, offline and conflict states. Real request failures never become fake successful bookings.
 

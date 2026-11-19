@@ -10,7 +10,7 @@ public class SeasonalZonesController(SeasonalZoneService zones, AuditService aud
 {
     [HttpGet]
     [HttpGet("~/api/v1/restaurants/{restaurantId}/zones")]
-    public async Task<IActionResult> Get() => Ok(new { closedAreas = await zones.GetClosedAreasAsync() });
+    public async Task<IActionResult> Get() { Response.Headers.CacheControl = "no-store"; return Ok(new { closedAreas = await zones.GetClosedAreasAsync() }); }
 
     public sealed record ChangeZoneRequest(bool Closed);
 

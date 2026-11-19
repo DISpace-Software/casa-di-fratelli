@@ -151,6 +151,7 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
     [HttpGet("~/api/v1/restaurants/{restaurantId}/reservations/blocked-slots")]
     public async Task<IActionResult> GetBlockedSlots()
     {
+        Response.Headers.CacheControl = "no-store";
         var today = DateOnly.FromDateTime(GetRestaurantNow());
         var lastPublicReservationDate = today.AddDays(PublicMaxReservationDaysAhead);
         var reservations = await _db.Reservations

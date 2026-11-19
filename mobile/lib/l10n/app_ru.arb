@@ -337,7 +337,7 @@
   "msgDemoProfileOnThisDevice": "Демонстрационный профиль на этом устройстве.",
   "msgYourProfileIsSavedOnTheServerYour224": "Профиль сохраняется на сервере. Имя и контакты подставляются при бронировании.",
   "msgConfirmEmailChange": "Подтверждение смены email",
-  "msgAfterSavingUseYourNewEmailToSign": "После сохранения используйте новый email для входа.",
+  "msgAfterSavingUseYourNewEmailToSign": "После сохранения подтвердите новый email перед входом.",
   "msgCurrentPassword": "Текущий пароль",
   "msgSaveChanges": "Сохранить изменения",
   "msgPasswordChangedSignInAgainOnAllYour": "Пароль изменён. Войдите снова на всех устройствах.",
@@ -591,5 +591,40 @@
   "mapRestaurantEntrance": "В ресторан",
   "mapTv": "Телевизор",
   "mapWall": "Перегородка",
-  "mapBar": "Бар"
+  "mapBar": "Бар",
+  "zoneClosed": "Закрыто",
+  "allZonesClosed": "На выбранную дату нет открытых залов. Выберите другую дату или свяжитесь с рестораном.",
+  "emailNotVerified": "Подтвердите почту перед входом.",
+  "invalidEmailCode": "Неверный или истёкший код. Запросите новый.",
+  "emailDeliveryFailed": "Не удалось отправить письмо. Попробуйте через минуту.",
+  "forgotPassword": "Забыли пароль?",
+  "resetPasswordTitle": "Восстановить пароль",
+  "verifyEmailTitle": "Подтвердить почту",
+  "verifyEmailIntro": "Отправим код, чтобы подтвердить, что этот адрес принадлежит вам.",
+  "resetEmailIntro": "Введите почту аккаунта. Если аккаунт существует, вы получите код для восстановления пароля.",
+  "emailCodeSent": "Если для адреса доступна эта операция, код отправлен на {email}. Проверьте входящие и спам.",
+  "emailCodeLabel": "Код из 6 цифр",
+  "emailCodeExpiry": "Действует 10 минут · 5 попыток",
+  "passwordLengthHint": "Не менее 12 символов",
+  "confirmNewPassword": "Повторите новый пароль",
+  "passwordsMustMatch": "Пароли должны совпадать.",
+  "sendEmailCode": "Отправить код",
+  "resendEmailCode": "Отправить новый код",
+  "resendIn": "Повторить через {seconds} сек.",
+  "changeEmailAddress": "Указать другую почту",
+  "passwordResetComplete": "Пароль изменён. Войдите с новым паролем. Предыдущие сеансы на всех устройствах завершены.",
+  "@emailCodeSent": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "@resendIn": {
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  }
 }

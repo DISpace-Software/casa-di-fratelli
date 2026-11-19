@@ -1,6 +1,9 @@
 import '../../l10n/language.dart';
 
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter/services.dart';
 
 import '../../data/guest_account_repository.dart';
 import '../../domain/models.dart';
@@ -466,13 +469,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
     FocusScope.of(context).unfocus();
     setState(() => busy = true);
     try {
-      await widget.controller.register(
+      final challenge = await widget.controller.register(
         inputs.value(),
         password.text,
         confirmation.text,
         privacyConsent: consent,
       );
-      if (mounted) Navigator.pop(context, true);
+      if (!mounted) return;
+      final verified = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EmailCodeScreen(
+            controller: widget.controller,
+            email: inputs.email.text.trim(),
+            challenge: challenge,
+          ),
+        ),
+      );
+      if (mounted && verified == true) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -597,11 +611,24 @@ class _EditGuestProfileScreenState extends State<EditGuestProfileScreen> {
     FocusScope.of(context).unfocus();
     setState(() => busy = true);
     try {
+      final emailChanged = changingEmail;
       await widget.controller.updateProfile(
         inputs.value(),
         currentPassword: changingEmail ? password.text : null,
       );
       if (mounted) {
+        if (emailChanged) {
+          await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => EmailCodeScreen(
+                controller: widget.controller,
+                email: inputs.email.text.trim(),
+              ),
+            ),
+          );
+          if (!mounted) return;
+        }
         Navigator.pop(context);
         ScaffoldMessenger.of(
           context,
@@ -814,5 +841,245 @@ class _GuestSecurityScreenState extends State<GuestSecurityScreen> {
         ),
       ),
     ],
+  );
+}
+
+class EmailCodeScreen extends StatefulWidget {
+  const EmailCodeScreen({
+    super.key,
+    required this.controller,
+    required this.email,
+    this.challenge,
+    this.reset = false,
+  });
+  final AppController controller;
+  final String email;
+  final Map<String, dynamic>? challenge;
+  final bool reset;
+  @override
+  State<EmailCodeScreen> createState() => _EmailCodeScreenState();
+}
+
+class _EmailCodeScreenState extends State<EmailCodeScreen> {
+  final form = GlobalKey<FormState>();
+  late final email = TextEditingController(text: widget.email);
+  final code = TextEditingController(),
+      password = TextEditingController(),
+      confirmation = TextEditingController();
+  String? challengeId, error;
+  bool busy = false, complete = false, obscure = true;
+  int resendSeconds = 0;
+  Timer? timer;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.challenge != null) _accept(widget.challenge!);
+    timer = Timer.periodic(Duration(seconds: 1), (_) {
+      if (mounted && resendSeconds > 0) setState(() => resendSeconds--);
+    });
+  }
+
+  void _accept(Map<String, dynamic> result) {
+    challengeId = result['challengeId'] as String;
+    resendSeconds = (result['resendAfterSeconds'] as num?)?.toInt() ?? 60;
+    code.clear();
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    for (final controller in [email, code, password, confirmation]) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    if (busy || resendSeconds > 0) return;
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email.text.trim())) {
+      setState(() => error = context.l10n.msgEnterAValidEmail);
+      return;
+    }
+    setState(() {
+      busy = true;
+      error = null;
+    });
+    try {
+      final result = await widget.controller.accounts.sendEmailCode(
+        email.text,
+        reset: widget.reset,
+      );
+      if (mounted) setState(() => _accept(result));
+    } catch (e) {
+      if (mounted) setState(() => error = accountError(e));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> _verify() async {
+    if (busy || !form.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      busy = true;
+      error = null;
+    });
+    try {
+      if (widget.reset) {
+        await widget.controller.resetPassword(
+          challengeId!,
+          code.text,
+          password.text,
+          confirmation.text,
+        );
+        if (mounted) setState(() => complete = true);
+      } else {
+        await widget.controller.verifyEmail(challengeId!, code.text);
+        if (mounted) Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) setState(() => error = accountError(e));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => _AccountFrame(
+    title: widget.reset
+        ? context.l10n.resetPasswordTitle
+        : context.l10n.verifyEmailTitle,
+    subtitle: complete
+        ? context.l10n.passwordResetComplete
+        : challengeId == null
+        ? (widget.reset
+              ? context.l10n.resetEmailIntro
+              : context.l10n.verifyEmailIntro)
+        : context.l10n.emailCodeSent(email.text.trim()),
+    children: complete
+        ? [
+            PrimaryButton(
+              label: context.l10n.msgSignIn,
+              onPressed: () => Navigator.pop(context),
+            ),
+          ]
+        : [
+            Form(
+              key: form,
+              child: AutofillGroup(
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: email,
+                      enabled: !busy && challengeId == null,
+                      keyboardType: TextInputType.emailAddress,
+                      autofillHints: [AutofillHints.email],
+                      decoration: InputDecoration(labelText: 'Email'),
+                    ),
+                    if (challengeId != null) ...[
+                      SizedBox(height: 22),
+                      TextFormField(
+                        controller: code,
+                        enabled: !busy,
+                        autofocus: true,
+                        keyboardType: TextInputType.number,
+                        autofillHints: [AutofillHints.oneTimeCode],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(6),
+                        ],
+                        style: TextStyle(
+                          fontSize: 28,
+                          letterSpacing: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: context.l10n.emailCodeLabel,
+                          helperText: context.l10n.emailCodeExpiry,
+                        ),
+                        validator: (value) =>
+                            RegExp(r'^\d{6}$').hasMatch(value ?? '')
+                            ? null
+                            : context.l10n.invalidEmailCode,
+                      ),
+                      if (widget.reset) ...[
+                        SizedBox(height: 22),
+                        TextFormField(
+                          controller: password,
+                          enabled: !busy,
+                          obscureText: obscure,
+                          maxLength: 128,
+                          autofillHints: [AutofillHints.newPassword],
+                          decoration: InputDecoration(
+                            labelText: context.l10n.msgNewPassword,
+                            helperText: context.l10n.passwordLengthHint,
+                            suffixIcon: IconButton(
+                              tooltip: context.l10n.msgShowOrHidePassword,
+                              onPressed: () =>
+                                  setState(() => obscure = !obscure),
+                              icon: Icon(
+                                obscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                            ),
+                          ),
+                          validator: (value) => (value ?? '').length >= 12
+                              ? null
+                              : context.l10n.passwordLengthHint,
+                        ),
+                        SizedBox(height: 14),
+                        TextFormField(
+                          controller: confirmation,
+                          enabled: !busy,
+                          obscureText: obscure,
+                          autofillHints: [AutofillHints.newPassword],
+                          maxLength: 128,
+                          decoration: InputDecoration(
+                            labelText: context.l10n.confirmNewPassword,
+                          ),
+                          validator: (value) => value == password.text
+                              ? null
+                              : context.l10n.passwordsMustMatch,
+                        ),
+                      ],
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            _Failure(error),
+            SizedBox(height: 24),
+            PrimaryButton(
+              label: challengeId == null
+                  ? context.l10n.sendEmailCode
+                  : widget.reset
+                  ? context.l10n.resetPasswordTitle
+                  : context.l10n.verifyEmailTitle,
+              loading: busy,
+              onPressed: challengeId == null ? _send : _verify,
+            ),
+            if (challengeId != null) ...[
+              SizedBox(height: 12),
+              TextButton(
+                onPressed: busy || resendSeconds > 0 ? null : _send,
+                child: Text(
+                  resendSeconds > 0
+                      ? context.l10n.resendIn(resendSeconds.toString())
+                      : context.l10n.resendEmailCode,
+                ),
+              ),
+              TextButton(
+                onPressed: busy
+                    ? null
+                    : () => setState(() {
+                        challengeId = null;
+                        resendSeconds = 0;
+                        error = null;
+                      }),
+                child: Text(context.l10n.changeEmailAddress),
+              ),
+            ],
+          ],
   );
 }

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Data;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -17,14 +18,21 @@ public sealed class GuestPasswordHasher : PasswordHasher<GuestCredential>
     }
 }
 
-public sealed class GuestAuthService(PlatformDbContext db, GuestPasswordHasher hasher, TimeProvider clock)
+public sealed class GuestAuthService(PlatformDbContext db, GuestPasswordHasher hasher, TimeProvider clock, IGuestEmailSender mail, IConfiguration configuration)
 {
+    private string HashCode(Guid id, string code)
+    {
+        var secret = configuration["Platform:Email:CodeSecret"];
+        if (string.IsNullOrWhiteSpace(secret) || secret.Length < 32)
+            throw new GuestAuthException(503, "EMAIL_DELIVERY_FAILED", "Email verification is not configured.");
+        return Convert.ToHexString(HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes($"{id:N}:{code}")));
+    }
     private DateTime Now => clock.GetUtcNow().UtcDateTime;
     private static GuestAuthException InvalidLogin() => new(401, "INVALID_CREDENTIALS", "Неверный email или пароль. После нескольких попыток попробуйте через 15 минут.");
     private static string Email(string email) => email.Trim().ToLowerInvariant();
     public static string HashToken(string token) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
-    public async Task<GuestAuthResult> RegisterAsync(GuestRegisterRequest request, CancellationToken ct)
+    public async Task<GuestChallengeResult> RegisterAsync(GuestRegisterRequest request, CancellationToken ct)
     {
         var email = Email(request.Email);
         if (await db.GuestCredentials.AnyAsync(x => x.NormalizedEmail == email, ct))
@@ -40,7 +48,7 @@ public sealed class GuestAuthService(PlatformDbContext db, GuestPasswordHasher h
         credential.PasswordHash = hasher.HashPassword(credential, request.Password);
         db.GuestCredentials.Add(credential);
         // The unique database index also rejects simultaneous duplicate registrations.
-        try { return await CreateSessionAsync(profile, ct); }
+        try { await db.SaveChangesAsync(ct); return await SendCodeAsync(email, "verify", ct); }
         catch (DbUpdateException error) when (error.InnerException is Npgsql.PostgresException { SqlState: "23505" })
         { throw new GuestAuthException(409, "EMAIL_IN_USE", "Не удалось зарегистрировать этот email. Попробуйте войти в аккаунт."); }
     }
@@ -67,6 +75,8 @@ public sealed class GuestAuthService(PlatformDbContext db, GuestPasswordHasher h
         credential.LockedUntilUtc = null;
         if (verification == PasswordVerificationResult.SuccessRehashNeeded)
             credential.PasswordHash = hasher.HashPassword(credential, request.Password);
+        if (credential.Profile.EmailVerifiedAtUtc == null)
+            throw new GuestAuthException(403, "EMAIL_NOT_VERIFIED", "Confirm your email before signing in.");
         return await CreateSessionAsync(credential.Profile, ct);
     }
 
@@ -79,7 +89,7 @@ public sealed class GuestAuthService(PlatformDbContext db, GuestPasswordHasher h
         var hash = HashToken(token);
         var now = Now;
         return await db.GuestSessions.Include(x => x.Profile).SingleOrDefaultAsync(x =>
-            x.TokenHash == hash && x.RevokedAtUtc == null && x.ExpiresAtUtc > now, ct);
+            x.Profile.EmailVerifiedAtUtc != null && x.TokenHash == hash && x.RevokedAtUtc == null && x.ExpiresAtUtc > now, ct);
     }
 
     public async Task<GuestProfileDto> UpdateAsync(GuestSession session, GuestProfileRequest request, CancellationToken ct)
@@ -92,6 +102,11 @@ public sealed class GuestAuthService(PlatformDbContext db, GuestPasswordHasher h
             if (await db.GuestCredentials.AnyAsync(x => x.NormalizedEmail == email && x.GuestProfileId != session.GuestProfileId, ct))
                 throw new GuestAuthException(409, "EMAIL_IN_USE", "Этот email нельзя использовать. Укажите другой адрес.");
             credential.NormalizedEmail = email;
+            session.Profile.EmailVerifiedAtUtc = null;
+            session.Profile.LastEmailSentAtUtc = null;
+            foreach (var item in await db.GuestSessions.Where(x => x.GuestProfileId == session.GuestProfileId && x.RevokedAtUtc == null).ToListAsync(ct))
+                item.RevokedAtUtc = Now;
+
         }
         Apply(session.Profile, request);
         session.Profile.UpdatedAtUtc = Now;
@@ -125,6 +140,83 @@ public sealed class GuestAuthService(PlatformDbContext db, GuestPasswordHasher h
         VerifyCurrentPassword(await CredentialAsync(session, ct), password);
         db.GuestProfiles.Remove(session.Profile);
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<GuestChallengeResult> SendCodeAsync(string address, string purpose, CancellationToken ct)
+    {
+        var email = Email(address);
+        var credential = await db.GuestCredentials.AsNoTracking().SingleOrDefaultAsync(x => x.NormalizedEmail == email, ct);
+        var now = Now;
+        // Indistinguishable response for unknown, already verified and throttled accounts.
+        var hidden = new GuestChallengeResult(Guid.NewGuid(), now.AddMinutes(10));
+        if (credential == null) return hidden;
+        var eligible = db.GuestProfiles.Where(x => x.Id == credential.GuestProfileId &&
+            (x.LastEmailSentAtUtc == null || x.LastEmailSentAtUtc <= now.AddSeconds(-60)));
+        if (purpose == "verify") eligible = eligible.Where(x => x.EmailVerifiedAtUtc == null);
+        if (await eligible.ExecuteUpdateAsync(u => u.SetProperty(x => x.LastEmailSentAtUtc, now), ct) == 0) return hidden;
+        var profile = await db.GuestProfiles.AsNoTracking().SingleAsync(x => x.Id == credential.GuestProfileId, ct);
+        var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
+        var challenge = new GuestEmailChallenge { GuestProfileId = profile.Id, Email = email, Purpose = purpose,
+            CreatedAtUtc = now, ExpiresAtUtc = now.AddMinutes(10) };
+        challenge.CodeHash = HashCode(challenge.Id, code);
+        // Supersede outstanding codes for the same purpose; retain only recent audit metadata.
+        await db.GuestEmailChallenges.Where(x => x.GuestProfileId == profile.Id && (x.Purpose == purpose || x.ExpiresAtUtc < now.AddDays(-1))).ExecuteDeleteAsync(ct);
+        db.GuestEmailChallenges.Add(challenge);
+        await db.SaveChangesAsync(ct);
+        if (!await mail.SendCodeAsync(email, code, purpose, profile.PreferredLanguage, challenge.Id, ct))
+            throw new GuestAuthException(503, "EMAIL_DELIVERY_FAILED", "Email could not be sent. Try again in a minute.");
+        return new(challenge.Id, challenge.ExpiresAtUtc);
+    }
+
+    private async Task CountCodeAttemptAsync(GuestCodeRequest request, string purpose, CancellationToken ct)
+    {
+        var now = Now;
+        var query = db.GuestEmailChallenges.Where(x => x.Id == request.ChallengeId && x.Purpose == purpose &&
+            x.ConsumedAtUtc == null && x.ExpiresAtUtc > now && x.Attempts < 5);
+        if (await query.ExecuteUpdateAsync(u => u.SetProperty(x => x.Attempts, x => x.Attempts + 1), ct) == 0)
+            throw new GuestAuthException(400, "INVALID_EMAIL_CODE", "Invalid or expired code. Request a new code.");
+    }
+
+    private async Task<GuestEmailChallenge> ConsumeCodeAsync(GuestCodeRequest request, string purpose, CancellationToken ct)
+    {
+        var now = Now;
+        var hash = HashCode(request.ChallengeId, request.Code);
+        var claim = db.GuestEmailChallenges.Where(x => x.Id == request.ChallengeId && x.Purpose == purpose &&
+            x.CodeHash == hash && x.ConsumedAtUtc == null && x.ExpiresAtUtc > now && x.Attempts <= 5);
+        if (await claim.ExecuteUpdateAsync(u => u.SetProperty(x => x.ConsumedAtUtc, now), ct) != 1)
+            throw new GuestAuthException(400, "INVALID_EMAIL_CODE", "Invalid or expired code. Request a new code.");
+        var result = await db.GuestEmailChallenges.AsNoTracking().SingleAsync(x => x.Id == request.ChallengeId, ct);
+        if (!await db.GuestCredentials.AnyAsync(x => x.GuestProfileId == result.GuestProfileId && x.NormalizedEmail == result.Email, ct))
+            throw new GuestAuthException(400, "INVALID_EMAIL_CODE", "The email has changed. Request a new code.");
+        return result;
+    }
+
+    public async Task<GuestAuthResult> VerifyEmailAsync(GuestCodeRequest request, CancellationToken ct)
+    {
+        // Consumption is an atomic compare-and-update, so concurrent replay cannot create sessions.
+        await CountCodeAttemptAsync(request, "verify", ct);
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        var challenge = await ConsumeCodeAsync(request, "verify", ct);
+        var profile = await db.GuestProfiles.SingleAsync(x => x.Id == challenge.GuestProfileId, ct);
+        profile.EmailVerifiedAtUtc = Now;
+        var result = await CreateSessionAsync(profile, ct);
+        await transaction.CommitAsync(ct);
+        return result;
+    }
+
+    public async Task ResetPasswordAsync(GuestResetRequest request, CancellationToken ct)
+    {
+        await CountCodeAttemptAsync(request, "reset", ct);
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
+        var challenge = await ConsumeCodeAsync(request, "reset", ct);
+        var credential = await db.GuestCredentials.Include(x => x.Profile).SingleAsync(x => x.GuestProfileId == challenge.GuestProfileId, ct);
+        credential.PasswordHash = hasher.HashPassword(credential, request.NewPassword);
+        credential.FailedLoginCount = 0; credential.LockedUntilUtc = null;
+        credential.Profile.EmailVerifiedAtUtc = Now;
+        foreach (var item in await db.GuestSessions.Where(x => x.GuestProfileId == challenge.GuestProfileId && x.RevokedAtUtc == null).ToListAsync(ct)) item.RevokedAtUtc = Now;
+        await db.SaveChangesAsync(ct);
+        await db.GuestEmailChallenges.Where(x => x.GuestProfileId == challenge.GuestProfileId && x.ConsumedAtUtc == null).ExecuteDeleteAsync(ct);
+        await transaction.CommitAsync(ct);
     }
 
     private Task<GuestCredential> CredentialAsync(GuestSession session, CancellationToken ct) =>

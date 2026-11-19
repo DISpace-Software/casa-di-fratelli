@@ -751,7 +751,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get msgAfterSavingUseYourNewEmailToSign =>
-      'After saving, use your new email to sign in.';
+      'After saving, verify your new email before signing in.';
 
   @override
   String get msgCurrentPassword => 'Current password';
@@ -1267,4 +1267,76 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapBar => 'Bar';
+
+  @override
+  String get zoneClosed => 'Closed';
+
+  @override
+  String get allZonesClosed =>
+      'No rooms are open on this date. Choose another date or contact the restaurant.';
+
+  @override
+  String get emailNotVerified => 'Verify your email before signing in.';
+
+  @override
+  String get invalidEmailCode => 'Invalid or expired code. Request a new code.';
+
+  @override
+  String get emailDeliveryFailed =>
+      'Could not send the email. Try again in a minute.';
+
+  @override
+  String get forgotPassword => 'Forgot password?';
+
+  @override
+  String get resetPasswordTitle => 'Reset password';
+
+  @override
+  String get verifyEmailTitle => 'Verify email';
+
+  @override
+  String get verifyEmailIntro =>
+      'We will send a code to confirm that this email belongs to you.';
+
+  @override
+  String get resetEmailIntro =>
+      'Enter your account email. If an account exists, you will receive a password reset code.';
+
+  @override
+  String emailCodeSent(String email) {
+    return 'If eligible, a code has been sent to $email. Check your inbox and spam folder.';
+  }
+
+  @override
+  String get emailCodeLabel => '6-digit code';
+
+  @override
+  String get emailCodeExpiry => 'Valid for 10 minutes · 5 attempts';
+
+  @override
+  String get passwordLengthHint => 'At least 12 characters';
+
+  @override
+  String get confirmNewPassword => 'Confirm new password';
+
+  @override
+  String get passwordsMustMatch => 'Passwords must match.';
+
+  @override
+  String get sendEmailCode => 'Send code';
+
+  @override
+  String get resendEmailCode => 'Send a new code';
+
+  @override
+  String resendIn(String seconds) {
+    return 'Send again in ${seconds}s';
+  }
+
+  @override
+  String get changeEmailAddress => 'Use another email';
+
+  @override
+  String get passwordResetComplete =>
+      'Password changed. Sign in with your new password. All previous sessions have been signed out.';
 }

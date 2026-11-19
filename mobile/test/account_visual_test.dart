@@ -61,6 +61,26 @@ void main() {
         });
       }
 
+      await capture(
+        EmailCodeScreen(
+          controller: controller,
+          email: 'maria@example.test',
+          challenge: {'challengeId': 'visual-only', 'resendAfterSeconds': 60},
+        ),
+        '08-email-verification',
+      );
+      await capture(
+        EmailCodeScreen(
+          controller: controller,
+          email: 'maria@example.test',
+          reset: true,
+          challenge: {
+            'challengeId': 'visual-reset-only',
+            'resendAfterSeconds': 60,
+          },
+        ),
+        '09-password-reset',
+      );
       await capture(RegisterScreen(controller: controller), '04-registration');
       await capture(
         Scaffold(body: ProfileScreen(controller: controller)),

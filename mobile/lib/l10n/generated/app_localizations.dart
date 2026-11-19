@@ -1469,7 +1469,7 @@ abstract class AppLocalizations {
   /// No description provided for @msgAfterSavingUseYourNewEmailToSign.
   ///
   /// In ru, this message translates to:
-  /// **'После сохранения используйте новый email для входа.'**
+  /// **'После сохранения подтвердите новый email перед входом.'**
   String get msgAfterSavingUseYourNewEmailToSign;
 
   /// No description provided for @msgCurrentPassword.
@@ -2323,6 +2323,132 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Бар'**
   String get mapBar;
+
+  /// No description provided for @zoneClosed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Закрыто'**
+  String get zoneClosed;
+
+  /// No description provided for @allZonesClosed.
+  ///
+  /// In ru, this message translates to:
+  /// **'На выбранную дату нет открытых залов. Выберите другую дату или свяжитесь с рестораном.'**
+  String get allZonesClosed;
+
+  /// No description provided for @emailNotVerified.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтвердите почту перед входом.'**
+  String get emailNotVerified;
+
+  /// No description provided for @invalidEmailCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неверный или истёкший код. Запросите новый.'**
+  String get invalidEmailCode;
+
+  /// No description provided for @emailDeliveryFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось отправить письмо. Попробуйте через минуту.'**
+  String get emailDeliveryFailed;
+
+  /// No description provided for @forgotPassword.
+  ///
+  /// In ru, this message translates to:
+  /// **'Забыли пароль?'**
+  String get forgotPassword;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Восстановить пароль'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @verifyEmailTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтвердить почту'**
+  String get verifyEmailTitle;
+
+  /// No description provided for @verifyEmailIntro.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправим код, чтобы подтвердить, что этот адрес принадлежит вам.'**
+  String get verifyEmailIntro;
+
+  /// No description provided for @resetEmailIntro.
+  ///
+  /// In ru, this message translates to:
+  /// **'Введите почту аккаунта. Если аккаунт существует, вы получите код для восстановления пароля.'**
+  String get resetEmailIntro;
+
+  /// No description provided for @emailCodeSent.
+  ///
+  /// In ru, this message translates to:
+  /// **'Если для адреса доступна эта операция, код отправлен на {email}. Проверьте входящие и спам.'**
+  String emailCodeSent(String email);
+
+  /// No description provided for @emailCodeLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код из 6 цифр'**
+  String get emailCodeLabel;
+
+  /// No description provided for @emailCodeExpiry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Действует 10 минут · 5 попыток'**
+  String get emailCodeExpiry;
+
+  /// No description provided for @passwordLengthHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не менее 12 символов'**
+  String get passwordLengthHint;
+
+  /// No description provided for @confirmNewPassword.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторите новый пароль'**
+  String get confirmNewPassword;
+
+  /// No description provided for @passwordsMustMatch.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пароли должны совпадать.'**
+  String get passwordsMustMatch;
+
+  /// No description provided for @sendEmailCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить код'**
+  String get sendEmailCode;
+
+  /// No description provided for @resendEmailCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправить новый код'**
+  String get resendEmailCode;
+
+  /// No description provided for @resendIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить через {seconds} сек.'**
+  String resendIn(String seconds);
+
+  /// No description provided for @changeEmailAddress.
+  ///
+  /// In ru, this message translates to:
+  /// **'Указать другую почту'**
+  String get changeEmailAddress;
+
+  /// No description provided for @passwordResetComplete.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пароль изменён. Войдите с новым паролем. Предыдущие сеансы на всех устройствах завершены.'**
+  String get passwordResetComplete;
 }
 
 class _AppLocalizationsDelegate

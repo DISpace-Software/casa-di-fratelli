@@ -51,7 +51,7 @@ http.Response authenticated() => utf8Response(
 
 void main() {
   test(
-    'registration sends complete profile and persists only session token',
+    'registration waits for email verification before persisting a session',
     () async {
       final store = MemorySessions();
       final api = GuestAccountRepository(
@@ -67,7 +67,13 @@ void main() {
           expect(body['confirmPassword'], 'A unique passphrase!');
           expect(body['preferredLanguage'], 'bg');
           expect(request.headers.containsKey('authorization'), false);
-          return authenticated();
+          return utf8Response(
+            jsonEncode({
+              'challengeId': 'challenge-1',
+              'resendAfterSeconds': 60,
+            }),
+            201,
+          );
         }),
       );
       final result = await api.register(
@@ -76,8 +82,8 @@ void main() {
         'A unique passphrase!',
         privacyConsent: true,
       );
-      expect(result.displayName, 'Мария Иванова');
-      expect(store.token, token);
+      expect(result['challengeId'], 'challenge-1');
+      expect(store.token, isNull);
       api.close();
     },
   );
@@ -172,93 +178,110 @@ void main() {
       api.close();
     },
   );
-  testWidgets(
-    'registration validates confirmation and creates server account',
-    (tester) async {
-      tester.view.physicalSize = const Size(390, 844);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-      var calls = 0;
-      final api = GuestAccountRepository(
-        baseUrl: 'https://api.example.test',
-        store: MemorySessions(),
-        client: MockClient((request) async {
-          calls++;
-          return authenticated();
-        }),
-      );
-      final controller = AppController(
-        initialLanguage: 'ru',
-        repository: SeatMapRepository(baseUrl: 'https://api.example.test'),
-        accounts: api,
-      );
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: seatMapTheme(),
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => TextButton(
-                onPressed: () => Navigator.push<void>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => RegisterScreen(controller: controller),
-                  ),
+  testWidgets('registration validates fields, waits for code, then signs in', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    var calls = 0;
+    final api = GuestAccountRepository(
+      baseUrl: 'https://api.example.test',
+      store: MemorySessions(),
+      client: MockClient((request) async {
+        calls++;
+        if (request.url.path.endsWith('/register')) {
+          return utf8Response(
+            jsonEncode({
+              'challengeId': 'challenge-1',
+              'resendAfterSeconds': 60,
+            }),
+            201,
+          );
+        }
+        expect(request.url.path, '/api/v1/guest/email/verify');
+        expect(jsonDecode(request.body)['code'], '123456');
+        return authenticated();
+      }),
+    );
+    final controller = AppController(
+      initialLanguage: 'ru',
+      repository: SeatMapRepository(baseUrl: 'https://api.example.test'),
+      accounts: api,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: seatMapTheme(),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.push<void>(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RegisterScreen(controller: controller),
                 ),
-                child: const Text('Start'),
               ),
+              child: const Text('Start'),
             ),
           ),
         ),
+      ),
+    );
+    await tester.tap(find.text('Start'));
+    await tester.pumpAndSettle();
+    Future<void> fill(String label, String value) async {
+      final field = find.byWidgetPredicate(
+        (w) => w is TextField && w.decoration?.labelText == label,
       );
-      await tester.tap(find.text('Start'));
+      await tester.ensureVisible(field);
       await tester.pumpAndSettle();
-      Future<void> fill(String label, String value) async {
-        final field = find.byWidgetPredicate(
-          (w) => w is TextField && w.decoration?.labelText == label,
-        );
-        await tester.ensureVisible(field);
-        await tester.pumpAndSettle();
-        await tester.enterText(field, value);
-        await tester.pumpAndSettle();
-      }
+      await tester.enterText(field, value);
+      await tester.pumpAndSettle();
+    }
 
-      await fill('Имя *', 'Мария');
-      await fill('Фамилия *', 'Иванова');
-      await fill('Email *', 'maria@example.test');
-      await fill('Телефон *', '+359888123456');
-      await fill('Пароль *', 'A unique passphrase!');
-      await fill('Повторите пароль *', 'different password');
-      final consent = find.byType(CheckboxListTile);
-      await tester.ensureVisible(consent);
-      await tester.pumpAndSettle();
-      await tester.tap(consent);
-      await tester.pumpAndSettle();
-      final submit = find.byType(PrimaryButton);
-      await tester.ensureVisible(submit);
-      await tester.pumpAndSettle();
-      await tester.tap(submit);
-      await tester.pumpAndSettle();
-      expect(
-        find.text('Пароли не совпадают'),
-        findsOneWidget,
-        reason: tester
-            .widgetList<Text>(find.byType(Text))
-            .map((w) => w.data)
-            .join(' | '),
-      );
-      expect(calls, 0);
-      await fill('Повторите пароль *', 'A unique passphrase!');
-      await tester.ensureVisible(submit);
-      await tester.pumpAndSettle();
-      await tester.tap(submit);
-      await tester.pumpAndSettle();
-      expect(calls, 1);
-      expect(controller.isLoggedIn, true);
-      expect(controller.profile.email, profile.email);
-      expect(find.text('Start'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-      api.close();
-    },
-  );
+    await fill('Имя *', 'Мария');
+    await fill('Фамилия *', 'Иванова');
+    await fill('Email *', 'maria@example.test');
+    await fill('Телефон *', '+359888123456');
+    await fill('Пароль *', 'A unique passphrase!');
+    await fill('Повторите пароль *', 'different password');
+    final consent = find.byType(CheckboxListTile);
+    await tester.ensureVisible(consent);
+    await tester.pumpAndSettle();
+    await tester.tap(consent);
+    await tester.pumpAndSettle();
+    final submit = find.byType(PrimaryButton);
+    await tester.ensureVisible(submit);
+    await tester.pumpAndSettle();
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Пароли не совпадают'),
+      findsOneWidget,
+      reason: tester
+          .widgetList<Text>(find.byType(Text))
+          .map((w) => w.data)
+          .join(' | '),
+    );
+    expect(calls, 0);
+    await fill('Повторите пароль *', 'A unique passphrase!');
+    await tester.ensureVisible(submit);
+    await tester.pumpAndSettle();
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(calls, 1);
+    expect(controller.isLoggedIn, false);
+    await fill('Код из 6 цифр', '123456');
+    final verify = find.byType(PrimaryButton);
+    await tester.ensureVisible(verify);
+    await tester.tap(verify);
+    await tester.pumpAndSettle();
+    expect(calls, 2);
+    expect(controller.isLoggedIn, true);
+    expect(controller.profile.email, profile.email);
+    expect(find.text('Start'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    api.close();
+  });
 }

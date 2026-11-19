@@ -42,6 +42,8 @@ class PreviewHandler(SimpleHTTPRequestHandler):
         guest_routes = {
             "register": {"POST"}, "login": {"POST"}, "me": {"GET", "PUT", "DELETE"},
             "logout": {"POST"}, "password": {"POST"},
+            "email/code": {"POST"}, "email/verify": {"POST"},
+            "password/forgot": {"POST"}, "password/reset": {"POST"},
         }
         guest_path = path.removeprefix("/api/v1/guest/")
         is_guest = path.startswith("/api/v1/guest/") and guest_path in guest_routes

@@ -51,6 +51,49 @@ namespace SeatMap.Api.Platform.Data.Migrations
                     b.ToTable("GuestCredentials");
                 });
 
+            modelBuilder.Entity("SeatMap.Api.Platform.Models.GuestEmailChallenge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Attempts")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("ConsumedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GuestProfileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GuestProfileId", "CreatedAtUtc");
+
+                    b.ToTable("GuestEmailChallenges");
+                });
+
             modelBuilder.Entity("SeatMap.Api.Platform.Models.GuestFavorite", b =>
                 {
                     b.Property<Guid>("GuestProfileId")
@@ -99,6 +142,9 @@ namespace SeatMap.Api.Platform.Data.Migrations
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)");
 
+                    b.Property<DateTime?>("EmailVerifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(60)
@@ -113,6 +159,9 @@ namespace SeatMap.Api.Platform.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)");
+
+                    b.Property<DateTime?>("LastEmailSentAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -228,6 +277,17 @@ namespace SeatMap.Api.Platform.Data.Migrations
                     b.HasOne("SeatMap.Api.Platform.Models.GuestProfile", "Profile")
                         .WithOne()
                         .HasForeignKey("SeatMap.Api.Platform.Models.GuestCredential", "GuestProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Profile");
+                });
+
+            modelBuilder.Entity("SeatMap.Api.Platform.Models.GuestEmailChallenge", b =>
+                {
+                    b.HasOne("SeatMap.Api.Platform.Models.GuestProfile", "Profile")
+                        .WithMany()
+                        .HasForeignKey("GuestProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

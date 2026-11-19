@@ -6,6 +6,7 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:seatmap_mobile/data/seatmap_repository.dart';
 import 'package:seatmap_mobile/data/demo_data.dart';
+import 'package:seatmap_mobile/domain/models.dart';
 import 'package:seatmap_mobile/state/app_controller.dart';
 
 const plan = {
@@ -56,6 +57,63 @@ http.Response jsonResponse(Object value, [int status = 200]) => http.Response(
   headers: {'content-type': 'application/json'},
 );
 void main() {
+  test(
+    'live map reload reflects moves, additions, deletions and seasonal closure',
+    () async {
+      var closed = false;
+      var current = jsonDecode(jsonEncode(plan)) as Map<String, dynamic>;
+      final repository = SeatMapRepository(
+        baseUrl: 'https://seatmap.example.test',
+        client: MockClient((request) async {
+          if (request.url.path.endsWith('/floor-plan')) {
+            return jsonResponse(current);
+          }
+          if (request.url.path.endsWith('/blocked-slots')) {
+            return jsonResponse([]);
+          }
+          if (request.url.path.endsWith('/zones')) {
+            return jsonResponse({
+              'closedAreas': closed ? ['salon'] : [],
+            });
+          }
+          return jsonResponse({'enabled': false});
+        }),
+      );
+      Future<FloorPlan> reload() => repository.loadAvailability(
+        demoRestaurants.first,
+        date: DateTime(2026, 11, 19),
+        time: '19:30',
+        guests: 2,
+      );
+      final first = await reload();
+      expect(first.zones.single.active, true);
+      current['revision'] = 'revision-2';
+      final tables = current['tables'] as List;
+      tables.removeAt(0);
+      (tables.single as Map)['x'] = 82;
+      tables.add({
+        'id': '3',
+        'area': 'salon',
+        'x': 22,
+        'y': 60,
+        'seats': 2,
+        'isActive': true,
+      });
+      current['combinations'] = [];
+      final changed = await reload();
+      expect(changed.tables.map((x) => x.id), ['2', '3']);
+      expect(changed.tables.first.x, 82);
+      expect(changed.revision, 'revision-2');
+      closed = true;
+      final seasonal = await reload();
+      expect(seasonal.zones.single.active, false);
+      expect(seasonal.tables.every((x) => x.occupied), true);
+      closed = false;
+      expect((await reload()).zones.single.active, true);
+      repository.close();
+    },
+  );
+
   setUp(() => SharedPreferences.setMockInitialValues({}));
   test(
     'live booking sends the exact public backend DTO and string table IDs',
