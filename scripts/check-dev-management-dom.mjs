@@ -43,6 +43,15 @@ const preorderSettings = {
   termsVersion: "preorders-v1",
   cardPaymentsAvailable: false,
 };
+const adminUsers = [
+  [2, "Fixture owner", "Owner"],
+  [3, "Fixture developer", "Developer"],
+  [4, "Fixture manager", "Administrator"],
+  [5, "Fixture waiter", "Waiter"],
+  [6, "Fixture kitchen", "Kitchen"],
+  [7, "Fixture bar", "Bar"],
+  [8, "Fixture unknown role", "UnknownRole"],
+].map(([id, name, role]) => ({ id, name, email: `fixture-${id}@example.test`, role, isActive: true }));
 const emptyLists = new Set([
   "/api/reservations", "/api/blacklist", "/api/reservations/public-table-holds", "/api/customers",
   "/api/events/admin", "/api/feedback", "/api/feedback/emails", "/api/dining-orders", "/api/menu",
@@ -77,8 +86,8 @@ async function test(name, { role = "Developer", query = "", tier = "Pro", tenant
     if (url.pathname === "/api/admin/push/config") return json({ enabled: false });
     if (url.pathname === "/api/floor-plan") return json({ schemaVersion: 1, revision: "test-plan-1", zones: [], tables: [], combinations: [] });
     if (url.pathname === "/api/preorders/settings") return json(preorderSettings);
-    if (url.pathname === "/api/admin/users") return json([{ id: 2, name: "Fixture owner", email: "owner@example.test", role: "Owner", isActive: true }]);
-    if (url.pathname === "/api/admin/audit") return json([]);
+    if (url.pathname === "/api/admin/users") return json(adminUsers);
+    if (url.pathname === "/api/admin/audit") return json([{ id: 1, action: "Fixture audit action", entity: "AdminUser", entityId: "4", adminName: "Fixture developer", createdAtUtc: "2026-11-19T08:00:00Z" }]);
     if (url.pathname === "/api/maintenance/backups/settings") return json({ enabled: true, intervalDays: 7, runAtLocalTime: "03:00", timeZoneId: "Europe/Sofia" });
     unexpectedRequests.push(`${method} ${url.pathname}`);
     throw new Error(`Unexpected mock API route: ${url.pathname}`);
@@ -106,11 +115,14 @@ async function test(name, { role = "Developer", query = "", tier = "Pro", tenant
   const devNav = () => [...container.querySelectorAll('nav[aria-label]')].find((element) => /DEV/.test(element.getAttribute("aria-label")));
   const heading = (text) => [...container.querySelectorAll("h2,h3,h4")].find((element) => element.textContent.trim() === text);
   const apiCount = (route) => requests.filter((request) => request.path === route).length;
+  const userRow = (name) => [...container.querySelectorAll("div")].find((element) => element.textContent === name)?.parentElement;
+  const rowButton = (row, label) => [...(row?.querySelectorAll("button") || [])].find((element) => element.textContent.trim() === label);
+  const roleValues = (select) => [...select.options].map((option) => option.value);
   const language = async (value) => { await click(button(value.toUpperCase())); await flush(); };
   try {
     await renderRole(role);
     await flush();
-    await exercise({ container, window, requests, click, flush, button, sectionButton, devNav, heading, apiCount, language, renderRole });
+    await exercise({ container, window, requests, click, flush, button, sectionButton, devNav, heading, apiCount, language, renderRole, userRow, rowButton, roleValues });
     assert.deepEqual(unexpectedRequests, [], "The simulated navigation made an unexpected request");
     assert.deepEqual(runtimeErrors, [], "React reported a rendering or effect error");
     checks.push({ name, passed: true });
@@ -124,7 +136,7 @@ async function test(name, { role = "Developer", query = "", tier = "Pro", tenant
 }
 
 try {
-  await test("Developer navigation groups service, access, branding, and maintenance inside DEV management", {}, async ({ container, button, click, language, sectionButton, devNav, heading, apiCount }) => {
+  await test("Developer navigation groups service, access, branding, and maintenance inside DEV management", {}, async ({ container, button, click, language, sectionButton, devNav, heading, apiCount, userRow, rowButton, roleValues }) => {
     assert.ok(button("DEV управление"), "Developer must see the dedicated Bulgarian DEV entry");
     assert.equal(button("Админи"), undefined, "Developer must not retain a standalone Admins entry");
     assert.equal(button("Поддръжка"), undefined, "Developer must not retain a standalone Maintenance entry");
@@ -152,6 +164,10 @@ try {
     assert.ok(apiCount("/api/admin/users") > 0);
     assert.ok(apiCount("/api/admin/audit") > 0);
     assert.match(container.textContent, /Fixture owner/);
+    assert.match(container.textContent, /Fixture audit action/);
+    assert.ok(rowButton(userRow("Fixture owner"), "Edit"));
+    assert.ok(rowButton(userRow("Fixture developer"), "Edit"));
+    assert.deepEqual(roleValues(button("Create admin").closest("form").querySelector("select")), ["Owner", "Administrator", "Waiter", "Kitchen", "Bar", "Developer"]);
     assert.equal(heading("SeatMap · Preorders"), undefined);
 
     await click(sectionButton("Restaurant & brand"));
@@ -177,7 +193,7 @@ try {
     assert.equal(container.querySelector('input[type="month"]'), null);
   });
 
-  await test("Owner retains standalone administration and maintenance plus consent in Profile", { role: "Owner" }, async ({ container, button, click, language, devNav, heading, apiCount }) => {
+  await test("Owner retains standalone administration and maintenance plus consent in Profile", { role: "Owner" }, async ({ container, button, click, language, devNav, heading, apiCount, userRow, rowButton, roleValues }) => {
     assert.equal(button("DEV управление"), undefined);
     assert.ok(button("Админи"));
     assert.ok(button("Поддръжка"));
@@ -187,6 +203,9 @@ try {
     assert.ok(apiCount("/api/admin/users") > 0);
     assert.equal(devNav(), undefined);
     assert.equal(button("Return to Basic version"), undefined);
+    assert.ok(rowButton(userRow("Fixture owner"), "Edit"), "The existing Owner management policy must stay available");
+    assert.equal(rowButton(userRow("Fixture developer"), "Edit"), undefined);
+    assert.deepEqual(roleValues(button("Create admin").closest("form").querySelector("select")), ["Owner", "Administrator", "Waiter", "Kitchen", "Bar"]);
     await click(button("← Back"));
     await click(button("Maintenance"));
     assert.ok(apiCount("/api/maintenance/backups") > 0);
@@ -195,6 +214,71 @@ try {
     assert.ok(heading("SeatMap · Preorders"));
     assert.ok([...container.querySelectorAll("label")].some((label) => label.textContent.includes("I want this restaurant to accept preorders")));
     assert.equal([...container.querySelectorAll("label")].some((label) => label.textContent.includes("Enabled by the platform")), false);
+  });
+
+  for (const managerRole of ["Administrator", "manager"]) {
+  await test(`${managerRole} has standalone Admins and audit with only manager and staff role controls`, { role: managerRole }, async ({ container, button, click, language, devNav, heading, apiCount, userRow, rowButton, roleValues }) => {
+    assert.ok(button("Админи"), "Managers must have their own Admins navigation entry");
+    assert.equal(button("DEV управление"), undefined);
+    await language("en");
+    await click(button("Admins"));
+    assert.ok(heading("Admins and audit"));
+    assert.equal(devNav(), undefined);
+    assert.ok(apiCount("/api/admin/users") > 0);
+    assert.ok(apiCount("/api/admin/audit") > 0);
+    assert.match(container.textContent, /Fixture audit action/);
+    assert.equal(heading("Ресторант и бранд / Restaurant branding"), undefined);
+    const allowed = ["Administrator", "Waiter", "Kitchen", "Bar"];
+    assert.deepEqual(roleValues(button("Create admin").closest("form").querySelector("select")), allowed,
+      "A manager cannot assign Owner or Developer when creating an account");
+    for (const name of ["Fixture owner", "Fixture developer", "Fixture unknown role"]) {
+      assert.ok(userRow(name), "Protected accounts may still be listed");
+      assert.equal(rowButton(userRow(name), "Edit"), undefined, `${name} must not expose an edit action`);
+      assert.equal(rowButton(userRow(name), "Delete"), undefined, `${name} must not expose a delete action`);
+    }
+    for (const name of ["Fixture manager", "Fixture waiter", "Fixture kitchen", "Fixture bar"]) {
+      assert.ok(rowButton(userRow(name), "Edit"), `${name} should expose the allowed edit action`);
+      assert.ok(rowButton(userRow(name), "Delete"), `${name} should expose the allowed delete action`);
+    }
+    await click(rowButton(userRow("Fixture manager"), "Edit"));
+    const editInput = [...container.querySelectorAll("input")].find((input) => input.value === "Fixture manager");
+    assert.ok(editInput, "The allowed edit form must open without writing data");
+    const editForm = editInput.parentElement;
+    assert.deepEqual(roleValues(editForm.querySelector("select")), allowed,
+      "An edit must not allow promoting an account to Owner or Developer");
+    await click(rowButton(editForm, "Cancel"));
+    assert.ok(userRow("Fixture manager"));
+    await click(container.querySelector("button.admin-profile-anchor"));
+    assert.equal(heading("SeatMap · Preorders"), undefined, "Manager access to accounts does not grant owner preorder consent");
+  });
+  }
+
+  await test("Changing Owner to Administrator closes a protected account edit form", { role: "Owner" }, async ({ container, button, click, language, userRow, rowButton, renderRole, flush, roleValues }) => {
+    await language("en");
+    await click(button("Admins"));
+    await click(rowButton(userRow("Fixture owner"), "Edit"));
+    assert.ok([...container.querySelectorAll("input")].some((input) => input.value === "Fixture owner"));
+    await renderRole("Administrator");
+    await flush();
+    assert.equal([...container.querySelectorAll("input")].some((input) => input.value === "Fixture owner"), false,
+      "A manager must not retain a previously opened Owner edit form");
+    assert.ok(userRow("Fixture owner"));
+    assert.equal(rowButton(userRow("Fixture owner"), "Edit"), undefined);
+    const createRole = button("Create admin").closest("form").querySelector("select");
+    assert.equal(createRole.value, "Administrator");
+    assert.deepEqual(roleValues(createRole), ["Administrator", "Waiter", "Kitchen", "Bar"]);
+  });
+
+  await test("Basic restaurant manager can manage Administrator accounts without assigning Pro or privileged roles", { role: "Administrator", tier: "Basic", tenant: "casa-di-fratelli" }, async ({ button, click, language, roleValues, userRow, rowButton, apiCount }) => {
+    await language("en");
+    assert.ok(button("Admins"));
+    assert.equal(button("DEV management"), undefined);
+    await click(button("Admins"));
+    assert.deepEqual(roleValues(button("Create admin").closest("form").querySelector("select")), ["Administrator"]);
+    assert.ok(apiCount("/api/admin/audit") > 0);
+    assert.ok(rowButton(userRow("Fixture manager"), "Edit"));
+    assert.equal(rowButton(userRow("Fixture owner"), "Edit"), undefined);
+    assert.equal(rowButton(userRow("Fixture developer"), "Edit"), undefined);
   });
 
   await test("Casa DEV deep link uses Casa branding and tenant headers with Basic service controls", { tenant: "casa-di-fratelli", tier: "Basic", query: "?tab=dev" }, async ({ container, button, click, devNav, sectionButton, language, apiCount }) => {
@@ -220,6 +304,7 @@ try {
       assert.equal(apiCount("/api/admin/users"), 0, "A forbidden deep link must not load Developer access controls");
       assert.equal(apiCount("/api/maintenance/backups"), 0, "A forbidden deep link must not mount maintenance tools");
       assert.equal(container.querySelector('input[type="month"]'), null);
+      if (["Waiter", "Kitchen", "Bar"].includes(role)) assert.equal(button("Админи"), undefined, "Operational staff must not receive account-management navigation");
       assert.ok(container.querySelector(".admin-page"), "The role must still have a usable administration screen");
     });
   }

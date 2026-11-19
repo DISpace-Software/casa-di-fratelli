@@ -836,7 +836,9 @@ function canActorManageAdminUser(actorRole, targetRole) {
   const actor = normalizeAdminRole(actorRole);
   const target = normalizeAdminRole(targetRole);
 
-  return actor === "Developer" || (actor === "Owner" && target !== "Developer");
+  return actor === "Developer" || (actor === "Owner" && target !== "Developer") ||
+    (["administrator", "admin", "manager"].includes(String(actorRole || "").trim().toLowerCase()) &&
+      ["administrator", "admin", "manager", "waiter", "staff", "server", "kitchen", "chef", "cook", "bar", "bartender", "barman", "бар", "барман"].includes(String(targetRole || "").trim().toLowerCase()));
 }
 
 const emptyAdminReservation = {
@@ -5833,12 +5835,19 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
   const canUseMaintenance = ["Administrator", "Owner", "Developer"].includes(currentAdminRole);
   const canUseReservationTrash = canUseMaintenance;
   const canViewFeedback = ["Administrator", "Owner", "Developer"].includes(currentAdminRole);
-  const canManageAdmins = ["Owner", "Developer"].includes(currentAdminRole);
+  const canManageAdmins = ["Owner", "Developer"].includes(currentAdminRole) ||
+    ["administrator", "admin", "manager"].includes(String(adminUser?.role || "").trim().toLowerCase());
   const hasDeveloperAdmin = adminUsers.some((user) => normalizeAdminRole(user.role || user.Role) === "Developer");
   const availableAdminRoleOptions = adminRoleOptions.filter((role) => {
     if (!isProVersion && ["Waiter", "Kitchen", "Bar"].includes(role.value)) return false;
+    if (currentAdminRole === "Administrator") return ["Administrator", "Waiter", "Kitchen", "Bar"].includes(role.value);
     return currentAdminRole === "Developer" || role.value !== "Developer" || !hasDeveloperAdmin;
   });
+  React.useEffect(() => {
+    setEditingAdminId(null);
+    setAdminUserForm((previous) => ({ ...previous, role: "Administrator" }));
+  }, [currentAdminRole]);
+
   const activeTablesByArea = React.useMemo(() => {
     const areas = plan.zones.filter(zone => zone.isActive).map(zone => zone.id);
     const next = {};
@@ -12629,7 +12638,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       <div className="mt-4 space-y-2">
                         {adminUsers.map((user) => (
                           <div key={getAdminUserId(user)} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                            {editingAdminId === getAdminUserId(user) ? (
+                            {editingAdminId === getAdminUserId(user) && canActorManageAdminUser(currentAdminRole, user.role) ? (
                               <div className="grid gap-3">
                                 <input
                                   value={adminEditForm.name}

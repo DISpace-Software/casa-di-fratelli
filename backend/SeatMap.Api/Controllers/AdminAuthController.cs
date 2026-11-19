@@ -251,7 +251,7 @@ public class AdminAuthController : ControllerBase
     }
 
     [HttpGet("users")]
-    [AdminAuthorize(AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
+    [AdminAuthorize(AdminRoleAccess.Owner, AdminRoleAccess.Developer, AdminRoleAccess.Administrator)]
     public async Task<IActionResult> Users()
     {
         var users = await _db.AdminUsers
@@ -279,6 +279,7 @@ public class AdminAuthController : ControllerBase
         if (!AdminRoleAccess.CanManageAdmins(current?.Role))
             return Forbid();
 
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
             return BadRequest(new { message = "Email and password are required." });
 
@@ -309,6 +310,7 @@ public class AdminAuthController : ControllerBase
         _db.AdminUsers.Add(user);
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "create", "AdminUser", user.Id.ToString(), after: new { user.Id, user.Name, user.Email, user.Role });
+        await transaction.CommitAsync();
 
         return Ok(new { user.Id, user.Name, user.Email, user.Role, user.IsActive });
     }
@@ -321,6 +323,7 @@ public class AdminAuthController : ControllerBase
         if (!AdminRoleAccess.CanManageAdmins(current?.Role))
             return Forbid();
 
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var user = await _db.AdminUsers.FirstOrDefaultAsync(x => x.Id == id);
         if (user == null)
             return NotFound();
@@ -371,6 +374,7 @@ public class AdminAuthController : ControllerBase
 
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "update", "AdminUser", user.Id.ToString(), before, new { user.Id, user.Name, user.Email, user.Role, user.IsActive });
+        await transaction.CommitAsync();
 
         return Ok(new { user.Id, user.Name, user.Email, user.Role, user.IsActive });
     }
@@ -383,6 +387,7 @@ public class AdminAuthController : ControllerBase
         if (!AdminRoleAccess.CanManageAdmins(current?.Role))
             return Forbid();
 
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
         var user = await _db.AdminUsers.FirstOrDefaultAsync(x => x.Id == id);
         if (user == null)
             return NotFound();
@@ -398,6 +403,7 @@ public class AdminAuthController : ControllerBase
 
         await _db.SaveChangesAsync();
         await _audit.RecordAsync(HttpContext, "delete", "AdminUser", id.ToString(), before: before);
+        await transaction.CommitAsync();
 
         return Ok(new { id });
     }
@@ -416,7 +422,7 @@ public class AdminAuthController : ControllerBase
     }
 
     [HttpGet("audit")]
-    [AdminAuthorize(AdminRoleAccess.Owner, AdminRoleAccess.Developer)]
+    [AdminAuthorize(AdminRoleAccess.Owner, AdminRoleAccess.Developer, AdminRoleAccess.Administrator)]
     public async Task<IActionResult> Audit()
     {
         var logs = await _db.AuditLogs

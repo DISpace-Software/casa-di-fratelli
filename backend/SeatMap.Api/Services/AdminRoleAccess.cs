@@ -13,9 +13,12 @@ public static class AdminRoleAccess
 
     public static string Normalize(string? role)
     {
-        var normalized = (role ?? string.Empty).Trim();
+        return TryNormalize(role, out var normalized) ? normalized : Administrator;
+    }
 
-        return normalized.ToLowerInvariant() switch
+    public static bool TryNormalize(string? role, out string normalized)
+    {
+        normalized = (role ?? string.Empty).Trim().ToLowerInvariant() switch
         {
             "owner" => Owner,
             "administrator" or "admin" or "manager" => Administrator,
@@ -23,31 +26,35 @@ public static class AdminRoleAccess
             "kitchen" or "chef" or "cook" => Kitchen,
             "bar" or "bartender" or "barman" or "бар" or "барман" => Bar,
             "developer" or "dev" or "programmer" => Developer,
-            _ => Administrator
+            _ => string.Empty
         };
+        return normalized.Length > 0;
     }
 
     public static bool CanManageAdmins(string? role)
     {
-        var normalized = Normalize(role);
-        return normalized is Owner or Developer;
+        return TryNormalize(role, out var normalized) && normalized is Owner or Developer or Administrator;
     }
 
     public static bool CanCreateRole(string? actorRole, string? newRole, bool developerExists = true)
     {
-        var actor = Normalize(actorRole);
+        if (!TryNormalize(actorRole, out var actor)) return false;
         var target = Normalize(newRole);
 
-        return actor == Developer || (actor == Owner && (target != Developer || !developerExists));
+        return actor == Developer || (actor == Owner && (target != Developer || !developerExists)) ||
+            (actor == Administrator && TryNormalize(newRole, out var staffRole) && IsStaffRole(staffRole));
     }
 
     public static bool CanModifyRole(string? actorRole, string? targetRole)
     {
-        var actor = Normalize(actorRole);
+        if (!TryNormalize(actorRole, out var actor)) return false;
         var target = Normalize(targetRole);
 
-        return actor == Developer || (actor == Owner && target != Developer);
+        return actor == Developer || (actor == Owner && target != Developer) ||
+            (actor == Administrator && TryNormalize(targetRole, out var staffRole) && IsStaffRole(staffRole));
     }
+
+    private static bool IsStaffRole(string role) => role is Administrator or Waiter or Kitchen or Bar;
 
     public static bool CanClearOperationalData(string? role)
     {

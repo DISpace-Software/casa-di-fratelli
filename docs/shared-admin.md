@@ -49,9 +49,13 @@ The header displays the selected restaurant name and tenant ID.
 
 For Developer, this replaces the standalone Admins and Maintenance navigation
 entries and the preorder controls in Profile. Owner retains Admins/branding,
-Maintenance, and preorder consent in Profile; Administrator retains Maintenance.
-Normal operational tools remain in their existing sections. API authorization
-and restaurant scoping are unchanged; this relocation does not enable
+Maintenance, and preorder consent in Profile. Administrator (including the existing
+Manager alias) has standalone Admins and Maintenance. Administrator can manage
+Administrator, Waiter, Kitchen, and Bar accounts, but cannot create, promote to,
+modify, or delete Owner/Developer accounts. Owner and Developer permissions are
+unchanged. Unrecognized stored roles cannot authenticate as administrators.
+Normal operational tools remain in their existing sections. The API enforces these same role boundaries; restaurant scoping is unchanged.
+This change does not enable
 preorders, alter commissions, accept owner terms, or connect card payments.
 
 Automated coverage: `scripts/check-dev-management-dom.mjs` mounts the actual

@@ -131,6 +131,7 @@ public class AdminAuthService
 
         var hash = HashToken(token);
         var session = await _db.AdminSessions
+            .AsNoTracking()
             .Include(x => x.AdminUser)
             .FirstOrDefaultAsync(x =>
                 x.TokenHash == hash &&
@@ -139,13 +140,13 @@ public class AdminAuthService
                 x.AdminUser != null &&
                 x.AdminUser.IsActive);
 
-        return session?.AdminUser == null
+        return session?.AdminUser == null || !AdminRoleAccess.TryNormalize(session.AdminUser.Role, out var role)
             ? null
             : new AdminPrincipal(
                 session.AdminUser.Id,
                 session.AdminUser.Name,
                 session.AdminUser.Email,
-                AdminRoleAccess.Normalize(session.AdminUser.Role));
+                role);
     }
 
     public async Task<bool> IsAuthorizedAsync(HttpRequest request)
@@ -205,8 +206,9 @@ public class AdminAuthService
         return email.Trim().ToLowerInvariant();
     }
 
-    private async Task<AdminLoginResult> CreateSessionAsync(AdminUser user, HttpRequest request)
+    private async Task<AdminLoginResult?> CreateSessionAsync(AdminUser user, HttpRequest request)
     {
+        if (!AdminRoleAccess.TryNormalize(user.Role, out var role)) return null;
         var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48));
         var session = new AdminSession
         {
@@ -222,7 +224,7 @@ public class AdminAuthService
         _db.AdminSessions.Add(session);
         await _db.SaveChangesAsync();
 
-        return new AdminLoginResult(token, new AdminPrincipal(user.Id, user.Name, user.Email, AdminRoleAccess.Normalize(user.Role)));
+        return new AdminLoginResult(token, new AdminPrincipal(user.Id, user.Name, user.Email, role));
     }
 
     private static string? ReadToken(HttpRequest request)
