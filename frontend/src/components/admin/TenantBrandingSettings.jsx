@@ -22,7 +22,7 @@ export default function TenantBrandingSettings({ adminFetch }) {
   }
   return <form onSubmit={save} className="mb-6 rounded-3xl border border-[#c9a56a]/25 bg-black/20 p-5">
     <h3 className="text-xl font-semibold">Ресторант и бранд / Restaurant branding</h3>
-    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{Object.entries(fields).map(([key, label]) => <label key={key} className="text-xs text-white/65">{label}<input type={typeof draft[key] === "number" ? "number" : "text"} value={draft[key]} required={key === "name"} onChange={(event) => setDraft((current) => ({ ...current, [key]: typeof current[key] === "number" ? Number(event.target.value) : event.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm text-white" /></label>)}</div>
+    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{Object.entries(fields).map(([key, label]) => <label key={key} className="text-xs text-white/65">{label}<input name={`restaurantBranding.${key}`} type={typeof draft[key] === "number" ? "number" : "text"} value={draft[key]} required={key === "name"} onChange={(event) => setDraft((current) => ({ ...current, [key]: typeof current[key] === "number" ? Number(event.target.value) : event.target.value }))} className="mt-1 w-full rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm text-white" /></label>)}</div>
     {message && <p role="status" className="mt-3 text-sm">{message}</p>}
     <button disabled={busy} className="luxury-button mt-4 rounded-xl px-5 py-3 disabled:opacity-50">{busy ? "Запазване… / Saving…" : "Запази / Save"}</button>
   </form>;

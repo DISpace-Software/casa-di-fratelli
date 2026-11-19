@@ -1,0 +1,40 @@
+.cofein-admin-halls { margin-bottom: 12px; min-width: 0; }
+.cofein-admin-view-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.cofein-admin-view-modes { display: flex; min-width: 0; padding: 3px; border: 1px solid #c9a56a38; border-radius: 14px; background: #ffffff04; }
+.cofein-admin-view-modes button { min-height: 40px; padding: 8px 15px; border: 1px solid transparent; border-radius: 10px; color: #d6c8b7; font-size: 13px; font-weight: 600; line-height: 1.2; }
+.cofein-admin-view-modes button[aria-pressed="true"] { border-color: #d5b37d; background: #c9a56a; color: #20180f; }
+.cofein-admin-map-overview-label { margin: 0; color: #c6b59b; font-size: 12px; }
+.cofein-admin-halls-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cofein-admin-hall-choice { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cofein-admin-hall-label { font-size: 11px; color: #c6b59b; }
+.cofein-admin-hall-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.cofein-admin-hall-buttons button, .cofein-admin-hall-choice select { min-height: 44px; padding: 9px 15px; border: 1px solid #c9a56a33; border-radius: 12px; background: #ffffff05; color: #f4e8d6; font-size: 14px; line-height: 1.2; font-weight: 600; }
+.cofein-admin-hall-buttons button[aria-pressed="true"] { background: #c9a56a; border-color: #c9a56a; color: #20180f; }
+.cofein-admin-camera-controls { display: flex; align-items: center; gap: 6px; }
+.cofein-admin-hall-parts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.cofein-admin-hall-parts > button { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 58px; padding: 5px 14px 5px 5px; border: 1px solid #c9a56a28; border-radius: 12px; background: #ffffff04; color: #d6c8b7; text-align: left; }
+.cofein-admin-hall-parts > button[aria-pressed="true"] { background: #c9a56a1a; border-color: #d5b37d; color: #fff0d7; }
+.cofein-admin-part-preview { width: 48px; height: 46px; flex: 0 0 48px; overflow: hidden; border-radius: 7px; background: #eee5d6; }
+.cofein-admin-hall-parts strong { display: block; font-size: 13px; line-height: 1.3; font-weight: 600; }
+.cofein-admin-hall-parts small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.3; opacity: .65; }
+.cofein-admin-hall-parts > .cofein-admin-plan-overview { margin-left: auto; padding: 8px 12px; font-size: 12px; border-color: transparent; background: transparent; }
+.cofein-admin-hall-selection { margin: 7px 0 0; font-size: 12px; color: #e6cda5; }
+.cofein-admin-halls button { cursor: pointer; touch-action: manipulation; }
+.cofein-admin-halls button:focus-visible, .cofein-admin-halls select:focus-visible { outline: 2px solid #f2d39a; outline-offset: 3px; }
+@media (max-width: 640px) {
+  .cofein-admin-view-toolbar { gap: 6px; margin-bottom: 7px; }
+  .cofein-admin-view-modes { flex: 1 1 auto; }
+  .cofein-admin-view-modes button { flex: 1; padding: 8px 10px; font-size: 12px; }
+  .cofein-admin-hall-label { display: none; }
+  .cofein-admin-halls-header { gap: 7px; }
+  .cofein-admin-hall-choice { flex: 1 1 100%; }
+  .cofein-admin-hall-buttons { width: 100%; }
+  .cofein-admin-hall-buttons button { flex: 1; padding: 8px 12px; }
+  .cofein-admin-hall-choice select { width: 100%; }
+  .cofein-admin-camera-controls { margin-left: auto; }
+  .cofein-admin-hall-parts { gap: 6px; margin-top: 7px; }
+  .cofein-admin-hall-parts > button { flex: 1; gap: 7px; padding-right: 8px; }
+  .cofein-admin-hall-parts > .cofein-admin-plan-overview { flex: 0 0 100%; justify-content: flex-end; min-height: 36px; padding: 4px 8px; }
+  .cofein-admin-hall-parts strong { font-size: 12px; }
+  .cofein-admin-part-preview { width: 40px; height: 42px; flex-basis: 40px; }
+}

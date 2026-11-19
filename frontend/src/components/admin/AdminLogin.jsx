@@ -6,6 +6,7 @@ import TenantBrandLogo from "./TenantBrandLogo";
 
 export default function AdminLogin({ onLogin }) {
   const { branding } = useTenantBranding();
+  const formId = React.useId();
   const resetParams = React.useMemo(() => {
     if (typeof window === "undefined") return { email: "", token: "" };
 
@@ -168,6 +169,7 @@ export default function AdminLogin({ onLogin }) {
   return (
     <div className="luxury-shell flex min-h-screen items-center justify-center px-5 py-10 text-white">
       <form
+        key={authMode}
         onSubmit={
           authMode === "forgot"
             ? handleRequestPasswordReset
@@ -190,9 +192,12 @@ export default function AdminLogin({ onLogin }) {
             : "Задайте нова парола за админ профила."}
         </p>
 
-        <label className="mt-7 block text-sm font-semibold text-white/65">Email</label>
+        <label htmlFor={`${formId}-email`} className="mt-7 block text-sm font-semibold text-white/65">Email</label>
         <input
+          id={`${formId}-email`}
+          name="email"
           type="email"
+          autoComplete="username"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           autoFocus
@@ -201,12 +206,15 @@ export default function AdminLogin({ onLogin }) {
 
         {authMode !== "forgot" && (
           <>
-            <label className="mt-4 block text-sm font-semibold text-white/65">
+            <label htmlFor={`${formId}-password`} className="mt-4 block text-sm font-semibold text-white/65">
               {authMode === "reset" ? "Нова парола" : "Парола"}
             </label>
             <div className="mt-2 flex overflow-hidden rounded-2xl border border-white/10 bg-black/25 focus-within:border-[#f2d39a]/55">
               <input
+                id={`${formId}-password`}
+                name="password"
                 type={showPassword ? "text" : "password"}
+                autoComplete={authMode === "reset" ? "new-password" : "current-password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 minLength={authMode === "reset" ? 8 : undefined}
@@ -225,6 +233,7 @@ export default function AdminLogin({ onLogin }) {
 
         {authMode === "reset" && (
           <input
+            name="resetToken"
             type="hidden"
             value={resetToken}
             onChange={(event) => setResetToken(event.target.value)}

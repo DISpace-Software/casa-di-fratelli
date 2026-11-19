@@ -7,6 +7,8 @@ import { tenantCategoryLabel, tenantCategoryOptions } from "../domain/adminMap/t
 import { tenantContext, tenantStorageKey } from "../config/tenantRuntime";
 import { useSeasonalZones } from "../context/SeasonalZonesContext";
 import { createLayoutSession } from "../domain/adminMap/layoutSession";
+import { nextTablePosition } from "../domain/adminMap/layoutDraft";
+import FloorPlanZonesEditor from "../components/admin/FloorPlanZonesEditor";
 import MarketingHistory from "../components/admin/MarketingHistory";
 import MapOverlay from "../components/admin/MapOverlay";
 import { buildTimeRange, isHallBlock } from "../domain/reservations/hallBlockRules";
@@ -30,7 +32,13 @@ import {
 } from "../domain/reservations/availability";
 import { getAvailableReservationTimesForDate, isPastTimeForDate } from "../domain/reservations/dateTimeRules";
 import UnifiedMapViewport from "../components/admin/UnifiedMapViewport";
+import CofeinAdminHallNavigation from "../components/admin/CofeinAdminHallNavigation";
 import { buildMapGeometry } from "../domain/adminMap/mapConfig";
+import CofeinFloorPlanDecor from "../components/floorplan/CofeinFloorPlanDecor";
+import CofeinTableVisual from "../components/floorplan/CofeinTableVisual";
+import CofeinMapExplorer from "../components/floorplan/CofeinMapExplorer";
+import { getCofeinMapGeometry, getCofeinBookingViews, projectCofeinTable } from "../domain/floorPlans/cofeinGeometry";
+import "../components/floorplan/cofein-map.css";
 import {
   localPercentToWorld,
   rotatePercentPointClockwise,
@@ -44,9 +52,10 @@ import { formatBirthdayEmailSentAt, daysUntilBirthday, getCustomerBirthDate, sea
 import { findPublicTableHold } from "../domain/reservations/publicTableHolds";
 import { getActiveLayoutTables, getMoveCandidateOptions } from "../domain/reservations/adminPlanRules";
 import { getRestaurantOccupancy } from "../domain/adminMap/occupancy";
+import { resolveAdminMapViewMode, sectionForAdminSelection } from "../domain/adminMap/mapViewMode";
 
 const isCasaTenant = tenantContext.tenantId === "casa-di-fratelli";
-const adminMapViewStorageKey = () => tenantStorageKey("casa-admin-map-view-mode");
+const adminMapViewStorageKey = () => tenantStorageKey(tenantContext.tenantId === "cofein" ? "cofein-admin-map-view-mode-v1" : "casa-admin-map-view-mode");
 
 const emptyMenuItem = {
   nameBg: "",
@@ -1194,6 +1203,7 @@ function TableChipSelector({
 
 function normalizeLayoutItem(item) {
   return {
+    ...item,
     id: String(item.id || item.Id || "").trim(),
     area: item.area || item.Area || "",
     x: Number(item.x ?? item.X ?? 50),
@@ -1454,6 +1464,14 @@ function TableLayoutEditor({
   const mapRef = React.useRef(null);
   const [draggingId, setDraggingId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState("");
+  const [spatialView, setSpatialView] = React.useState("");
+  const cofeinSpatial = tenantContext.tenantId === "cofein";
+  // Inactive halls and tables still belong to the editable draft. These copies
+  // affect camera geometry only; saving always uses the original layout.
+  const editorZones = React.useMemo(() => cofeinSpatial ? zones.map(zone => ({ ...zone, isActive: true })) : zones, [cofeinSpatial, zones]);
+  const editorGeometry = React.useMemo(() => cofeinSpatial ? getCofeinMapGeometry(editorZones, layout) : null, [cofeinSpatial, editorZones, layout]);
+  const editorViews = React.useMemo(() => cofeinSpatial ? getCofeinBookingViews(editorGeometry, selectedArea, layout.map(table => ({ ...table, isActive: true }))) : [], [cofeinSpatial, editorGeometry, selectedArea, layout]);
+  const editorView = spatialView === "all" ? editorGeometry?.views.all : editorViews.find(view => view.id === spatialView) || editorViews[0] || editorGeometry?.views[`zone:${selectedArea}`];
   const areas = zones.map(zone => [zone.id, getZoneName(zone, zone.presentation?.startsWith("casa-") ? "bg" : language)]);
   const presentation = zones.find(zone => zone.id === selectedArea)?.presentation || "plain";
   const areaTables = layout.filter((item) => item.area === selectedArea);
@@ -1461,8 +1479,8 @@ function TableLayoutEditor({
   const selectedTable = areaTables.find((item) => item.id === selectedTableId) || areaTables[0];
 
   React.useEffect(() => {
-    setSelectedTableId("");
-  }, [selectedArea]);
+    setSelectedTableId(current => layout.some(table => table.id === current && table.area === selectedArea) ? current : "");
+  }, [selectedArea, layout]);
 
   const moveTable = (tableId, clientX, clientY) => {
     const box = mapRef.current?.getBoundingClientRect();
@@ -1515,12 +1533,15 @@ function TableLayoutEditor({
         <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="Изглед на картата">
           {[
             ["section", "По секции"],
-            ["scroll", "Скрол карта"],
+            ["scroll", cofeinSpatial ? "Цялата карта" : "Скрол карта"],
           ].map(([mode, label]) => (
             <button
               key={mode}
               type="button"
-              onClick={() => onMapViewModeChange(mode)}
+              onClick={() => {
+                onMapViewModeChange(mode);
+                if (cofeinSpatial) setSpatialView(mode === "scroll" ? "all" : "");
+              }}
               aria-pressed={mapViewMode === mode}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 mapViewMode === mode ? "luxury-button" : "ghost-button"
@@ -1531,14 +1552,27 @@ function TableLayoutEditor({
           ))}
         </div>
       </div>
-      <div className="grid gap-5 lg:grid-cols-[1.4fr_0.8fr]">
-        <div>
-          <div className="mb-4 flex flex-wrap gap-2">
+      <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)]">
+        <div className="min-w-0">
+          {cofeinSpatial ? <CofeinAdminHallNavigation
+            geometry={editorGeometry}
+            tables={layout}
+            zones={areas.map(([id, name]) => ({ id, name }))}
+            activeZone={selectedArea}
+            onZoneChange={area => { onAreaChange(area); setSpatialView(""); }}
+            views={editorViews}
+            activeViewId={editorView?.id}
+            onViewChange={setSpatialView}
+            language={language}
+            allowOverview
+          /> : <div className="mb-4 flex flex-wrap gap-2">
             {areas.map(([area, label]) => (
               <button
                 key={area}
                 type="button"
-                onClick={() => onAreaChange(area)}
+                onClick={() => {
+                  onAreaChange(area);
+                }}
                 className={`rounded-full px-4 py-2 text-sm transition ${
                   selectedArea === area ? "luxury-button" : "ghost-button"
                 }`}
@@ -1546,9 +1580,28 @@ function TableLayoutEditor({
                 {label}
               </button>
             ))}
-          </div>
+          </div>}
 
-          <div
+          {cofeinSpatial ? <CofeinMapExplorer
+            zones={editorZones}
+            geometryTables={layout}
+            tables={layout}
+            states={Object.fromEntries(layout.map(table => [table.id, { status: table.isActive ? "available" : "unavailable", selectable: true }]))}
+            selectedIds={selectedTable ? [selectedTable.id] : []}
+            viewId={editorView?.id}
+            cameraView={editorView}
+            hideNavigation
+            language={language}
+            onTableSelect={table => { onAreaChange(table.area); setSelectedTableId(table.id); }}
+            onTableMove={(table, point) => {
+              const current = layout.find(item => item.id === table.id);
+              if (!current) return;
+              if (selectedArea !== table.area) onAreaChange(table.area);
+              setSelectedTableId(table.id);
+              const next = { ...current, x: Number(point.x.toFixed(2)), y: Number(point.y.toFixed(2)) };
+              if (!hasLayoutOverlap(layout, next)) onUpdate(table.id, next);
+            }}
+          /> : <div
             ref={mapRef}
             className={`relative min-h-[560px] overflow-hidden rounded-[26px] border border-white/10 ${
               presentation === "casa-garden"
@@ -1596,10 +1649,10 @@ function TableLayoutEditor({
               </button>
               );
             })}
-          </div>
+          </div>}
         </div>
 
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100">
             {text.overlap}
           </div>
@@ -1609,7 +1662,10 @@ function TableLayoutEditor({
               <button
                 key={table.id}
                 type="button"
-                onClick={() => setSelectedTableId(table.id)}
+                onClick={() => {
+                  setSelectedTableId(table.id);
+                  if (cofeinSpatial) setSpatialView(editorViews.find(view => view.tableIds.includes(table.id))?.id || "");
+                }}
                 className={`mb-2 flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm transition last:mb-0 ${
                   selectedTable?.id === table.id
                     ? "border-[#f2d39a]/50 bg-[#c9a56a]/16 text-[#fff4df]"
@@ -1640,7 +1696,7 @@ function TableLayoutEditor({
               <div className="grid grid-cols-2 gap-2">
                   <label className="col-span-2 text-xs text-white/55">
                     {text.tableNumber}
-                    <input
+                    <input name="layoutTable.id"
                       type="text"
                       value={selectedTable.id}
                       onChange={(event) => {
@@ -1653,7 +1709,7 @@ function TableLayoutEditor({
                   </label>
                   <label className="text-xs text-white/55">
                     X
-                    <input
+                    <input name="layoutTable.x"
                       type="number"
                       min="5"
                       max="95"
@@ -1664,7 +1720,7 @@ function TableLayoutEditor({
                   </label>
                   <label className="text-xs text-white/55">
                     Y
-                    <input
+                    <input name="layoutTable.y"
                       type="number"
                       min="5"
                       max="95"
@@ -1675,7 +1731,7 @@ function TableLayoutEditor({
                   </label>
                   <label className="text-xs text-white/55">
                     {text.seats}
-                    <input
+                    <input name="layoutTable.seats"
                       type="number"
                       min="1"
                       max="500"
@@ -1685,7 +1741,7 @@ function TableLayoutEditor({
                     />
                   </label>
                   <label className="flex items-end gap-2 text-xs text-white/70">
-                    <input
+                    <input name="layoutTable.isActive"
                       type="checkbox"
                       checked={selectedTable.isActive}
                       onChange={(event) => onUpdate(selectedTable.id, { ...selectedTable, isActive: event.target.checked })}
@@ -1796,14 +1852,23 @@ function ReservationOperationsMap({
   ordersOnly = false,
   onExitMap,
   mapViewMode = "scroll",
+  onMapViewModeChange,
 }) {
   const { plan } = useFloorPlan();
   const { branding } = useTenantBranding();
-  const geometry = React.useMemo(() => buildMapGeometry(plan.zones.filter(z => z.isActive)), [plan]);
+  // Architecture changes presentation only. Identity, capacity and booking rules
+  // continue to come from the restaurant's current floor-plan document.
+  const cofeinSpatial = tenantContext.tenantId === "cofein";
+  const cofeinWholeMap = cofeinSpatial && mapViewMode === "scroll";
+  const legacySection = mapViewMode === "section" && !cofeinSpatial;
+  const geometry = React.useMemo(() => cofeinSpatial
+    ? getCofeinMapGeometry(plan.zones, plan.tables)
+    : buildMapGeometry(plan.zones.filter(zone => zone.isActive)), [plan, cofeinSpatial]);
   const mapZones = geometry.zones;
   const { closedAreas, loaded: zonesLoaded } = useSeasonalZones();
   const [selectedReservationId, setSelectedReservationId] = React.useState(null);
   const [selectedTableId, setSelectedTableId] = React.useState(null);
+  const [cofeinViewId, setCofeinViewId] = React.useState("");
   const [mapFocusRequestId, setMapFocusRequestId] = React.useState(0);
   const [moveReservationId, setMoveReservationId] = React.useState(null);
   const [moveDraft, setMoveDraft] = React.useState({ area: "", tableIds: [], guestCount: 0 });
@@ -1837,8 +1902,8 @@ function ReservationOperationsMap({
     getActiveLayoutTables(layout, area).length;
   const getActiveTablesForArea = React.useCallback(
     (area) => (closedAreas.includes(area) ? [] : getActiveLayoutTables(layout, area))
-      .map((table) => mapViewMode === "section" && table.area !== "openTerrace" ? table : orientTableForMap(table, plan.zones.find(zone => zone.id === table.area)?.presentation)),
-    [layout, mapViewMode, closedAreas, plan]
+      .map((table) => legacySection && table.area !== "openTerrace" ? table : orientTableForMap(table, plan.zones.find(zone => zone.id === table.area)?.presentation)),
+    [layout, legacySection, closedAreas, plan]
   );
   const areaTables = React.useMemo(
     () => plan.zones.filter(zone => zone.isActive).map(zone => zone.id)
@@ -1846,6 +1911,15 @@ function ReservationOperationsMap({
       .sort((first, second) => first.id.localeCompare(second.id, undefined, { numeric: true })),
     [getActiveTablesForArea, plan]
   );
+  const cofeinViews = React.useMemo(() => cofeinSpatial ? getCofeinBookingViews(geometry, selectedArea, areaTables) : [], [cofeinSpatial, geometry, selectedArea, areaTables]);
+  const cofeinView = cofeinWholeMap ? geometry.views.all
+    : cofeinViews.find(view => view.id === cofeinViewId) || cofeinViews[0] || geometry.views?.[`zone:${selectedArea}`];
+  const cofeinViewTableIds = React.useMemo(() => new Set(cofeinWholeMap ? areaTables.map(table => table.id) : cofeinView?.tableIds || []), [cofeinWholeMap, areaTables, cofeinView]);
+  const cofeinDecorGeometry = React.useMemo(() => {
+    if (!cofeinSpatial) return geometry;
+    const visibleZones = geometry.zones.filter(zone => !closedAreas.includes(zone.id) && (cofeinWholeMap || zone.id === selectedArea));
+    return { ...geometry, zones: visibleZones, hasPreset: visibleZones.some(zone => zone.preset) };
+  }, [cofeinSpatial, cofeinWholeMap, geometry, selectedArea, closedAreas]);
   const occupancy = React.useMemo(
     () => getRestaurantOccupancy(layout, reservations, now, {
       closedAreas,
@@ -1866,18 +1940,18 @@ function ReservationOperationsMap({
     [areaTables]
   );
   const getReservationBounds = React.useCallback(
-    (reservation) => {
-      const tables = getReservationTables(reservation);
+    (reservation, visibleTableIds = null) => {
+      const tables = getReservationTables(reservation).filter(table => !visibleTableIds || visibleTableIds.has(table.id));
       if (tables.length === 0) return null;
 
-      const xValues = tables.map((table) => table.x);
-      const yValues = tables.map((table) => table.y);
+      const xValues = tables.map((table) => cofeinSpatial ? projectCofeinTable(table, geometry).x / geometry.world.width * 100 : table.x);
+      const yValues = tables.map((table) => cofeinSpatial ? projectCofeinTable(table, geometry).y / geometry.world.height * 100 : table.y);
       const minX = Math.min(...xValues);
       const maxX = Math.max(...xValues);
       const minY = Math.min(...yValues);
       const maxY = Math.max(...yValues);
-      const width = Math.max(maxX - minX, tables.length > 1 ? 10 : 0);
-      const height = Math.max(maxY - minY, tables.length > 1 ? 8 : 0);
+      const width = Math.max(maxX - minX, tables.length > 1 ? (cofeinSpatial ? 100 / geometry.world.width * 100 : 10) : 0);
+      const height = Math.max(maxY - minY, tables.length > 1 ? (cofeinSpatial ? 128 / geometry.world.height * 100 : 8) : 0);
 
       return {
         area: tables[0].area,
@@ -1892,10 +1966,10 @@ function ReservationOperationsMap({
         top: ((minY + maxY) / 2) - height / 2,
         width,
         height,
-        labelTop: Math.max(4, minY - 7),
+        labelTop: cofeinSpatial ? Math.max(12 / geometry.world.height * 100, minY - 44 / geometry.world.height * 100) : Math.max(4, minY - 7),
       };
     },
-    [getReservationTables]
+    [getReservationTables, cofeinSpatial, geometry]
   );
   const liveReservations = React.useMemo(() => {
     const unique = new Map();
@@ -1916,29 +1990,30 @@ function ReservationOperationsMap({
     liveReservations.find((reservation) => reservation.id === selectedReservationId) ||
     reservations.find((reservation) => reservation.id === selectedReservationId);
   const selectedMapFocusTarget = React.useMemo(() => {
+    if (cofeinSpatial && moveReservationId) return null;
     if (selectedTableId) {
-      const table = areaTables.find((item) => item.id === selectedTableId && item.area === selectedArea);
+      const table = areaTables.find((item) => item.id === selectedTableId && item.area === selectedArea && (!cofeinSpatial || cofeinViewTableIds.has(item.id)));
       if (table) {
         const zone = mapZones.find((item) => item.id === table.area) || mapZones[0];
-        const point = localPercentToWorld(zone, table);
+        const point = cofeinSpatial ? projectCofeinTable(table, geometry) : localPercentToWorld(zone, table);
         return { ...point, key: `table-${table.area}-${table.id}-${mapFocusRequestId}` };
       }
     }
 
     if (selectedReservation) {
-      const bounds = getReservationBounds(selectedReservation);
+      const bounds = getReservationBounds(selectedReservation, cofeinSpatial ? cofeinViewTableIds : null);
       if (bounds) {
         const zone = mapZones.find((item) => item.id === bounds.area) || mapZones[0];
         return {
-          x: zone.x + (bounds.centerX / 100) * zone.width,
-          y: zone.y + (bounds.centerY / 100) * zone.height,
+          x: cofeinSpatial ? bounds.centerX / 100 * geometry.world.width : zone.x + (bounds.centerX / 100) * zone.width,
+          y: cofeinSpatial ? bounds.centerY / 100 * geometry.world.height : zone.y + (bounds.centerY / 100) * zone.height,
           key: `reservation-${selectedReservation.id}`,
         };
       }
     }
 
     return null;
-  }, [areaTables, getReservationBounds, mapFocusRequestId, selectedArea, selectedReservation, selectedTableId, mapZones]);
+  }, [areaTables, getReservationBounds, mapFocusRequestId, selectedArea, selectedReservation, selectedTableId, mapZones, cofeinSpatial, geometry, cofeinViewTableIds, moveReservationId]);
   const activeOrdersByReservationId = React.useMemo(() => {
     const grouped = new Map();
 
@@ -2123,6 +2198,15 @@ function ReservationOperationsMap({
     : null;
 
   function toggleReservationSelection(reservationId) {
+    if (cofeinSpatial) {
+      const reservation = reservations.find(item => item.id === reservationId);
+      if (reservation) {
+        onAreaChange(reservation.area);
+        const views = getCofeinBookingViews(geometry, reservation.area, areaTables);
+        const currentView = views.find(view => view.id === cofeinView?.id && view.tableIds.some(id => reservation.tableIds.includes(id)));
+        setCofeinViewId((currentView || views.find(view => view.tableIds.some(id => reservation.tableIds.includes(id))))?.id || "");
+      }
+    }
     setSelectedReservationId((current) => (current === reservationId ? null : reservationId));
     setSelectedTableId(null);
     setTableReservationDraft(null);
@@ -2132,6 +2216,11 @@ function ReservationOperationsMap({
     setMoveError("");
     setSelectedReservationId(reservation.id);
     onAreaChange(reservation.area);
+    if (cofeinSpatial) {
+      const views = getCofeinBookingViews(geometry, reservation.area, areaTables);
+      const currentView = views.find(view => view.id === cofeinView?.id && view.tableIds.some(id => reservation.tableIds.includes(id)));
+      setCofeinViewId((currentView || views.find(view => view.tableIds.some(id => reservation.tableIds.includes(id))))?.id || "");
+    }
     setMoveReservationId(reservation.id);
     setMoveDraft({
       area: reservation.area,
@@ -2208,12 +2297,28 @@ function ReservationOperationsMap({
 
   function handleMapZoneChange(area) {
     if (moveBusy) return;
+    if (cofeinSpatial && area !== selectedArea) {
+      setCofeinViewId("");
+      setSelectedTableId(null);
+      if (!moveReservationId) setSelectedReservationId(null);
+    }
     setMoveError("");
     onAreaChange(area);
     if (!moveReservationId) return;
     setMoveDraft((current) =>
       current.area === area ? current : { ...current, area, tableIds: [] }
     );
+  }
+
+  function handleMapViewModeChange(mode) {
+    if (mode === "section" && cofeinSpatial) {
+      const selectedIds = selectedTableId ? [selectedTableId]
+        : tableReservationDraft ? tableReservationDraft.tableIds || [tableReservationDraft.tableId]
+        : walkInDraft ? [walkInDraft.tableId]
+        : moveReservationId ? moveDraft.tableIds : selectedReservation?.tableIds || [];
+      setCofeinViewId(sectionForAdminSelection(cofeinViews, cofeinViewId, selectedIds)?.id || "");
+    }
+    onMapViewModeChange?.(mode);
   }
 
   function openConsumptionPanel() {
@@ -2438,7 +2543,7 @@ function ReservationOperationsMap({
           </div>
 
           <div className="mt-4 grid gap-3">
-            <input
+            <input name="mapReservation.guestName"
               aria-label={adminLocalText(language, "Име", "Name", "Имя")}
               value={tableReservationDraft.guestName}
               onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, guestName: event.target.value }))}
@@ -2446,7 +2551,7 @@ function ReservationOperationsMap({
               placeholder={language === "bg" ? "Име" : "Name"}
               className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
             />
-            <input
+            <input name="mapReservation.phone"
               aria-label={adminLocalText(language, "Телефон", "Phone", "Телефон")}
               value={tableReservationDraft.phone}
               onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, phone: event.target.value }))}
@@ -2455,7 +2560,7 @@ function ReservationOperationsMap({
               className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none placeholder:text-white/35 focus:border-[#f2d39a]/55"
             />
             <div className="grid grid-cols-2 gap-2">
-              <input
+              <input name="mapReservation.reservedDate"
                 type="date"
                 aria-label={adminLocalText(language, "Дата", "Date", "Дата")}
                 value={tableReservationDraft.reservedDate}
@@ -2464,7 +2569,7 @@ function ReservationOperationsMap({
                 required
                 className="w-full rounded-2xl border border-white/10 bg-black/25 px-3 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
               />
-              <select
+              <select name="mapReservation.reservedTime"
                 aria-label={adminLocalText(language, "Час", "Time", "Время")}
                 value={tableReservationDraft.reservedTime}
                 onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, reservedTime: event.target.value }))}
@@ -2480,7 +2585,7 @@ function ReservationOperationsMap({
               </select>
             </div>
             <div className="grid grid-cols-[0.75fr_1fr] gap-2">
-              <input
+              <input name="mapReservation.guestCount"
                 type="number"
                 min="1"
                 aria-label={adminLocalText(language, "Гости", "Guests", "Гости")}
@@ -2489,7 +2594,7 @@ function ReservationOperationsMap({
                 required
                 className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/55"
               />
-              <input
+              <input name="mapReservation.email"
                 aria-label={adminLocalText(language, "Имейл", "Email", "Email")}
                 value={tableReservationDraft.email}
                 onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, email: event.target.value }))}
@@ -2501,11 +2606,11 @@ function ReservationOperationsMap({
               <>
                 <label className="text-xs text-white/65">
                   {adminLocalText(language, "Бележка на клиента", "Guest note", "Примечание гостя")}
-                  <textarea value={tableReservationDraft.notes} onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, notes: event.target.value }))} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white" />
+                  <textarea name="mapReservation.notes" value={tableReservationDraft.notes} onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, notes: event.target.value }))} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white" />
                 </label>
                 <label className="text-xs text-white/65">
                   {adminLocalText(language, "Вътрешна бележка", "Internal note", "Внутренняя заметка")}
-                  <textarea value={tableReservationDraft.internalNote} onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, internalNote: event.target.value }))} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white" />
+                  <textarea name="mapReservation.internalNote" value={tableReservationDraft.internalNote} onChange={(event) => setTableReservationDraft((prev) => ({ ...prev, internalNote: event.target.value }))} className="mt-1 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white" />
                 </label>
               </>
             )}
@@ -2531,7 +2636,7 @@ function ReservationOperationsMap({
 
   if (!zonesLoaded || areas.length === 0) return <Panel title={text.title}><p role="status" className="p-6 text-white/70">{!zonesLoaded ? adminLocalText(language, "Зареждане на зоните…", "Loading areas…", "Загрузка зон…") : adminLocalText(language, "Всички зони са затворени за сезона. Отворете зона от „Блокирай зала“.", "All areas are seasonally closed. Reopen an area under Block hall.", "Все зоны закрыты на сезон. Откройте зону в разделе блокировки зала.")}</p></Panel>;
 
-  const MapViewport = mapViewMode === "section" ? SectionMapViewport : UnifiedMapViewport;
+  const MapViewport = legacySection ? SectionMapViewport : UnifiedMapViewport;
 
   return (
     <Panel title={text.title} subtitle={text.subtitle} bare={!ordersOnly}>
@@ -2548,7 +2653,7 @@ function ReservationOperationsMap({
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <input
+            <input name="mapDate"
               type="date"
               value={mapDate}
               onChange={(event) => onDateChange?.(event.target.value)}
@@ -2573,7 +2678,16 @@ function ReservationOperationsMap({
         <div className="relative min-w-0">
         <MapViewport
           geometry={geometry}
-          zones={areas.map(([id, name]) => ({ id, name: `${name} · ${getAreaTableCount(id)} ${text.tables}` }))}
+          storageNamespace={cofeinSpatial ? `cofein-halls-v4:${mapViewMode}` : undefined}
+          surfaceClassName={cofeinSpatial ? "cofein-admin-map-surface" : undefined}
+          minimumScale={cofeinSpatial ? geometry.minScale : undefined}
+          detailViews={cofeinSpatial ? cofeinViews : undefined}
+          hallNavigation={cofeinSpatial}
+          hallTables={cofeinSpatial ? areaTables : undefined}
+          activeDetailView={cofeinSpatial ? cofeinView : undefined}
+          onDetailViewChange={setCofeinViewId}
+          selectionSummary={cofeinSpatial && moveReservationId && moveDraft.tableIds.length ? `${adminLocalText(language, "Избрани маси", "Selected tables", "Выбраны столы")}: ${moveDraft.tableIds.join(", ")}` : undefined}
+          zones={areas.map(([id, name]) => ({ id, name: cofeinSpatial ? name : `${name} · ${getAreaTableCount(id)} ${text.tables}` }))}
           activeZone={selectedArea}
           onZoneChange={handleMapZoneChange}
           focusTarget={selectedMapFocusTarget}
@@ -2587,7 +2701,7 @@ function ReservationOperationsMap({
           onExitExpanded={!ordersOnly ? onExitMap : undefined}
           expandedControls={!ordersOnly ? (
             <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-black/25 p-2 backdrop-blur-xl">
-              <input
+              <input name="expandedMapDate"
                 type="date"
                 value={mapDate}
                 onChange={(event) => onDateChange?.(event.target.value)}
@@ -2657,14 +2771,16 @@ function ReservationOperationsMap({
           )}
           language={language}
           viewMode={mapViewMode}
+          onViewModeChange={cofeinSpatial ? handleMapViewModeChange : undefined}
           text={text}
         >
-          {mapZones.filter((zone) => !closedAreas.includes(zone.id) && (mapViewMode === "scroll" || zone.id === selectedArea)).map((zone) => {
+          {cofeinSpatial && <CofeinFloorPlanDecor geometry={cofeinDecorGeometry} language={language} />}
+          {!cofeinSpatial && mapZones.filter((zone) => !closedAreas.includes(zone.id) && (!legacySection || zone.id === selectedArea)).map((zone) => {
             const label = areas.find(([area]) => area === zone.id)?.[1] || zone.id;
             return (
               <section
                 key={zone.id}
-                className={mapViewMode === "section" ? "absolute inset-0 overflow-hidden" : `absolute overflow-hidden rounded-[34px] border ${
+                className={legacySection ? "absolute inset-0 overflow-hidden" : `absolute overflow-hidden rounded-[34px] border ${
                   selectedArea === zone.id ? "border-[#f2d39a]/55 shadow-[0_0_55px_rgba(201,165,106,0.18)]" : "border-white/12"
                 } ${
                   zone.presentation === "casa-garden"
@@ -2673,24 +2789,26 @@ function ReservationOperationsMap({
                     ? "bg-[radial-gradient(circle_at_top,_rgba(110,231,183,0.13),_transparent_34%),linear-gradient(180deg,rgba(30,34,25,0.98),rgba(14,16,11,0.98))]"
                     : "bg-[radial-gradient(circle_at_top,_rgba(201,165,106,0.16),_transparent_34%),linear-gradient(180deg,rgba(39,27,21,0.98),rgba(16,12,10,0.98))]"
                 }`}
-                style={mapViewMode === "section" ? undefined : { left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
+                style={legacySection ? undefined : { left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
                 aria-label={label}
               >
                 <div className="admin-reservation-map-grid absolute inset-5 rounded-[22px] border border-[#c9a56a]/14 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.025)_1px,transparent_1px)] bg-[length:42px_42px]" />
-                {mapViewMode === "scroll" && (
+                {!legacySection && (
                   <div className="pointer-events-none absolute left-8 top-7 z-[6] rounded-full border border-[#f2d39a]/25 bg-black/55 px-5 py-2 text-sm font-bold uppercase tracking-[0.16em] text-[#fff4df] backdrop-blur">
                     {label}
                   </div>
                 )}
-                {mapViewMode === "section"
+                {legacySection
                   ? <LegacyAdminMapDecor area={zone.id} presentation={zone.presentation} />
                   : <AdminMapDecor area={zone.id} presentation={zone.presentation} />}
               </section>
             );
           })}
 
-          {liveReservations.filter((reservation) => mapViewMode === "scroll" || reservation.area === selectedArea).map((reservation) => {
-            const bounds = getReservationBounds(reservation);
+          {liveReservations.filter((reservation) => cofeinSpatial
+            ? reservation.id === selectedReservationId || ((cofeinWholeMap || reservation.area === selectedArea) && reservation.tableIds.some(id => cofeinViewTableIds.has(id)))
+            : !legacySection || reservation.area === selectedArea).map((reservation) => {
+            const bounds = getReservationBounds(reservation, cofeinSpatial ? cofeinViewTableIds : null);
             if (!bounds) return null;
 
             const minutes = isMapToday ? getReservationMinutesFromNow(reservation, now) : null;
@@ -2712,7 +2830,7 @@ function ReservationOperationsMap({
               <div
                 key={`reservation-${reservation.id}`}
                 className={`pointer-events-none absolute ${isSelected ? "z-[220]" : "z-20"}`}
-                style={mapViewMode === "section"
+                style={cofeinSpatial ? { left: 0, top: 0, width: geometry.world.width, height: geometry.world.height } : legacySection
                   ? { inset: 0 }
                   : { left: zone.x, top: zone.y, width: zone.width, height: zone.height }}
               >
@@ -2868,7 +2986,7 @@ function ReservationOperationsMap({
             );
           })}
 
-          {moveSelectionBounds && selectedReservation && (mapViewMode === "scroll" || moveSelectionBounds.area === selectedArea) && (() => {
+          {moveSelectionBounds && selectedReservation && (!legacySection || moveSelectionBounds.area === selectedArea) && (() => {
             const requiredGuests = Number(moveDraft.guestCount || selectedReservation.guestCount || 1);
 
             return (
@@ -2904,7 +3022,7 @@ function ReservationOperationsMap({
                   >
                     −
                   </button>
-                  <input
+                  <input name="reservationMove.guestCount"
                     type="number"
                     min="1"
                     max="40"
@@ -2937,7 +3055,7 @@ function ReservationOperationsMap({
             );
           })()}
 
-          {areaTables.filter((table) => mapViewMode === "scroll" || table.area === selectedArea).map((table) => {
+          {areaTables.filter((table) => cofeinSpatial ? cofeinViewTableIds.has(table.id) : !legacySection || table.area === selectedArea).map((table) => {
             const reservation = liveByTable.get(table.id);
             const isAdminBlocked = Boolean(findPublicTableHold(publicTableHolds, mapDate, [table.id]));
             const tableOrders = activeOrdersByTable.get(table.id) || [];
@@ -2963,20 +3081,30 @@ function ReservationOperationsMap({
                   allowCapacityOverride: true,
                 }));
             const zone = mapZones.find((item) => item.id === table.area) || mapZones[0];
-            const worldPosition = localPercentToWorld(zone, table);
+            const placement = cofeinSpatial ? projectCofeinTable(table, geometry) : null;
+            const worldPosition = placement || localPercentToWorld(zone, table);
+            const spatialStatus = isMoveUnavailable ? "unavailable"
+              : isAdminBlocked ? "blocked"
+              : reservation?.isArrived ? "arrived"
+              : isLate ? "late"
+              : reservation ? "reserved"
+              : hasTableOrders ? "arrived" : "available";
 
             return (
               <div
                 key={`${table.area}-${table.id}`}
                 className={`absolute -translate-x-1/2 -translate-y-1/2 ${isSelectedTable ? "z-[220]" : "z-10"}`}
                 style={{
-                  left: mapViewMode === "section" ? `${table.x}%` : worldPosition.x,
-                  top: mapViewMode === "section" ? `${table.y}%` : worldPosition.y,
+                  left: legacySection ? `${table.x}%` : worldPosition.x,
+                  top: legacySection ? `${table.y}%` : worldPosition.y,
                 }}
               >
                 <button
                   type="button"
                   disabled={isMoveMode && !isMoveAllowed}
+                  aria-label={cofeinSpatial ? `${text.table} ${table.id}, ${table.seats} ${adminLocalText(language, 'места', 'seats', 'мест')}` : undefined}
+                  aria-pressed={cofeinSpatial ? Boolean(isSelectedTable || isMoveSelected) : undefined}
+                  style={placement ? { width: placement.width, height: placement.height, position: "relative" } : undefined}
                   data-admin-blocked={isAdminBlocked ? "true" : "false"}
                   title={isAdminBlocked ? adminLocalText(language, "Блокирана от администратор", "Blocked by admin", "Заблокирован администратором") : undefined}
                   data-reserved={reservation ? "true" : "false"}
@@ -3002,12 +3130,12 @@ function ReservationOperationsMap({
                     setTableReservationDraft(null);
                     setSelectedTableId((current) => (current === table.id ? null : table.id));
                   }}
-                  className={`admin-map-table-node flex items-center justify-center rounded-2xl border font-semibold shadow-2xl transition hover:scale-[1.04] ${
+                  className={cofeinSpatial ? "cofein-map-table-button" : `admin-map-table-node flex items-center justify-center rounded-2xl border font-semibold shadow-2xl transition hover:scale-[1.04] ${
                     isGroupTable
-                      ? mapViewMode === "section"
+                      ? legacySection
                         ? "h-9 min-w-[50px] px-2 text-xs sm:h-10 sm:min-w-[58px] sm:px-3 md:h-12 md:min-w-[68px] lg:h-16 lg:min-w-[88px]"
                         : "h-9 min-w-[50px] px-2 text-xs sm:h-10 sm:min-w-[58px] sm:px-3 md:h-14 md:min-w-[80px] lg:h-16 lg:min-w-[88px]"
-                      : mapViewMode === "section"
+                      : legacySection
                         ? "h-8 w-8 text-xs sm:h-9 sm:w-9 md:h-11 md:w-11 lg:h-14 lg:w-14 lg:text-sm"
                         : "h-8 w-8 text-xs sm:h-9 sm:w-9 md:h-14 md:w-14 md:text-sm"
                   } ${
@@ -3032,7 +3160,7 @@ function ReservationOperationsMap({
                       : "border-[#c9a56a]/35 bg-[linear-gradient(145deg,#5a4332,#2a1f18)] text-white/85"
                   } ${isSelectedTable ? "ring-2 ring-[#f2d39a]/35" : ""}`}
                 >
-                  {table.id}
+                  {cofeinSpatial ? <CofeinTableVisual table={table} placement={placement} status={spatialStatus} selected={isSelectedTable || isMoveSelected} /> : table.id}
                 </button>
 
                 {isSelectedTable && !isReservationFormOpen && !walkInDraft && !showConsumption && (
@@ -3406,7 +3534,7 @@ function ReservationOperationsMap({
                               </button>
                             ))}
                           </div>
-                          <input
+                          <input name="consumptionSearch"
                             value={consumptionSearch}
                             onChange={(event) => setConsumptionSearch(event.target.value)}
                             placeholder={text.searchDish}
@@ -3496,7 +3624,7 @@ function ReservationOperationsMap({
                       >
                         -
                       </button>
-                      <input
+                      <input name="walkIn.guestCount"
                         type="number"
                         min="1"
                         max="40"
@@ -3971,7 +4099,7 @@ function MarketingModule({ adminLanguage, adminFetch }) {
                     <div className="mt-2 text-sm text-white/45">{text.placeholders}</div>
                   </div>
                   <label className="flex items-center gap-2 text-sm text-white/70">
-                    <input type="checkbox" checked={Boolean(campaign.enabled ?? campaign.Enabled)} onChange={(event) => updateCampaign(key, "enabled", event.target.checked)} />
+                    <input name={`marketing.${key}.enabled`} type="checkbox" checked={Boolean(campaign.enabled ?? campaign.Enabled)} onChange={(event) => updateCampaign(key, "enabled", event.target.checked)} />
                     {text.enabled}
                   </label>
                 </div>
@@ -3980,19 +4108,19 @@ function MarketingModule({ adminLanguage, adminFetch }) {
                   {fields.map((field) => (
                     <label key={field} className="block">
                       <span className="mb-1 block text-xs text-white/45">{fieldLabels[field]}</span>
-                      <input type="number" step="1" value={campaign[field] ?? campaign[capitalize(field)] ?? ""} onChange={(event) => updateCampaign(key, field, Number(event.target.value || 0))} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                      <input name={`marketing.${key}.${field}`} type="number" step="1" value={campaign[field] ?? campaign[capitalize(field)] ?? ""} onChange={(event) => updateCampaign(key, field, Number(event.target.value || 0))} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
                     </label>
                   ))}
                 </div>
 
                 <label className="mt-4 block">
                   <span className="mb-1 block text-xs text-white/45">{text.subject}</span>
-                  <input value={campaign.subject ?? campaign.Subject ?? ""} onChange={(event) => updateCampaign(key, "subject", event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                  <input name={`marketing.${key}.subject`} value={campaign.subject ?? campaign.Subject ?? ""} onChange={(event) => updateCampaign(key, "subject", event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
                 </label>
 
                 <label className="mt-4 block">
                   <span className="mb-1 block text-xs text-white/45">{text.html}</span>
-                  <textarea rows={7} value={campaign.htmlTemplate ?? campaign.HtmlTemplate ?? ""} onChange={(event) => updateCampaign(key, "htmlTemplate", event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm leading-relaxed outline-none focus:border-amber-300" />
+                  <textarea name={`marketing.${key}.htmlTemplate`} rows={7} value={campaign.htmlTemplate ?? campaign.HtmlTemplate ?? ""} onChange={(event) => updateCampaign(key, "htmlTemplate", event.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm leading-relaxed outline-none focus:border-amber-300" />
                 </label>
 
                 <div className="mt-3">
@@ -4464,7 +4592,7 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
                 <div className="mt-1 text-xs text-white/45">{text.scheduleHint}</div>
               </div>
               <label className="flex items-center gap-3 text-sm text-white/70">
-                <input
+                <input name="backup.enabled"
                   type="checkbox"
                   checked={backupSettings.enabled}
                   onChange={(event) => setBackupSettings((prev) => ({ ...prev, enabled: event.target.checked }))}
@@ -4475,7 +4603,7 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
             <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/40">{text.intervalDays}</span>
-                <input
+                <input name="backup.intervalDays"
                   type="number"
                   min="1"
                   max="30"
@@ -4486,7 +4614,7 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
               </label>
               <label className="block">
                 <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/40">{text.runAt}</span>
-                <input
+                <input name="backup.runAtLocalTime"
                   type="time"
                   value={backupSettings.runAtLocalTime}
                   onChange={(event) => setBackupSettings((prev) => ({ ...prev, runAtLocalTime: event.target.value }))}
@@ -4562,10 +4690,10 @@ function MaintenanceModule({ adminLanguage, adminFetch, loadReservations, loadDi
                   ))}
                 </div>
               </div>
-              <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder={text.reason} rows={3} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+              <textarea name="dataReset.reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={text.reason} rows={3} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
               <div className="grid gap-3 md:grid-cols-2">
-                <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" aria-label={text.from} />
-                <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" aria-label={text.to} />
+                <input name="dataReset.fromDate" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" aria-label={text.from} />
+                <input name="dataReset.toDate" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" aria-label={text.to} />
               </div>
               <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm text-amber-100/80">
                 {text.warning}
@@ -5230,17 +5358,17 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
             <form onSubmit={saveItem} className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
               <div className="section-kicker">{editingItemId ? tr.edit : tr.add}</div>
               <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <input required placeholder={tr.name} value={itemForm.name} onChange={(e) => setItemForm((p) => ({ ...p, name: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
-                <input required placeholder={tr.category} value={itemForm.category} onChange={(e) => setItemForm((p) => ({ ...p, category: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
-                <select value={itemForm.unit} onChange={(e) => setItemForm((p) => ({ ...p, unit: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300">
+                <input name="inventoryItem.name" required placeholder={tr.name} value={itemForm.name} onChange={(e) => setItemForm((p) => ({ ...p, name: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                <input name="inventoryItem.category" required placeholder={tr.category} value={itemForm.category} onChange={(e) => setItemForm((p) => ({ ...p, category: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                <select name="inventoryItem.unit" value={itemForm.unit} onChange={(e) => setItemForm((p) => ({ ...p, unit: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300">
                   {["g", "kg", "ml", "l", "pcs"].map((unit) => <option key={unit} value={unit}>{unit}</option>)}
                 </select>
-                <input type="number" step="0.001" placeholder={tr.stock} value={itemForm.currentQuantity} onChange={(e) => setItemForm((p) => ({ ...p, currentQuantity: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
-                <input type="number" step="0.001" placeholder={tr.min} value={itemForm.minimumQuantity} onChange={(e) => setItemForm((p) => ({ ...p, minimumQuantity: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
-                <input type="number" step="0.0001" placeholder={tr.cost} value={itemForm.unitCost} onChange={(e) => setItemForm((p) => ({ ...p, unitCost: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                <input name="inventoryItem.currentQuantity" type="number" step="0.001" placeholder={tr.stock} value={itemForm.currentQuantity} onChange={(e) => setItemForm((p) => ({ ...p, currentQuantity: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                <input name="inventoryItem.minimumQuantity" type="number" step="0.001" placeholder={tr.min} value={itemForm.minimumQuantity} onChange={(e) => setItemForm((p) => ({ ...p, minimumQuantity: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                <input name="inventoryItem.unitCost" type="number" step="0.0001" placeholder={tr.cost} value={itemForm.unitCost} onChange={(e) => setItemForm((p) => ({ ...p, unitCost: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
               </div>
               <label className="mt-4 flex items-center gap-3 text-sm text-white/70">
-                <input type="checkbox" checked={itemForm.isActive} onChange={(e) => setItemForm((p) => ({ ...p, isActive: e.target.checked }))} />
+                <input name="inventoryItem.isActive" type="checkbox" checked={itemForm.isActive} onChange={(e) => setItemForm((p) => ({ ...p, isActive: e.target.checked }))} />
                 {tr.active}
               </label>
               <div className="mt-5 flex flex-wrap gap-2">
@@ -5253,8 +5381,8 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
 
             <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
               <div className="mb-4 grid gap-3 md:grid-cols-2">
-                <input placeholder={adminLanguage === "bg" ? "Търси ингредиент..." : "Search ingredient..."} value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
-                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300">
+                <input name="inventorySearch" placeholder={adminLanguage === "bg" ? "Търси ингредиент..." : "Search ingredient..."} value={search} onChange={(e) => setSearch(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                <select name="inventoryCategoryFilter" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300">
                   <option value="all">{tr.allCategories}</option>
                   {itemCategories.map((category) => <option key={category} value={category}>{category}</option>)}
                 </select>
@@ -5331,7 +5459,7 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
             <div className="grid gap-4 lg:grid-cols-[1fr_auto_auto_auto] lg:items-end">
               <div>
                 <label className="mb-2 block text-sm text-white/55">{tr.menuItem}</label>
-                <select value={selectedMenuItemId} onChange={(e) => setSelectedMenuItemId(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300">
+                <select name="recipe.menuItemId" value={selectedMenuItemId} onChange={(e) => setSelectedMenuItemId(e.target.value)} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300">
                   <option value="">—</option>
                   {menuItems.map((item) => (
                     <option key={item.id || item.Id} value={item.id || item.Id}>{getMenuItemName(item, adminLanguage)} · {getDepartmentLabel(item.department || item.Department, adminLanguage)}</option>
@@ -5359,12 +5487,12 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
             <div className="mt-5 space-y-3">
               {recipeLines.map((line, index) => (
                 <div key={index} className="grid gap-3 rounded-2xl border border-white/10 bg-black/20 p-3 md:grid-cols-[1fr_140px_1fr_auto]">
-                  <select value={line.inventoryItemId} onChange={(e) => setRecipeLines((prev) => prev.map((row, rowIndex) => rowIndex === index ? { ...row, inventoryItemId: e.target.value } : row))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none">
+                  <select name={`recipeLines[${index}].inventoryItemId`} value={line.inventoryItemId} onChange={(e) => setRecipeLines((prev) => prev.map((row, rowIndex) => rowIndex === index ? { ...row, inventoryItemId: e.target.value } : row))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none">
                     <option value="">{tr.ingredient}</option>
                     {items.map((item) => <option key={item.id || item.Id} value={item.id || item.Id}>{item.name || item.Name} ({item.unit || item.Unit})</option>)}
                   </select>
-                  <input type="number" step="0.001" placeholder={tr.quantity} value={line.quantity} onChange={(e) => setRecipeLines((prev) => prev.map((row, rowIndex) => rowIndex === index ? { ...row, quantity: e.target.value } : row))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none" />
-                  <input placeholder={tr.comment} value={line.notes} onChange={(e) => setRecipeLines((prev) => prev.map((row, rowIndex) => rowIndex === index ? { ...row, notes: e.target.value } : row))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none" />
+                  <input name={`recipeLines[${index}].quantity`} type="number" step="0.001" placeholder={tr.quantity} value={line.quantity} onChange={(e) => setRecipeLines((prev) => prev.map((row, rowIndex) => rowIndex === index ? { ...row, quantity: e.target.value } : row))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none" />
+                  <input name={`recipeLines[${index}].notes`} placeholder={tr.comment} value={line.notes} onChange={(e) => setRecipeLines((prev) => prev.map((row, rowIndex) => rowIndex === index ? { ...row, notes: e.target.value } : row))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none" />
                   <button type="button" onClick={() => setRecipeLines((prev) => prev.filter((_, rowIndex) => rowIndex !== index))} className="rounded-xl border border-red-300/25 bg-red-500/12 px-3 py-2 text-red-100">×</button>
                 </div>
               ))}
@@ -5383,22 +5511,22 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
             <form onSubmit={saveAdjustment} className="rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
               <div className="section-kicker">{tr.movements}</div>
               <div className="mt-4 grid gap-3">
-                <select required value={adjustment.inventoryItemId} onChange={(e) => setAdjustment((p) => ({ ...p, inventoryItemId: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                <select name="inventoryAdjustment.inventoryItemId" required value={adjustment.inventoryItemId} onChange={(e) => setAdjustment((p) => ({ ...p, inventoryItemId: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                   <option value="">{tr.ingredient}</option>
                   {items.map((item) => <option key={item.id || item.Id} value={item.id || item.Id}>{item.name || item.Name}</option>)}
                 </select>
-                <select value={adjustment.type} onChange={(e) => setAdjustment((p) => ({ ...p, type: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+                <select name="inventoryAdjustment.type" value={adjustment.type} onChange={(e) => setAdjustment((p) => ({ ...p, type: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                   <option value="Receipt">{tr.receipt}</option>
                   <option value="ManualAdjustment">{tr.adjustment}</option>
                   <option value="Waste">{tr.waste}</option>
                 </select>
-                <input required type="number" step="0.001" placeholder={tr.quantity} value={adjustment.quantity} onChange={(e) => setAdjustment((p) => ({ ...p, quantity: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
-                <textarea placeholder={tr.comment} value={adjustment.comment} onChange={(e) => setAdjustment((p) => ({ ...p, comment: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+                <input name="inventoryAdjustment.quantity" required type="number" step="0.001" placeholder={tr.quantity} value={adjustment.quantity} onChange={(e) => setAdjustment((p) => ({ ...p, quantity: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
+                <textarea name="inventoryAdjustment.comment" placeholder={tr.comment} value={adjustment.comment} onChange={(e) => setAdjustment((p) => ({ ...p, comment: e.target.value }))} className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3" />
               </div>
               <button className="luxury-button mt-4 rounded-2xl px-5 py-3 font-semibold">{tr.save}</button>
             </form>
             <div className="max-h-[660px] space-y-2 overflow-y-auto rounded-[28px] border border-white/10 bg-white/[0.04] p-5">
-              <select value={movementTypeFilter} onChange={(e) => setMovementTypeFilter(e.target.value)} className="mb-4 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
+              <select name="inventoryMovementType" value={movementTypeFilter} onChange={(e) => setMovementTypeFilter(e.target.value)} className="mb-4 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
                 <option value="all">{adminLanguage === "bg" ? "Всички движения" : "All movements"}</option>
                 {["Receipt", "SaleConsumption", "ManualAdjustment", "InventoryCorrection", "Waste"].map((type) => <option key={type} value={type}>{type}</option>)}
               </select>
@@ -5468,7 +5596,7 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
                     </div>
                   </div>
 
-                  <input value={auditSearch} onChange={(event) => setAuditSearch(event.target.value)} placeholder={adminLanguage === "bg" ? "Търси в ревизията..." : "Search audit..."} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
+                  <input name="inventoryAuditSearch" value={auditSearch} onChange={(event) => setAuditSearch(event.target.value)} placeholder={adminLanguage === "bg" ? "Търси в ревизията..." : "Search audit..."} className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300" />
 
                   <div className="max-h-[680px] overflow-y-auto pr-1">
                     <div className="grid min-w-[760px] gap-2">
@@ -5488,11 +5616,11 @@ function InventoryModule({ adminLanguage, adminFetch, menuItems, loadMenuItems }
                               <div className="mt-1 text-xs text-white/40">{line.category} · {line.unit}</div>
                             </div>
                             <div className="text-sm text-white/55">{line.expectedQuantity} {line.unit}</div>
-                            <input disabled={(selectedAudit.status || selectedAudit.Status) === "Confirmed"} type="number" step="0.001" value={line.actualQuantity} onChange={(event) => setAuditLines((prev) => prev.map((row) => row.inventoryItemId === line.inventoryItemId ? { ...row, actualQuantity: event.target.value } : row))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-amber-300 disabled:opacity-60" />
+                            <input name={`inventoryAudit[${line.inventoryItemId}].actualQuantity`} disabled={(selectedAudit.status || selectedAudit.Status) === "Confirmed"} type="number" step="0.001" value={line.actualQuantity} onChange={(event) => setAuditLines((prev) => prev.map((row) => row.inventoryItemId === line.inventoryItemId ? { ...row, actualQuantity: event.target.value } : row))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-amber-300 disabled:opacity-60" />
                             <div className={`text-sm font-semibold ${difference < 0 ? "text-red-100" : difference > 0 ? "text-emerald-100" : "text-white/45"}`}>
                               {difference.toFixed(3)}
                             </div>
-                            <input disabled={(selectedAudit.status || selectedAudit.Status) === "Confirmed"} value={line.comment} onChange={(event) => setAuditLines((prev) => prev.map((row) => row.inventoryItemId === line.inventoryItemId ? { ...row, comment: event.target.value } : row))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-amber-300 disabled:opacity-60" />
+                            <input name={`inventoryAudit[${line.inventoryItemId}].comment`} disabled={(selectedAudit.status || selectedAudit.Status) === "Confirmed"} value={line.comment} onChange={(event) => setAuditLines((prev) => prev.map((row) => row.inventoryItemId === line.inventoryItemId ? { ...row, comment: event.target.value } : row))} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 outline-none focus:border-amber-300 disabled:opacity-60" />
                           </div>
                         );
                       })}
@@ -5685,6 +5813,7 @@ export default function AdminPage(props) {
 }
 
 function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged, onEventsChanged, theme, onToggleTheme, layoutSession, layoutSync }) {
+  const adminFormId = React.useId();
   const { plan } = useFloorPlan();
   const { closedAreas, loaded: zonesLoaded, error: zonesError, updateZones, reloadZones } = useSeasonalZones();
   const [savingSeasonalArea, setSavingSeasonalArea] = React.useState("");
@@ -5757,9 +5886,15 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     if (!layoutZones.some(zone => zone.id === layoutArea)) setLayoutArea(layoutZones[0]?.id || "");
   }, [layoutZones, layoutArea]);
   const [adminMapViewMode, setAdminMapViewMode] = React.useState(() => {
-    if (typeof window === "undefined") return "scroll";
-    return window.localStorage.getItem(adminMapViewStorageKey()) === "section" ? "section" : "scroll";
+    let saved;
+    try { saved = typeof window === "undefined" ? null : window.localStorage.getItem(adminMapViewStorageKey()); } catch { /* Storage is optional. */ }
+    return resolveAdminMapViewMode(saved, tenantContext.tenantId);
   });
+  const changeAdminMapViewMode = React.useCallback((mode) => {
+    if (mode !== "section" && mode !== "scroll") return;
+    setAdminMapViewMode(mode);
+    try { window.localStorage.setItem(adminMapViewStorageKey(), mode); } catch { /* Keep the selected view for this session. */ }
+  }, []);
   const [reservationMapDate, setReservationMapDate] = React.useState(() => formatLocalDate(new Date()));
   const [noteEdits, setNoteEdits] = React.useState({});
   const [orderMenuSearches, setOrderMenuSearches] = React.useState({});
@@ -6322,7 +6457,15 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
   function addTableLayoutItem() {
     if (!layoutArea) return;
-    const areaItems = tableLayout.filter((item) => item.area === layoutArea);
+    if (tableLayout.length >= 500) {
+      setAdminError(adminLocalText(adminLanguage, "Достигнат е лимитът от 500 маси.", "The limit of 500 tables has been reached.", "Достигнут лимит в 500 столов."));
+      return;
+    }
+    const point = nextTablePosition(tableLayout, layoutArea);
+    if (!point) {
+      setAdminError(adminLocalText(adminLanguage, "Няма свободна позиция. Преместете масите или добавете зала.", "No free position. Move tables or add a hall.", "Нет свободной позиции. Переставьте столы или добавьте зал."));
+      return;
+    }
     const nextNumber = Math.max(
       0,
       ...tableLayout.map((item) => Number.parseInt(String(item.id).replace(/\D/g, ""), 10)).filter(Number.isFinite)
@@ -6330,14 +6473,14 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     const candidate = {
       id: String(nextNumber),
       area: layoutArea,
-      x: 50,
-      y: Math.min(90, 18 + areaItems.length * 8),
+      ...point,
       seats: 4,
       special: false,
       wide: layoutZones.find(zone => zone.id === layoutArea)?.presentation === "casa-indoor",
       isActive: true,
     };
 
+    setAdminError("");
     setTableLayout((prev) => [...prev, candidate]);
   }
 
@@ -9339,6 +9482,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     </div>
 
                   <form onSubmit={changeOwnPassword} className="rounded-[26px] border border-white/10 bg-black/20 p-5 md:p-6">
+                    <input type="text" name="username" autoComplete="username" value={adminUser?.email || ""} readOnly hidden />
                     <div className="section-kicker">
                       {adminLanguage === "bg" ? "Сигурност" : "Security"}
                     </div>
@@ -9355,7 +9499,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 	                      <label className="block text-sm text-white/60">
 	                        {adminLanguage === "bg" ? "Текуща парола" : "Current password"}
 	                        <span className="mt-2 flex overflow-hidden rounded-2xl border border-white/10 bg-black/25 focus-within:border-amber-300">
-	                          <input
+	                          <input name="currentPassword"
 	                            type={showOwnPasswords.currentPassword ? "text" : "password"}
 	                            autoComplete="current-password"
 	                            value={ownPasswordForm.currentPassword}
@@ -9376,7 +9520,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 	                      <label className="block text-sm text-white/60">
 	                        {adminLanguage === "bg" ? "Нова парола" : "New password"}
 	                        <span className="mt-2 flex overflow-hidden rounded-2xl border border-white/10 bg-black/25 focus-within:border-amber-300">
-	                          <input
+	                          <input name="newPassword"
 	                            type={showOwnPasswords.newPassword ? "text" : "password"}
 	                            autoComplete="new-password"
 	                            value={ownPasswordForm.newPassword}
@@ -9442,6 +9586,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                 ordersOnly={false}
                 onExitMap={() => setActiveTab("home")}
                 mapViewMode={adminMapViewMode}
+                onMapViewModeChange={changeAdminMapViewMode}
               />
             )}
 
@@ -9459,14 +9604,14 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       {adminLanguage === "bg" ? "Нова резервация" : "New reservation"}
                     </button>
 
-                    <input
+                    <input name="reservationSearch"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder={a.reservations.search}
                       className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none placeholder:text-white/35 focus:border-amber-300"
                     />
 
-                    <select
+                    <select name="reservationStatusFilter"
                       value={statusFilter}
                       onChange={(e) => setStatusFilter(e.target.value)}
                       className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-amber-300"
@@ -9519,9 +9664,11 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                         ["guestCount", adminLanguage === "bg" ? "Гости" : "Guests"],
                       ].map(([key, label]) => (
                         <div key={key}>
-                          <label className="mb-2 block text-sm text-stone-400">{label}</label>
+                          <label htmlFor={`${adminFormId}-reservation-create-${key}`} className="mb-2 block text-sm text-stone-400">{label}</label>
                           {key === "reservedTime" ? (
-                            <select
+                            <select name="reservationCreate.reservedTime"
+                              id={`${adminFormId}-reservation-create-${key}`}
+                              aria-label={label}
                               value={adminReservation.reservedTime}
                               onChange={(e) =>
                                 setAdminReservation((prev) => ({
@@ -9541,7 +9688,9 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                               ))}
                             </select>
                           ) : (
-                            <input
+                            <input name={`reservationCreate.${key}`}
+                              id={`${adminFormId}-reservation-create-${key}`}
+                              aria-label={label}
                               type={key === "reservedDate" ? "date" : key === "guestCount" ? "number" : "text"}
                               value={adminReservation[key]}
                               onChange={(e) =>
@@ -9560,10 +9709,10 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       ))}
 
                       <div className="lg:col-span-3">
-                        <label className="mb-3 block text-sm text-stone-400">
+                        <p id={`${adminFormId}-reservation-create-area`} className="mb-3 block text-sm text-stone-400">
                           {adminLanguage === "bg" ? "Зона за гостите" : "Guest area"}
-                        </label>
-                        <div className="grid gap-3 md:grid-cols-3">
+                        </p>
+                        <div role="group" aria-labelledby={`${adminFormId}-reservation-create-area`} className="grid gap-3 md:grid-cols-3">
                           {reservationAreaOptions.map((option) => {
                             const selected = adminReservation.area === option.value;
 
@@ -9606,7 +9755,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       <div className="lg:col-span-3">
                         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                           <div>
-                            <label className="block text-sm text-stone-400">
+                            <label htmlFor={`${adminFormId}-reservation-create-tableIds`} className="block text-sm text-stone-400">
                               {adminLanguage === "bg" ? "Маси" : "Tables"}
                             </label>
                             <p className="mt-1 text-xs text-stone-500">
@@ -9621,7 +9770,8 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                             </div>
                           )}
                         </div>
-                        <input
+                        <input name="reservationCreate.tableIds"
+                          id={`${adminFormId}-reservation-create-tableIds`}
                           value={adminReservation.tableIds}
                           onChange={(e) =>
                             setAdminReservation((prev) => ({
@@ -9654,10 +9804,11 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       </div>
 
                       <div className="lg:col-span-3">
-                        <label className="mb-2 block text-sm text-stone-400">
+                        <label htmlFor={`${adminFormId}-reservation-create-internalNote`} className="mb-2 block text-sm text-stone-400">
                           {adminLanguage === "bg" ? "Вътрешна бележка" : "Internal note"}
                         </label>
-                        <textarea
+                        <textarea name="reservationCreate.internalNote"
+                          id={`${adminFormId}-reservation-create-internalNote`}
                           value={adminReservation.internalNote}
                           onChange={(e) =>
                             setAdminReservation((prev) => ({
@@ -9750,7 +9901,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                 </div>
                                 <div className="mt-3 text-sm text-stone-300">{a.reservations.client}: {r.notes || "—"}</div>
                                 <label className="mt-3 block text-xs text-stone-500">{a.reservations.internal}</label>
-                                <textarea
+                                <textarea name={`reservationRows[${r.id}].internalNote`}
                                   value={getNoteEdit(r)}
                                   onChange={(event) => setNoteEdit(r, event.target.value)}
                                   rows={3}
@@ -9809,7 +9960,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                   <span className="mb-1 block text-xs text-stone-500">
                                     {a.reservations.date}
                                   </span>
-                                  <input
+                                  <input name={`reservationRows[${r.id}].reservedDate`}
                                     type="date"
                                     min={todayInput}
                                     value={tableEdit.reservedDate}
@@ -9822,7 +9973,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                   <span className="mb-1 block text-xs text-stone-500">
                                     {a.reservations.time}
                                   </span>
-                                  <select
+                                  <select name={`reservationRows[${r.id}].reservedTime`}
                                     value={tableEdit.reservedTime}
                                     onChange={(e) => setTableEditDateTime(r, "reservedTime", e.target.value)}
                                     disabled={r.status === "Cancelled"}
@@ -9837,7 +9988,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                   <span className="mb-1 block text-xs text-stone-500">
                                     {a.reservations.guests}
                                   </span>
-                                  <input
+                                  <input name={`reservationRows[${r.id}].guestCount`}
                                     type="number"
                                     min="1"
                                     value={tableEdit.guestCount}
@@ -9846,7 +9997,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                     className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-amber-300 disabled:opacity-40"
                                   />
                                 </label>
-                                <select
+                                <select name={`reservationRows[${r.id}].area`}
                                   value={tableEdit.area}
                                   onChange={(e) => setTableEditArea(r, e.target.value)}
                                   disabled={r.status === "Cancelled"}
@@ -9991,7 +10142,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                         {a.reservations.client}: {r.notes || "—"}
                                       </div>
                                       <label className="mt-3 block text-xs text-stone-500">{a.reservations.internal}</label>
-                                      <textarea
+                                      <textarea name={`reservationCards[${r.id}].internalNote`}
                                         value={getNoteEdit(r)}
                                         onChange={(event) => setNoteEdit(r, event.target.value)}
                                         rows={3}
@@ -10042,7 +10193,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                   <span className="mb-1 block text-xs text-stone-500">
                                     {a.reservations.date}
                                   </span>
-                                  <input
+                                  <input name={`reservationCards[${r.id}].reservedDate`}
                                     type="date"
                                     min={todayInput}
                                     value={tableEdit.reservedDate}
@@ -10055,7 +10206,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                   <span className="mb-1 block text-xs text-stone-500">
                                     {a.reservations.time}
                                   </span>
-                                  <select
+                                  <select name={`reservationCards[${r.id}].reservedTime`}
                                     value={tableEdit.reservedTime}
                                     onChange={(e) => setTableEditDateTime(r, "reservedTime", e.target.value)}
                                     disabled={r.status === "Cancelled"}
@@ -10070,7 +10221,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                           <span className="mb-1 block text-xs text-stone-500">
                                             {a.reservations.guests}
                                           </span>
-                                          <input
+                                          <input name={`reservationCards[${r.id}].guestCount`}
                                             type="number"
                                             min="1"
                                             value={tableEdit.guestCount}
@@ -10079,7 +10230,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                             className="w-full rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm outline-none focus:border-amber-300 disabled:opacity-40"
                                           />
                                         </label>
-                                        <select
+                                        <select name={`reservationCards[${r.id}].area`}
                                           value={tableEdit.area}
                                           onChange={(e) => setTableEditArea(r, e.target.value)}
                                           disabled={r.status === "Cancelled"}
@@ -10410,7 +10561,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                 <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-100">
                                   {a.orders.addItem}
                                 </div>
-                                <input
+                                <input name={`orders[${order.id}].menuSearch`}
                                   value={orderMenuSearches[order.id] || ""}
                                   onChange={(event) =>
                                     setOrderMenuSearches((prev) => ({ ...prev, [order.id]: event.target.value }))
@@ -10508,7 +10659,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       </p>
                     </div>
                     <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                      <input
+                      <input name="restaurantClosure.enabled"
                         type="checkbox"
                         checked={restaurantClosure.enabled}
                         onChange={(event) => setRestaurantClosure((current) => ({ ...current, enabled: event.target.checked }))}
@@ -10525,7 +10676,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       <span className="mb-2 block text-sm text-stone-400">
                         {adminLanguage === "bg" ? "Затворено от" : "Closed from"}
                       </span>
-                      <input
+                      <input name="restaurantClosure.startDate"
                         type="date"
                         value={restaurantClosure.startDate || ""}
                         onChange={(event) => setRestaurantClosure((current) => ({ ...current, startDate: event.target.value }))}
@@ -10537,7 +10688,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       <span className="mb-2 block text-sm text-stone-400">
                         {adminLanguage === "bg" ? "Затворено до (включително)" : "Closed through (inclusive)"}
                       </span>
-                      <input
+                      <input name="restaurantClosure.endDate"
                         type="date"
                         min={restaurantClosure.startDate || undefined}
                         value={restaurantClosure.endDate || ""}
@@ -10552,7 +10703,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     <span className="mb-2 block text-sm text-stone-400">
                       {adminLanguage === "bg" ? "Текст на уведомлението" : "Notification text"}
                     </span>
-                    <textarea
+                    <textarea name="restaurantClosure.message"
                       value={restaurantClosure.message || ""}
                       onChange={(event) => setRestaurantClosure((current) => ({ ...current, message: event.target.value }))}
                       rows={8}
@@ -10631,7 +10782,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     <label className="mb-2 block text-sm text-stone-400">
                       {adminLanguage === "bg" ? "Дата" : "Date"}
                     </label>
-                    <input
+                    <input name="hallBlock.reservedDate"
                       type="date"
                       value={hallBlock.reservedDate}
                       min={todayInput}
@@ -10652,7 +10803,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     <label className="mb-2 block text-sm text-stone-400">
                       {adminLanguage === "bg" ? "От" : "From"}
                     </label>
-                    <select
+                    <select name="hallBlock.startTime"
                       value={hallBlock.startTime}
                       onChange={(e) => {
                         setHallBlock((prev) => ({
@@ -10675,7 +10826,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     <label className="mb-2 block text-sm text-stone-400">
                       {adminLanguage === "bg" ? "До" : "To"}
                     </label>
-                    <select
+                    <select name="hallBlock.endTime"
                       value={hallBlock.endTime}
                       onChange={(e) => {
                         setHallBlock((prev) => ({
@@ -10698,7 +10849,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     <label className="mb-2 block text-sm text-stone-400">
                       {adminLanguage === "bg" ? "Бележка" : "Note"}
                     </label>
-                    <textarea
+                    <textarea name="hallBlock.note"
                       value={hallBlock.note}
                       onChange={(e) =>
                         setHallBlock((prev) => ({
@@ -10822,7 +10973,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       <div className="grid gap-4 md:grid-cols-3">
                         <div>
                           <label className="mb-2 block text-sm text-stone-400">{a.menu.nameBg}</label>
-                          <input
+                          <input name="menuItem.nameBg"
                             value={menuForm.nameBg}
                             onChange={(e) => setMenuForm((prev) => ({ ...prev, nameBg: e.target.value }))}
                             required
@@ -10832,7 +10983,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                         <div>
                           <label className="mb-2 block text-sm text-stone-400">{a.menu.nameEn}</label>
-                          <input
+                          <input name="menuItem.nameEn"
                             value={menuForm.nameEn}
                             onChange={(e) => setMenuForm((prev) => ({ ...prev, nameEn: e.target.value }))}
                             className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
@@ -10841,7 +10992,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                         <div>
                           <label className="mb-2 block text-sm text-stone-400">Название на русском</label>
-                          <input
+                          <input name="menuItem.nameRu"
                             value={menuForm.nameRu}
                             onChange={(e) => setMenuForm((prev) => ({ ...prev, nameRu: e.target.value }))}
                             className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
@@ -10850,7 +11001,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                         <div>
                           <label className="mb-2 block text-sm text-stone-400">{a.menu.weight}</label>
-                          <input
+                          <input name="menuItem.weight"
                             value={menuForm.weight}
                             onChange={(e) => setMenuForm((prev) => ({ ...prev, weight: e.target.value }))}
                             placeholder={adminLanguage === "bg" ? "напр. 350 гр" : "e.g. 350 g"}
@@ -10864,7 +11015,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                             <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#f2d39a]">
                               €
                             </span>
-                            <input
+                            <input name="menuItem.price"
                               type="number"
                               step="0.01"
                               min="0"
@@ -10883,7 +11034,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       <div className="mt-4 grid gap-4 md:grid-cols-[1fr_180px]">
                         <div>
                           <label className="mb-2 block text-sm text-stone-400">{a.menu.imageUrl}</label>
-                          <input
+                          <input name="menuItem.imageUrl"
                             value={menuForm.imageUrl}
                             onChange={(e) => setMenuForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
                             placeholder="https://..."
@@ -10891,7 +11042,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                           />
                           <div className="mt-3 flex flex-wrap gap-2">
                             <label className="ghost-button cursor-pointer rounded-2xl px-4 py-3 text-sm font-semibold">
-                              <input
+                              <input name="menuItem.imageUpload"
                                 type="file"
                                 accept="image/*"
                                 capture="environment"
@@ -11013,7 +11164,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                         <label className="mb-2 block text-sm text-stone-400">
                           {adminLanguage === "bg" ? "Нова секция" : "New section"}
                         </label>
-                        <input
+                        <input name="menuItem.customCategory"
                           value={
                             categoryOptions.some((category) => category.id === normalizeCategory(menuForm.category))
                               ? ""
@@ -11029,7 +11180,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     <div className="grid gap-4 md:grid-cols-3">
                       <div>
                         <label className="mb-2 block text-sm text-stone-400">{a.menu.descriptionBg}</label>
-                        <textarea
+                        <textarea name="menuItem.descriptionBg"
                           value={menuForm.descriptionBg}
                           onChange={(e) => setMenuForm((prev) => ({ ...prev, descriptionBg: e.target.value }))}
                           rows={5}
@@ -11039,7 +11190,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                       <div>
                         <label className="mb-2 block text-sm text-stone-400">{a.menu.descriptionEn}</label>
-                        <textarea
+                        <textarea name="menuItem.descriptionEn"
                           value={menuForm.descriptionEn}
                           onChange={(e) => setMenuForm((prev) => ({ ...prev, descriptionEn: e.target.value }))}
                           rows={5}
@@ -11049,7 +11200,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                       <div>
                         <label className="mb-2 block text-sm text-stone-400">Описание на русском</label>
-                        <textarea
+                        <textarea name="menuItem.descriptionRu"
                           value={menuForm.descriptionRu}
                           onChange={(e) => setMenuForm((prev) => ({ ...prev, descriptionRu: e.target.value }))}
                           rows={5}
@@ -11060,7 +11211,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-stone-300">
-                        <input
+                        <input name="menuItem.isActive"
                           type="checkbox"
                           checked={menuForm.isActive}
                           onChange={(e) => setMenuForm((prev) => ({ ...prev, isActive: e.target.checked }))}
@@ -11069,7 +11220,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       </label>
 
                       <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-stone-300">
-                        <input
+                        <input name="menuItem.notifySubscribers"
                           type="checkbox"
                           checked={menuForm.notifySubscribers}
                           onChange={(e) => setMenuForm((prev) => ({ ...prev, notifySubscribers: e.target.checked }))}
@@ -11346,7 +11497,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       <div className="grid gap-4 md:grid-cols-2">
                         <div>
                           <label className="mb-2 block text-sm text-stone-400">{a.events.titleBg}</label>
-                          <input
+                          <input name="event.titleBg"
                             value={eventForm.titleBg}
                             onChange={(e) => setEventForm((prev) => ({ ...prev, titleBg: e.target.value }))}
                             required
@@ -11356,7 +11507,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                         <div>
                           <label className="mb-2 block text-sm text-stone-400">{a.events.titleEn}</label>
-                          <input
+                          <input name="event.titleEn"
                             value={eventForm.titleEn}
                             onChange={(e) => setEventForm((prev) => ({ ...prev, titleEn: e.target.value }))}
                             className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 outline-none focus:border-amber-300"
@@ -11365,7 +11516,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                         <div className="md:col-span-2">
                           <label className="mb-2 block text-sm text-stone-400">{a.events.badge}</label>
-                          <input
+                          <input name="event.badge"
                             value={eventForm.badge}
                             onChange={(e) => setEventForm((prev) => ({ ...prev, badge: e.target.value }))}
                             placeholder={adminLanguage === "bg" ? "напр. 14.02 GIVEAWAY" : "e.g. 14.02 GIVEAWAY"}
@@ -11375,7 +11526,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                         <div className="md:col-span-2">
                           <label className="mb-2 block text-sm text-stone-400">{a.events.activeUntil}</label>
-                          <input
+                          <input name="event.activeUntilLocal"
                             type="datetime-local"
                             value={eventForm.activeUntilLocal}
                             onChange={(e) => setEventForm((prev) => ({ ...prev, activeUntilLocal: e.target.value }))}
@@ -11386,7 +11537,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                         <div>
                           <label className="mb-2 block text-sm text-stone-400">{a.events.textBg}</label>
-                          <textarea
+                          <textarea name="event.textBg"
                             value={eventForm.textBg}
                             onChange={(e) => setEventForm((prev) => ({ ...prev, textBg: e.target.value }))}
                             rows={7}
@@ -11396,7 +11547,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
                         <div>
                           <label className="mb-2 block text-sm text-stone-400">{a.events.textEn}</label>
-                          <textarea
+                          <textarea name="event.textEn"
                             value={eventForm.textEn}
                             onChange={(e) => setEventForm((prev) => ({ ...prev, textEn: e.target.value }))}
                             rows={7}
@@ -11416,7 +11567,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                         </div>
 
                         <label className="ghost-button cursor-pointer rounded-2xl px-4 py-3 text-sm font-semibold">
-                          <input
+                          <input name="event.imageUploads"
                             type="file"
                             accept="image/*"
                             multiple
@@ -11456,7 +11607,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     </div>
 
                     <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-stone-300">
-                      <input
+                      <input name="event.isActive"
                         type="checkbox"
                         checked={eventForm.isActive}
                         onChange={(e) => setEventForm((prev) => ({ ...prev, isActive: e.target.checked }))}
@@ -11594,6 +11745,15 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                   </p>}
                 </div>
                 <fieldset disabled={layoutSync.busy || !layoutSync.loaded} className="min-w-0 border-0 p-0" aria-busy={layoutSync.busy}>
+              {/* Casa's public client still exposes its three legacy areas.
+                  Enable hall editing there when that client adopts floor-plan. */}
+              {layoutSync.plan && !isCasaTenant && <FloorPlanZonesEditor
+                plan={layoutSync.plan}
+                language={adminLanguage}
+                selectedArea={layoutArea}
+                onSelect={setLayoutArea}
+                onChange={layoutSession.updatePlan}
+              />}
               <TableLayoutEditor
                 zones={layoutZones}
                 language={adminLanguage}
@@ -11601,10 +11761,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                 layout={tableLayout}
                 selectedArea={layoutArea}
                 mapViewMode={adminMapViewMode}
-                onMapViewModeChange={(mode) => {
-                  setAdminMapViewMode(mode);
-                  window.localStorage.setItem(adminMapViewStorageKey(), mode);
-                }}
+                onMapViewModeChange={changeAdminMapViewMode}
                 onAreaChange={setLayoutArea}
                 onUpdate={updateTableLayoutItem}
                 onAdd={addTableLayoutItem}
@@ -11655,7 +11812,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     ].map(([key, label]) => (
                       <div key={key}>
                         <label className="mb-2 block text-sm text-stone-400">{label}</label>
-                        <input
+                        <input name={`blacklist.${key}`}
                           value={blacklistForm[key]}
                           onChange={(e) =>
                             setBlacklistForm((prev) => ({
@@ -11673,7 +11830,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       <label className="mb-2 block text-sm text-stone-400">
                         {adminLocalText(adminLanguage, "Бележки", "Notes", "Заметки")}
                       </label>
-                      <textarea
+                      <textarea name="blacklist.notes"
                         value={blacklistForm.notes}
                         onChange={(e) =>
                           setBlacklistForm((prev) => ({
@@ -11746,7 +11903,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/40">
                       {adminLocalText(adminLanguage, "Период на отчета", "Report period", "Период отчёта")}
                     </label>
-                    <select
+                    <select name="reportsPeriod"
                       value={reportsPeriod}
                       onChange={(event) => setReportsPeriod(event.target.value)}
                       className="min-h-[46px] w-full rounded-2xl border border-[#c9a56a]/25 bg-black/25 px-4 py-3 text-sm font-semibold text-[#fff4df] outline-none focus:border-[#f2d39a]/60"
@@ -11886,7 +12043,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                 }
                 right={
                   <div className="flex flex-col gap-3 sm:flex-row">
-                    <input
+                    <input name="feedbackSearch"
                       value={feedbackSearch}
                       onChange={(event) => setFeedbackSearch(event.target.value)}
                       onKeyDown={(event) => {
@@ -11906,7 +12063,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                   <p className="mt-1 text-sm text-white/55">{adminLocalText(adminLanguage, "История от активирането на проследяването. „Изпратено“ означава, че Resend е приел писмото.", "History since tracking was enabled. Sent means Resend accepted the email.", "История с момента включения отслеживания. «Отправлено» означает, что Resend принял письмо.")}</p>
                   <form onSubmit={sendFeedbackTest} className="mt-4 flex flex-col gap-3 sm:flex-row">
                     <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-white/65">{adminLocalText(adminLanguage, "Тестов email", "Test email", "Email для теста")}
-                      <input type="email" required value={feedbackTestEmail} onChange={(event) => setFeedbackTestEmail(event.target.value)} className="min-h-[44px] rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white" />
+                      <input name="feedbackTestEmail" type="email" required value={feedbackTestEmail} onChange={(event) => setFeedbackTestEmail(event.target.value)} className="min-h-[44px] rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white" />
                     </label>
                     <button disabled={feedbackTestBusy} type="submit" className="ghost-button min-h-[44px] self-end rounded-2xl px-4 py-3 text-sm disabled:opacity-50">{feedbackTestBusy ? "…" : adminLocalText(adminLanguage, "Изпрати тестово писмо", "Send test email", "Отправить тестовое письмо")}</button>
                   </form>
@@ -12121,7 +12278,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                 <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-white/10 bg-black/20 p-4 sm:flex-row sm:items-center">
                   <label className="min-w-0 flex-1 text-xs font-semibold text-white/60">
                     {adminLocalText(adminLanguage, "Търсене на клиент", "Find a customer", "Найти клиента")}
-                    <input type="search" value={customerQuery} onChange={(event) => setCustomerQuery(event.target.value)} placeholder={adminLocalText(adminLanguage, "Име, телефон или имейл…", "Name, phone or email…", "Имя, телефон или email…")} className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/60" />
+                    <input name="customerSearch" type="search" value={customerQuery} onChange={(event) => setCustomerQuery(event.target.value)} placeholder={adminLocalText(adminLanguage, "Име, телефон или имейл…", "Name, phone or email…", "Имя, телефон или email…")} className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/60" />
                   </label>
                   <p className="shrink-0 text-sm text-[#f2d39a]" role="status">
                     {customersMode === "blacklist" ? searchedBlacklist.length : sortedCustomers.length} {adminLocalText(adminLanguage, "резултата", "results", "результатов")}
@@ -12164,7 +12321,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                         ].map(([key, label]) => (
                           <div key={key}>
                             <label className="mb-2 block text-sm text-stone-400">{label}</label>
-                            <input
+                            <input name={`customerBlacklist.${key}`}
                               value={blacklistForm[key]}
                               onChange={(e) =>
                                 setBlacklistForm((prev) => ({
@@ -12182,7 +12339,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                           <label className="mb-2 block text-sm text-stone-400">
                             {adminLocalText(adminLanguage, "Бележки", "Notes", "Заметки")}
                           </label>
-                          <textarea
+                          <textarea name="customerBlacklist.notes"
                             value={blacklistForm.notes}
                             onChange={(e) =>
                               setBlacklistForm((prev) => ({
@@ -12273,7 +12430,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                           <label className="block text-sm text-white/60 xl:col-span-2">
                             {adminLocalText(adminLanguage, "Име", "Name", "Имя")}
-                            <input
+                            <input name="customer.guestName"
                               value={manualCustomerForm.guestName}
                               onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, guestName: event.target.value }))}
                               required
@@ -12282,7 +12439,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                           </label>
                           <label className="block text-sm text-white/60">
                             {adminLocalText(adminLanguage, "Телефон", "Phone", "Телефон")}
-                            <input
+                            <input name="customer.phone"
                               value={manualCustomerForm.phone}
                               onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, phone: event.target.value }))}
                               className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
@@ -12290,7 +12447,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                           </label>
                           <label className="block text-sm text-white/60">
                             Email
-                            <input
+                            <input name="customer.email"
                               type="email"
                               value={manualCustomerForm.email}
                               onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, email: event.target.value }))}
@@ -12299,7 +12456,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                           </label>
                           <label className="block text-sm text-white/60">
                             {adminLocalText(adminLanguage, "Рожден ден", "Birthday", "День рождения")}
-                            <input
+                            <input name="customer.birthDate"
                               type="date"
                               value={manualCustomerForm.birthDate}
                               onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, birthDate: event.target.value }))}
@@ -12307,7 +12464,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                             />
                           </label>
                           <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/70 xl:col-span-2">
-                            <input
+                            <input name="customer.marketingConsent"
                               type="checkbox"
                               checked={manualCustomerForm.marketingConsent}
                               onChange={(event) => setManualCustomerForm((prev) => ({ ...prev, marketingConsent: event.target.checked }))}
@@ -12605,8 +12762,9 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                         ].map(([key, label, type]) => (
                           <label key={key} className="block text-sm text-white/60">
                             {label}
-                            <input
+                            <input name={`adminCreate.${key}`}
                               type={type}
+                              autoComplete={key === "password" ? "new-password" : key === "email" ? "username" : undefined}
                               value={adminUserForm[key]}
                               onChange={(event) => setAdminUserForm((prev) => ({ ...prev, [key]: event.target.value }))}
                               className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
@@ -12615,7 +12773,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                         ))}
                         <label className="block text-sm text-white/60">
                           {adminLanguage === "bg" ? "Роля" : "Role"}
-                          <select
+                          <select name="adminCreate.role"
                             value={adminUserForm.role}
                             onChange={(event) => setAdminUserForm((prev) => ({ ...prev, role: event.target.value }))}
                             className="mt-2 w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-[#f2d39a]/50"
@@ -12640,20 +12798,20 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                           <div key={getAdminUserId(user)} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                             {editingAdminId === getAdminUserId(user) && canActorManageAdminUser(currentAdminRole, user.role) ? (
                               <div className="grid gap-3">
-                                <input
+                                <input name={`adminProfiles[${getAdminUserId(user)}].name`}
                                   value={adminEditForm.name}
                                   onChange={(event) => setAdminEditForm((prev) => ({ ...prev, name: event.target.value }))}
                                   placeholder={adminLanguage === "bg" ? "Име" : "Name"}
                                   className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/50"
                                 />
-                                <input
+                                <input name={`adminProfiles[${getAdminUserId(user)}].email`} autoComplete="username"
                                   type="email"
                                   value={adminEditForm.email}
                                   onChange={(event) => setAdminEditForm((prev) => ({ ...prev, email: event.target.value }))}
                                   placeholder="Email"
                                   className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/50"
                                 />
-                                <input
+                                <input name={`adminProfiles[${getAdminUserId(user)}].password`} autoComplete="new-password"
                                   type="password"
                                   value={adminEditForm.password}
                                   onChange={(event) => setAdminEditForm((prev) => ({ ...prev, password: event.target.value }))}
@@ -12665,7 +12823,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                     ? "Сегашната парола не се показва от съображения за сигурност. Въведи тук нова, за да я смениш."
                                     : "The current password is not shown for security. Enter a new one here to replace it."}
                                 </p>
-                                <select
+                                <select name={`adminProfiles[${getAdminUserId(user)}].role`}
                                   value={adminEditForm.role}
                                   onChange={(event) => setAdminEditForm((prev) => ({ ...prev, role: event.target.value }))}
                                   className="w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-[#f2d39a]/50"
@@ -12677,7 +12835,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                                   ))}
                                 </select>
                                 <label className="flex items-center gap-2 text-sm text-white/70">
-                                  <input
+                                  <input name={`adminProfiles[${getAdminUserId(user)}].isActive`}
                                     type="checkbox"
                                     checked={adminEditForm.isActive}
                                     onChange={(event) => setAdminEditForm((prev) => ({ ...prev, isActive: event.target.checked }))}

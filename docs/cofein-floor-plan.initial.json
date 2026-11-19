@@ -1,0 +1,333 @@
+{
+  "schemaVersion": 1,
+  "revision": "",
+  "zones": [
+    {
+      "id": "interior",
+      "name": "Интериор",
+      "presentation": "plain",
+      "isActive": true,
+      "names": {
+        "bg": "Интериор",
+        "en": "Interior",
+        "ru": "Интерьер"
+      }
+    },
+    {
+      "id": "exterior",
+      "name": "Екстериор",
+      "presentation": "plain",
+      "isActive": true,
+      "names": {
+        "bg": "Екстериор",
+        "en": "Exterior",
+        "ru": "Экстерьер"
+      }
+    }
+  ],
+  "tables": [
+    {
+      "id": "T01",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 5.0,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T02",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 12.36,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T03",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 19.93,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T04",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 27.71,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T05",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 39.7,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T06",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 47.06,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T07",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 54.63,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T08",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 63.88,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T09",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 71.87,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T10",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 79.44,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T11",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 87.43,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T12",
+      "area": "exterior",
+      "x": 5.0,
+      "y": 95.0,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T13",
+      "area": "exterior",
+      "x": 69.92,
+      "y": 84.91,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T14",
+      "area": "exterior",
+      "x": 52.95,
+      "y": 90.37,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    },
+    {
+      "id": "T15",
+      "area": "exterior",
+      "x": 60.33,
+      "y": 5.76,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "T16",
+      "area": "exterior",
+      "x": 60.33,
+      "y": 15.51,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "T17",
+      "area": "exterior",
+      "x": 60.33,
+      "y": 25.19,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "T18",
+      "area": "exterior",
+      "x": 60.33,
+      "y": 34.86,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "T19",
+      "area": "interior",
+      "x": 5.0,
+      "y": 5.0,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "T20",
+      "area": "interior",
+      "x": 5.0,
+      "y": 20.0,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "T21",
+      "area": "interior",
+      "x": 5.0,
+      "y": 34.87,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "T22",
+      "area": "interior",
+      "x": 5.0,
+      "y": 49.74,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "T23",
+      "area": "interior",
+      "x": 63.99,
+      "y": 64.61,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "T24",
+      "area": "interior",
+      "x": 95.0,
+      "y": 77.87,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "T25",
+      "area": "exterior",
+      "x": 70.66,
+      "y": 71.66,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "T26",
+      "area": "exterior",
+      "x": 95.0,
+      "y": 78.6,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "F01",
+      "area": "interior",
+      "x": 17.1,
+      "y": 73.66,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "F02",
+      "area": "interior",
+      "x": 41.3,
+      "y": 84.66,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "F03",
+      "area": "interior",
+      "x": 65.5,
+      "y": 95.0,
+      "seats": 6,
+      "special": false,
+      "wide": true,
+      "isActive": true
+    },
+    {
+      "id": "F04",
+      "area": "exterior",
+      "x": 66.0,
+      "y": 38.22,
+      "seats": 4,
+      "special": false,
+      "wide": false,
+      "isActive": true
+    }
+  ],
+  "combinations": [],
+  "publicMaxGuests": 8,
+  "publicMaxTables": 1
+}
