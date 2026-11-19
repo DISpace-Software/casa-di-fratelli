@@ -14,4 +14,6 @@ The Made in Blue prompt:
 
 `fonts/Inter.ttf` is Inter's variable font from the official Google Fonts repository (`google/fonts`, `ofl/inter`). Its licence is bundled as `fonts/OFL-Inter.txt`.
 
-`brand/app-icon.svg` is the editable code-authored SeatMap chair mark. `tool/generate_icons.py` reproduces the corresponding PNGs for Android, iOS and the web using Pillow.
+`brand/app-icon.png` and `brand/seatmap-mark.png` use the approved lavender SM monogram with a lime tabletop, derived from `design/logo-concepts/refined/lavender-v2.png`. The original artwork was created with the built-in image generation tool; its prompt is recorded in `design/logo-concepts/refined/prompts.json`. `tool/generate_icons.py` crops and resizes that artwork for Android, iOS and web launcher icons.
+
+The native launch animation in `lib/ui/brand/` uses code-authored vector paths that follow the approved monogram. Its initial S/M outlines are extracted from the bundled Inter font and retain that font's OFL provenance. No new raster logo or video asset is introduced; launcher/header PNGs remain unchanged. Native launch backgrounds use `#10101D`, and the old static iOS `LaunchImage` is no longer used by the launch storyboard. See [brand documentation](brand/README.md) for animation behavior and optional frame-capture commands.

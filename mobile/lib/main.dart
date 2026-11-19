@@ -7,6 +7,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import 'state/app_controller.dart';
+import 'ui/brand/seatmap_launch_intro.dart';
 import 'ui/screens/discovery_screens.dart';
 import 'ui/theme.dart';
 
@@ -40,6 +41,8 @@ class SeatMapApp extends StatefulWidget {
 }
 
 class _SeatMapAppState extends State<SeatMapApp> {
+  bool _showLaunchIntro = true;
+
   @override
   void initState() {
     super.initState();
@@ -79,7 +82,27 @@ class _SeatMapAppState extends State<SeatMapApp> {
               ),
               child: Stack(
                 children: [
-                  Positioned.fill(child: child!),
+                  Positioned.fill(
+                    child: ExcludeSemantics(
+                      excluding: _showLaunchIntro,
+                      child: IgnorePointer(
+                        ignoring: _showLaunchIntro,
+                        child: ExcludeFocus(
+                          excluding: _showLaunchIntro,
+                          child: child!,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_showLaunchIntro)
+                    Positioned.fill(
+                      child: SeatMapLaunchIntro(
+                        key: const ValueKey('seatmap-launch-intro'),
+                        onComplete: () {
+                          if (mounted) setState(() => _showLaunchIntro = false);
+                        },
+                      ),
+                    ),
                   if (widget.previewChrome)
                     const Positioned(
                       top: 0,
