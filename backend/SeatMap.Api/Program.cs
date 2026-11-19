@@ -69,6 +69,8 @@ builder.Services.AddScoped<ReservationConflictService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ReservationBookingService>();
 builder.Services.AddScoped<GuestReservationService>();
+builder.Services.AddScoped<SeatMap.Api.Services.Preorders.PreorderPolicyService>();
+builder.Services.AddScoped<SeatMap.Api.Services.Preorders.GuestPreorderService>();
 builder.Services.AddScoped<IReservationBookingNotifications, ReservationBookingNotifications>();
 builder.Services.AddScoped<AdminAuthService>();
 builder.Services.AddScoped<AuditService>();

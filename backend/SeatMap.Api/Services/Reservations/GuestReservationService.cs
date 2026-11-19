@@ -94,6 +94,8 @@ public sealed class GuestReservationService(AppDbContext db, TenantBrandingServi
         return ReservationBookingResult.Success(Describe(reservation, brand, now));
     }
 
-    private Task<bool> HasOrdersAsync(int id) => db.DiningOrders.AnyAsync(x => x.ReservationId == id && !x.IsDeleted && x.Status != "Cancelled");
+    private async Task<bool> HasOrdersAsync(int id) =>
+        await db.DiningOrders.AnyAsync(x => x.ReservationId == id && !x.IsDeleted && x.Status != "Cancelled") ||
+        await db.PreorderPayments.AnyAsync(x => x.Preorder.ReservationId == id);
     private static ReservationBookingResult Missing() => ReservationBookingResult.NotFound(new { code = "RESERVATION_NOT_FOUND", message = "Reservation not found or access is invalid." });
 }

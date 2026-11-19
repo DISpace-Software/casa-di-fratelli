@@ -2449,6 +2449,264 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Пароль изменён. Войдите с новым паролем. Предыдущие сеансы на всех устройствах завершены.'**
   String get passwordResetComplete;
+
+  /// No description provided for @noAvailableTables.
+  ///
+  /// In ru, this message translates to:
+  /// **'На это время нет свободных столиков'**
+  String get noAvailableTables;
+
+  /// No description provided for @menuExperienceKicker.
+  ///
+  /// In ru, this message translates to:
+  /// **'ВКУС ВАШЕГО ВЕЧЕРА'**
+  String get menuExperienceKicker;
+
+  /// No description provided for @menuExperienceTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш вечер.\nВаш вкус.'**
+  String get menuExperienceTitle;
+
+  /// No description provided for @menuExperienceSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Откройте меню и найдите что-то по душе.'**
+  String get menuExperienceSubtitle;
+
+  /// No description provided for @menuFood.
+  ///
+  /// In ru, this message translates to:
+  /// **'Блюда'**
+  String get menuFood;
+
+  /// No description provided for @menuDrinks.
+  ///
+  /// In ru, this message translates to:
+  /// **'Напитки'**
+  String get menuDrinks;
+
+  /// No description provided for @menuAll.
+  ///
+  /// In ru, this message translates to:
+  /// **'Все'**
+  String get menuAll;
+
+  /// No description provided for @searchMenu.
+  ///
+  /// In ru, this message translates to:
+  /// **'Найти блюдо или напиток'**
+  String get searchMenu;
+
+  /// No description provided for @clearMenuSearch.
+  ///
+  /// In ru, this message translates to:
+  /// **'Очистить поиск'**
+  String get clearMenuSearch;
+
+  /// No description provided for @menuNoResults.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ничего не найдено. Попробуйте другую категорию или запрос.'**
+  String get menuNoResults;
+
+  /// No description provided for @addToPreorder.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить в предзаказ'**
+  String get addToPreorder;
+
+  /// No description provided for @removeMenuItem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уменьшить количество'**
+  String get removeMenuItem;
+
+  /// No description provided for @closeMenuItem.
+  ///
+  /// In ru, this message translates to:
+  /// **'Готово'**
+  String get closeMenuItem;
+
+  /// No description provided for @openPreorderCart.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваш заказ · {count} · {total} €'**
+  String openPreorderCart(String count, String total);
+
+  /// No description provided for @preorderForYourTable.
+  ///
+  /// In ru, this message translates to:
+  /// **'К вашему столику'**
+  String get preorderForYourTable;
+
+  /// No description provided for @preordersNotOffered.
+  ///
+  /// In ru, this message translates to:
+  /// **'Посмотрите меню. Этот ресторан пока не подключил предзаказы.'**
+  String get preordersNotOffered;
+
+  /// No description provided for @preorderCartTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'К вашему приходу'**
+  String get preorderCartTitle;
+
+  /// No description provided for @preorderServeTime.
+  ///
+  /// In ru, this message translates to:
+  /// **'Когда подать заказ?'**
+  String get preorderServeTime;
+
+  /// No description provided for @preorderNotes.
+  ///
+  /// In ru, this message translates to:
+  /// **'Комментарий для ресторана'**
+  String get preorderNotes;
+
+  /// No description provided for @preorderTotal.
+  ///
+  /// In ru, this message translates to:
+  /// **'Итого'**
+  String get preorderTotal;
+
+  /// No description provided for @preorderPrepaymentRule.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предзаказ оформляется с полной предоплатой картой. Ресторан получит заказ после подтверждения оплаты. Для изменения оплаченного заказа свяжитесь с рестораном.'**
+  String get preorderPrepaymentRule;
+
+  /// No description provided for @preorderAcceptPrepayment.
+  ///
+  /// In ru, this message translates to:
+  /// **'Я понимаю, что нужна полная предоплата картой.'**
+  String get preorderAcceptPrepayment;
+
+  /// No description provided for @preorderPaymentsUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ресторан пока не принимает предоплату картой. Можно сохранить неоплаченный черновик; он не отправляется на кухню.'**
+  String get preorderPaymentsUnavailable;
+
+  /// No description provided for @preorderDemoPreview.
+  ///
+  /// In ru, this message translates to:
+  /// **'Демонстрация: списания с карты и отправки заказа в ресторан не будет.'**
+  String get preorderDemoPreview;
+
+  /// No description provided for @preorderConfirmBookingFirst.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтвердите бронь по email, прежде чем сохранять предзаказ.'**
+  String get preorderConfirmBookingFirst;
+
+  /// No description provided for @preorderDraftSaved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неоплаченный черновик сохранён. Он станет заказом для ресторана только после оплаты.'**
+  String get preorderDraftSaved;
+
+  /// No description provided for @preorderDemoSaved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Демочерновик подготовлен. Реальный заказ и платёж не создавались.'**
+  String get preorderDemoSaved;
+
+  /// No description provided for @preorderSavedLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Черновик сохранён'**
+  String get preorderSavedLabel;
+
+  /// No description provided for @savePreorderDraft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохранить неоплаченный черновик'**
+  String get savePreorderDraft;
+
+  /// No description provided for @preorderOfferTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пусть ваш вечер\nначнётся со вкуса'**
+  String get preorderOfferTitle;
+
+  /// No description provided for @preorderOfferBody.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите блюда и напитки заранее и укажите время подачи. Предзаказ оформляется с полной предоплатой картой.'**
+  String get preorderOfferBody;
+
+  /// No description provided for @preorderLater.
+  ///
+  /// In ru, this message translates to:
+  /// **'Позже'**
+  String get preorderLater;
+
+  /// No description provided for @preorderChooseMenu.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выбрать из меню'**
+  String get preorderChooseMenu;
+
+  /// No description provided for @viewRestaurantMenu.
+  ///
+  /// In ru, this message translates to:
+  /// **'Меню и предзаказ'**
+  String get viewRestaurantMenu;
+
+  /// No description provided for @preorderActionFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось сохранить предзаказ. Проверьте бронь и попробуйте ещё раз.'**
+  String get preorderActionFailed;
+
+  /// No description provided for @preorderMenuChanged.
+  ///
+  /// In ru, this message translates to:
+  /// **'Меню изменилось. Обновите его перед продолжением.'**
+  String get preorderMenuChanged;
+
+  /// No description provided for @preorderTooLate.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предзаказы закрываются за 30 минут до начала брони.'**
+  String get preorderTooLate;
+
+  /// No description provided for @preorderPayFull.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплатить {total} € картой'**
+  String preorderPayFull(String total);
+
+  /// No description provided for @preorderEditCart.
+  ///
+  /// In ru, this message translates to:
+  /// **'Изменить заказ'**
+  String get preorderEditCart;
+
+  /// No description provided for @preorderPricesUpdated.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цены обновлены по меню ресторана. Проверьте сохранённый черновик.'**
+  String get preorderPricesUpdated;
+
+  /// No description provided for @menuCoffee.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эспрессо'**
+  String get menuCoffee;
+
+  /// No description provided for @menuLemonade.
+  ///
+  /// In ru, this message translates to:
+  /// **'Домашний лимонад'**
+  String get menuLemonade;
+
+  /// No description provided for @preorderCartLimit.
+  ///
+  /// In ru, this message translates to:
+  /// **'В одном предзаказе можно выбрать до 40 разных позиций.'**
+  String get preorderCartLimit;
 }
 
 class _AppLocalizationsDelegate

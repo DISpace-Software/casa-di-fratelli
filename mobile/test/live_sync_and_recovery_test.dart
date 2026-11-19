@@ -42,7 +42,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      var removed = false, closed = false, reads = 0;
+      var removed = false, closed = false, occupied = false, reads = 0;
       final repository = SeatMapRepository(
         baseUrl: 'https://api.example.test',
         client: MockClient((request) async {
@@ -72,7 +72,17 @@ void main() {
             });
           }
           if (request.url.path.endsWith('/blocked-slots')) {
-            return response([]);
+            return response(
+              occupied
+                  ? [
+                      {
+                        'reservedDate': '2026-11-20',
+                        'reservedTime': '19:30',
+                        'tableIds': ['10'],
+                      },
+                    ]
+                  : [],
+            );
           }
           if (request.url.path.endsWith('/zones')) {
             return response({
@@ -86,6 +96,7 @@ void main() {
         initialLanguage: 'en',
         repository: repository,
       );
+      controller.setSearch(date: DateTime(2026, 11, 20), time: '19:30');
       await tester.pumpWidget(
         MaterialApp(
           theme: seatMapTheme(),
@@ -99,6 +110,17 @@ void main() {
       await tester.tap(find.text('10').first);
       await tester.pump();
       expect(find.text('Table 10'), findsOneWidget);
+      occupied = true;
+      await tester.pump(Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(find.text('10'), findsNothing);
+      expect(find.text('Table 10'), findsNothing);
+      occupied = false;
+      await tester.pump(Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(find.text('10'), findsOneWidget);
+      await tester.tap(find.text('10'));
+      await tester.pump();
       removed = true;
       await tester.pump(Duration(seconds: 3));
       await tester.pumpAndSettle();
@@ -108,12 +130,12 @@ void main() {
       closed = true;
       await tester.pump(Duration(seconds: 3));
       await tester.pumpAndSettle();
-      final tab = tester.widget<ChoicePill>(
+      expect(
         find.byWidgetPredicate(
-          (w) => w is ChoicePill && w.label == 'Hall · Closed',
+          (w) => w is ChoicePill && w.label.contains('Hall'),
         ),
+        findsNothing,
       );
-      expect(tab.onTap, isNull);
       expect(find.textContaining('No rooms are open'), findsOneWidget);
       await tester.pumpWidget(SizedBox());
       repository.close();

@@ -8,6 +8,7 @@ import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../domain/models.dart';
+import '../domain/menu.dart';
 import 'demo_data.dart';
 
 class SeatMapException implements Exception {
@@ -143,7 +144,17 @@ class SeatMapRepository {
       final code = decoded is Map ? decoded['code']?.toString() ?? '' : '';
       if (guestManagement) {
         throw SeatMapException(
-          code == 'CONTACT_RESTAURANT'
+          code == 'PREORDERS_DISABLED'
+              ? appStrings.preordersNotOffered
+              : code == 'PREORDER_MENU_CHANGED'
+              ? appStrings.preorderMenuChanged
+              : code == 'PREORDER_TOO_LATE'
+              ? appStrings.preorderTooLate
+              : code == 'PREORDER_BOOKING_UNCONFIRMED'
+              ? appStrings.preorderConfirmBookingFirst
+              : code.startsWith('PREORDER') || code.startsWith('CARD_')
+              ? appStrings.preorderActionFailed
+              : code == 'CONTACT_RESTAURANT'
               ? appStrings.cancellationContactRequired
               : response.statusCode == 404
               ? appStrings.bookingAccessUnavailable
@@ -204,6 +215,7 @@ class SeatMapRepository {
         final restaurant = Restaurant(
           id: id,
           name: name,
+          websiteUrl: _string(row['websiteUrl']),
           city: '',
           area: '',
           imageAsset: image,
@@ -660,52 +672,126 @@ class SeatMapRepository {
         );
   }
 
-  Future<List<Map<String, dynamic>>> loadMenu(Restaurant restaurant) async {
+  Future<List<MenuDish>> loadMenu(Restaurant restaurant) async {
     if (demoMode) {
+      final names = [
+        appStrings.msgShopskaSalad,
+        appStrings.msgBurrataWithTomatoes,
+        appStrings.msgBeefTartare,
+        appStrings.msgDuckBreast,
+        appStrings.msgMushroomRisotto,
+        appStrings.msgChocolateFondant,
+      ];
+      final descriptions = [
+        appStrings.msgTomatoesCucumberRoastedPepperWhiteCheese,
+        appStrings.msgSeasonalTomatoesAndFreshBasil,
+        appStrings.msgCapersMustardCreamToast,
+        appStrings.msgCeleriacSeasonalVegetablesSourCherrySauce,
+        appStrings.msgWildMushroomsArborioRiceParmesan,
+        appStrings.msgWarmChocolateAndVanillaIceCream,
+      ];
       return [
-        {
-          'name': appStrings.msgShopskaSalad,
-          'description': appStrings.msgTomatoesCucumberRoastedPepperWhiteCheese,
-          'price': '9.50',
-        },
-        {
-          'name': appStrings.msgBurrataWithTomatoes,
-          'description': appStrings.msgSeasonalTomatoesAndFreshBasil,
-          'price': '13.00',
-        },
-        {
-          'name': appStrings.msgBeefTartare,
-          'description': appStrings.msgCapersMustardCreamToast,
-          'price': '17.00',
-        },
-        {
-          'name': appStrings.msgDuckBreast,
-          'description':
-              appStrings.msgCeleriacSeasonalVegetablesSourCherrySauce,
-          'price': '24.00',
-        },
-        {
-          'name': appStrings.msgMushroomRisotto,
-          'description': appStrings.msgWildMushroomsArborioRiceParmesan,
-          'price': '18.00',
-        },
-        {
-          'name': appStrings.msgChocolateFondant,
-          'description': appStrings.msgWarmChocolateAndVanillaIceCream,
-          'price': '8.50',
-        },
+        for (var i = 0; i < names.length; i++)
+          MenuDish(
+            id: i + 1,
+            name: names[i],
+            description: descriptions[i],
+            priceMinor: [950, 1300, 1700, 2400, 1800, 850][i],
+            category: i < 2
+                ? 'salads'
+                : i == 5
+                ? 'desserts'
+                : 'mains',
+            weight: i == 5 ? '160 g' : '300 g',
+          ),
+        MenuDish(
+          id: 7,
+          name: appStrings.menuCoffee,
+          priceMinor: 350,
+          category: 'hot-drinks',
+          drink: true,
+          weight: '60 ml',
+        ),
+        MenuDish(
+          id: 8,
+          name: appStrings.menuLemonade,
+          priceMinor: 650,
+          category: 'lemonades',
+          drink: true,
+          weight: '400 ml',
+        ),
       ];
     }
-    return _list(await _request('${_path(restaurant)}/menu'))
-        .map(_object)
-        .where((item) => item['isActive'] != false)
-        .map(
-          (item) => <String, dynamic>{
-            'name': _translated(item, 'name'),
-            'description': _translated(item, 'description'),
-            'price': (item['price'] as num).toStringAsFixed(2),
-          },
-        )
-        .toList();
+    return _list(
+      await _request('${_path(restaurant)}/menu'),
+    ).map(_object).where((item) => item['isActive'] != false).map((item) {
+      var image = _string(item['imageUrl']);
+      if (image.startsWith('/') && !image.startsWith('//')) {
+        final website = Uri.tryParse(restaurant.websiteUrl);
+        image =
+            website != null && website.scheme == 'https' && website.hasAuthority
+            ? website.resolve(image).toString()
+            : '';
+      }
+      if (!(image.startsWith('https://') || image.startsWith('data:image/'))) {
+        image = '';
+      }
+      return MenuDish(
+        id: item['id'] as int,
+        name: _translated(item, 'name'),
+        description: _translated(item, 'description'),
+        priceMinor: ((item['price'] as num) * 100).round(),
+        category: _string(item['category'], 'mains'),
+        drink: _string(item['department']).toLowerCase() == 'bar',
+        image: image,
+        weight: _string(item['weight']),
+      );
+    }).toList();
   }
+
+  Future<PreorderSettings> preorderSettings(Restaurant restaurant) async =>
+      demoMode
+      ? const PreorderSettings(enabled: true)
+      : PreorderSettings.fromJson(
+          _object(await _request('${_path(restaurant)}/preorders/settings')),
+        );
+
+  String _preorderPath(Booking booking) {
+    final id = booking.id.split(':').last;
+    if (!RegExp(r'^\d+$').hasMatch(id) || booking.managementToken.isEmpty) {
+      throw SeatMapException(appStrings.bookingAccessUnavailable);
+    }
+    return '/api/v1/restaurants/${Uri.encodeComponent(booking.restaurantId)}/reservations/$id/preorders';
+  }
+
+  Future<Map<String, dynamic>> savePreorderDraft(
+    Booking booking,
+    Map<String, dynamic> body,
+  ) async => _object(
+    await _request(
+      _preorderPath(booking),
+      body: body,
+      headers: {'X-Reservation-Token': booking.managementToken},
+      guestManagement: true,
+    ),
+  );
+  Future<Map<String, dynamic>> quotePreorder(
+    Booking booking,
+    Map<String, dynamic> body,
+  ) async => _object(
+    await _request(
+      '${_preorderPath(booking)}/quote',
+      body: body,
+      headers: {'X-Reservation-Token': booking.managementToken},
+      guestManagement: true,
+    ),
+  );
+  Future<List<Map<String, dynamic>>> preorderDrafts(Booking booking) async =>
+      _list(
+        await _request(
+          _preorderPath(booking),
+          headers: {'X-Reservation-Token': booking.managementToken},
+          guestManagement: true,
+        ),
+      ).map(_object).toList();
 }

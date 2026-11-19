@@ -35,8 +35,29 @@ public class AppDbContext : DbContext
 
     public DbSet<CustomerFeedback> CustomerFeedbacks => Set<CustomerFeedback>();
 
+    public DbSet<ReservationPreorder> ReservationPreorders => Set<ReservationPreorder>();
+    public DbSet<PreorderPayment> PreorderPayments => Set<PreorderPayment>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<ReservationPreorder>(entity => {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.RequestHash).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
+            entity.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+            entity.Property(x => x.ItemsJson).IsRequired(); entity.Property(x => x.Notes).HasMaxLength(500);
+            entity.HasIndex(x => new { x.ReservationId, x.IdempotencyKey }).IsUnique();
+            entity.HasOne(x => x.Reservation).WithMany().HasForeignKey(x => x.ReservationId).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<PreorderPayment>(entity => {
+            entity.HasKey(x => x.Id);
+            entity.Property(x => x.Provider).HasMaxLength(50).IsRequired();
+            entity.Property(x => x.ProviderPaymentId).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Currency).HasMaxLength(3).IsRequired();
+            entity.HasIndex(x => new { x.Provider, x.ProviderPaymentId }).IsUnique();
+            entity.HasIndex(x => x.ReservationPreorderId).IsUnique(); entity.HasIndex(x => x.PaidAtUtc);
+            entity.HasOne(x => x.Preorder).WithMany().HasForeignKey(x => x.ReservationPreorderId).OnDelete(DeleteBehavior.Restrict);
+        });
         modelBuilder.Entity<Reservation>(entity =>
         {
             entity.Property(x => x.GuestName).IsRequired().HasMaxLength(120);

@@ -55,6 +55,9 @@ class PreviewHandler(SimpleHTTPRequestHandler):
         segments = path.strip("/").split("/")
         allowed = guest_routes[guest_path] if is_guest else ({"GET", "POST"} if len(segments) == 5 and segments[-1] == "reservations" else {"GET"})
         is_booking_access = is_restaurant and len(segments) == 7 and segments[4] == 'reservations' and segments[5].isdigit() and segments[6] in ('guest', 'cancel')
+        is_preorder = is_restaurant and len(segments) >= 7 and segments[4] == 'reservations' and segments[5].isdigit() and segments[6] == 'preorders'
+        if is_preorder:
+            allowed = {'GET', 'POST'} if len(segments) == 7 else ({'POST'} if (len(segments) == 8 and segments[7] == 'quote') or (len(segments) == 9 and segments[8] == 'checkout') else set())
         if is_booking_access:
             allowed = {'GET'} if segments[6] == 'guest' else {'POST'}
         if self.command not in allowed:
@@ -74,7 +77,7 @@ class PreviewHandler(SimpleHTTPRequestHandler):
             data=body,
             method=self.command,
             headers={"Accept": "application/json", "Content-Type": "application/json",
-                     **({"X-Reservation-Token": self.headers["X-Reservation-Token"]} if is_booking_access and self.headers.get("X-Reservation-Token") else {}),
+                     **({"X-Reservation-Token": self.headers["X-Reservation-Token"]} if (is_booking_access or is_preorder) and self.headers.get("X-Reservation-Token") else {}),
                      **({"Authorization": self.headers["Authorization"]} if is_guest and self.headers.get("Authorization") else {})},
         )
         try:

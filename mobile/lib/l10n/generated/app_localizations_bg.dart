@@ -1341,4 +1341,153 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get passwordResetComplete =>
       'Паролата е променена. Влезте с новата парола. Всички предишни сесии са прекратени.';
+
+  @override
+  String get noAvailableTables => 'Няма свободни маси за този час';
+
+  @override
+  String get menuExperienceKicker => 'ВКУСЪТ НА ВАШАТА ВЕЧЕР';
+
+  @override
+  String get menuExperienceTitle => 'Вашата вечер,\nвашият вкус.';
+
+  @override
+  String get menuExperienceSubtitle =>
+      'Разгледайте менюто и открийте нещо любимо.';
+
+  @override
+  String get menuFood => 'Ястия';
+
+  @override
+  String get menuDrinks => 'Напитки';
+
+  @override
+  String get menuAll => 'Всички';
+
+  @override
+  String get searchMenu => 'Търсене на ястие или напитка';
+
+  @override
+  String get clearMenuSearch => 'Изчисти търсенето';
+
+  @override
+  String get menuNoResults =>
+      'Няма резултати. Опитайте друга категория или търсене.';
+
+  @override
+  String get addToPreorder => 'Добави към предварителната поръчка';
+
+  @override
+  String get removeMenuItem => 'Намали количеството';
+
+  @override
+  String get closeMenuItem => 'Готово';
+
+  @override
+  String openPreorderCart(String count, String total) {
+    return 'Вашата поръчка · $count · $total €';
+  }
+
+  @override
+  String get preorderForYourTable => 'За вашата маса';
+
+  @override
+  String get preordersNotOffered =>
+      'Разгледайте менюто. Ресторантът не е активирал предварителни поръчки.';
+
+  @override
+  String get preorderCartTitle => 'За вашето посещение';
+
+  @override
+  String get preorderServeTime => 'Кога да сервираме?';
+
+  @override
+  String get preorderNotes => 'Бележка към ресторанта';
+
+  @override
+  String get preorderTotal => 'Общо';
+
+  @override
+  String get preorderPrepaymentRule =>
+      'Предварителната поръчка изисква пълно предплащане с карта. Ресторантът я получава само след потвърдено плащане. За промени по платена поръчка се свържете с ресторанта.';
+
+  @override
+  String get preorderAcceptPrepayment =>
+      'Разбирам, че се изисква пълно предплащане с карта.';
+
+  @override
+  String get preorderPaymentsUnavailable =>
+      'Ресторантът все още не приема предплащане с карта. Можете да запазите неплатена чернова; тя няма да бъде изпратена към кухнята.';
+
+  @override
+  String get preorderDemoPreview =>
+      'Само демонстрация. Не се таксува карта и не се изпраща поръчка.';
+
+  @override
+  String get preorderConfirmBookingFirst =>
+      'Потвърдете резервацията по имейл преди да запазите предварителна поръчка.';
+
+  @override
+  String get preorderDraftSaved =>
+      'Неплатената чернова е запазена. Необходимо е плащане, за да стане поръчка към ресторанта.';
+
+  @override
+  String get preorderDemoSaved =>
+      'Демо черновата е подготвена. Няма реална поръчка или плащане.';
+
+  @override
+  String get preorderSavedLabel => 'Черновата е запазена';
+
+  @override
+  String get savePreorderDraft => 'Запази неплатена чернова';
+
+  @override
+  String get preorderOfferTitle => 'Нека вечерта ви\nбъде още по-хубава';
+
+  @override
+  String get preorderOfferBody =>
+      'Изберете ястия и напитки, задайте час за сервиране и се насладете на посещението си. Изисква се пълно предплащане с карта.';
+
+  @override
+  String get preorderLater => 'По-късно';
+
+  @override
+  String get preorderChooseMenu => 'Към менюто';
+
+  @override
+  String get viewRestaurantMenu => 'Меню и предварителни поръчки';
+
+  @override
+  String get preorderActionFailed =>
+      'Предварителната поръчка не е запазена. Проверете резервацията и опитайте отново.';
+
+  @override
+  String get preorderMenuChanged =>
+      'Менюто е променено. Обновете го, преди да продължите.';
+
+  @override
+  String get preorderTooLate =>
+      'Предварителните поръчки приключват 30 минути преди резервацията.';
+
+  @override
+  String preorderPayFull(String total) {
+    return 'Плати $total € с карта';
+  }
+
+  @override
+  String get preorderEditCart => 'Редактирай поръчката';
+
+  @override
+  String get preorderPricesUpdated =>
+      'Цените са обновени от менюто на ресторанта. Проверете запазената чернова.';
+
+  @override
+  String get menuCoffee => 'Еспресо';
+
+  @override
+  String get menuLemonade => 'Домашна лимонада';
+
+  @override
+  String get preorderCartLimit =>
+      'Изберете до 40 различни артикула за една поръчка.';
 }

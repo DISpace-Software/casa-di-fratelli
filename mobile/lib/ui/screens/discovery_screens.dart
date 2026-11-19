@@ -8,6 +8,7 @@ import '../../state/app_controller.dart';
 import '../components.dart';
 import '../theme.dart';
 import 'seat_map_screen.dart';
+import 'menu_screen.dart';
 import 'support_screens.dart';
 
 String shortDate(DateTime date, {bool withToday = true}) {
@@ -208,15 +209,7 @@ class DiscoveryScreen extends StatelessWidget {
       children: [
         Row(
           children: [
-            Container(
-              width: 29,
-              height: 29,
-              decoration: BoxDecoration(
-                color: SeatMapColors.lavender,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: CustomPaint(painter: _ChairLogoPainter()),
-            ),
+            const SeatMapMark(width: 42),
             SizedBox(width: 9),
             Text(
               'SeatMap',
@@ -1448,92 +1441,13 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
     );
   }
 
-  Future<void> _menu(BuildContext context) async {
-    final future = widget.controller.repository.loadMenu(restaurant);
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (context) => SizedBox(
-        height: MediaQuery.sizeOf(context).height * .78,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(24, 0, 24, 20),
-              child: Text(
-                context.l10n.msgMenuP((restaurant.name).toString()),
-                style: TextStyle(fontSize: 23, fontWeight: FontWeight.w700),
-              ),
-            ),
-            Expanded(
-              child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: future,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Text(
-                        context.l10n.msgCouldNotLoadTheMenuPleaseTryLater,
-                      ),
-                    );
-                  }
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.data!.isEmpty) {
-                    return Center(child: Text(context.l10n.msgMenuComingSoon));
-                  }
-                  return ListView.separated(
-                    padding: EdgeInsets.symmetric(horizontal: 24),
-                    itemCount: snapshot.data!.length,
-                    separatorBuilder: (_, _) => Divider(height: 28),
-                    itemBuilder: (_, index) {
-                      final dish = snapshot.data![index];
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '${dish['name']}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                SizedBox(height: 7),
-                                Text(
-                                  '${dish['description'] ?? ''}',
-                                  style: TextStyle(
-                                    color: SeatMapColors.muted,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(width: 15),
-                          Text(
-                            '${dish['price']} €',
-                            style: TextStyle(
-                              color: SeatMapColors.lavender,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Future<void> _menu(BuildContext context) => Navigator.push<void>(
+    context,
+    MaterialPageRoute(
+      builder: (_) =>
+          MenuScreen(controller: widget.controller, restaurant: restaurant),
+    ),
+  );
 }
 
 Future<void> chooseDate(
@@ -1697,31 +1611,4 @@ Future<void> chooseCity(BuildContext context, AppController controller) async {
               .toList(),
     ),
   );
-}
-
-class _ChairLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = SeatMapColors.background
-      ..strokeWidth = 1.4
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    canvas.drawPath(
-      Path()
-        ..moveTo(9, 7)
-        ..lineTo(9, 20)
-        ..moveTo(9, 12)
-        ..lineTo(18, 12)
-        ..moveTo(9, 16)
-        ..lineTo(21, 16)
-        ..lineTo(21, 20)
-        ..moveTo(16, 12)
-        ..lineTo(16, 16),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

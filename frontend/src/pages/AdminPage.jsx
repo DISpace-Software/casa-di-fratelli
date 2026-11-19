@@ -11,6 +11,7 @@ import MarketingHistory from "../components/admin/MarketingHistory";
 import MapOverlay from "../components/admin/MapOverlay";
 import { buildTimeRange, isHallBlock } from "../domain/reservations/hallBlockRules";
 import { getReservationMinutesFromNow, formatLocalDate, getLiveReservationCandidates, buildReservationsByTableForDate } from "../domain/adminMap/liveReservations";
+import PreorderSettings from "../components/admin/PreorderSettings";
 import TenantBrandingSettings from "../components/admin/TenantBrandingSettings";
 import { useTenantBranding } from "../context/TenantBrandingContext";
 import React from "react";
@@ -9338,6 +9339,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                       {adminLanguage === "bg" ? "Смени паролата" : "Change password"}
                     </button>
                   </form>
+                  {["Owner", "Developer"].includes(currentAdminRole) && <PreorderSettings adminFetch={adminFetch} role={currentAdminRole} language={adminLanguage} />}
                   </div>
                 </div>
               </Panel>

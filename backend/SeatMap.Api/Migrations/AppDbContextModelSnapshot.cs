@@ -262,6 +262,47 @@ namespace SeatMap.Api.Migrations
                 {
                     b.Navigation("Tables");
                 });
+
+            modelBuilder.Entity("SeatMap.Api.Models.ReservationPreorder", b => {
+                b.Property<Guid>("Id").HasColumnType("uuid");
+                b.Property<int>("ReservationId").HasColumnType("integer");
+                b.Property<Guid>("IdempotencyKey").HasColumnType("uuid");
+                b.Property<string>("RequestHash").IsRequired().HasMaxLength(64).HasColumnType("character varying(64)");
+                b.Property<string>("Status").IsRequired().HasMaxLength(30).HasColumnType("character varying(30)");
+                b.Property<string>("Currency").IsRequired().HasMaxLength(3).HasColumnType("character varying(3)");
+                b.Property<long>("TotalMinor").HasColumnType("bigint");
+                b.Property<int>("CommissionBasisPoints").HasColumnType("integer");
+                b.Property<long>("CommissionMinor").HasColumnType("bigint");
+                b.Property<long>("RestaurantNetMinor").HasColumnType("bigint");
+                b.Property<string>("ItemsJson").IsRequired().HasColumnType("text");
+                b.Property<string>("Notes").IsRequired().HasMaxLength(500).HasColumnType("character varying(500)");
+                b.Property<DateTime>("ServeAtUtc").HasColumnType("timestamp with time zone");
+                b.Property<DateTime>("CreatedAtUtc").HasColumnType("timestamp with time zone");
+                b.HasKey("Id");
+                b.ToTable("ReservationPreorders");
+                b.HasIndex("ReservationId", "IdempotencyKey").IsUnique();
+                b.HasOne("SeatMap.Api.Models.Reservation", "Reservation").WithMany().HasForeignKey("ReservationId").OnDelete(DeleteBehavior.Restrict).IsRequired();
+                b.Navigation("Reservation");
+            });
+
+            modelBuilder.Entity("SeatMap.Api.Models.PreorderPayment", b => {
+                b.Property<Guid>("Id").HasColumnType("uuid");
+                b.Property<Guid>("ReservationPreorderId").HasColumnType("uuid");
+                b.Property<string>("Provider").IsRequired().HasMaxLength(50).HasColumnType("character varying(50)");
+                b.Property<string>("ProviderPaymentId").IsRequired().HasMaxLength(200).HasColumnType("character varying(200)");
+                b.Property<string>("Currency").IsRequired().HasMaxLength(3).HasColumnType("character varying(3)");
+                b.Property<long>("GrossMinor").HasColumnType("bigint");
+                b.Property<long>("CommissionMinor").HasColumnType("bigint");
+                b.Property<long>("RestaurantNetMinor").HasColumnType("bigint");
+                b.Property<DateTime>("PaidAtUtc").HasColumnType("timestamp with time zone");
+                b.HasKey("Id");
+                b.ToTable("PreorderPayments");
+                b.HasIndex("Provider", "ProviderPaymentId").IsUnique();
+                b.HasIndex("ReservationPreorderId").IsUnique();
+                b.HasIndex("PaidAtUtc");
+                b.HasOne("SeatMap.Api.Models.ReservationPreorder", "Preorder").WithMany().HasForeignKey("ReservationPreorderId").OnDelete(DeleteBehavior.Restrict).IsRequired();
+                b.Navigation("Preorder");
+            });
 #pragma warning restore 612, 618
         }
     }

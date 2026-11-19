@@ -1,0 +1,13 @@
+# SeatMap logo explorations
+
+Generated with the built-in `image_gen` tool. Original PNGs are preserved here without edits. Palette follows the app: midnight #10101F, lavender #C6AFFF and restrained peach accents.
+
+1. `01-social-s.png` — flowing S, intimate dining table and two opposing seats. Recommended link to SeatMap's name.
+2. `02-table-pin.png` — destination pin containing a table for two.
+3. `03-welcome-chair.png` — welcoming chair with a reservation check.
+
+Prompt set (one independent generation per concept):
+
+1. Use case: logo-brand. Asset type: premium mobile app icon concept for SeatMap, restaurant table reservations and dining. Create ONE distinctive polished brand mark: a top-down dining table with two seats integrated into a flowing letter S through negative space. Palette from the existing app: deep midnight #10101F, luminous lavender #C6AFFF, tiny warm peach accent if useful. Flat vector-like geometry, confident simple silhouette readable at 24px, beautifully balanced optical spacing, refined rounded corners. Center the mark on a square midnight background, suitable as an iOS and Android app icon. No text, no letters written as typography, no device mockup, no shadows, no watermark, no extra symbols. This is concept 1, intimate social dining.
+2. Use case: logo-brand. Asset type: premium mobile app icon concept for SeatMap, restaurant table reservations. Create ONE inventive minimal brand mark: an elegant location pin whose circular interior becomes a top-down dining table with a subtle pair of opposing seats. Original memorable silhouette, restrained and upscale, flat vector-like precision. Palette: luminous lavender #C6AFFF on deep midnight #10101F, optional very small warm peach #F4C5AC. Center a large optically balanced mark on a square midnight background with generous icon-safe margins. Readable at 24px. No typography, no device mockup, no drop shadows, no watermark. Concept 2, discover your perfect table.
+3. Use case: logo-brand. Asset type: premium mobile app icon concept for SeatMap, restaurant table reservations and prepaid dining experiences. Create ONE sophisticated emblem: a continuous smooth lavender ribbon forming a welcoming chair and a subtle checkmark, with the counterspace suggesting a round dining table. Bold original visual idea, inviting but premium, flat vector-like minimalism and excellent small-size legibility. Lavender #C6AFFF on deep midnight #10101F square background, restrained optional peach accent. Centered large mark with optical balance and app-icon safe margins. No text, no device mockup, no gradients or shadows, no watermark. Concept 3, a seat ready for you.

@@ -149,7 +149,10 @@ class _SeatMapScreenState extends State<SeatMapScreen>
 
   @override
   Widget build(BuildContext context) {
-    final tables = plan.tables.where((table) => table.zoneId == zone).toList();
+    final visibleZones = plan.zones.where((item) => item.active).toList();
+    final tables = plan.tables
+        .where((table) => table.zoneId == zone && !table.occupied)
+        .toList();
     final selection = plan.tables
         .where((table) => selected.contains(table.id))
         .toList();
@@ -238,19 +241,15 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                     height: 36,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: plan.zones.length,
+                      itemCount: visibleZones.length,
                       separatorBuilder: (_, _) => SizedBox(width: 9),
                       itemBuilder: (context, index) => ChoicePill(
-                        plan.zones[index].active
-                            ? plan.zones[index].name
-                            : '${plan.zones[index].name} · ${context.l10n.zoneClosed}',
-                        selected: zone == plan.zones[index].id,
-                        onTap: !plan.zones[index].active
-                            ? null
-                            : () => setState(() {
-                                zone = plan.zones[index].id;
-                                selected.clear();
-                              }),
+                        visibleZones[index].name,
+                        selected: zone == visibleZones[index].id,
+                        onTap: () => setState(() {
+                          zone = visibleZones[index].id;
+                          selected.clear();
+                        }),
                         padding: 20,
                       ),
                     ),
@@ -298,7 +297,7 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                       ),
                       child: EmptyStateIcon(
                         icon: Icons.chair_alt_outlined,
-                        title: context.l10n.msgThisRoomIsNotSetUpYet,
+                        title: context.l10n.noAvailableTables,
                         text: context
                             .l10n
                             .msgChooseAnotherRoomOrContactTheRestaurant,
@@ -354,10 +353,6 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                       _Legend(
                         color: Color(0xFF8270B1),
                         label: context.l10n.msgAvailable,
-                      ),
-                      _Legend(
-                        color: Color(0xFF5A566D),
-                        label: context.l10n.msgOccupied,
                       ),
                       _Legend(
                         color: SeatMapColors.lavender,

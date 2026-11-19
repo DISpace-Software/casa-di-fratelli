@@ -1339,4 +1339,152 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get passwordResetComplete =>
       'Password changed. Sign in with your new password. All previous sessions have been signed out.';
+
+  @override
+  String get noAvailableTables => 'No tables available at this time';
+
+  @override
+  String get menuExperienceKicker => 'A TASTE OF YOUR EVENING';
+
+  @override
+  String get menuExperienceTitle => 'Your evening,\nyour taste.';
+
+  @override
+  String get menuExperienceSubtitle =>
+      'Discover the menu and find something you will love.';
+
+  @override
+  String get menuFood => 'Food';
+
+  @override
+  String get menuDrinks => 'Drinks';
+
+  @override
+  String get menuAll => 'All';
+
+  @override
+  String get searchMenu => 'Find a dish or drink';
+
+  @override
+  String get clearMenuSearch => 'Clear search';
+
+  @override
+  String get menuNoResults => 'Nothing found. Try another category or search.';
+
+  @override
+  String get addToPreorder => 'Add to preorder';
+
+  @override
+  String get removeMenuItem => 'Remove one';
+
+  @override
+  String get closeMenuItem => 'Done';
+
+  @override
+  String openPreorderCart(String count, String total) {
+    return 'Your order · $count · $total €';
+  }
+
+  @override
+  String get preorderForYourTable => 'For your table';
+
+  @override
+  String get preordersNotOffered =>
+      'Explore the menu. This restaurant has not enabled preorders.';
+
+  @override
+  String get preorderCartTitle => 'For your arrival';
+
+  @override
+  String get preorderServeTime => 'When should we serve it?';
+
+  @override
+  String get preorderNotes => 'A note for the restaurant';
+
+  @override
+  String get preorderTotal => 'Total';
+
+  @override
+  String get preorderPrepaymentRule =>
+      'Preorders require full card prepayment. The restaurant receives your order only after payment is confirmed. For changes to a paid order, contact the restaurant.';
+
+  @override
+  String get preorderAcceptPrepayment =>
+      'I understand that full card prepayment is required.';
+
+  @override
+  String get preorderPaymentsUnavailable =>
+      'This restaurant cannot accept card prepayment yet. You can save an unpaid draft; it will not be sent to the kitchen.';
+
+  @override
+  String get preorderDemoPreview =>
+      'Preview only. No card is charged and no order is sent to the restaurant.';
+
+  @override
+  String get preorderConfirmBookingFirst =>
+      'Confirm your booking by email before saving a preorder.';
+
+  @override
+  String get preorderDraftSaved =>
+      'Unpaid draft saved. Payment is required before it becomes a restaurant order.';
+
+  @override
+  String get preorderDemoSaved =>
+      'Demo draft prepared. No order or payment was created.';
+
+  @override
+  String get preorderSavedLabel => 'Draft saved';
+
+  @override
+  String get savePreorderDraft => 'Save unpaid draft';
+
+  @override
+  String get preorderOfferTitle => 'Make your evening\neven better';
+
+  @override
+  String get preorderOfferBody =>
+      'Choose food and drinks now, set a serving time and enjoy your table when you arrive. Preorders require full card prepayment.';
+
+  @override
+  String get preorderLater => 'Maybe later';
+
+  @override
+  String get preorderChooseMenu => 'Explore the menu';
+
+  @override
+  String get viewRestaurantMenu => 'Menu & preorders';
+
+  @override
+  String get preorderActionFailed =>
+      'Could not save the preorder. Check your booking and try again.';
+
+  @override
+  String get preorderMenuChanged =>
+      'The menu has changed. Refresh it before continuing.';
+
+  @override
+  String get preorderTooLate =>
+      'Preorders close 30 minutes before your reservation.';
+
+  @override
+  String preorderPayFull(String total) {
+    return 'Pay $total € by card';
+  }
+
+  @override
+  String get preorderEditCart => 'Edit your order';
+
+  @override
+  String get preorderPricesUpdated =>
+      'Prices were updated from the restaurant menu. Review your saved draft.';
+
+  @override
+  String get menuCoffee => 'Espresso';
+
+  @override
+  String get menuLemonade => 'Homemade lemonade';
+
+  @override
+  String get preorderCartLimit =>
+      'Choose up to 40 different items per preorder.';
 }

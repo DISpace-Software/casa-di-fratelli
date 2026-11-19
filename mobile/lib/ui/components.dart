@@ -8,6 +8,25 @@ double topInset(BuildContext context) =>
 double bottomInset(BuildContext context) =>
     kIsWeb ? 24 : MediaQuery.paddingOf(context).bottom;
 
+/// Approved connected SM monogram, including the lime tabletop.
+class SeatMapMark extends StatelessWidget {
+  const SeatMapMark({super.key, this.width = 42});
+  final double width;
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(width / 8),
+    child: Image.asset(
+      'assets/brand/seatmap-mark.png',
+      width: width,
+      height: width * 452 / 676,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+      excludeFromSemantics: true,
+    ),
+  );
+}
+
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,

@@ -626,5 +626,65 @@
         "type": "String"
       }
     }
-  }
+  },
+  "noAvailableTables": "На это время нет свободных столиков",
+  "menuExperienceKicker": "ВКУС ВАШЕГО ВЕЧЕРА",
+  "menuExperienceTitle": "Ваш вечер.\nВаш вкус.",
+  "menuExperienceSubtitle": "Откройте меню и найдите что-то по душе.",
+  "menuFood": "Блюда",
+  "menuDrinks": "Напитки",
+  "menuAll": "Все",
+  "searchMenu": "Найти блюдо или напиток",
+  "clearMenuSearch": "Очистить поиск",
+  "menuNoResults": "Ничего не найдено. Попробуйте другую категорию или запрос.",
+  "addToPreorder": "Добавить в предзаказ",
+  "removeMenuItem": "Уменьшить количество",
+  "closeMenuItem": "Готово",
+  "openPreorderCart": "Ваш заказ · {count} · {total} €",
+  "preorderForYourTable": "К вашему столику",
+  "preordersNotOffered": "Посмотрите меню. Этот ресторан пока не подключил предзаказы.",
+  "preorderCartTitle": "К вашему приходу",
+  "preorderServeTime": "Когда подать заказ?",
+  "preorderNotes": "Комментарий для ресторана",
+  "preorderTotal": "Итого",
+  "preorderPrepaymentRule": "Предзаказ оформляется с полной предоплатой картой. Ресторан получит заказ после подтверждения оплаты. Для изменения оплаченного заказа свяжитесь с рестораном.",
+  "preorderAcceptPrepayment": "Я понимаю, что нужна полная предоплата картой.",
+  "preorderPaymentsUnavailable": "Ресторан пока не принимает предоплату картой. Можно сохранить неоплаченный черновик; он не отправляется на кухню.",
+  "preorderDemoPreview": "Демонстрация: списания с карты и отправки заказа в ресторан не будет.",
+  "preorderConfirmBookingFirst": "Подтвердите бронь по email, прежде чем сохранять предзаказ.",
+  "preorderDraftSaved": "Неоплаченный черновик сохранён. Он станет заказом для ресторана только после оплаты.",
+  "preorderDemoSaved": "Демочерновик подготовлен. Реальный заказ и платёж не создавались.",
+  "preorderSavedLabel": "Черновик сохранён",
+  "savePreorderDraft": "Сохранить неоплаченный черновик",
+  "preorderOfferTitle": "Пусть ваш вечер\nначнётся со вкуса",
+  "preorderOfferBody": "Выберите блюда и напитки заранее и укажите время подачи. Предзаказ оформляется с полной предоплатой картой.",
+  "preorderLater": "Позже",
+  "preorderChooseMenu": "Выбрать из меню",
+  "viewRestaurantMenu": "Меню и предзаказ",
+  "preorderActionFailed": "Не удалось сохранить предзаказ. Проверьте бронь и попробуйте ещё раз.",
+  "preorderMenuChanged": "Меню изменилось. Обновите его перед продолжением.",
+  "preorderTooLate": "Предзаказы закрываются за 30 минут до начала брони.",
+  "preorderPayFull": "Оплатить {total} € картой",
+  "preorderEditCart": "Изменить заказ",
+  "preorderPricesUpdated": "Цены обновлены по меню ресторана. Проверьте сохранённый черновик.",
+  "@openPreorderCart": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "@preorderPayFull": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "menuCoffee": "Эспрессо",
+  "menuLemonade": "Домашний лимонад",
+  "preorderCartLimit": "В одном предзаказе можно выбрать до 40 разных позиций."
 }

@@ -6,6 +6,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../restaurant_contact.dart';
 import '../../l10n/language.dart';
 import 'account_screens.dart';
+import 'menu_screen.dart';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
@@ -252,19 +253,7 @@ class _LoginScreenState extends State<LoginScreen> {
           SizedBox(height: 29),
           Align(
             alignment: Alignment.centerLeft,
-            child: Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: SeatMapColors.lavender,
-                borderRadius: BorderRadius.circular(17),
-              ),
-              child: Icon(
-                Icons.chair_alt_outlined,
-                size: 29,
-                color: SeatMapColors.background,
-              ),
-            ),
+            child: const SeatMapMark(width: 96),
           ),
           SizedBox(height: 23),
           Text(
@@ -1169,6 +1158,36 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                   widget.controller.restaurantPhoneFor(booking),
                                 ),
                               ),
+                            TextButton.icon(
+                              icon: Icon(
+                                Icons.restaurant_menu_rounded,
+                                size: 17,
+                              ),
+                              label: Text(context.l10n.viewRestaurantMenu),
+                              onPressed: () {
+                                final restaurant =
+                                    widget.controller.restaurants
+                                        .where(
+                                          (r) => r.id == booking.restaurantId,
+                                        )
+                                        .firstOrNull ??
+                                    Restaurant(
+                                      id: booking.restaurantId,
+                                      name: booking.restaurantName,
+                                      imageAsset: booking.restaurantImage,
+                                    );
+                                Navigator.push<void>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => MenuScreen(
+                                      controller: widget.controller,
+                                      restaurant: restaurant,
+                                      booking: booking,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                             Divider(height: 20),
                             Row(
                               children: [
@@ -1308,6 +1327,8 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
         MaterialPageRoute<void>(
           builder: (_) => BookingSuccessScreen(
             booking: booking,
+            controller: widget.controller,
+            restaurant: widget.restaurant,
             onViewBookings: widget.onViewBookings,
           ),
         ),
@@ -1589,14 +1610,96 @@ class _SummaryLine extends StatelessWidget {
   );
 }
 
-class BookingSuccessScreen extends StatelessWidget {
+class BookingSuccessScreen extends StatefulWidget {
   const BookingSuccessScreen({
     super.key,
     required this.booking,
+    required this.controller,
+    required this.restaurant,
     this.onViewBookings,
   });
   final Booking booking;
+  final AppController controller;
+  final Restaurant restaurant;
   final VoidCallback? onViewBookings;
+  @override
+  State<BookingSuccessScreen> createState() => _BookingSuccessScreenState();
+}
+
+class _BookingSuccessScreenState extends State<BookingSuccessScreen> {
+  Booking get booking => widget.booking;
+  VoidCallback? get onViewBookings => widget.onViewBookings;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _offer());
+  }
+
+  Future<void> _offer() async {
+    try {
+      final settings = await widget.controller.repository.preorderSettings(
+        widget.restaurant,
+      );
+      if (!mounted ||
+          !settings.enabled ||
+          ModalRoute.of(context)?.isCurrent != true ||
+          (!booking.demo && booking.managementToken.isEmpty)) {
+        return;
+      }
+      final accept = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          title: Column(
+            children: [
+              Icon(
+                Icons.restaurant_rounded,
+                size: 38,
+                color: SeatMapColors.lavender,
+              ),
+              SizedBox(height: 18),
+              Text(
+                context.l10n.preorderOfferTitle,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          content: Text(
+            context.l10n.preorderOfferBody,
+            textAlign: TextAlign.center,
+            style: TextStyle(height: 1.6),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: Text(context.l10n.preorderLater),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialog, true),
+              child: Text(context.l10n.preorderChooseMenu),
+            ),
+          ],
+        ),
+      );
+      if (mounted && accept == true) {
+        await Navigator.push<void>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MenuScreen(
+              controller: widget.controller,
+              restaurant: widget.restaurant,
+              booking: booking,
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      /* The saved reservation remains the primary successful result. */
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pending = booking.status == 'pending';

@@ -1342,4 +1342,153 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get passwordResetComplete =>
       'Пароль изменён. Войдите с новым паролем. Предыдущие сеансы на всех устройствах завершены.';
+
+  @override
+  String get noAvailableTables => 'На это время нет свободных столиков';
+
+  @override
+  String get menuExperienceKicker => 'ВКУС ВАШЕГО ВЕЧЕРА';
+
+  @override
+  String get menuExperienceTitle => 'Ваш вечер.\nВаш вкус.';
+
+  @override
+  String get menuExperienceSubtitle =>
+      'Откройте меню и найдите что-то по душе.';
+
+  @override
+  String get menuFood => 'Блюда';
+
+  @override
+  String get menuDrinks => 'Напитки';
+
+  @override
+  String get menuAll => 'Все';
+
+  @override
+  String get searchMenu => 'Найти блюдо или напиток';
+
+  @override
+  String get clearMenuSearch => 'Очистить поиск';
+
+  @override
+  String get menuNoResults =>
+      'Ничего не найдено. Попробуйте другую категорию или запрос.';
+
+  @override
+  String get addToPreorder => 'Добавить в предзаказ';
+
+  @override
+  String get removeMenuItem => 'Уменьшить количество';
+
+  @override
+  String get closeMenuItem => 'Готово';
+
+  @override
+  String openPreorderCart(String count, String total) {
+    return 'Ваш заказ · $count · $total €';
+  }
+
+  @override
+  String get preorderForYourTable => 'К вашему столику';
+
+  @override
+  String get preordersNotOffered =>
+      'Посмотрите меню. Этот ресторан пока не подключил предзаказы.';
+
+  @override
+  String get preorderCartTitle => 'К вашему приходу';
+
+  @override
+  String get preorderServeTime => 'Когда подать заказ?';
+
+  @override
+  String get preorderNotes => 'Комментарий для ресторана';
+
+  @override
+  String get preorderTotal => 'Итого';
+
+  @override
+  String get preorderPrepaymentRule =>
+      'Предзаказ оформляется с полной предоплатой картой. Ресторан получит заказ после подтверждения оплаты. Для изменения оплаченного заказа свяжитесь с рестораном.';
+
+  @override
+  String get preorderAcceptPrepayment =>
+      'Я понимаю, что нужна полная предоплата картой.';
+
+  @override
+  String get preorderPaymentsUnavailable =>
+      'Ресторан пока не принимает предоплату картой. Можно сохранить неоплаченный черновик; он не отправляется на кухню.';
+
+  @override
+  String get preorderDemoPreview =>
+      'Демонстрация: списания с карты и отправки заказа в ресторан не будет.';
+
+  @override
+  String get preorderConfirmBookingFirst =>
+      'Подтвердите бронь по email, прежде чем сохранять предзаказ.';
+
+  @override
+  String get preorderDraftSaved =>
+      'Неоплаченный черновик сохранён. Он станет заказом для ресторана только после оплаты.';
+
+  @override
+  String get preorderDemoSaved =>
+      'Демочерновик подготовлен. Реальный заказ и платёж не создавались.';
+
+  @override
+  String get preorderSavedLabel => 'Черновик сохранён';
+
+  @override
+  String get savePreorderDraft => 'Сохранить неоплаченный черновик';
+
+  @override
+  String get preorderOfferTitle => 'Пусть ваш вечер\nначнётся со вкуса';
+
+  @override
+  String get preorderOfferBody =>
+      'Выберите блюда и напитки заранее и укажите время подачи. Предзаказ оформляется с полной предоплатой картой.';
+
+  @override
+  String get preorderLater => 'Позже';
+
+  @override
+  String get preorderChooseMenu => 'Выбрать из меню';
+
+  @override
+  String get viewRestaurantMenu => 'Меню и предзаказ';
+
+  @override
+  String get preorderActionFailed =>
+      'Не удалось сохранить предзаказ. Проверьте бронь и попробуйте ещё раз.';
+
+  @override
+  String get preorderMenuChanged =>
+      'Меню изменилось. Обновите его перед продолжением.';
+
+  @override
+  String get preorderTooLate =>
+      'Предзаказы закрываются за 30 минут до начала брони.';
+
+  @override
+  String preorderPayFull(String total) {
+    return 'Оплатить $total € картой';
+  }
+
+  @override
+  String get preorderEditCart => 'Изменить заказ';
+
+  @override
+  String get preorderPricesUpdated =>
+      'Цены обновлены по меню ресторана. Проверьте сохранённый черновик.';
+
+  @override
+  String get menuCoffee => 'Эспрессо';
+
+  @override
+  String get menuLemonade => 'Домашний лимонад';
+
+  @override
+  String get preorderCartLimit =>
+      'В одном предзаказе можно выбрать до 40 разных позиций.';
 }

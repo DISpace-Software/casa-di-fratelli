@@ -16,6 +16,7 @@ static void Check(bool result, string message) { if (!result) throw new Exceptio
 await MenuStartupChecks.RunAsync();
 await FloorPlanChecks.RunAsync();
 await GuestCancellationChecks.RunAsync();
+await PreorderChecks.RunAsync();
 await CasaStaffParityChecks.RunAsync();
 await TenantNotificationChecks.RunAsync();
 await AdminSessionIsolationChecks.RunAsync();

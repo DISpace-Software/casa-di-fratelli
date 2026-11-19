@@ -626,5 +626,65 @@
         "type": "String"
       }
     }
-  }
+  },
+  "noAvailableTables": "Няма свободни маси за този час",
+  "menuExperienceKicker": "ВКУСЪТ НА ВАШАТА ВЕЧЕР",
+  "menuExperienceTitle": "Вашата вечер,\nвашият вкус.",
+  "menuExperienceSubtitle": "Разгледайте менюто и открийте нещо любимо.",
+  "menuFood": "Ястия",
+  "menuDrinks": "Напитки",
+  "menuAll": "Всички",
+  "searchMenu": "Търсене на ястие или напитка",
+  "clearMenuSearch": "Изчисти търсенето",
+  "menuNoResults": "Няма резултати. Опитайте друга категория или търсене.",
+  "addToPreorder": "Добави към предварителната поръчка",
+  "removeMenuItem": "Намали количеството",
+  "closeMenuItem": "Готово",
+  "openPreorderCart": "Вашата поръчка · {count} · {total} €",
+  "preorderForYourTable": "За вашата маса",
+  "preordersNotOffered": "Разгледайте менюто. Ресторантът не е активирал предварителни поръчки.",
+  "preorderCartTitle": "За вашето посещение",
+  "preorderServeTime": "Кога да сервираме?",
+  "preorderNotes": "Бележка към ресторанта",
+  "preorderTotal": "Общо",
+  "preorderPrepaymentRule": "Предварителната поръчка изисква пълно предплащане с карта. Ресторантът я получава само след потвърдено плащане. За промени по платена поръчка се свържете с ресторанта.",
+  "preorderAcceptPrepayment": "Разбирам, че се изисква пълно предплащане с карта.",
+  "preorderPaymentsUnavailable": "Ресторантът все още не приема предплащане с карта. Можете да запазите неплатена чернова; тя няма да бъде изпратена към кухнята.",
+  "preorderDemoPreview": "Само демонстрация. Не се таксува карта и не се изпраща поръчка.",
+  "preorderConfirmBookingFirst": "Потвърдете резервацията по имейл преди да запазите предварителна поръчка.",
+  "preorderDraftSaved": "Неплатената чернова е запазена. Необходимо е плащане, за да стане поръчка към ресторанта.",
+  "preorderDemoSaved": "Демо черновата е подготвена. Няма реална поръчка или плащане.",
+  "preorderSavedLabel": "Черновата е запазена",
+  "savePreorderDraft": "Запази неплатена чернова",
+  "preorderOfferTitle": "Нека вечерта ви\nбъде още по-хубава",
+  "preorderOfferBody": "Изберете ястия и напитки, задайте час за сервиране и се насладете на посещението си. Изисква се пълно предплащане с карта.",
+  "preorderLater": "По-късно",
+  "preorderChooseMenu": "Към менюто",
+  "viewRestaurantMenu": "Меню и предварителни поръчки",
+  "preorderActionFailed": "Предварителната поръчка не е запазена. Проверете резервацията и опитайте отново.",
+  "preorderMenuChanged": "Менюто е променено. Обновете го, преди да продължите.",
+  "preorderTooLate": "Предварителните поръчки приключват 30 минути преди резервацията.",
+  "preorderPayFull": "Плати {total} € с карта",
+  "preorderEditCart": "Редактирай поръчката",
+  "preorderPricesUpdated": "Цените са обновени от менюто на ресторанта. Проверете запазената чернова.",
+  "@openPreorderCart": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "@preorderPayFull": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "menuCoffee": "Еспресо",
+  "menuLemonade": "Домашна лимонада",
+  "preorderCartLimit": "Изберете до 40 различни артикула за една поръчка."
 }

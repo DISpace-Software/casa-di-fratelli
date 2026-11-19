@@ -45,6 +45,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(controller.bookings, hasLength(1));
     expect(find.text('Ваш тестовый\nстолик забронирован'), findsOneWidget);
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.tap(find.text('Позже'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('К моим броням'));
     await tester.pumpAndSettle();
     expect(find.text('Мои брони'), findsOneWidget);
