@@ -40,7 +40,7 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
     private async Task RequireEnabledAsync()
     {
         var platform = await policies.PlatformAsync(); var consent = await policies.ConsentAsync();
-        if (!platform.Enabled || !consent.OptedIn || consent.AcceptedCommissionBasisPoints != platform.CommissionBasisPoints)
+        if (!platform.Enabled || !PreorderPolicyService.HasCurrentConsent(platform, consent))
             throw new PreorderException(403, "PREORDERS_DISABLED", "This restaurant does not offer preorders.");
     }
     private static void ValidateItems(PreorderDraftRequest request)

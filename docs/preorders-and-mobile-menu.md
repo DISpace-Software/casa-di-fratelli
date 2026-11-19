@@ -10,7 +10,7 @@ A centered offer after booking opens the preorder menu only when that restaurant
 
 ## Consent and developer control
 
-In the shared administration profile, Developer controls the restaurant's platform master switch and commission in basis points (0–10000). Only Owner can separately opt in and accept the displayed commission and terms. Developer cannot grant owner consent. A changed commission requires renewed owner consent before the feature becomes enabled again. Policy changes are audited in the selected restaurant database.
+In the shared administration profile, Developer controls the restaurant's platform master switch and commission in basis points (0–10000). Only Owner can separately opt in and accept the displayed commission and terms. Developer cannot grant owner consent. A changed commission or terms version requires renewed owner consent before the feature becomes enabled again. Consent is bound to the displayed commission and terms version; stale acceptance returns `409 PREORDER_TERMS_CHANGED`, refreshes the displayed terms and clears the acceptance checkbox. Policy changes are audited in the selected restaurant database.
 
 Both controls default to off; production rollout must not opt a restaurant in on its behalf.
 
@@ -30,7 +30,7 @@ All reservation routes require `X-Reservation-Token`; email or phone alone grant
 
 - `GET settings`: Owner or Developer.
 - `PUT platform`: Developer only, `{ enabled, commissionBasisPoints }`.
-- `PUT consent`: Owner only, `{ optedIn, acceptTerms }`.
+- `PUT consent`: Owner only, `{ optedIn, acceptFullPrepaymentAndMonthlySettlement, expectedCommissionBasisPoints, expectedTermsVersion }`.
 - `GET settlements?month=YYYY-MM`: Owner or Developer.
 
 The monthly report uses the restaurant's timezone and confirmed payment ledger entries only. Gross, commission and net are EUR cents; commission snapshots belong to the order. Drafts do not appear as payments or kitchen orders.
@@ -45,7 +45,7 @@ Before activating real orders, implement the chosen acquiring provider, verified
 
 Restaurant migration `20261119023000_PreordersFoundation` creates only `ReservationPreorders` and `PreorderPayments` plus indexes and foreign keys. Apply to each restaurant database before deploying the API because cancellation eligibility also checks the future paid ledger. Keep startup migration and demo seeding disabled in production. No platform account migration is required.
 
-31 preorder checks cover role restrictions, capabilities, restaurant isolation, opt-in, fee reconsent, pricing, rounding, idempotency, closed zones, pending bookings, unavailable checkout and unpaid cancellation. They pass on SQLite and isolated PostgreSQL. Flutter checks cover live map visibility, menu/cart behavior and the disabled payment action; visual artifacts are generated at iPhone size.
+41 preorder checks cover role restrictions, capabilities, restaurant isolation, opt-in, fee reconsent, stale displayed terms, stored terms version, pricing, rounding, idempotency, closed zones, pending bookings, unavailable checkout and unpaid cancellation. They pass on SQLite and isolated PostgreSQL. Flutter checks cover live map visibility, menu/cart behavior and the disabled payment action; visual artifacts are generated at iPhone size.
 
 ## Approved logo
 

@@ -27,17 +27,28 @@ export default function PreorderSettings({ adminFetch, role, language }) {
     fetchRef.current(`${API_BASE_URL}/api/preorders/settings`).then(async (response) => {
       if (!response.ok) throw new Error();
       const data = await response.json();
-      if (active) { setSettings(data); setEnabled(data.platform.enabled); setCommission(String(data.platform.commissionBasisPoints / 100)); setOptedIn(data.restaurant.optedIn); }
+      if (active) { setSettings(data); setEnabled(data.platform.enabled); setCommission(String(data.platform.commissionBasisPoints / 100)); setOptedIn(data.restaurant.optedIn); setAccept(false); }
     }).catch(() => { if (active) setMessage(t.error); });
     return () => { active = false; };
   }, [role, t.error]);
   async function save(event) {
-    event.preventDefault(); if (busy) return;
+    event.preventDefault(); if (busy || !settings) return;
     setBusy(true); setMessage("");
     try {
       const developer = role === "Developer";
-      const body = developer ? { enabled, commissionBasisPoints: Math.round(Number(commission) * 100) } : { optedIn, acceptFullPrepaymentAndMonthlySettlement: accept };
+      const body = developer ? { enabled, commissionBasisPoints: Math.round(Number(commission) * 100) } : { optedIn, acceptFullPrepaymentAndMonthlySettlement: accept, expectedCommissionBasisPoints: settings.platform.commissionBasisPoints, expectedTermsVersion: settings.termsVersion };
       const response = await adminFetch(`${API_BASE_URL}/api/preorders/${developer ? "platform" : "consent"}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (response.status === 409 && !developer) {
+        const problem = await response.json();
+        if (problem.code === "PREORDER_TERMS_CHANGED") {
+          setAccept(false);
+          const latest = await adminFetch(`${API_BASE_URL}/api/preorders/settings`);
+          if (!latest.ok) throw new Error();
+          setSettings(await latest.json());
+          setMessage(t.renewal);
+          return;
+        }
+      }
       if (!response.ok) throw new Error();
       setSettings(await response.json()); setMessage(t.saved); setAccept(false);
     } catch { setMessage(t.error); } finally { setBusy(false); }
@@ -69,7 +80,7 @@ export default function PreorderSettings({ adminFetch, role, language }) {
         <button disabled={busy || (role === "Owner" && optedIn && !accept)} className="luxury-button w-fit rounded-xl px-5 py-3 text-sm disabled:opacity-40">{t.save}</button>
       </form>
       <div className="mt-6 border-t border-white/10 pt-5"><h4 className="font-semibold">{t.report}</h4>
-        <div className="mt-3 flex flex-wrap gap-3"><input aria-label={t.report} type="month" value={month} onChange={(e) => { setMonth(e.target.value); setReport(null); }} className={`${field} max-w-52`} /><button type="button" onClick={loadReport} disabled={busy || !month} className="rounded-xl border border-violet-300/25 px-4 py-2 text-sm disabled:opacity-40">{t.report}</button></div>
+        <div className="mt-3 flex flex-wrap gap-3"><input aria-label={t.report} type="month" disabled={busy} value={month} onChange={(e) => { setMonth(e.target.value); setReport(null); }} className={`${field} max-w-52`} /><button type="button" onClick={loadReport} disabled={busy || !month} className="rounded-xl border border-violet-300/25 px-4 py-2 text-sm disabled:opacity-40">{t.report}</button></div>
         {report && <div className="mt-4 grid gap-3 sm:grid-cols-3">{[[t.gross, report.grossMinor], [t.fee, report.commissionMinor], [t.net, report.restaurantNetMinor]].map(([label, value]) => <div key={label} className="rounded-xl bg-black/20 p-3"><div className="text-xs text-white/50">{label}</div><strong className="mt-2 block">{(value / 100).toFixed(2)} €</strong></div>)}<p className="text-xs text-white/45">{report.payments} {t.payments}</p></div>}
       </div>
       {message && <p role="status" className="mt-4 text-sm text-violet-100">{message}</p>}

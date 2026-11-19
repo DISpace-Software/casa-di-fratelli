@@ -62,7 +62,13 @@ internal static class PreorderChecks
         await policy.SetPlatformAsync(new(true,1250),developer);
         await Reject(()=>service.QuoteAsync(booking.Id,key,request),403,"PREORDERS_DISABLED");
         await Reject(()=>policy.SetConsentAsync(new(true,false),owner),400,"PREORDER_TERMS_REQUIRED");
-        await policy.SetConsentAsync(new(true,true),owner);
+        var displayedTerms=JsonSerializer.SerializeToElement(await policy.AdminAsync());
+        var initialConsent=new PreorderConsentRequest(true,true,
+            displayedTerms.GetProperty("platform").GetProperty("CommissionBasisPoints").GetInt32(),
+            displayedTerms.GetProperty("termsVersion").GetString());
+        await Reject(()=>policy.SetConsentAsync(new(true,true),owner),409,"PREORDER_TERMS_CHANGED");
+        await Reject(()=>policy.SetConsentAsync(initialConsent with { ExpectedTermsVersion="preorders-v0" },owner),409,"PREORDER_TERMS_CHANGED");
+        await policy.SetConsentAsync(initialConsent,owner);
         var quote=await service.QuoteAsync(booking.Id,key,request);
         Check(quote.TotalMinor==2718 && quote.Currency=="EUR" && quote.Items[0].UnitMinor==1234,"Server prices must determine the entire EUR amount");
         Check(quote.Items[1].Kind=="Drink" && quote.ServeAtUtc==new DateTime(2026,11,20,17,30,0,DateTimeKind.Utc),"Menu department and restaurant timezone must determine serving details");
@@ -86,7 +92,29 @@ internal static class PreorderChecks
         request.IdempotencyKey=Guid.NewGuid();await Reject(()=>service.CreateDraftAsync(booking.Id,key,request),409,"PREORDER_BOOKING_UNCONFIRMED");booking.Status="Approved";await db.SaveChangesAsync();
         await policy.SetPlatformAsync(new(true,1500),developer);await Reject(()=>service.QuoteAsync(booking.Id,key,request),403,"PREORDERS_DISABLED");
         Check((await policy.ConsentAsync()).AcceptedCommissionBasisPoints==1250,"Developer fee changes must not silently change owner consent");
-        await policy.SetConsentAsync(new(true,true),owner);Check((await service.QuoteAsync(booking.Id,key,request)).TotalMinor==2718,"Owner may explicitly accept new commission");
+        var auditCountBeforeStaleAcceptance=await db.AuditLogs.CountAsync(x=>x.Action=="preorder-policy");
+        await Reject(()=>policy.SetConsentAsync(initialConsent,owner),409,"PREORDER_TERMS_CHANGED");
+        Check((await policy.ConsentAsync()).AcceptedCommissionBasisPoints==1250 &&
+            await db.AuditLogs.CountAsync(x=>x.Action=="preorder-policy")==auditCountBeforeStaleAcceptance,
+            "Accepting an outdated screen must not alter consent or append a successful consent audit");
+        await Reject(()=>service.QuoteAsync(booking.Id,key,request),403,"PREORDERS_DISABLED");
+        var currentConsent=initialConsent with { ExpectedCommissionBasisPoints=1500 };
+        await policy.SetConsentAsync(currentConsent,owner);Check((await service.QuoteAsync(booking.Id,key,request)).TotalMinor==2718,"Owner may explicitly accept new commission");
+        var consentSetting=await db.AppSettings.SingleAsync(x=>x.Key=="preorders:consent:v1");
+        var acceptedConsent=await policy.ConsentAsync();
+        foreach (var staleVersion in new string?[] { "preorders-v0", null })
+        {
+            consentSetting.Value=JsonSerializer.Serialize(acceptedConsent with { Version=staleVersion },new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            await db.SaveChangesAsync();
+            Check(!JsonSerializer.SerializeToElement(await policy.PublicAsync()).GetProperty("enabled").GetBoolean() &&
+                JsonSerializer.SerializeToElement(await policy.AdminAsync()).GetProperty("consentNeedsRenewal").GetBoolean(),
+                "Outdated or missing stored terms must disable public ordering and request renewed owner consent");
+            await Reject(()=>service.QuoteAsync(booking.Id,key,request),403,"PREORDERS_DISABLED");
+        }
+        await policy.SetConsentAsync(currentConsent,owner);
+        await policy.SetConsentAsync(new(false,false),owner);
+        Check(!(await policy.ConsentAsync()).OptedIn,"Owner must be able to withdraw consent without accepting the current terms");
+        await policy.SetConsentAsync(currentConsent,owner);
         Check((await db.ReservationPreorders.SingleAsync()).CommissionBasisPoints==1250,"Saved financial snapshots must not change retroactively");
         var guests=new GuestReservationService(db,brand,clock);Check((await guests.CancelAsync(booking.Id,key)).Kind==ReservationBookingResultKind.Success,"Unpaid drafts must not block timely booking cancellation");
         await Reject(()=>service.QuoteAsync(booking.Id,key,request),409,"PREORDER_BOOKING_INACTIVE");
