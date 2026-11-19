@@ -23,38 +23,26 @@ public sealed class PreorderPolicyService(AppDbContext db, TimeProvider time)
             ? JsonSerializer.Deserialize<T>(value, Json) ?? fallback : fallback;
     public Task<PreorderPlatformPolicy> PlatformAsync() => ReadAsync(PlatformKey, new PreorderPlatformPolicy());
     public Task<PreorderConsent> ConsentAsync() => ReadAsync(ConsentKey, new PreorderConsent());
-    public static bool HasCurrentConsent(PreorderPlatformPolicy platform, PreorderConsent consent) =>
-        consent.OptedIn && consent.AcceptedCommissionBasisPoints == platform.CommissionBasisPoints &&
-        string.Equals(consent.Version, CurrentTermsVersion, StringComparison.Ordinal);
     public async Task<object> PublicAsync()
     {
-        var platform = await PlatformAsync(); var consent = await ConsentAsync();
-        return new { enabled = platform.Enabled && HasCurrentConsent(platform, consent), cardPaymentsAvailable = false,
+        var platform = await PlatformAsync();
+        return new { enabled = platform.Enabled, activationMode = "developer", cardPaymentsAvailable = false,
             fullPrepaymentRequired = true, minLeadMinutes = 30, maxServeOffsetMinutes = 120, serveStepMinutes = 15 };
     }
     public async Task<object> AdminAsync()
     {
         var platform = await PlatformAsync(); var restaurant = await ConsentAsync();
-        return new { platform, restaurant, termsVersion = CurrentTermsVersion, consentNeedsRenewal = restaurant.OptedIn && !HasCurrentConsent(platform, restaurant),
+        // Legacy consent is retained for history only. The developer's saved policy
+        // is the single source of activation; changing fees never renews owner consent.
+        return new { platform, restaurant, enabled = platform.Enabled, activationMode = "developer",
+            termsVersion = CurrentTermsVersion, consentNeedsRenewal = false,
             cardPaymentsAvailable = false, settlementFrequency = "Monthly", currency = "EUR" };
     }
     public Task SetPlatformAsync(PreorderPlatformRequest request, AdminPrincipal actor) =>
         SaveAsync(PlatformKey, new PreorderPlatformPolicy(request.Enabled, request.CommissionBasisPoints), actor);
-    public async Task SetConsentAsync(PreorderConsentRequest request, AdminPrincipal actor)
-    {
-        if (request.OptedIn && !request.AcceptFullPrepaymentAndMonthlySettlement)
-            throw new PreorderException(400, "PREORDER_TERMS_REQUIRED", "The owner must accept full prepayment and monthly settlement.");
-        await using var transaction = await RestaurantWriteTransaction.BeginAsync(db);
-        var policy = await PlatformAsync();
-        if (request.OptedIn && (request.ExpectedCommissionBasisPoints != policy.CommissionBasisPoints ||
-            !string.Equals(request.ExpectedTermsVersion, CurrentTermsVersion, StringComparison.Ordinal)))
-            throw new PreorderException(409, "PREORDER_TERMS_CHANGED", "The preorder terms changed. Reload and accept the displayed commission and terms.");
-        await SaveUnderLockAsync(ConsentKey, new PreorderConsent(request.OptedIn,
-            request.OptedIn ? time.GetUtcNow().UtcDateTime : null, request.OptedIn ? actor.Id : null,
-            Version: CurrentTermsVersion,
-            AcceptedCommissionBasisPoints: request.OptedIn ? policy.CommissionBasisPoints : null), actor);
-        await transaction.CommitAsync();
-    }
+    public Task SetConsentAsync(PreorderConsentRequest request, AdminPrincipal actor) =>
+        throw new PreorderException(410, "PREORDER_MANAGED_BY_PLATFORM",
+            "Preorders and commission are managed by the platform developer. Owner confirmation is no longer required.");
     private async Task SaveAsync<T>(string key, T value, AdminPrincipal actor)
     {
         await using var transaction = await RestaurantWriteTransaction.BeginAsync(db);

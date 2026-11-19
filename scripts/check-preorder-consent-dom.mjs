@@ -102,82 +102,120 @@ async function test(name, setup, exercise) {
 }
 
 try {
-  await test("A changed commission invalidates owner acceptance and requires explicit acceptance of the refreshed terms", (context) => {
-    context.current = settings(1250, "preorders-v1");
-    context.refresh = deferred();
-    context.changed = false;
-    context.puts = 0;
+  await test("Developer activation alone makes preorders available after saving, with no owner acceptance request", (context) => {
+    context.role = "Developer";
+    context.saved = deferred();
     context.handler = (request) => {
-      if (request.path === "/api/preorders/settings") return context.changed ? context.refresh.promise : json(context.current);
-      if (request.path === "/api/preorders/consent" && request.method === "PUT") {
-        context.puts += 1;
-        if (context.puts === 1) {
-          context.changed = true;
-          return json({ code: "PREORDER_TERMS_CHANGED", message: "Please review the current terms." }, 409);
-        }
-        return json(settings(1750, "preorders-v2", true));
-      }
+      if (request.path === "/api/preorders/settings") return json({ ...settings(1000, "old-terms"), platform: { enabled: false, commissionBasisPoints: 1000 } });
+      if (request.path === "/api/preorders/platform" && request.method === "PUT") return context.saved.promise;
       return null;
     };
-  }, async ({ container, click, checkbox, saveButton, consentRequests, requests, refresh, act, flush }) => {
-    assert.match(container.textContent, /Agreed commission \(%\): 12\.5%/);
-    assert.match(container.querySelector('[data-preorder-status="waiting"]').textContent, /To show preorders to guests.*12\.5%/);
-    await click(checkbox("I want this restaurant"));
-    assert.ok(container.querySelector('[data-preorder-status="waiting"]'), "An unsaved opt-in must not claim availability");
-    assert.equal(saveButton().disabled, true, "Opting in alone must not authorize the terms");
-    await click(checkbox("I accept full prepayment"));
-    assert.equal(saveButton().disabled, false);
-    await click(saveButton());
-    assert.deepEqual(consentRequests().map((request) => request.body), [{
-      optedIn: true,
-      acceptFullPrepaymentAndMonthlySettlement: true,
-      expectedCommissionBasisPoints: 1250,
-      expectedTermsVersion: "preorders-v1",
-    }], "The first request must bind consent to the terms the owner actually saw");
-    assert.ok(requests.filter((request) => request.path === "/api/preorders/settings").length >= 3, "A stale response must trigger a fresh settings request after StrictMode's initial loads");
-    assert.equal(saveButton().disabled, true, "Saving must remain blocked during the terms refresh");
-    assert.equal(container.querySelector('input[type="month"]').disabled, true);
-    await click(saveButton());
-    assert.equal(consentRequests().length, 1, "The stale consent must never be silently resubmitted");
-
-    await act(async () => { refresh.resolve(json(settings(1750, "preorders-v2", true, true))); await tick(); });
-    await flush();
-    assert.match(container.textContent, /Agreed commission \(%\): 17\.5%/);
-    assert.equal(checkbox("I accept full prepayment").checked, false, "Accepting the old terms does not accept the replacement terms");
+  }, async ({ container, click, checkbox, submit, saveButton, requests, saved, act, flush }) => {
+    assert.ok(container.querySelector('[data-preorder-status="disabled"]'));
+    assert.equal(checkbox("I accept full prepayment"), undefined);
+    await click(checkbox("Enabled by the platform"));
+    assert.ok(container.querySelector('[data-preorder-status="disabled"]'), "Unsaved activation must not claim availability");
+    assert.equal(requests.some((request) => request.method === "PUT"), false);
+    await submit();
     assert.equal(saveButton().disabled, true);
-    assert.match(container.textContent, /(?:commission|terms).*changed|(?:new|updated) terms/i);
-    assert.match(container.querySelector('[data-preorder-status="renewal"]').textContent, /17\.5%/);
-    await click(saveButton());
-    assert.equal(consentRequests().length, 1, "Refreshed settings still require the owner's new checkbox action");
-
-    await click(checkbox("I accept full prepayment"));
-    await click(saveButton());
+    assert.equal(checkbox("Enabled by the platform").disabled, true);
+    assert.equal(container.querySelector('input[type="number"]').disabled, true);
+    assert.ok(container.querySelector('[data-preorder-status="disabled"]'), "Pending saves must retain the server state");
+    await act(async () => { saved.resolve(json(settings(1000, "old-terms", false))); await tick(); });
     await flush();
-    assert.deepEqual(consentRequests().map((request) => request.body.expectedCommissionBasisPoints), [1250, 1750]);
-    assert.deepEqual(consentRequests().map((request) => request.body.expectedTermsVersion), ["preorders-v1", "preorders-v2"]);
-    assert.equal(consentRequests()[1].body.acceptFullPrepaymentAndMonthlySettlement, true);
+    const status = container.querySelector('[data-preorder-status="available"]');
+    assert.ok(status, "Developer activation must work when the historical owner optedIn field is false");
+    assert.match(status.textContent, /Unpaid drafts only.*card payment is unavailable/);
+    assert.match(status.textContent, /After a new reservation/);
     assert.equal(container.querySelector('[role="status"]').textContent, "Saved");
-    assert.equal(checkbox("I accept full prepayment").checked, false);
-    assert.match(container.querySelector('[data-preorder-status="available"]').textContent, /Unpaid drafts only.*card payment is unavailable/);
-    assert.match(container.querySelector('[data-preorder-status="available"]').textContent, /After a new reservation/);
+    assert.deepEqual(requests.filter((request) => request.method === "PUT").map(({ path, body }) => ({ path, body })), [{
+      path: "/api/preorders/platform", body: { enabled: true, commissionBasisPoints: 1000 },
+    }]);
   });
 
-  await test("A pending monthly report locks the selected month and settings until the response arrives", (context) => {
+  await test("Changing the agreed commission keeps availability independent of historical consent and terms", (context) => {
+    context.role = "Developer";
+    context.handler = (request) => {
+      if (request.path === "/api/preorders/settings") return json(settings(1000, "old-terms", true, true));
+      if (request.path === "/api/preorders/platform" && request.method === "PUT") return json({
+        ...settings(1800, "new-terms", true, true), restaurant: { optedIn: true, acceptedCommissionBasisPoints: 1000, version: "old-terms" },
+      });
+      return null;
+    };
+  }, async ({ container, requests, input, submit, flush }) => {
+    assert.ok(container.querySelector('[data-preorder-status="available"]'), "Historical renewal flags must not disable availability");
+    await input(container.querySelector('input[type="number"]'), "18");
+    assert.ok(container.querySelector('[data-preorder-status="available"]'));
+    await submit();
+    await flush();
+    assert.equal(container.querySelector('input[type="number"]').value, "18");
+    assert.ok(container.querySelector('[data-preorder-status="available"]'));
+    assert.doesNotMatch(container.textContent, /waiting for owner|consent must be renewed|owner must accept/i);
+    assert.deepEqual(requests.filter((request) => request.method === "PUT").map(({ path, body }) => ({ path, body })), [{
+      path: "/api/preorders/platform", body: { enabled: true, commissionBasisPoints: 1800 },
+    }]);
+  });
+
+  await test("Developer disabling hides preorders only after the saved response", (context) => {
+    context.role = "Developer";
+    context.handler = (request) => {
+      if (request.path === "/api/preorders/settings") return json(settings(1000, "preorders-v1", true));
+      if (request.path === "/api/preorders/platform") return json({ ...settings(1000, "preorders-v1", true), platform: { enabled: false, commissionBasisPoints: 1000 } });
+      return null;
+    };
+  }, async ({ container, click, checkbox, submit, requests, flush }) => {
+    await click(checkbox("Enabled by the platform"));
+    assert.ok(container.querySelector('[data-preorder-status="available"]'));
+    await submit();
+    await flush();
+    assert.match(container.querySelector('[data-preorder-status="disabled"]').textContent, /Guests do not see the preorder offer/);
+    assert.equal(requests.find((request) => request.method === "PUT").body.enabled, false);
+    assert.equal(requests.some((request) => request.path === "/api/preorders/consent"), false);
+  });
+
+  await test("A failed activation save keeps the effective status disabled", (context) => {
+    context.role = "Developer";
+    context.handler = (request) => {
+      if (request.path === "/api/preorders/settings") return json({ ...settings(1000, "preorders-v1"), platform: { enabled: false, commissionBasisPoints: 1000 } });
+      if (request.path === "/api/preorders/platform") return json({ message: "Unavailable" }, 503);
+      return null;
+    };
+  }, async ({ container, click, checkbox, submit, flush }) => {
+    await click(checkbox("Enabled by the platform"));
+    await submit();
+    await flush();
+    assert.ok(container.querySelector('[data-preorder-status="disabled"]'));
+    assert.match(container.querySelector('[role="status"]').textContent, /Settings were not saved/);
+  });
+
+  await test("Owner sees active status and the agreed fee without activation or acceptance controls", (context) => {
+    context.handler = (request) => request.path === "/api/preorders/settings" ? json(settings(1000, "old-terms", false, true)) : null;
+  }, async ({ container, requests, saveButton }) => {
+    assert.ok(container.querySelector('[data-preorder-status="available"]'));
+    assert.match(container.textContent, /Agreed commission \(%\): 10%/);
+    assert.match(container.textContent, /No additional confirmation is required/);
+    assert.equal(container.querySelector("form"), null);
+    assert.equal(container.querySelector('input[type="checkbox"]'), null);
+    assert.equal(container.querySelector('input[type="number"]'), null);
+    assert.equal(saveButton(), null);
+    assert.ok(container.querySelector('input[type="month"]'));
+    assert.equal(requests.some((request) => request.method !== "GET"), false);
+  });
+
+  await test("Owner monthly reports stay read-only and lock the selected month while loading", (context) => {
     context.report = deferred();
     context.handler = (request) => {
       if (request.path === "/api/preorders/settings") return json(settings(1250, "preorders-v1"));
       if (request.path === "/api/preorders/settlements") return context.report.promise;
       return null;
     };
-  }, async ({ container, requests, report, input, click, saveButton, checkbox, act, flush }) => {
+  }, async ({ container, requests, report, input, click, act, flush }) => {
     const monthInput = container.querySelector('input[type="month"]');
     await input(monthInput, "2026-10");
     const reportButton = [...container.querySelectorAll("button")].find((button) => button.textContent === "Monthly report");
     await click(reportButton);
-    assert.equal(monthInput.disabled, true, "Month must remain fixed while its report is loading");
+    assert.equal(monthInput.disabled, true);
     assert.equal(reportButton.disabled, true);
-    assert.equal(saveButton().disabled, true);
-    assert.equal(checkbox("I want this restaurant").disabled, true);
     assert.deepEqual(requests.filter((request) => request.path === "/api/preorders/settlements").map((request) => request.search), ["?month=2026-10"]);
     await click(reportButton);
     assert.equal(requests.filter((request) => request.path === "/api/preorders/settlements").length, 1);
@@ -189,81 +227,33 @@ try {
     assert.match(container.textContent, /105\.00 €/);
     assert.match(container.textContent, /2 confirmed payments/);
     await input(monthInput, "2026-11");
-    assert.doesNotMatch(container.textContent, /120\.00 €/,
-      "Changing the month must clear the previous month's totals");
+    assert.doesNotMatch(container.textContent, /120\.00 €/);
+    assert.equal(requests.some((request) => request.method !== "GET"), false, "Owner report browsing must never submit settings or consent");
   });
 
-  await test("Developer changes update the platform policy without submitting owner acceptance", (context) => {
-    context.role = "Developer";
-    context.handler = (request) => {
-      if (request.path === "/api/preorders/settings") return json(settings(1250, "preorders-v1"));
-      if (request.path === "/api/preorders/platform" && request.method === "PUT") return json(settings(1800, "preorders-v1"));
-      return null;
-    };
-  }, async ({ container, requests, input, submit, saveButton, checkbox, flush }) => {
-    assert.equal(checkbox("I accept full prepayment"), undefined);
-    assert.match(container.querySelector('[data-preorder-status="waiting"]').textContent, /Profile → SeatMap · Preorders.*12\.5%/);
-    await input(container.querySelector('input[type="number"]'), "18");
-    assert.equal(container.querySelector('input[type="number"]').value, "18");
-    assert.match(container.querySelector('[data-preorder-status="waiting"]').textContent, /12\.5%/,
-      "The activation summary must show the saved commission until the platform save succeeds");
-    assert.equal(saveButton().disabled, false);
-    // happy-dom's decimal-step validity uses floating-point modulo; submit the
-    // form event directly to exercise React's payload without testing that shim.
-    await submit();
-    await flush();
-    const writes = requests.filter((request) => request.method === "PUT");
-    assert.deepEqual(writes.map((request) => ({ path: request.path, body: request.body })), [{
-      path: "/api/preorders/platform",
-      body: { enabled: true, commissionBasisPoints: 1800 },
-    }]);
-    assert.equal(container.querySelector('[role="status"]').textContent, "Saved");
-    assert.match(container.querySelector('[data-preorder-status="waiting"]').textContent, /18%/);
-    assert.equal(container.querySelector('[data-preorder-status="available"]'), null,
-      "Saving Developer permission must not imply that the owner accepted the service");
-  });
-
-  await test("A platform toggle changes app availability only after it is saved and still requires owner consent", (context) => {
-    context.role = "Developer";
-    context.handler = (request) => {
-      if (request.path === "/api/preorders/settings") return json({ ...settings(1000, "preorders-v1"), platform: { enabled: false, commissionBasisPoints: 1000 } });
-      if (request.path === "/api/preorders/platform" && request.method === "PUT") return json(settings(1000, "preorders-v1"));
-      return null;
-    };
-  }, async ({ container, requests, click, checkbox, submit, flush }) => {
-    assert.match(container.querySelector('[data-preorder-status="disabled"]').textContent, /Enable the platform switch below and save/);
-    await click(checkbox("Enabled by the platform"));
-    assert.ok(container.querySelector('[data-preorder-status="disabled"]'), "Unsaved platform changes must not change the saved status");
-    assert.equal(requests.some((request) => request.method === "PUT"), false);
-    await submit();
-    await flush();
-    assert.match(container.querySelector('[data-preorder-status="waiting"]').textContent, /The owner must open.*10%/);
-    assert.deepEqual(requests.filter((request) => request.method === "PUT").map((request) => request.path), ["/api/preorders/platform"]);
-  });
-
-  await test("An owner sees the missing platform step even when their saved consent is current", (context) => {
+  await test("Owner disabled status directs configuration to DEV management without an owner confirmation step", (context) => {
     context.handler = (request) => request.path === "/api/preorders/settings"
       ? json({ ...settings(1000, "preorders-v1", true), platform: { enabled: false, commissionBasisPoints: 1000 } }) : null;
   }, async ({ container, requests }) => {
-    const status = container.querySelector('[data-preorder-status="disabled"]');
-    assert.match(status.textContent, /DEV management → Services & commission/);
-    assert.match(status.textContent, /Guests do not see the preorder offer yet/);
+    assert.match(container.querySelector('[data-preorder-status="disabled"]').textContent, /DEV management → Services & commission/);
+    assert.equal(container.querySelector("form"), null);
+    assert.equal(container.querySelector('input[type="checkbox"]'), null);
     assert.equal(requests.some((request) => request.method !== "GET"), false);
   });
 
-  for (const [language, title, nextStep] of [
-    ["bg", "Очаква съгласие от собственика", "Профил → SeatMap · Предварителни поръчки"],
-    ["ru", "Ждём согласия владельца", "Профиль → SeatMap · Предзаказы"],
+  for (const [language, title, readonly] of [
+    ["bg", "Достъпно в приложението", "Не е нужно допълнително потвърждение."],
+    ["ru", "Доступно в приложении", "Дополнительное подтверждение не требуется."],
   ]) {
-    await test(`${language} developer status explains the owner's exact activation path`, (context) => {
-      context.role = "Developer";
+    await test(`${language} owner status is active without historical acceptance and explains read-only management`, (context) => {
       context.language = language;
-      context.handler = (request) => request.path === "/api/preorders/settings" ? json(settings(1000, "preorders-v1")) : null;
+      context.handler = (request) => request.path === "/api/preorders/settings" ? json(settings(1000, "old-terms", false, true)) : null;
     }, async ({ container, requests }) => {
-      const status = container.querySelector('[data-preorder-status="waiting"]');
+      const status = container.querySelector('[data-preorder-status="available"]');
       assert.equal(status.querySelector("h4").textContent, title);
-      assert.ok(status.textContent.includes(nextStep));
-      assert.ok(status.textContent.includes("10%"));
+      assert.ok(container.textContent.includes(readonly));
+      assert.ok(container.textContent.includes("10%"));
+      assert.equal(container.querySelector('input[type="checkbox"]'), null);
       assert.equal(requests.some((request) => request.method !== "GET"), false);
     });
   }

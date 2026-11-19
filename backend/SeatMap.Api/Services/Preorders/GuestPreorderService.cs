@@ -39,8 +39,8 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
     private static PreorderException Missing() => new(404, "RESERVATION_NOT_FOUND", "Reservation not found or access is invalid.");
     private async Task RequireEnabledAsync()
     {
-        var platform = await policies.PlatformAsync(); var consent = await policies.ConsentAsync();
-        if (!platform.Enabled || !PreorderPolicyService.HasCurrentConsent(platform, consent))
+        var platform = await policies.PlatformAsync();
+        if (!platform.Enabled)
             throw new PreorderException(403, "PREORDERS_DISABLED", "This restaurant does not offer preorders.");
     }
     private static void ValidateItems(PreorderDraftRequest request)

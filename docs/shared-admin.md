@@ -49,19 +49,25 @@ The header displays the selected restaurant name and tenant ID.
 
 For Developer, this replaces the standalone Admins and Maintenance navigation
 entries and the preorder controls in Profile. Owner retains Admins/branding,
-Maintenance, and preorder consent in Profile. Administrator (including the existing
+Maintenance, and read-only preorder availability, agreed commission, and monthly
+reports in Profile. Administrator (including the existing
 Manager alias) has standalone Admins and Maintenance. Administrator can manage
 Administrator, Waiter, Kitchen, and Bar accounts, but cannot create, promote to,
-modify, or delete Owner/Developer accounts. Owner and Developer permissions are
-unchanged. Unrecognized stored roles cannot authenticate as administrators.
+modify, or delete Owner/Developer accounts. Account-management permissions for
+Owner and Developer are unchanged. Unrecognized stored roles cannot authenticate as administrators.
 Normal operational tools remain in their existing sections. The API enforces these same role boundaries; restaurant scoping is unchanged.
-This change does not enable
-preorders, alter commissions, accept owner terms, or connect card payments.
+The Developer's saved preorder switch is the sole activation control after
+agreement with the restaurant. Saving an enabled switch makes the feature
+available in the mobile app; historical Owner consent and terms do not gate
+activation or commission changes. Owner has no additional confirmation step.
+This navigation change does not itself alter saved settings or connect card
+payments. Card acquiring and real payouts remain separate, unavailable services.
 
 Automated coverage: `scripts/check-dev-management-dom.mjs` mounts the actual
 AdminPage with an isolated simulated DOM and mocked HTTP. It is not visual
-browser verification. The existing preorder-consent DOM checks continue to
-cover stale terms and monthly report state.
+browser verification. `scripts/check-preorder-consent-dom.mjs` now covers
+Developer-only activation, saved-state reporting, commission changes independent
+of historical consent, read-only Owner access, and monthly report state.
 
 ## Cofein branding
 

@@ -193,7 +193,7 @@ try {
     assert.equal(container.querySelector('input[type="month"]'), null);
   });
 
-  await test("Owner retains standalone administration and maintenance plus consent in Profile", { role: "Owner" }, async ({ container, button, click, language, devNav, heading, apiCount, userRow, rowButton, roleValues }) => {
+  await test("Owner retains standalone administration and maintenance plus read-only preorder status and reports in Profile", { role: "Owner" }, async ({ container, button, click, language, devNav, heading, apiCount, userRow, rowButton, roleValues }) => {
     assert.equal(button("DEV управление"), undefined);
     assert.ok(button("Админи"));
     assert.ok(button("Поддръжка"));
@@ -212,8 +212,14 @@ try {
     assert.equal(button("Clear reservations and orders"), undefined);
     await click(container.querySelector("button.admin-profile-anchor"));
     assert.ok(heading("SeatMap · Preorders"));
-    assert.ok([...container.querySelectorAll("label")].some((label) => label.textContent.includes("I want this restaurant to accept preorders")));
-    assert.equal([...container.querySelectorAll("label")].some((label) => label.textContent.includes("Enabled by the platform")), false);
+    const preorderSection = heading("SeatMap · Preorders").closest("section");
+    assert.ok(preorderSection.querySelector('[data-preorder-status="disabled"]'));
+    assert.match(preorderSection.textContent, /Agreed commission \(%\): 12%/);
+    assert.match(preorderSection.textContent, /No additional confirmation is required/);
+    assert.equal(preorderSection.querySelector("form"), null);
+    assert.equal(preorderSection.querySelector('input[type="checkbox"]'), null);
+    assert.equal(preorderSection.querySelector('input[type="number"]'), null);
+    assert.ok(preorderSection.querySelector('input[type="month"]'));
   });
 
   for (const managerRole of ["Administrator", "manager"]) {
@@ -249,7 +255,7 @@ try {
     await click(rowButton(editForm, "Cancel"));
     assert.ok(userRow("Fixture manager"));
     await click(container.querySelector("button.admin-profile-anchor"));
-    assert.equal(heading("SeatMap · Preorders"), undefined, "Manager access to accounts does not grant owner preorder consent");
+    assert.equal(heading("SeatMap · Preorders"), undefined, "Manager access to accounts does not grant owner preorder reports");
   });
   }
 

@@ -59,16 +59,23 @@ internal static class PreorderChecks
         await Reject(()=>service.QuoteAsync(booking.Id,key,request),403,"PREORDERS_DISABLED");
         var developer=new AdminPrincipal(1,"Developer","dev@example.test",AdminRoleAccess.Developer);
         var owner=new AdminPrincipal(2,"Owner","owner@example.test",AdminRoleAccess.Owner);
+        Check(!JsonSerializer.SerializeToElement(await policy.PublicAsync()).GetProperty("enabled").GetBoolean(),
+            "Preorders must remain off until the developer enables the restaurant");
         await policy.SetPlatformAsync(new(true,1250),developer);
-        await Reject(()=>service.QuoteAsync(booking.Id,key,request),403,"PREORDERS_DISABLED");
-        await Reject(()=>policy.SetConsentAsync(new(true,false),owner),400,"PREORDER_TERMS_REQUIRED");
-        var displayedTerms=JsonSerializer.SerializeToElement(await policy.AdminAsync());
-        var initialConsent=new PreorderConsentRequest(true,true,
-            displayedTerms.GetProperty("platform").GetProperty("CommissionBasisPoints").GetInt32(),
-            displayedTerms.GetProperty("termsVersion").GetString());
-        await Reject(()=>policy.SetConsentAsync(new(true,true),owner),409,"PREORDER_TERMS_CHANGED");
-        await Reject(()=>policy.SetConsentAsync(initialConsent with { ExpectedTermsVersion="preorders-v0" },owner),409,"PREORDER_TERMS_CHANGED");
-        await policy.SetConsentAsync(initialConsent,owner);
+        var publicSettings=JsonSerializer.SerializeToElement(await policy.PublicAsync());
+        var adminSettings=JsonSerializer.SerializeToElement(await policy.AdminAsync());
+        Check(publicSettings.GetProperty("enabled").GetBoolean() && publicSettings.GetProperty("activationMode").GetString()=="developer" &&
+            adminSettings.GetProperty("enabled").GetBoolean() && adminSettings.GetProperty("activationMode").GetString()=="developer" &&
+            !adminSettings.GetProperty("consentNeedsRenewal").GetBoolean(),
+            "Developer activation must immediately enable public and admin settings without owner confirmation");
+        Check(!await db.AppSettings.AnyAsync(x=>x.Key=="preorders:consent:v1"),
+            "Developer activation must not fabricate a legacy owner consent record");
+        var auditCountBeforeLegacyWrite=await db.AuditLogs.CountAsync(x=>x.Action=="preorder-policy");
+        foreach (var obsoleteRequest in new[] { new PreorderConsentRequest(true,false), new(true,true,1250,PreorderPolicyService.CurrentTermsVersion), new(false,false) })
+            await Reject(()=>policy.SetConsentAsync(obsoleteRequest,owner),410,"PREORDER_MANAGED_BY_PLATFORM");
+        Check(!await db.AppSettings.AnyAsync(x=>x.Key=="preorders:consent:v1") &&
+            await db.AuditLogs.CountAsync(x=>x.Action=="preorder-policy")==auditCountBeforeLegacyWrite,
+            "Obsolete owner requests must neither create consent nor append successful policy audits");
         var quote=await service.QuoteAsync(booking.Id,key,request);
         Check(quote.TotalMinor==2718 && quote.Currency=="EUR" && quote.Items[0].UnitMinor==1234,"Server prices must determine the entire EUR amount");
         Check(quote.Items[1].Kind=="Drink" && quote.ServeAtUtc==new DateTime(2026,11,20,17,30,0,DateTimeKind.Utc),"Menu department and restaurant timezone must determine serving details");
@@ -90,38 +97,59 @@ internal static class PreorderChecks
         booking.Status="AwaitingEmailConfirmation";await db.SaveChangesAsync();
         Check(!(await service.QuoteAsync(booking.Id,key,request)).BookingConfirmed,"Pending booking may preview but cannot submit a preorder");
         request.IdempotencyKey=Guid.NewGuid();await Reject(()=>service.CreateDraftAsync(booking.Id,key,request),409,"PREORDER_BOOKING_UNCONFIRMED");booking.Status="Approved";await db.SaveChangesAsync();
-        await policy.SetPlatformAsync(new(true,1500),developer);await Reject(()=>service.QuoteAsync(booking.Id,key,request),403,"PREORDERS_DISABLED");
-        Check((await policy.ConsentAsync()).AcceptedCommissionBasisPoints==1250,"Developer fee changes must not silently change owner consent");
-        var auditCountBeforeStaleAcceptance=await db.AuditLogs.CountAsync(x=>x.Action=="preorder-policy");
-        await Reject(()=>policy.SetConsentAsync(initialConsent,owner),409,"PREORDER_TERMS_CHANGED");
-        Check((await policy.ConsentAsync()).AcceptedCommissionBasisPoints==1250 &&
-            await db.AuditLogs.CountAsync(x=>x.Action=="preorder-policy")==auditCountBeforeStaleAcceptance,
-            "Accepting an outdated screen must not alter consent or append a successful consent audit");
-        await Reject(()=>service.QuoteAsync(booking.Id,key,request),403,"PREORDERS_DISABLED");
-        var currentConsent=initialConsent with { ExpectedCommissionBasisPoints=1500 };
-        await policy.SetConsentAsync(currentConsent,owner);Check((await service.QuoteAsync(booking.Id,key,request)).TotalMinor==2718,"Owner may explicitly accept new commission");
-        var consentSetting=await db.AppSettings.SingleAsync(x=>x.Key=="preorders:consent:v1");
-        var acceptedConsent=await policy.ConsentAsync();
-        foreach (var staleVersion in new string?[] { "preorders-v0", null })
+        // Historical records can exist after upgrading. They are retained exactly,
+        // but are no longer an activation gate or an editable owner setting.
+        var historicalConsent=new PreorderConsent(true,clock.Now.UtcDateTime,owner.Id,PreorderPolicyService.CurrentTermsVersion,1250);
+        var consentSetting=new AppSetting { Key="preorders:consent:v1", Value=JsonSerializer.Serialize(historicalConsent,new JsonSerializerOptions(JsonSerializerDefaults.Web)) };
+        db.AppSettings.Add(consentSetting);await db.SaveChangesAsync();
+        var historicalJson=consentSetting.Value;
+        await policy.SetPlatformAsync(new(true,1500),developer);
+        Check((await service.QuoteAsync(booking.Id,key,request)).TotalMinor==2718 &&
+            JsonSerializer.SerializeToElement(await policy.PublicAsync()).GetProperty("enabled").GetBoolean() &&
+            !JsonSerializer.SerializeToElement(await policy.AdminAsync()).GetProperty("consentNeedsRenewal").GetBoolean(),
+            "Changing the platform fee must keep preorders enabled without renewed owner acceptance");
+        Check((await policy.ConsentAsync())==historicalConsent && consentSetting.Value==historicalJson,
+            "Developer fee changes must preserve historical owner consent exactly");
+        var newDraft=await service.CreateDraftAsync(booking.Id,key,request);
+        var newStored=await db.ReservationPreorders.SingleAsync(x=>x.Id==newDraft.Id);
+        Check(newStored.CommissionBasisPoints==1500 && newStored.CommissionMinor==408 && newStored.RestaurantNetMinor==2310 &&
+            (await db.ReservationPreorders.SingleAsync(x=>x.Id==draft.Id)).CommissionBasisPoints==1250,
+            "New drafts must use the current fee while previous drafts keep their financial snapshot");
+        foreach (var legacyConsent in new[] { historicalConsent with { Version="preorders-v0" }, historicalConsent with { Version=null }, new PreorderConsent() })
         {
-            consentSetting.Value=JsonSerializer.Serialize(acceptedConsent with { Version=staleVersion },new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            consentSetting.Value=JsonSerializer.Serialize(legacyConsent,new JsonSerializerOptions(JsonSerializerDefaults.Web));
             await db.SaveChangesAsync();
-            Check(!JsonSerializer.SerializeToElement(await policy.PublicAsync()).GetProperty("enabled").GetBoolean() &&
-                JsonSerializer.SerializeToElement(await policy.AdminAsync()).GetProperty("consentNeedsRenewal").GetBoolean(),
-                "Outdated or missing stored terms must disable public ordering and request renewed owner consent");
-            await Reject(()=>service.QuoteAsync(booking.Id,key,request),403,"PREORDERS_DISABLED");
+            Check(JsonSerializer.SerializeToElement(await policy.PublicAsync()).GetProperty("enabled").GetBoolean() &&
+                !JsonSerializer.SerializeToElement(await policy.AdminAsync()).GetProperty("consentNeedsRenewal").GetBoolean() &&
+                (await service.QuoteAsync(booking.Id,key,request)).TotalMinor==2718,
+                "Outdated, missing or withdrawn legacy consent must not override developer activation");
         }
-        await policy.SetConsentAsync(currentConsent,owner);
-        await policy.SetConsentAsync(new(false,false),owner);
-        Check(!(await policy.ConsentAsync()).OptedIn,"Owner must be able to withdraw consent without accepting the current terms");
-        await policy.SetConsentAsync(currentConsent,owner);
-        Check((await db.ReservationPreorders.SingleAsync()).CommissionBasisPoints==1250,"Saved financial snapshots must not change retroactively");
+        consentSetting.Value=historicalJson;await db.SaveChangesAsync();
+        var auditCountBeforeObsoleteUpdate=await db.AuditLogs.CountAsync(x=>x.Action=="preorder-policy");
+        await Reject(()=>policy.SetConsentAsync(new(false,false),owner),410,"PREORDER_MANAGED_BY_PLATFORM");
+        Check((await policy.ConsentAsync())==historicalConsent &&
+            await db.AuditLogs.CountAsync(x=>x.Action=="preorder-policy")==auditCountBeforeObsoleteUpdate,
+            "An obsolete withdrawal must not alter historical consent or audit a successful change");
+        await policy.SetPlatformAsync(new(false,1250),developer);
+        Check(!JsonSerializer.SerializeToElement(await policy.PublicAsync()).GetProperty("enabled").GetBoolean() &&
+            !JsonSerializer.SerializeToElement(await policy.AdminAsync()).GetProperty("enabled").GetBoolean(),
+            "Developer disabling must take effect even when historical consent matches the fee and terms");
+        await Reject(()=>service.QuoteAsync(booking.Id,key,request),403,"PREORDERS_DISABLED");
+        request.IdempotencyKey=Guid.NewGuid();await Reject(()=>service.CreateDraftAsync(booking.Id,key,request),403,"PREORDERS_DISABLED");
+        await Reject(()=>service.CheckoutAsync(booking.Id,draft.Id,key),403,"PREORDERS_DISABLED");
+        Check(await db.ReservationPreorders.CountAsync()==2 && !await db.PreorderPayments.AnyAsync() && !await db.DiningOrders.AnyAsync(),
+            "Disabling preorders must prevent new drafts and preserve existing unpaid carts without fulfillment");
+        await policy.SetPlatformAsync(new(true,1500),developer);
         var guests=new GuestReservationService(db,brand,clock);Check((await guests.CancelAsync(booking.Id,key)).Kind==ReservationBookingResultKind.Success,"Unpaid drafts must not block timely booking cancellation");
         await Reject(()=>service.QuoteAsync(booking.Id,key,request),409,"PREORDER_BOOKING_INACTIVE");
         await using var otherConnection=new SqliteConnection("Data Source=:memory:");await otherConnection.OpenAsync();
         await using var other=new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseSqlite(otherConnection).Options);await other.Database.EnsureCreatedAsync();
-        var otherPolicy=new PreorderPolicyService(other,clock);Check(!(await otherPolicy.PlatformAsync()).Enabled && !(await otherPolicy.ConsentAsync()).OptedIn,"Restaurant policy must stay isolated in each database");
-        Check(await db.AuditLogs.CountAsync(x=>x.Action=="preorder-policy")>=4,"Policy and consent changes must be audited");
+        var otherPolicy=new PreorderPolicyService(other,clock);Check(!(await otherPolicy.PlatformAsync()).Enabled &&
+            !JsonSerializer.SerializeToElement(await otherPolicy.PublicAsync()).GetProperty("enabled").GetBoolean() && !(await otherPolicy.ConsentAsync()).OptedIn,
+            "Restaurant policy must stay isolated in each database");
+        var policyAudits=await db.AuditLogs.Where(x=>x.Action=="preorder-policy").ToListAsync();
+        Check(policyAudits.Count==4 && policyAudits.All(x=>x.EntityId=="preorders:platform:v1" && x.AdminUserId==developer.Id),
+            "Every platform change must be audited under the developer, with no fabricated owner acceptance");
         db.AdminUsers.AddRange(new AdminUser { Id=1,Name="Developer",Email="dev@checks.test",Role=AdminRoleAccess.Developer },new AdminUser { Id=2,Name="Owner",Email="owner@checks.test",Role=AdminRoleAccess.Owner });
         db.AdminSessions.AddRange(new AdminSession {AdminUserId=1,TokenHash=AdminAuthService.HashToken("developer-check"),ExpiresAtUtc=DateTime.UtcNow.AddHours(1)},new AdminSession {AdminUserId=2,TokenHash=AdminAuthService.HashToken("owner-check"),ExpiresAtUtc=DateTime.UtcNow.AddHours(1)});
         await db.SaveChangesAsync();
@@ -137,8 +165,21 @@ internal static class PreorderChecks
             return invoked ? 200 : executing.Result is StatusCodeResult code ? code.StatusCode : (executing.Result as ObjectResult)?.StatusCode ?? 500;
         }
         Check(await Authorize("Platform","developer-check")==200 && await Authorize("Platform","owner-check")==403,"Only the developer can activate the platform feature or change fees");
-        Check(await Authorize("Consent","owner-check")==200 && await Authorize("Consent","developer-check")==403,"Developer must not impersonate owner consent");
+        Check(await Authorize("Consent","owner-check")==200 && await Authorize("Consent","developer-check")==403,"Legacy owner route must retain its existing authentication boundary");
+        var controller=new PreorderAdministrationController(policy,db,brand) { ControllerContext=new ControllerContext { HttpContext=new DefaultHttpContext() } };
+        controller.HttpContext.Items["AdminUser"]=owner;
+        try { await controller.Consent(new(false,false)); throw new Exception("Legacy consent endpoint must reject writes"); }
+        catch (PreorderException error) {
+            var exceptionContext=new ExceptionContext(new ActionContext(controller.HttpContext,new RouteData(),new ActionDescriptor()),[]) { Exception=error };
+            new PreorderErrorsAttribute().OnException(exceptionContext);
+            Check(exceptionContext.ExceptionHandled && exceptionContext.Result is ObjectResult { StatusCode:410 } result &&
+                JsonSerializer.SerializeToElement(result.Value).GetProperty("code").GetString()=="PREORDER_MANAGED_BY_PLATFORM",
+                "Legacy owner endpoint must return an explicit 410 migration error");
+        }
+        Check(await Authorize("Settings","owner-check")==200 && await Authorize("Settlements","owner-check")==200 &&
+            await Authorize("Settings","developer-check")==200 && await Authorize("Settlements","developer-check")==200,
+            "Owner and Developer must retain read-only settings and settlement access");
         Check(await Authorize("Settings","")==401 && await Authorize("Settlements","")==401,"Policy and financial reports require authenticated restaurant staff");
-        Console.WriteLine($"PASS: {count} preorder checks: opt-in, commission re-consent, server prices, capabilities, idempotency, closures, timing, tenant isolation and no unpaid fulfillment.");
+        Console.WriteLine($"PASS: {count} preorder checks: developer activation, historical consent preservation, commission snapshots, server prices, capabilities, idempotency, closures, timing, tenant isolation and no unpaid fulfillment.");
     }
 }

@@ -6,13 +6,13 @@ The mobile seat map only shows currently active zones and currently free tables.
 
 The restaurant menu uses the live menu endpoint, preserves menu item IDs and integer cent prices, filters inactive items, separates food/drinks and offers category filters, search, photo cards and dish details. Existing real photos are used; missing photos receive category artwork. Relative photo paths are resolved against the restaurant's catalog website URL. Bulgarian, English and Russian strings are included.
 
-A centered offer after booking opens the preorder menu only when that restaurant's effective policy is enabled. Upcoming booking cards also open the menu. Restaurants without opt-in still have a browse-only menu. Demo mode previews the cart without creating restaurant orders or charging a card.
+A centered offer after booking opens the preorder menu when that restaurant's saved platform policy is enabled. Upcoming booking cards also open the menu. Restaurants with the platform switch off still have a browse-only menu. Demo mode previews the cart without creating restaurant orders or charging a card.
 
-## Consent and developer control
+## Developer activation
 
-In the shared administration, **DEV management → Services & commission** lets Developer control the restaurant's platform master switch and commission in basis points (0–10000). Only Owner can separately opt in and accept the displayed commission and terms from **My profile**. Developer cannot grant owner consent. A changed commission or terms version requires renewed owner consent before the feature becomes enabled again. Consent is bound to the displayed commission and terms version; stale acceptance returns `409 PREORDER_TERMS_CHANGED`, refreshes the displayed terms and clears the acceptance checkbox. Policy changes are audited in the selected restaurant database.
+In the shared administration, **DEV management → Services & commission** lets Developer control the restaurant's platform switch and commission in basis points (0–10000). Saving this switch is sufficient to activate preorders: Owner confirmation is not required. Changing the commission keeps the feature enabled; new drafts snapshot the new fee, while existing drafts retain their original financial amounts. Only Developer can edit the policy, and each change is audited in the selected restaurant database. Owner can view the current status, commission and monthly report.
 
-Both controls default to off; production rollout must not opt a restaurant in on its behalf.
+The platform switch defaults to off. This release needs no migration or policy-data rewrite: an existing saved `platform.enabled: true` immediately becomes effective after deployment. Historical owner consent records and audit entries remain unchanged and are returned for compatibility only. They never control activation, and obsolete consent writes are explicitly rejected rather than fabricating acceptance.
 
 ## Public API
 
@@ -22,6 +22,8 @@ Both controls default to off; production rollout must not opt a restaurant in on
 - `GET /api/v1/restaurants/{restaurantId}/reservations/{id}/preorders`
 - `POST /api/v1/restaurants/{restaurantId}/reservations/{id}/preorders/{preorderId}/checkout`
 
+Public settings expose `enabled` directly from the restaurant's saved platform policy and `activationMode: "developer"`. Quote, draft and checkout eligibility use the same switch. Turning it off blocks new quote/draft/checkout requests, while existing unpaid drafts remain readable with the reservation capability token.
+
 All reservation routes require `X-Reservation-Token`; email or phone alone grants no access. The server recalculates menu prices, validates active items, quantities, current zone/booking availability, serving offsets and lead time. Saving requires an approved booking, a GUID idempotency key and 1–40 distinct items, each quantity 1–20. Serving time is reservation time plus 0–120 minutes in 15-minute increments. Preorders close 30 minutes before the reservation starts. Replaying the same key and content returns the same draft; a different payload with that key is rejected.
 
 ## Administration API
@@ -30,8 +32,10 @@ All reservation routes require `X-Reservation-Token`; email or phone alone grant
 
 - `GET settings`: Owner or Developer.
 - `PUT platform`: Developer only, `{ enabled, commissionBasisPoints }`.
-- `PUT consent`: Owner only, `{ optedIn, acceptFullPrepaymentAndMonthlySettlement, expectedCommissionBasisPoints, expectedTermsVersion }`.
+- `PUT consent`: legacy Owner-authenticated route; returns `410 PREORDER_MANAGED_BY_PLATFORM` without changing consent, policy or audit records. Older clients should refresh and present settings as read-only.
 - `GET settlements?month=YYYY-MM`: Owner or Developer.
+
+Admin settings expose `enabled`, `activationMode: "developer"` and `consentNeedsRenewal: false`, alongside `platform` and historical `restaurant` / `termsVersion` fields. Owner and Developer retain read-only settings and report access; only Developer may edit activation and fees.
 
 The monthly report uses the restaurant's timezone and confirmed payment ledger entries only. Gross, commission and net are EUR cents; commission snapshots belong to the order. Drafts do not appear as payments or kitchen orders.
 
@@ -51,7 +55,7 @@ After every preorder migration, connect with **each restaurant's actual API runt
 
 If access is missing, the table owner should grant the intended restaurant runtime role `SELECT, INSERT, UPDATE, DELETE` on **only** `public."ReservationPreorders"` and `public."PreorderPayments"`, consistent with the application's other restaurant tables. Do not change table ownership, use a superuser for the API, or grant access to all databases/tables as a shortcut. Run the guard again with the runtime connection and verify an authenticated read-only admin settlement request; do not cancel a customer's reservation as a smoke test. The Cofein repair on 19 November 2026 added these two table grants to its existing `cofein_app` role; Casa already had access. No booking, consent, order or payment data changed.
 
-41 preorder checks cover role restrictions, capabilities, restaurant isolation, opt-in, fee reconsent, stale displayed terms, stored terms version, pricing, rounding, idempotency, closed zones, pending bookings, unavailable checkout and unpaid cancellation. They pass on SQLite and isolated PostgreSQL. Flutter checks cover live map visibility, menu/cart behavior and the disabled payment action; visual artifacts are generated at iPhone size.
+47 preorder checks cover role restrictions, capabilities, restaurant isolation, developer activation without consent, fee changes, historical consent preservation, obsolete-write rejection, disablement, pricing, rounding, idempotency, closed zones, pending bookings, unavailable checkout and unpaid cancellation. They pass on SQLite and isolated PostgreSQL. Flutter checks cover live map visibility, menu/cart behavior and the disabled payment action; visual artifacts are generated at iPhone size.
 
 ## Approved logo
 

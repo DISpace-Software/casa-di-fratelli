@@ -184,7 +184,9 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(SizedBox());
   });
-  testWidgets('restaurant opt-out keeps menu browse-only', (tester) async {
+  testWidgets('disabled preorder service keeps menu browse-only', (
+    tester,
+  ) async {
     phone(tester);
     final controller = AppController(
       initialLanguage: 'en',
@@ -206,7 +208,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
   testWidgets(
-    'live booking rereads effective policy and offers preorders without card integration',
+    'live booking rereads Developer activation and offers preorders without card integration',
     (tester) async {
       phone(tester);
       const cofein = Restaurant(
@@ -266,16 +268,17 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      await openSuccess('owner-has-not-opted-in');
+      await openSuccess('developer-service-disabled');
       expect(controller.demoMode, isFalse);
       expect(find.text('Your table is booked!'), findsOneWidget);
       expect(find.byType(AlertDialog), findsNothing);
       expect(requests, hasLength(1));
 
-      // A subsequent public response represents the owner accepting the current
-      // terms. The same repository must not cache the previous disabled result.
+      // A subsequent public response represents the Developer activating the
+      // service. The same repository must not cache the disabled result or
+      // require a separate Owner-consent flag to display the offer.
       effectiveEnabled = true;
-      await openSuccess('owner-has-opted-in');
+      await openSuccess('developer-service-enabled');
       expect(requests, hasLength(2));
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text('Make your evening\neven better'), findsOneWidget);
