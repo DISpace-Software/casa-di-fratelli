@@ -73,6 +73,7 @@ The Flutter app is in [`mobile/`](mobile/README.md), targeting iOS and Android w
 
 ## Documentation
 
+- [Визуальный путеводитель: проект, GitHub, архитектура, бронирование и публикация — 17.11.2026](docs/visual-guide/README.md)
 - [Architecture](docs/architecture.md)
 - [SeatMap transition audit and staged plan](docs/seatmap-transition-audit.md)
 - [Multi-tenancy](docs/multi-tenancy.md)

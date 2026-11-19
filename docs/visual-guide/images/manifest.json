@@ -1,0 +1,47 @@
+{
+  "generationMode": "built-in image_gen",
+  "images": [
+    {
+      "file": "00-overview.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 1587554,
+      "sha256": "5a9e873888fe40e828851218f6db928e408875e0a8688f6ff663d1783c0dd260"
+    },
+    {
+      "file": "01-github.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 1514074,
+      "sha256": "a26a9d44577a539dd155d4b31f5056a3546937add0623aa5983744a453de4d02"
+    },
+    {
+      "file": "02-architecture.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 1542298,
+      "sha256": "416443fe19240e932a3e71f8abaf61a8699457a6c57a6172c9c3908c4ee8e5d5"
+    },
+    {
+      "file": "03-reservation-flow.png",
+      "width": 1585,
+      "height": 992,
+      "bytes": 1828302,
+      "sha256": "899a4c7ceedbb4d2c96ab1403266cbc3bd221ecbe414666f3c1ff9053f1e7d60"
+    },
+    {
+      "file": "04-floor-plan.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 1608764,
+      "sha256": "70b7ad4430411c5b7c41e6fe7154772aa30bbb4c31a9f840ffd57daddb0715b3"
+    },
+    {
+      "file": "05-deployment.png",
+      "width": 1586,
+      "height": 992,
+      "bytes": 1625411,
+      "sha256": "d8b5b68c983fa158c95b08bbb25ca53b2f4b735e5be3f3fb99a46edcefe859f3"
+    }
+  ]
+}

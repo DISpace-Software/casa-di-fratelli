@@ -1,0 +1,28 @@
+Revision 1 — exact generation prompt
+Use case: infographic-diagram.
+Create one real raster infographic, landscape approximately 16:10, very high resolution and crisp readable Russian typography. Premium technical editorial design: ivory #F5F1E8 background, near-black text, muted copper for frontend, dark teal for API/data, slate for secondary information. Spacious rounded rectangular cards, restrained line icons, thin clean directional arrows, excellent typographic hierarchy. No photos, 3D, fake logos, gradients, ornamental filler or tiny dense text. It must look like a carefully typeset architecture atlas page.
+
+Top left small header exactly: "SEATMAP • 17.11.2026". Large main title exactly: "Как устроен весь проект".
+
+Arrange a clear top-to-bottom architecture with an ample main body and two slim bottom strips. Every fact below must be represented, but the visual copy should be only the quoted labels, not explanatory English instructions.
+
+At top of diagram a single repository card: "Один GitHub-репозиторий", with "DISpace-Software/casa-di-fratelli" on its own legible line. Thin arrows from this single source branch to two deployment groups below: the frontend group and API group. Label these source arrows "Сборка". Do NOT depict several repositories.
+
+Middle left, a wide copper-tinted group titled "Vercel · 3 frontend-сборки". Inside it three clean equal cards: "Сайт Casa", "Сайт Cofein", "Общая админка". Under the group heading show a distinct explanatory line "Vercel → приложения в браузере". Within Cofein's card include a compact note "Меню сейчас: статические JSON". Under the admin card small line "/r/{restaurantId}/admin". These are browser applications hosted as static frontend builds, not three backend services.
+
+Middle right, teal group titled "Render · единый .NET API". Inside two vertically arranged steps: "Выбор ресторана" and "Общие правила и проверки". Connect the browser applications group DIRECTLY to this API group with one rightward arrow labelled "Браузер → API напрямую". Do not route this request through GitHub or imply a Vercel server proxies it. Place the GitHub-to-API build arrow separately above this runtime arrow.
+
+From "Выбор ресторана" / the API group draw two outward arrows down to a pair of restrained teal database cards, labelled "PostgreSQL · Casa" and "PostgreSQL · Cofein". A shared caption directly above or below the pair says "Отдельная логическая БД на ресторан". These are logical databases, not a claim of two physical servers. Database cards only connect to the API, never directly to browser cards.
+
+An understated supporting band alongside the main architecture contains two short facts: "Общее: API, правила, модель карты" and "Индивидуальное: брендинг и оформление".
+
+Near bottom, a slim solid process strip in one line: "Посещение → зал и стол → контакты → проверка API → бронь".
+Below that a separate slate dashed future row, clearly headed "Далее", with three outlined pills: "Мобильный SeatMap", "Синхронизация меню Cofein", "Профиль гостя". Dashed styling must make them visibly future scope, not live functionality.
+
+Footer left exactly "00/05". Footer right exactly "Фактическая схема · подробности в документации".
+
+Technical accuracy constraints: One repository, three frontend builds, one shared API. API resolves tenant before database access. Separate logical PostgreSQL database per restaurant. Shared domain policies with restaurant-specific presentation. Current Cofein public menu is static JSON. No claim of full DDD or live microservices. Use correct Russian spelling, preserve all brand strings, make arrows unambiguous, avoid crossing lines and never let lines run through text.
+
+Revision history: initial generation accepted after visual QA; no repair/edit calls.
+Generation mode: built-in image_gen.
+Visual QA: Russian labels, technical facts, future/current separation and arrow direction inspected using view_image. No text truncation or spelling defects observed.

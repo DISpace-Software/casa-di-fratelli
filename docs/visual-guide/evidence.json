@@ -1,0 +1,56 @@
+{
+  "snapshotDate": "2026-11-17",
+  "timezone": "Europe/Sofia",
+  "repository": "https://github.com/DISpace-Software/casa-di-fratelli",
+  "githubMainAtAudit": "20522145ef82a444a34ae7497228bf7ac4a7d977",
+  "auditedSourceCommit": "243623ef51c540063a87fcde235dbb2ef8559af5",
+  "auditedSourceBranch": "feat/cofein-booking-ux-20261113",
+  "auditedSourceBranchWasLocalOnly": true,
+  "frontendRelease": {
+    "date": "2026-11-17",
+    "components": ["cofein", "shared-admin"],
+    "sourceCommit": "243623ef51c540063a87fcde235dbb2ef8559af5",
+    "liveStaticFileHashesVerified": true,
+    "backendRedeployed": false,
+    "casaPublicFrontendRedeployed": false,
+    "localEvidenceNames": [
+      "cofein-browser-warnings-20261117/release-manifest.json",
+      "cofein-browser-warnings-20261117/release/production-integrity.json"
+    ],
+    "note": "Local release artifacts are referenced for provenance; raw operational data and credentials are not published in this guide."
+  },
+  "readOnlyLivePlanSnapshot": {
+    "cofein": { "zones": 2, "tables": 30, "publicMaxGuests": 8, "publicMaxTables": 1, "staffCombinationMode": "configured", "combinations": 0, "notificationsEnabled": false },
+    "casa-di-fratelli": { "zones": 3, "tables": 51, "publicMaxGuests": 8, "publicMaxTables": 1, "staffCombinationMode": "same-zone", "combinations": 37, "notificationsEnabled": true }
+  },
+  "unknowns": [
+    "Current Render production source commit",
+    "Current Casa public frontend deployment source commit",
+    "Production provisioning/enabling of the optional platform database",
+    "Production durable storage configuration for backup exports"
+  ],
+  "sourcePathsAtAuditedCommit": [
+    "frontend/package.json",
+    "frontend/src/main.jsx",
+    "frontend/src/cofein/main.jsx",
+    "frontend/src/admin/main.jsx",
+    "frontend/src/config/tenantRuntime.js",
+    "frontend/src/config/tenantApi.js",
+    "frontend/src/cofein/bookingApi.js",
+    "frontend/src/cofein/CofeinMenu.jsx",
+    "frontend/src/pages/AdminPage.jsx",
+    "frontend/src/domain/floorPlans/cofeinGeometry.js",
+    "frontend/src/domain/adminMap/occupancy.js",
+    "backend/SeatMap.Api/Program.cs",
+    "backend/SeatMap.Api/Services/Tenancy/TenantResolutionMiddleware.cs",
+    "backend/SeatMap.Api/Services/Tenancy/TenantDatabaseConnectionResolver.cs",
+    "backend/SeatMap.Api/Services/Reservations/ReservationBookingService.cs",
+    "backend/SeatMap.Api/Services/Reservations/RestaurantWriteTransaction.cs",
+    "backend/SeatMap.Api/Services/FloorPlans/FloorPlan.cs",
+    "backend/SeatMap.Api/Services/FloorPlans/FloorPlanService.cs",
+    "backend/SeatMap.Api/Data/AppDbContext.cs",
+    "backend/SeatMap.Api/Platform/Data/PlatformDbContext.cs",
+    "docs/restaurant-map-architecture.md"
+  ],
+  "imageGeneration": { "tool": "built-in image_gen", "promptDirectory": "prompts", "imageDirectory": "images", "purpose": "reviewed explanatory infographics" }
+}
