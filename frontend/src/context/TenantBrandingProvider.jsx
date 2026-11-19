@@ -1,28 +1,31 @@
 import React from "react";
 import { API_BASE_URL, apiFetch as fetch } from "../config/api";
 import { tenantContext } from "../config/tenantRuntime.js";
-import { normalizeTenantBranding } from "../config/tenantBranding";
+import { initialTenantBranding, normalizeTenantBranding } from "../config/tenantBranding";
 import { TenantBrandingContext } from "./TenantBrandingContext";
 
 export default function TenantBrandingProvider({ children }) {
-  const [branding, setBranding] = React.useState(() => normalizeTenantBranding(tenantContext.shared ? { name: "Restaurant" } : null));
+  const [branding, setBranding] = React.useState(() => initialTenantBranding(tenantContext));
   const [loaded, setLoaded] = React.useState(false);
   const [error, setError] = React.useState("");
   const reloadBranding = React.useCallback(async (signal) => {
-    const response = await fetch(`${API_BASE_URL}/api/branding`, { signal });
+    const [response, restaurantResponse] = await Promise.all([
+      fetch(`${API_BASE_URL}/api/branding`, { signal }),
+      tenantContext.shared ? fetch(`${API_BASE_URL}/api/admin/context`, { signal }) : null,
+    ]);
     if (!response.ok) throw new Error("Could not load restaurant branding.");
     const data = await response.json();
     if (!data || typeof data.name !== "string" || !data.name.trim()) throw new Error("Invalid restaurant branding.");
-    const normalized = normalizeTenantBranding(data, { isCasa: tenantContext.tenantId === "casa-di-fratelli" });
+    const normalized = normalizeTenantBranding(data, { tenantId: tenantContext.tenantId });
     if (tenantContext.shared) {
       // Relative media belongs to the restaurant website, not the shared portal.
-      const restaurantResponse = await fetch(`${API_BASE_URL}/api/admin/context`, { signal });
       if (!restaurantResponse.ok) throw new Error("Could not verify the restaurant.");
       const restaurant = await restaurantResponse.json();
       if (restaurant.tenantId !== tenantContext.tenantId) throw new Error("Restaurant context mismatch.");
       normalized.assetBaseUrl = restaurant.frontendUrl || "";
       if (normalized.logoUrl.startsWith("/") && restaurant.frontendUrl) normalized.logoUrl = new URL(normalized.logoUrl, restaurant.frontendUrl).href;
     }
+    if (signal?.aborted) return;
     setBranding(normalized);
     setError("");
     setLoaded(true);

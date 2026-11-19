@@ -14,6 +14,7 @@ import { getReservationMinutesFromNow, formatLocalDate, getLiveReservationCandid
 import PreorderSettings from "../components/admin/PreorderSettings";
 import DeveloperManagement, { DeveloperDataTools, DeveloperServiceSettings } from "../components/admin/DeveloperManagement";
 import TenantBrandingSettings from "../components/admin/TenantBrandingSettings";
+import TenantBrandLogo from "../components/admin/TenantBrandLogo";
 import { useTenantBranding } from "../context/TenantBrandingContext";
 import React from "react";
 import { flushSync } from "react-dom";
@@ -8909,10 +8910,9 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
           </button>
 
           <div className={isDashboard ? "max-w-[760px]" : "pr-2"}>
-            <img
-              src={branding.logoUrl || "/restaurant-generic.svg"}
-              alt={branding.name}
-              className={`brand-logo object-left ${isDashboard ? "mb-5 h-16 w-[220px]" : "h-12 w-[168px]"}`}
+            <TenantBrandLogo
+              branding={branding}
+              className={`object-left ${isDashboard ? "mb-5 h-16 w-[220px]" : "h-12 w-[168px]"}`}
             />
             {isDashboard && (
               <>

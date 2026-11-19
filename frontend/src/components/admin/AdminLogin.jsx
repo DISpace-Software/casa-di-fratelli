@@ -2,6 +2,7 @@ import React from "react";
 import { useTenantBranding } from "../../context/TenantBrandingContext";
 import { API_BASE_URL, apiFetch as fetch } from "../../config/api";
 import { tenantStorageKey } from "../../config/tenantRuntime.js";
+import TenantBrandLogo from "./TenantBrandLogo";
 
 export default function AdminLogin({ onLogin }) {
   const { branding } = useTenantBranding();
@@ -176,11 +177,7 @@ export default function AdminLogin({ onLogin }) {
         }
         className="luxury-panel w-full max-w-md rounded-[28px] p-6 md:p-8"
       >
-        <img
-          src={branding.logoUrl || "/restaurant-generic.svg"}
-          alt={branding.name}
-          className="brand-logo mb-7 h-16 w-[220px] object-left"
-        />
+        <TenantBrandLogo branding={branding} className="mb-7 h-16 w-[220px] object-left" />
         <p className="section-kicker">{branding.name} Admin OS</p>
         <h1 className="mt-3 text-3xl font-semibold text-[#fff4df]">
           {authMode === "login" ? "Admin Login" : authMode === "forgot" ? "Възстановяване" : "Нова парола"}

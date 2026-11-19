@@ -63,6 +63,21 @@ AdminPage with an isolated simulated DOM and mocked HTTP. It is not visual
 browser verification. The existing preorder-consent DOM checks continue to
 cover stale terms and monthly report state.
 
+## Cofein branding
+
+The original Cofein lettering traced from the owner-supplied menu cover is
+included under `frontend/public/cofein/brand/`, with provenance alongside the
+SVG files. Assets from `6d9325d` and the administration integration from
+`9148ab4` were selectively backported; the unrelated map/voice feature branches
+were not merged.
+
+The login, loading screen, and dashboard prefer the API-configured logo. When
+Cofein has no configured logo (or that image fails), the shared admin displays
+its bundled `cofein-lockup.svg` and Cofein favicon. Unknown restaurants fall
+back to their own name. Fallback identity follows the tenant ID, never a
+matching display name, and saving branding does not persist derived fallbacks.
+The release packager includes both Cofein display assets.
+
 ## Routing, identity and isolation
 
 Restaurant links have the form:

@@ -1,0 +1,13 @@
+{
+  "source": "20260907_170149.jpg",
+  "sourceSha256": "4f88b9e0417cf9538e1d9536be08463db0ee34518e5cc6ceb8422b8a6ed1f22a",
+  "sourceDescription": "Owner-supplied photograph of the printed Cofein pizza-menu cover, 7 September 2026. The original cover reads COFEIN / COFFEE BAR & DINER.",
+  "method": "Vector contours traced from the photographed white lettering after orientation and perspective correction. Tiny print/dust pinholes removed; no substitute font, generated lettering, or stylistic redraw.",
+  "assetKind": "Photographic-source outline tracing, not an original digital logo master or identified typeface.",
+  "variants": {
+    "cofein-wordmark.svg": "COFEIN lettering only",
+    "cofein-lockup.svg": "COFEIN and original COFFEE BAR & DINER descriptor",
+    "cofein-monogram.svg": "C contour taken from that same COFEIN lettering"
+  },
+  "note": "Use one of these outlines for display branding. Do not retype the restaurant name in a display font. Proportions reflect the supplied printed source; replace these assets together if the original digital master is supplied."
+}
