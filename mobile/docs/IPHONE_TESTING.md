@@ -22,16 +22,20 @@ python3 tool/serve_live_preview.py --host 0.0.0.0
 
 ## Настоящее приложение iOS через USB
 
-На этом компьютере проверено: macOS 15.8.1, Intel x86_64, Flutter 3.50.0. Установлены только Xcode Command Line Tools; полного Xcode и CocoaPods пока нет. Нативный бинарник не собран и не подписан.
+На этом компьютере проверено: macOS 15.8.1, Intel x86_64, Flutter 3.50.0. Xcode 26.3 находится в `/Users/macbookpro/Downloads/Xcode.app`; в `/Applications/Xcode.app` осталась старая версия 15.0.1. Используйте новый Xcode. Подключённый iPhone обнаружен, Developer Mode включён, профиль подписи SeatMap создан. Проект использует Swift Package Manager, CocoaPods для текущих плагинов не требуется.
 
-1. Установите **полный Xcode**, совместимый с вашей macOS и версией iOS на телефоне. Откройте его, завершите установку компонентов, ознакомьтесь с лицензией и примите её самостоятельно. Установите iOS platform support. Для используемых плагинов также установите CocoaPods.
+19 ноября 2026 release-сборка установлена и запущена на iPhone 14 Plus (iOS 27.0.1) с production API. Пользователь подтвердил доверие профилю разработчика; запуск подтверждён через `devicectl` и наличие процесса приложения на устройстве. Текущий профиль Personal Team истекает 25 ноября 2026: после истечения понадобится повторная подпись и установка. Это личная установка, не публикация через TestFlight.
+
+1. На другом Mac установите **полный Xcode**, совместимый с вашей macOS и версией iOS на телефоне. Откройте его, завершите установку компонентов, ознакомьтесь с лицензией и примите её самостоятельно. Установите iOS platform support.
 2. Переключите инструменты на полный Xcode и проверьте окружение:
 
    ```sh
-   sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+   sudo xcode-select --switch /Users/macbookpro/Downloads/Xcode.app/Contents/Developer
    sudo xcodebuild -runFirstLaunch
    /Users/macbookpro/develop/flutter/bin/flutter doctor -v
    ```
+
+   На другом компьютере подставьте фактический путь к актуальному Xcode. Важно переключить `xcode-select`: одного `DEVELOPER_DIR` недостаточно для некоторых Dart native asset hooks, которые запускаются с очищенным окружением.
 
 3. Подключите разблокированный iPhone кабелем USB, подтвердите доверие этому Mac. Включите **Настройки → Конфиденциальность и безопасность → Режим разработчика**. iPhone может потребовать перезапуск; подтвердите включение режима после него.
 4. Подготовьте зависимости и откройте проект:
@@ -47,7 +51,7 @@ python3 tool/serve_live_preview.py --host 0.0.0.0
 
    ```sh
    /Users/macbookpro/develop/flutter/bin/flutter devices
-   /Users/macbookpro/develop/flutter/bin/flutter run -d <ID_ВАШЕГО_IPHONE> \
+   /Users/macbookpro/develop/flutter/bin/flutter run --release -d <ID_ВАШЕГО_IPHONE> \
      --dart-define=SEATMAP_API_BASE_URL=https://casa-di-fratelli-api.onrender.com
    ```
 

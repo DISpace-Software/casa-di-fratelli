@@ -1,3 +1,4 @@
+import '../restaurant_contact.dart';
 import '../../l10n/language.dart';
 
 import 'package:material_ui/material_ui.dart';
@@ -41,7 +42,24 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) widget.controller.refreshBookings();
+  }
+
   int tab = 0;
   bool favoritesOnly = false;
   void openRestaurant(Restaurant restaurant) => Navigator.of(context).push(
@@ -127,6 +145,7 @@ class _AppShellState extends State<AppShell> {
           onTap: () => setState(() {
             tab = index;
             if (index == 1) favoritesOnly = false;
+            if (index == 2) widget.controller.refreshBookings();
           }),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1200,6 +1219,19 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                       ),
                     ],
                   ),
+                  if (restaurant.phone.isNotEmpty)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () => showRestaurantContact(
+                          context,
+                          restaurantName: restaurant.name,
+                          phone: restaurant.phone,
+                        ),
+                        icon: Icon(Icons.phone_outlined, size: 17),
+                        label: Text(restaurant.phone),
+                      ),
+                    ),
                   SizedBox(height: 17),
                   Divider(height: 1),
                   SizedBox(height: 22),

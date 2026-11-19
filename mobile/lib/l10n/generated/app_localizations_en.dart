@@ -1182,4 +1182,89 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get centreLabel => 'Centre';
+
+  @override
+  String get cancellationContactRequired =>
+      'Online cancellation is unavailable. Please contact the restaurant.';
+
+  @override
+  String get bookingAccessUnavailable =>
+      'Access to manage this booking is unavailable. Please contact the restaurant.';
+
+  @override
+  String get bookingUpdateFailed =>
+      'Could not update the booking. Check your connection and try again.';
+
+  @override
+  String get bookingAccessSaveFailed =>
+      'Your booking was created, but its cancellation key could not be saved. Keep the app installed and contact the restaurant if needed.';
+
+  @override
+  String get bookingCancelled => 'Booking cancelled';
+
+  @override
+  String cancelBookingConfirmation(
+    String restaurant,
+    String date,
+    String time,
+  ) {
+    return 'Cancel your booking at $restaurant on $date, $time?';
+  }
+
+  @override
+  String cancellationRuleHours(String hours) {
+    return 'Cancel in the app at least $hours hours before your booking. After that, contact the restaurant.';
+  }
+
+  @override
+  String cancellationDeadlineLabel(String deadline) {
+    return 'Cancel by $deadline · restaurant local time';
+  }
+
+  @override
+  String get callRestaurant => 'Call restaurant';
+
+  @override
+  String get phoneUnavailable =>
+      'The restaurant has not provided a phone number yet.';
+
+  @override
+  String get couldNotOpenDialer =>
+      'Could not open the dialer. You can copy the number instead.';
+
+  @override
+  String get copyPhone => 'Copy number';
+
+  @override
+  String get phoneCopied => 'Number copied';
+
+  @override
+  String get cancellingBooking => 'Cancelling…';
+
+  @override
+  String get refreshBookings => 'Refresh bookings';
+
+  @override
+  String get bookingCompleted => 'Completed';
+
+  @override
+  String get mapWindow => 'Window';
+
+  @override
+  String get mapEntrance => 'Entrance';
+
+  @override
+  String get mapTerraceEntrance => 'To terrace';
+
+  @override
+  String get mapRestaurantEntrance => 'To restaurant';
+
+  @override
+  String get mapTv => 'TV';
+
+  @override
+  String get mapWall => 'Partition';
+
+  @override
+  String get mapBar => 'Bar';
 }

@@ -14,6 +14,7 @@ class Restaurant {
     this.closesAt = '21:00',
     this.leadMinutes = 15,
     this.maxDaysAhead = 10,
+    this.cancellationLeadMinutes = 180,
     this.rating = 0,
     this.availableTimes = const ['19:00', '19:30', '20:15', '20:45'],
     this.featured = false,
@@ -32,7 +33,7 @@ class Restaurant {
       timeZone,
       opensAt,
       closesAt;
-  final int leadMinutes, maxDaysAhead;
+  final int leadMinutes, maxDaysAhead, cancellationLeadMinutes;
   final double rating;
   final List<String> availableTimes;
   final bool featured;
@@ -52,6 +53,7 @@ class Restaurant {
     String? closesAt,
     int? leadMinutes,
     int? maxDaysAhead,
+    int? cancellationLeadMinutes,
     List<String>? availableTimes,
     FloorPlan? floorPlan,
   }) => Restaurant(
@@ -69,6 +71,8 @@ class Restaurant {
     closesAt: closesAt ?? this.closesAt,
     leadMinutes: leadMinutes ?? this.leadMinutes,
     maxDaysAhead: maxDaysAhead ?? this.maxDaysAhead,
+    cancellationLeadMinutes:
+        cancellationLeadMinutes ?? this.cancellationLeadMinutes,
     rating: rating,
     availableTimes: availableTimes ?? this.availableTimes,
     featured: featured,
@@ -81,6 +85,7 @@ class FloorPlan {
   const FloorPlan({
     this.zones = const [],
     this.tables = const [],
+    this.landmarks = const [],
     this.combinations = const [],
     this.revision = '',
     this.publicMaxGuests = 8,
@@ -88,17 +93,34 @@ class FloorPlan {
   });
   final List<Zone> zones;
   final List<SeatTable> tables;
+  final List<FloorLandmark> landmarks;
   final List<List<String>> combinations;
   final String revision;
   final int publicMaxGuests, publicMaxTables;
   FloorPlan copyWith({List<Zone>? zones, List<SeatTable>? tables}) => FloorPlan(
     zones: zones ?? this.zones,
     tables: tables ?? this.tables,
+    landmarks: landmarks,
     combinations: combinations,
     revision: revision,
     publicMaxGuests: publicMaxGuests,
     publicMaxTables: publicMaxTables,
   );
+}
+
+class FloorLandmark {
+  const FloorLandmark({
+    required this.id,
+    required this.zoneId,
+    required this.kind,
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+    this.label = '',
+  });
+  final String id, zoneId, kind, label;
+  final double x, y, width, height;
 }
 
 class Zone {
@@ -156,6 +178,13 @@ class Booking {
     required this.phone,
     this.status = 'confirmed',
     this.demo = true,
+    this.restaurantPhone = '',
+    this.timeZone = 'Europe/Sofia',
+    this.managementToken = '',
+    this.startsAtUtc,
+    this.cancellationDeadlineUtc,
+    this.cancellationLeadMinutes = 180,
+    this.serverCanCancel = true,
   });
   final String id,
       restaurantId,
@@ -165,25 +194,52 @@ class Booking {
       tableLabel,
       guestName,
       phone,
-      status;
+      status,
+      restaurantPhone,
+      timeZone;
+  // Kept in Keychain/encrypted storage by AppController, never serialized with metadata.
+  final String managementToken;
   final DateTime date;
-  final int guests;
+  final DateTime? startsAtUtc, cancellationDeadlineUtc;
+  final int guests, cancellationLeadMinutes;
   final List<String> tableIds;
-  final bool demo;
-  Booking copyWith({String? status}) => Booking(
+  final bool demo, serverCanCancel;
+  Booking copyWith({
+    String? status,
+    String? managementToken,
+    String? restaurantPhone,
+    DateTime? startsAtUtc,
+    DateTime? cancellationDeadlineUtc,
+    int? cancellationLeadMinutes,
+    bool? serverCanCancel,
+    DateTime? date,
+    String? time,
+    int? guests,
+    List<String>? tableIds,
+    String? tableLabel,
+  }) => Booking(
     id: id,
     restaurantId: restaurantId,
     restaurantName: restaurantName,
     restaurantImage: restaurantImage,
-    date: date,
-    time: time,
-    guests: guests,
-    tableIds: tableIds,
-    tableLabel: tableLabel,
+    date: date ?? this.date,
+    time: time ?? this.time,
+    guests: guests ?? this.guests,
+    tableIds: tableIds ?? this.tableIds,
+    tableLabel: tableLabel ?? this.tableLabel,
     guestName: guestName,
     phone: phone,
     status: status ?? this.status,
     demo: demo,
+    managementToken: managementToken ?? this.managementToken,
+    restaurantPhone: restaurantPhone ?? this.restaurantPhone,
+    timeZone: timeZone,
+    startsAtUtc: startsAtUtc ?? this.startsAtUtc,
+    cancellationDeadlineUtc:
+        cancellationDeadlineUtc ?? this.cancellationDeadlineUtc,
+    cancellationLeadMinutes:
+        cancellationLeadMinutes ?? this.cancellationLeadMinutes,
+    serverCanCancel: serverCanCancel ?? this.serverCanCancel,
   );
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -199,6 +255,14 @@ class Booking {
     'phone': phone,
     'status': status,
     'demo': demo,
+    'restaurantPhone': restaurantPhone,
+    'timeZone': timeZone,
+    'startsAtUtc': startsAtUtc?.toUtc().toIso8601String(),
+    'cancellationDeadlineUtc': cancellationDeadlineUtc
+        ?.toUtc()
+        .toIso8601String(),
+    'cancellationLeadMinutes': cancellationLeadMinutes,
+    'serverCanCancel': serverCanCancel,
   };
   factory Booking.fromJson(Map<String, dynamic> json) => Booking(
     id: json['id'] as String,
@@ -214,6 +278,14 @@ class Booking {
     phone: json['phone'] as String,
     status: json['status'] as String,
     demo: json['demo'] as bool,
+    restaurantPhone: json['restaurantPhone'] as String? ?? '',
+    timeZone: json['timeZone'] as String? ?? 'Europe/Sofia',
+    startsAtUtc: DateTime.tryParse(json['startsAtUtc']?.toString() ?? ''),
+    cancellationDeadlineUtc: DateTime.tryParse(
+      json['cancellationDeadlineUtc']?.toString() ?? '',
+    ),
+    cancellationLeadMinutes: json['cancellationLeadMinutes'] as int? ?? 180,
+    serverCanCancel: json['serverCanCancel'] as bool? ?? true,
   );
 }
 

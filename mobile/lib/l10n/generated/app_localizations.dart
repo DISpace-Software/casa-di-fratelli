@@ -2185,6 +2185,144 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Центр'**
   String get centreLabel;
+
+  /// No description provided for @cancellationContactRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Самостоятельная отмена недоступна. Свяжитесь с рестораном.'**
+  String get cancellationContactRequired;
+
+  /// No description provided for @bookingAccessUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нет ключа управления этой бронью. Свяжитесь с рестораном.'**
+  String get bookingAccessUnavailable;
+
+  /// No description provided for @bookingUpdateFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось обновить бронь. Проверьте соединение и повторите.'**
+  String get bookingUpdateFailed;
+
+  /// No description provided for @bookingAccessSaveFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бронь создана, но не удалось сохранить ключ отмены на устройстве. Не удаляйте приложение; при необходимости свяжитесь с рестораном.'**
+  String get bookingAccessSaveFailed;
+
+  /// No description provided for @bookingCancelled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бронь отменена'**
+  String get bookingCancelled;
+
+  /// No description provided for @cancelBookingConfirmation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить бронь в {restaurant} на {date}, {time}?'**
+  String cancelBookingConfirmation(String restaurant, String date, String time);
+
+  /// No description provided for @cancellationRuleHours.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отмена в приложении доступна не позднее чем за {hours} ч до начала. Позже — только через ресторан.'**
+  String cancellationRuleHours(String hours);
+
+  /// No description provided for @cancellationDeadlineLabel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить до {deadline} · время ресторана'**
+  String cancellationDeadlineLabel(String deadline);
+
+  /// No description provided for @callRestaurant.
+  ///
+  /// In ru, this message translates to:
+  /// **'Позвонить в ресторан'**
+  String get callRestaurant;
+
+  /// No description provided for @phoneUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Телефон пока не указан рестораном.'**
+  String get phoneUnavailable;
+
+  /// No description provided for @couldNotOpenDialer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось открыть телефон. Номер можно скопировать.'**
+  String get couldNotOpenDialer;
+
+  /// No description provided for @copyPhone.
+  ///
+  /// In ru, this message translates to:
+  /// **'Скопировать номер'**
+  String get copyPhone;
+
+  /// No description provided for @phoneCopied.
+  ///
+  /// In ru, this message translates to:
+  /// **'Номер скопирован'**
+  String get phoneCopied;
+
+  /// No description provided for @cancellingBooking.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменяем…'**
+  String get cancellingBooking;
+
+  /// No description provided for @refreshBookings.
+  ///
+  /// In ru, this message translates to:
+  /// **'Обновить брони'**
+  String get refreshBookings;
+
+  /// No description provided for @bookingCompleted.
+  ///
+  /// In ru, this message translates to:
+  /// **'Завершена'**
+  String get bookingCompleted;
+
+  /// No description provided for @mapWindow.
+  ///
+  /// In ru, this message translates to:
+  /// **'Окно'**
+  String get mapWindow;
+
+  /// No description provided for @mapEntrance.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вход'**
+  String get mapEntrance;
+
+  /// No description provided for @mapTerraceEntrance.
+  ///
+  /// In ru, this message translates to:
+  /// **'На террасу'**
+  String get mapTerraceEntrance;
+
+  /// No description provided for @mapRestaurantEntrance.
+  ///
+  /// In ru, this message translates to:
+  /// **'В ресторан'**
+  String get mapRestaurantEntrance;
+
+  /// No description provided for @mapTv.
+  ///
+  /// In ru, this message translates to:
+  /// **'Телевизор'**
+  String get mapTv;
+
+  /// No description provided for @mapWall.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перегородка'**
+  String get mapWall;
+
+  /// No description provided for @mapBar.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бар'**
+  String get mapBar;
 }
 
 class _AppLocalizationsDelegate

@@ -1186,4 +1186,88 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get centreLabel => 'Центр';
+
+  @override
+  String get cancellationContactRequired =>
+      'Самостоятельная отмена недоступна. Свяжитесь с рестораном.';
+
+  @override
+  String get bookingAccessUnavailable =>
+      'Нет ключа управления этой бронью. Свяжитесь с рестораном.';
+
+  @override
+  String get bookingUpdateFailed =>
+      'Не удалось обновить бронь. Проверьте соединение и повторите.';
+
+  @override
+  String get bookingAccessSaveFailed =>
+      'Бронь создана, но не удалось сохранить ключ отмены на устройстве. Не удаляйте приложение; при необходимости свяжитесь с рестораном.';
+
+  @override
+  String get bookingCancelled => 'Бронь отменена';
+
+  @override
+  String cancelBookingConfirmation(
+    String restaurant,
+    String date,
+    String time,
+  ) {
+    return 'Отменить бронь в $restaurant на $date, $time?';
+  }
+
+  @override
+  String cancellationRuleHours(String hours) {
+    return 'Отмена в приложении доступна не позднее чем за $hours ч до начала. Позже — только через ресторан.';
+  }
+
+  @override
+  String cancellationDeadlineLabel(String deadline) {
+    return 'Отменить до $deadline · время ресторана';
+  }
+
+  @override
+  String get callRestaurant => 'Позвонить в ресторан';
+
+  @override
+  String get phoneUnavailable => 'Телефон пока не указан рестораном.';
+
+  @override
+  String get couldNotOpenDialer =>
+      'Не удалось открыть телефон. Номер можно скопировать.';
+
+  @override
+  String get copyPhone => 'Скопировать номер';
+
+  @override
+  String get phoneCopied => 'Номер скопирован';
+
+  @override
+  String get cancellingBooking => 'Отменяем…';
+
+  @override
+  String get refreshBookings => 'Обновить брони';
+
+  @override
+  String get bookingCompleted => 'Завершена';
+
+  @override
+  String get mapWindow => 'Окно';
+
+  @override
+  String get mapEntrance => 'Вход';
+
+  @override
+  String get mapTerraceEntrance => 'На террасу';
+
+  @override
+  String get mapRestaurantEntrance => 'В ресторан';
+
+  @override
+  String get mapTv => 'Телевизор';
+
+  @override
+  String get mapWall => 'Перегородка';
+
+  @override
+  String get mapBar => 'Бар';
 }

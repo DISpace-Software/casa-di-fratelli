@@ -145,6 +145,10 @@ namespace SeatMap.Api.Migrations
 
             modelBuilder.Entity("SeatMap.Api.Models.Reservation", b =>
                 {
+                    b.Property<string>("GuestManagementTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");

@@ -7,6 +7,36 @@ DataMessages get appStrings => DataMessages(AppLanguage.code);
 class DataMessages {
   const DataMessages(this.language);
   final String language;
+  String get bookingAccessUnavailable {
+    final value = switch (language) {
+      'bg' =>
+        "Няма ключ за управление на тази резервация. Свържете се с ресторанта.",
+      'en' => "Access to manage this booking is unavailable. Please contact the restaurant.",
+      _ => "Нет ключа управления этой бронью. Свяжитесь с рестораном.",
+    };
+    return value;
+  }
+
+  String get bookingUpdateFailed {
+    final value = switch (language) {
+      'bg' => "Резервацията не можа да бъде обновена. Проверете връзката и опитайте отново.",
+      'en' =>
+        "Could not update the booking. Check your connection and try again.",
+      _ => "Не удалось обновить бронь. Проверьте соединение и повторите.",
+    };
+    return value;
+  }
+
+  String get cancellationContactRequired {
+    final value = switch (language) {
+      'bg' => "Самостоятелната отмяна не е достъпна. Свържете се с ресторанта.",
+      'en' =>
+        "Online cancellation is unavailable. Please contact the restaurant.",
+      _ => "Самостоятельная отмена недоступна. Свяжитесь с рестораном.",
+    };
+    return value;
+  }
+
   String get centreLabel {
     final value = switch (language) {
       'bg' => "Център",

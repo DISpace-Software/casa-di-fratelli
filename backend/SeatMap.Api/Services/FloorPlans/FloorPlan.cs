@@ -3,6 +3,8 @@ using SeatMap.Api.Dtos;
 namespace SeatMap.Api.Services.FloorPlans;
 
 public sealed record FloorZone(string Id, string Name, string Presentation = "plain", bool IsActive = true, Dictionary<string, string>? Names = null);
+public sealed record FloorLandmark(string Id, string ZoneId, string Kind, double X, double Y,
+    double Width, double Height, Dictionary<string, string>? Names = null);
 
 public sealed record FloorPlan
 {
@@ -10,6 +12,8 @@ public sealed record FloorPlan
     public string Revision { get; init; } = "";
     public List<FloorZone> Zones { get; init; } = [];
     public List<TableLayoutItem> Tables { get; init; } = [];
+    // Null retains the original Casa presentation; [] explicitly removes landmarks.
+    public List<FloorLandmark>? Landmarks { get; init; }
     // Each entry is an exact permitted set. Single tables are always eligible.
     public List<List<string>> Combinations { get; init; } = [];
     // Null is a legacy document; FloorPlanService resolves the restaurant's

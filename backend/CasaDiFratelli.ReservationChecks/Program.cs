@@ -15,6 +15,7 @@ using Microsoft.Data.Sqlite;
 static void Check(bool result, string message) { if (!result) throw new Exception(message); }
 await MenuStartupChecks.RunAsync();
 await FloorPlanChecks.RunAsync();
+await GuestCancellationChecks.RunAsync();
 await CasaStaffParityChecks.RunAsync();
 await TenantNotificationChecks.RunAsync();
 await AdminSessionIsolationChecks.RunAsync();

@@ -21,7 +21,9 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
 
     private FloorPlan ResolveStaffPolicy(FloorPlan plan) => plan with {
         StaffCombinationMode = plan.StaffCombinationMode ??
-            (tenant.TenantId.Equals("casa-di-fratelli", StringComparison.OrdinalIgnoreCase) ? "same-zone" : "configured")
+            (tenant.TenantId.Equals("casa-di-fratelli", StringComparison.OrdinalIgnoreCase) ? "same-zone" : "configured"),
+        Landmarks = plan.Landmarks ?? (tenant.TenantId.Equals("casa-di-fratelli", StringComparison.OrdinalIgnoreCase)
+            ? CasaLandmarks.ForZones(plan.Zones) : [])
     };
 
     public async Task<FloorPlan> GetAsync()
@@ -69,12 +71,17 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
 
     public async Task<FloorPlan> SaveAsync(FloorPlan plan)
     {
-        plan = ResolveStaffPolicy(plan);
-        var error = Validate(plan);
+        var error = Validate(plan with { Landmarks = null });
         if (error != null) throw new ArgumentException(error);
+        plan = ResolveStaffPolicy(plan);
         await using var transaction = await RestaurantWriteTransaction.BeginAsync(db);
         var before = await GetAsync();
         if (plan.Revision != before.Revision) throw new FloorPlanConflictException("The map was changed by another administrator. Reload it before saving.");
+        // Older map editors preserve unknown fields. Removing a zone must remove
+        // its decorative landmarks, while genuinely unknown zone IDs remain invalid.
+        var removedZones = before.Zones.Select(z => z.Id).Except(plan.Zones.Select(z => z.Id)).ToHashSet();
+        plan = plan with { Landmarks = plan.Landmarks?.Where(item => item == null || !removedZones.Contains(item.ZoneId)).ToList()! };
+        if (Validate(plan) is { } landmarkError) throw new ArgumentException(landmarkError);
         // Table IDs are durable reservation references. Deactivate instead of deleting.
         var removed = before.Tables.Select(t => t.Id).Except(plan.Tables.Select(t => t.Id), StringComparer.Ordinal).Select(id => id.ToUpperInvariant()).ToList();
         if (removed.Count > 0 && await db.ReservationTables.IgnoreQueryFilters().AnyAsync(t => removed.Contains(t.TableCode.ToUpper())))
@@ -183,6 +190,16 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
         if (plan.Zones.Any(z => (z.Presentation == "casa-indoor" && z.Id != "indoor") || (z.Presentation == "casa-garden" && z.Id != "garden") || (z.Presentation == "casa-terrace" && z.Id != "openTerrace"))) return "Casa presentation presets require their original zone IDs. Use plain for custom zones.";
         if (plan.Zones.Any(z => z.Names != null && (z.Names.Count > 10 || z.Names.Any(n => n.Key.Length > 10 || string.IsNullOrWhiteSpace(n.Value) || n.Value.Length > 100)))) return "Invalid translated zone name.";
         if (plan.Zones.Select(z => z.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != plan.Zones.Count) return "Duplicate zone ID.";
+        if (plan.Landmarks is { } landmarks)
+        {
+            if (landmarks.Count > 200 || landmarks.Any(x => x == null || string.IsNullOrWhiteSpace(x.Id) || x.Id.Length > 100 ||
+                !plan.Zones.Any(z => z.Id == x.ZoneId) || !new[] { "window", "entrance", "terraceEntrance", "restaurantEntrance", "tv", "wall", "bar" }.Contains(x.Kind) ||
+                !double.IsFinite(x.X) || !double.IsFinite(x.Y) || !double.IsFinite(x.Width) || !double.IsFinite(x.Height) ||
+                x.X < 0 || x.Y < 0 || x.Width <= 0 || x.Height <= 0 || x.X + x.Width > 100 || x.Y + x.Height > 100 ||
+                x.Names != null && (x.Names.Count > 10 || x.Names.Any(n => n.Key.Length > 10 || string.IsNullOrWhiteSpace(n.Value) || n.Value.Length > 100))))
+                return "Invalid floor landmark.";
+            if (landmarks.Select(x => x.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != landmarks.Count) return "Duplicate landmark ID.";
+        }
         if (plan.Tables.Any(t => t == null || string.IsNullOrWhiteSpace(t.Id) || t.Id != t.Id.Trim() || t.Id.Length > 20 || t.Id.Contains(',') || t.Id.Any(char.IsControl))) return "Every table needs a valid ID (up to 20 characters, without commas).";
         if (plan.Tables.Select(t => t.Id).Distinct(StringComparer.OrdinalIgnoreCase).Count() != plan.Tables.Count) return "Duplicate table ID.";
         foreach (var t in plan.Tables)

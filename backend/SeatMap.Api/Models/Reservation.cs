@@ -59,6 +59,10 @@ public class Reservation
 
     public string? EmailConfirmationTokenHash { get; set; }
 
+    // The raw capability is returned only once to the booking creator.
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string? GuestManagementTokenHash { get; set; }
+
     public DateTime? EmailConfirmationExpiresAtUtc { get; set; }
 
     public DateTime? EmailConfirmedAtUtc { get; set; }

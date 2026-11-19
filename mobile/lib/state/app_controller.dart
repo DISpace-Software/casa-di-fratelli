@@ -11,14 +11,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/models.dart';
 import '../data/seatmap_repository.dart';
 import '../data/guest_account_repository.dart';
+import '../data/booking_access_store.dart';
 
 class AppController extends ChangeNotifier {
   AppController({
     SeatMapRepository? repository,
     GuestAccountRepository? accounts,
+    BookingAccessStore? bookingAccess,
     String? initialLanguage,
   }) : repository = repository ?? SeatMapRepository(),
        _accountsOverride = accounts,
+       _bookingAccessOverride = bookingAccess,
        _initialLanguage = initialLanguage {
     _languageCode =
         initialLanguage ??
@@ -62,6 +65,12 @@ class AppController extends ChangeNotifier {
   }
 
   final GuestAccountRepository? _accountsOverride;
+  final BookingAccessStore? _bookingAccessOverride;
+  late final BookingAccessStore bookingAccess =
+      _bookingAccessOverride ?? SecureBookingAccessStore(repository.baseUrl);
+  bool refreshingBookings = false;
+  String? bookingsError;
+  int _bookingRevision = 0;
   late final GuestAccountRepository accounts =
       _accountsOverride ?? GuestAccountRepository(baseUrl: repository.baseUrl);
   final SeatMapRepository repository;
@@ -164,7 +173,19 @@ class AppController extends ChangeNotifier {
         accountError = _message(exception);
       }
     }
+    for (var i = 0; i < bookings.length; i++) {
+      if (bookings[i].demo) continue;
+      try {
+        final token = await bookingAccess.read(bookings[i].id);
+        if (token != null) {
+          bookings[i] = bookings[i].copyWith(managementToken: token);
+        }
+      } catch (_) {
+        /* Old/local metadata still remains visible with restaurant contact. */
+      }
+    }
     await refreshRestaurants();
+    await refreshBookings();
   }
 
   Future<void> refreshRestaurants() async {
@@ -349,38 +370,83 @@ class AppController extends ChangeNotifier {
       email: email,
       notes: notes,
     );
+    if (booking.managementToken.isNotEmpty) {
+      try {
+        await bookingAccess.write(booking.id, booking.managementToken);
+      } catch (_) {
+        bookingsError = appStrings.bookingAccessSaveFailed;
+      }
+    }
     bookings.insert(0, booking);
+    _bookingRevision++;
     await _saveBookings();
     notifyListeners();
     return booking;
   }
 
+  String restaurantPhoneFor(Booking booking) => restaurants
+      .where((restaurant) => restaurant.id == booking.restaurantId)
+      .map((restaurant) => restaurant.phone)
+      .firstWhere(
+        (phone) => phone.isNotEmpty,
+        orElse: () => booking.restaurantPhone,
+      );
+
+  Future<void> refreshBookings() async {
+    if (refreshingBookings || bookings.isEmpty) return;
+    refreshingBookings = true;
+    bookingsError = null;
+    final revision = _bookingRevision;
+    notifyListeners();
+    try {
+      final updates = await Future.wait(
+        bookings.map((booking) async {
+          try {
+            return await repository.refreshBooking(booking);
+          } catch (error) {
+            bookingsError = _message(error);
+            return booking;
+          }
+        }),
+      );
+      if (revision == _bookingRevision) {
+        bookings = updates;
+        await _saveBookings();
+      }
+    } catch (error) {
+      bookingsError = _message(error);
+    } finally {
+      refreshingBookings = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> cancelBooking(String bookingId) async {
     final index = bookings.indexWhere((booking) => booking.id == bookingId);
     if (index < 0) return;
-    final booking = bookings[index];
-    if (!booking.demo) {
-      throw Exception(
-        appStrings.msgOnlineCancellationIsNotAvailableYetContactThe,
-      );
+    _bookingRevision++;
+    try {
+      final updated = await repository.cancelBooking(bookings[index]);
+      bookings[index] = updated;
+      await _saveBookings();
+    } catch (error) {
+      try {
+        bookings[index] = await repository.refreshBooking(bookings[index]);
+        if (bookings[index].status == 'cancelled') {
+          await _saveBookings();
+          return;
+        }
+      } catch (_) {
+        // Keep the last known status if the restaurant is unreachable.
+      }
+      if (error is SeatMapException && error.code == 'RESERVATION_NOT_FOUND') {
+        bookings[index] = bookings[index].copyWith(serverCanCancel: false);
+      }
+      rethrow;
+    } finally {
+      _bookingRevision++;
+      notifyListeners();
     }
-    bookings[index] = Booking(
-      id: booking.id,
-      restaurantId: booking.restaurantId,
-      restaurantName: booking.restaurantName,
-      restaurantImage: booking.restaurantImage,
-      date: booking.date,
-      time: booking.time,
-      guests: booking.guests,
-      tableIds: booking.tableIds,
-      tableLabel: booking.tableLabel,
-      guestName: booking.guestName,
-      phone: booking.phone,
-      status: 'cancelled',
-      demo: true,
-    );
-    await _saveBookings();
-    notifyListeners();
   }
 
   Future<void> _saveBookings() async {

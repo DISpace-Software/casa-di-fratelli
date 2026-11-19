@@ -541,5 +541,55 @@
       }
     }
   },
-  "centreLabel": "Centre"
+  "centreLabel": "Centre",
+  "cancellationContactRequired": "Online cancellation is unavailable. Please contact the restaurant.",
+  "bookingAccessUnavailable": "Access to manage this booking is unavailable. Please contact the restaurant.",
+  "bookingUpdateFailed": "Could not update the booking. Check your connection and try again.",
+  "bookingAccessSaveFailed": "Your booking was created, but its cancellation key could not be saved. Keep the app installed and contact the restaurant if needed.",
+  "bookingCancelled": "Booking cancelled",
+  "cancelBookingConfirmation": "Cancel your booking at {restaurant} on {date}, {time}?",
+  "@cancelBookingConfirmation": {
+    "placeholders": {
+      "restaurant": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cancellationRuleHours": "Cancel in the app at least {hours} hours before your booking. After that, contact the restaurant.",
+  "@cancellationRuleHours": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "cancellationDeadlineLabel": "Cancel by {deadline} · restaurant local time",
+  "@cancellationDeadlineLabel": {
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
+  "callRestaurant": "Call restaurant",
+  "phoneUnavailable": "The restaurant has not provided a phone number yet.",
+  "couldNotOpenDialer": "Could not open the dialer. You can copy the number instead.",
+  "copyPhone": "Copy number",
+  "phoneCopied": "Number copied",
+  "cancellingBooking": "Cancelling…",
+  "refreshBookings": "Refresh bookings",
+  "bookingCompleted": "Completed",
+  "mapWindow": "Window",
+  "mapEntrance": "Entrance",
+  "mapTerraceEntrance": "To terrace",
+  "mapRestaurantEntrance": "To restaurant",
+  "mapTv": "TV",
+  "mapWall": "Partition",
+  "mapBar": "Bar"
 }

@@ -47,6 +47,7 @@ public class AppDbContext : DbContext
             entity.Property(x => x.Status).IsRequired().HasMaxLength(30);
             entity.Property(x => x.OrderAccessToken).HasMaxLength(80);
             entity.Property(x => x.EmailConfirmationTokenHash).HasMaxLength(128);
+            entity.Property(x => x.GuestManagementTokenHash).HasMaxLength(64);
             entity.Property(x => x.CreatedByAdminName).HasMaxLength(120);
             entity.Property(x => x.DeletedByAdminName).HasMaxLength(120);
             entity.HasIndex(x => x.OrderAccessToken);

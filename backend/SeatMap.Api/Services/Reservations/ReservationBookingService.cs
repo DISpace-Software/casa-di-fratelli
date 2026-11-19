@@ -159,6 +159,7 @@ public sealed class ReservationBookingService(
         var automaticConfirmation = branding.ReservationConfirmationMode == ReservationConfirmationMode.Automatic;
         var requiresEmailConfirmation = !automaticConfirmation && !request.CreatedByAdmin && !hasConfirmedReservationWithEmail;
         var confirmationToken = requiresEmailConfirmation ? CreateEmailConfirmationToken() : null;
+        var managementToken = request.CreatedByAdmin ? null : GuestReservationService.CreateToken();
 
         var reservation = new Reservation
         {
@@ -180,6 +181,7 @@ public sealed class ReservationBookingService(
             CreatedByAdminName = request.CreatedByAdmin ? administrator?.Name : null,
             InternalNote = request.CreatedByAdmin ? request.InternalNote : null,
             EmailConfirmationTokenHash = confirmationToken == null ? null : HashToken(confirmationToken),
+            GuestManagementTokenHash = managementToken == null ? null : GuestReservationService.HashToken(managementToken),
             EmailConfirmationExpiresAtUtc = confirmationToken == null ? null : _time.GetUtcNow().UtcDateTime.AddDays(2),
             // Approving a booking automatically is not proof of email ownership.
             EmailConfirmedAtUtc = requiresEmailConfirmation || automaticConfirmation ? null : _time.GetUtcNow().UtcDateTime,
@@ -220,6 +222,8 @@ public sealed class ReservationBookingService(
             reservation.Notes,
             reservation.Status,
             RequiresEmailConfirmation = requiresEmailConfirmation,
+            ManagementToken = managementToken,
+            GuestReservation = GuestReservationService.Describe(reservation, brand, _time.GetUtcNow().UtcDateTime),
             IsReturningCustomer = !requiresEmailConfirmation && !request.CreatedByAdmin && hasConfirmedReservationWithEmail,
             Message = requiresEmailConfirmation
                 ? "Please confirm your reservation from the email we sent."

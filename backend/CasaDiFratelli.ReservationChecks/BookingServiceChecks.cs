@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.RateLimiting;
 using SeatMap.Api.Services.FloorPlans;
 using System.Net;
 using System.Net.Http.Json;
@@ -54,6 +55,7 @@ internal static class BookingServiceChecks
     private static async Task AdminCapacityOverrideAsync()
     {
         await using var restaurant = await Restaurant.CreateAsync("casa-di-fratelli");
+        restaurant.Clock.Now = DateTimeOffset.UtcNow;
         var current = new CurrentTenant(); current.Resolve(restaurant.Tenant);
         var plans = new FloorPlanService(restaurant.Db, current);
         var plan = await plans.GetAsync();
@@ -61,7 +63,7 @@ internal static class BookingServiceChecks
 
         var request = Request();
         request.TableIds = ["23"]; request.GuestCount = 6;
-        request.ReservedDate = new(2026, 11, 6); request.ReservedTime = "19:30";
+        request.ReservedDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)); request.ReservedTime = "19:30";
         Check((await restaurant.Booking.CreateAsync(request)).Kind == ReservationBookingResultKind.Invalid,
             "Public six-person booking at four-seat Casa table 23 must remain rejected");
         request.CreatedByAdmin = true; request.Email = ""; request.PrivacyConsent = false;
@@ -322,6 +324,8 @@ internal static class BookingServiceChecks
         builder.Services.AddScoped<FloorPlanService>();
         builder.Services.AddScoped<SeasonalZoneService>();
         builder.Services.AddScoped<ReservationBookingService>();
+        builder.Services.AddScoped<GuestReservationService>();
+        builder.Services.AddRateLimiter(options => options.AddFixedWindowLimiter("guest-reservations", rule => { rule.PermitLimit = 100; rule.Window = TimeSpan.FromMinutes(5); }));
         builder.Services.AddScoped<AdminAuthService>();
         builder.Services.AddScoped<AuditService>();
         builder.Services.AddScoped<ProductTierService>();
@@ -331,6 +335,7 @@ internal static class BookingServiceChecks
         await using var app = builder.Build();
         app.UseRouting();
         app.UseMiddleware<TenantResolutionMiddleware>();
+        app.UseRateLimiter();
         app.MapControllers();
         await app.StartAsync();
         try
@@ -343,7 +348,26 @@ internal static class BookingServiceChecks
             var oldJson = await legacyResponse.Content.ReadAsStringAsync();
             var newJson = await mobileResponse.Content.ReadAsStringAsync();
             Check(legacyResponse.IsSuccessStatusCode && mobileResponse.IsSuccessStatusCode, $"Both booking adapters must work: {oldJson} / {newJson}");
-            Check(JsonNode.DeepEquals(JsonNode.Parse(oldJson), JsonNode.Parse(newJson)), "Legacy and v1 booking responses diverged");
+            var oldResult = JsonNode.Parse(oldJson)!.AsObject();
+            var newResult = JsonNode.Parse(newJson)!.AsObject();
+            Check(oldResult["managementToken"]!.GetValue<string>() != newResult["managementToken"]!.GetValue<string>(), "Different restaurant bookings must have different management capabilities");
+            var mobileToken = newResult["managementToken"]!.GetValue<string>();
+            oldResult.Remove("managementToken"); newResult.Remove("managementToken");
+            Check(oldResult["guestReservation"]!["restaurantPhone"]!.GetValue<string>() == "+359-restaurant-alpha" &&
+                newResult["guestReservation"]!["restaurantPhone"]!.GetValue<string>() == "+359-restaurant-beta", "Guest contact must belong to the selected restaurant");
+            oldResult["guestReservation"]!.AsObject().Remove("restaurantPhone");
+            newResult["guestReservation"]!.AsObject().Remove("restaurantPhone");
+            Check(JsonNode.DeepEquals(oldResult, newResult), "Legacy and v1 booking responses diverged");
+            var mobileId = newResult["id"]!.GetValue<int>();
+            async Task<HttpResponseMessage> GuestRequest(string restaurant, string resource, HttpMethod method, string? token) {
+                using var request = new HttpRequestMessage(method, $"/api/v1/restaurants/{restaurant}/reservations/{mobileId}/{resource}");
+                if (token != null) request.Headers.Add("X-Reservation-Token", token);
+                return await client.SendAsync(request);
+            }
+            Check((await GuestRequest("beta", "guest", HttpMethod.Get, null)).StatusCode == HttpStatusCode.NotFound, "Guest route must not disclose a reservation without its capability");
+            Check((await GuestRequest("alpha", "cancel", HttpMethod.Post, mobileToken)).StatusCode == HttpStatusCode.NotFound, "Guest cancellation must not cross tenant boundaries");
+            var guestStatus = await GuestRequest("beta", "guest", HttpMethod.Get, mobileToken);
+            Check(guestStatus.IsSuccessStatusCode && guestStatus.Headers.CacheControl?.NoStore == true, "Guest status must authenticate its capability and disable caching");
             Check(await alpha.Db.Reservations.CountAsync() == 1 && await beta.Db.Reservations.CountAsync() == 1, "Booking crossed restaurant database boundary");
             Check((await client.GetAsync($"/api/v1/restaurants/beta/reservations/confirm?token={alpha.Notices.Tokens.Single()}")).StatusCode == HttpStatusCode.NotFound, "Confirmation token crossed restaurant boundary");
             Check((await client.GetAsync($"/api/v1/restaurants/beta/reservations/confirm?token={beta.Notices.Tokens.Single()}")).IsSuccessStatusCode, "Versioned confirmation failed");
@@ -371,6 +395,11 @@ internal static class BookingServiceChecks
             Check(await alpha.Db.Reservations.CountAsync() == 1 && await beta.Db.Reservations.CountAsync() == 2, "Rejected HTTP requests changed bookings");
             var conflict = await client.PostAsJsonAsync("/api/v1/restaurants/beta/reservations", Request("conflict@example.test"));
             Check(conflict.StatusCode == HttpStatusCode.Conflict, "Versioned booking must share occupied-table rules");
+            var cancelled = await GuestRequest("beta", "cancel", HttpMethod.Post, mobileToken);
+            Check(cancelled.IsSuccessStatusCode && (await cancelled.Content.ReadAsStringAsync()).Contains("Cancelled"), "Real guest cancellation HTTP route failed");
+            Check((await GuestRequest("beta", "cancel", HttpMethod.Post, mobileToken)).IsSuccessStatusCode, "HTTP cancellation must be safe to retry");
+            Check((await client.PostAsJsonAsync("/api/v1/restaurants/beta/reservations", Request("replacement@example.test"))).IsSuccessStatusCode,
+                "Guest cancellation must release the table for a new real booking through HTTP");
             Check((await client.PostAsJsonAsync("/api/v1/restaurants/unknown/reservations", Request())).StatusCode == HttpStatusCode.NotFound, "Unknown restaurant must fail before booking service");
         }
         finally { await app.StopAsync(); }

@@ -52,6 +52,9 @@ class PreviewHandler(SimpleHTTPRequestHandler):
             return
         segments = path.strip("/").split("/")
         allowed = guest_routes[guest_path] if is_guest else ({"GET", "POST"} if len(segments) == 5 and segments[-1] == "reservations" else {"GET"})
+        is_booking_access = is_restaurant and len(segments) == 7 and segments[4] == 'reservations' and segments[5].isdigit() and segments[6] in ('guest', 'cancel')
+        if is_booking_access:
+            allowed = {'GET'} if segments[6] == 'guest' else {'POST'}
         if self.command not in allowed:
             self.send_error(405)
             return
@@ -69,6 +72,7 @@ class PreviewHandler(SimpleHTTPRequestHandler):
             data=body,
             method=self.command,
             headers={"Accept": "application/json", "Content-Type": "application/json",
+                     **({"X-Reservation-Token": self.headers["X-Reservation-Token"]} if is_booking_access and self.headers.get("X-Reservation-Token") else {}),
                      **({"Authorization": self.headers["Authorization"]} if is_guest and self.headers.get("Authorization") else {})},
         )
         try:

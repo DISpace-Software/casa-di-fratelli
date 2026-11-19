@@ -11,7 +11,12 @@ import '../domain/models.dart';
 import 'demo_data.dart';
 
 class SeatMapException implements Exception {
-  const SeatMapException(this.message, {this.uncertain = false});
+  const SeatMapException(
+    this.message, {
+    this.uncertain = false,
+    this.code = '',
+  });
+  final String code;
   final String message;
   final bool uncertain;
   @override
@@ -85,25 +90,36 @@ class SeatMapRepository {
   void close() => _client.close();
   String _path(Restaurant restaurant) =>
       '/api/v1/restaurants/${Uri.encodeComponent(restaurant.id)}';
-  Future<dynamic> _request(String path, {Map<String, dynamic>? body}) async {
+  Future<dynamic> _request(
+    String path, {
+    Map<String, dynamic>? body,
+    Map<String, String> headers = const {},
+    bool guestManagement = false,
+  }) async {
     http.Response response;
     try {
       final uri = Uri.parse('$baseUrl$path');
       response =
           await (body == null
-                  ? _client.get(uri, headers: {'Accept': 'application/json'})
+                  ? _client.get(
+                      uri,
+                      headers: {'Accept': 'application/json', ...headers},
+                    )
                   : _client.post(
                       uri,
                       headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
+                        ...headers,
                       },
                       body: jsonEncode(body),
                     ))
               .timeout(Duration(seconds: 15));
     } on Exception {
       throw SeatMapException(
-        body == null
+        guestManagement
+            ? appStrings.bookingUpdateFailed
+            : body == null
             ? appStrings.msgCouldNotReachTheRestaurantCheckYourConnection
             : appStrings.msgNoResponseReceivedYourBookingMayHaveBeen,
         uncertain: body != null,
@@ -124,6 +140,17 @@ class SeatMapRepository {
       );
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      final code = decoded is Map ? decoded['code']?.toString() ?? '' : '';
+      if (guestManagement) {
+        throw SeatMapException(
+          code == 'CONTACT_RESTAURANT'
+              ? appStrings.cancellationContactRequired
+              : response.statusCode == 404
+              ? appStrings.bookingAccessUnavailable
+              : appStrings.bookingUpdateFailed,
+          code: code,
+        );
+      }
       final message = switch (response.statusCode) {
         409 => appStrings.msgThisTableIsAlreadyTakenReturnToThe,
         429 => appStrings.msgTheBookingLimitHasBeenReachedPleaseTry,
@@ -200,6 +227,8 @@ class SeatMapRepository {
       closesAt: _string(brand['publicLatestReservationTime'], '21:00'),
       leadMinutes: brand['publicLeadMinutes'] as int? ?? 15,
       maxDaysAhead: brand['publicMaxReservationDaysAhead'] as int? ?? 10,
+      cancellationLeadMinutes:
+          brand['guestCancellationLeadMinutes'] as int? ?? 180,
     );
     return result.copyWith(
       availableTimes: timesFor(
@@ -263,6 +292,25 @@ class SeatMapRepository {
         .toList();
     return FloorPlan(
       revision: value['revision'] as String,
+      landmarks: (value['landmarks'] as List? ?? []).map((raw) {
+        final item = _object(raw);
+        final names = item['names'];
+        return FloorLandmark(
+          id: item['id'] as String,
+          zoneId: item['zoneId'] as String,
+          kind: item['kind'] as String,
+          x: (item['x'] as num).toDouble(),
+          y: (item['y'] as num).toDouble(),
+          width: (item['width'] as num).toDouble(),
+          height: (item['height'] as num).toDouble(),
+          label: names is Map
+              ? _string(
+                  names[languageCode],
+                  _string(names['en'], _string(names['bg'])),
+                )
+              : '',
+        );
+      }).toList(),
       zones: zones,
       tables: tables,
       combinations: _list(value['combinations'])
@@ -427,7 +475,10 @@ class SeatMapRepository {
         appStrings.msgChooseAnAvailableTableWithEnoughSeats,
       );
     }
-    var id = 'demo-${_now().microsecondsSinceEpoch}', status = 'confirmed';
+    var id = 'demo-${_now().microsecondsSinceEpoch}',
+        status = 'confirmed',
+        managementToken = '';
+    Map<String, dynamic>? guestStatus;
     if (!demoMode) {
       final response = _object(
         await _request(
@@ -461,8 +512,12 @@ class SeatMapRepository {
       }
       id = '${restaurant.id}:${response['id']}';
       status = response['status'] == 'Approved' ? 'confirmed' : 'pending';
+      managementToken = _string(response['managementToken']);
+      guestStatus = response['guestReservation'] is Map<String, dynamic>
+          ? response['guestReservation'] as Map<String, dynamic>
+          : null;
     }
-    return Booking(
+    final booking = Booking(
       id: id,
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
@@ -476,7 +531,103 @@ class SeatMapRepository {
       phone: phone.trim(),
       status: status,
       demo: demoMode,
+      restaurantPhone: restaurant.phone,
+      timeZone: restaurant.timeZone,
+      managementToken: managementToken,
+      cancellationLeadMinutes: restaurant.cancellationLeadMinutes,
     );
+    return guestStatus == null
+        ? booking
+        : _withGuestStatus(booking, guestStatus);
+  }
+
+  DateTime bookingStartsAt(Booking booking) {
+    if (booking.startsAtUtc != null) return booking.startsAtUtc!;
+    final parts = booking.time.split(':');
+    return tz.TZDateTime(
+      tz.getLocation(booking.timeZone),
+      booking.date.year,
+      booking.date.month,
+      booking.date.day,
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+    ).toUtc();
+  }
+
+  DateTime cancellationDeadline(Booking booking) =>
+      booking.cancellationDeadlineUtc ??
+      bookingStartsAt(booking)
+          .subtract(Duration(minutes: booking.cancellationLeadMinutes));
+
+  bool canCancelBooking(Booking booking) =>
+      (booking.demo || booking.managementToken.isNotEmpty) &&
+      booking.serverCanCancel &&
+      ['confirmed', 'pending'].contains(booking.status) &&
+      !_now().toUtc().isAfter(cancellationDeadline(booking));
+
+  Booking _withGuestStatus(Booking booking, Map<String, dynamic> value) {
+    if ('${booking.restaurantId}:${value['id']}' != booking.id ||
+        value['status'] is! String) {
+      throw SeatMapException(appStrings.bookingUpdateFailed);
+    }
+    final status = switch (value['status']) {
+      'Approved' => 'confirmed',
+      'AwaitingEmailConfirmation' || 'Pending' => 'pending',
+      'Cancelled' => 'cancelled',
+      _ => 'completed',
+    };
+    return booking.copyWith(
+      status: status,
+      serverCanCancel: value['canCancel'] == true,
+      date: DateTime.tryParse(value['reservedDate']?.toString() ?? ''),
+      time: value['reservedTime'] as String?,
+      startsAtUtc: DateTime.tryParse(value['startsAtUtc']?.toString() ?? ''),
+      cancellationDeadlineUtc: DateTime.tryParse(
+        value['cancellationDeadlineUtc']?.toString() ?? '',
+      ),
+      cancellationLeadMinutes: value['cancellationLeadMinutes'] as int? ?? 180,
+      restaurantPhone: value['restaurantPhone'] as String?,
+      guests: value['guestCount'] as int?,
+      tableIds: value['tableIds'] is List
+          ? List<String>.from(value['tableIds'] as List)
+          : null,
+      tableLabel: value['tableIds'] is List
+          ? (value['tableIds'] as List).join(' + ')
+          : null,
+    );
+  }
+
+  String _bookingPath(Booking booking) =>
+      '/api/v1/restaurants/${Uri.encodeComponent(booking.restaurantId)}/reservations/${Uri.encodeComponent(booking.id.split(':').last)}';
+
+  Future<Booking> refreshBooking(Booking booking) async {
+    if (booking.demo || booking.managementToken.isEmpty) return booking;
+    final data = await _request(
+      '${_bookingPath(booking)}/guest',
+      headers: {'X-Reservation-Token': booking.managementToken},
+      guestManagement: true,
+    );
+    return _withGuestStatus(booking, _object(data));
+  }
+
+  Future<Booking> cancelBooking(Booking booking) async {
+    if (booking.demo) {
+      if (!canCancelBooking(booking)) {
+        throw SeatMapException(appStrings.cancellationContactRequired);
+      }
+      return booking.copyWith(status: 'cancelled', serverCanCancel: false);
+    }
+    if (booking.managementToken.isEmpty) {
+      throw SeatMapException(appStrings.bookingAccessUnavailable);
+    }
+    // Always let the server decide the deadline and ownership, including safe retries.
+    final data = await _request(
+      '${_bookingPath(booking)}/cancel',
+      body: {},
+      headers: {'X-Reservation-Token': booking.managementToken},
+      guestManagement: true,
+    );
+    return _withGuestStatus(booking, _object(data));
   }
 
   static bool canSelect(FloorPlan plan, List<SeatTable> tables, int guests) {

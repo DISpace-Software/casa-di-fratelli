@@ -40,18 +40,19 @@ internal static class AdminSessionIsolationChecks
 
         var unresolved = new CurrentTenant();
         var unresolvedController = new AdminAuthController(null!, null!, null!, null!, null!, null!, unresolved, null!);
+        unresolvedController.ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() };
         Check(unresolvedController.GetContext() is NotFoundObjectResult, "Admin context must not fall back to Casa when no tenant is resolved");
         cofein.IsListed = false;
         cofein.FrontendUrl = "https://cofein.example.test";
         cofein.NotificationsEnabled = false;
         var currentCofein = new CurrentTenant(); currentCofein.Resolve(cofein);
-        var contextController = new AdminAuthController(null!, null!, null!, null!, null!, null!, currentCofein, null!);
+        var contextController = new AdminAuthController(null!, null!, null!, null!, new ConfigurationBuilder().Build(), null!, currentCofein, null!) { ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() } };
         var contextPayload = JsonSerializer.SerializeToElement(((OkObjectResult)contextController.GetContext()).Value);
-        Check(contextPayload.EnumerateObject().Count() == 4 && contextPayload.GetProperty("tenantId").GetString() == cofein.Id &&
+        Check(contextPayload.EnumerateObject().Count() == 5 && contextPayload.TryGetProperty("reservationDictation", out _) && contextPayload.GetProperty("tenantId").GetString() == cofein.Id &&
               contextPayload.GetProperty("name").GetString() == cofein.Name &&
               contextPayload.GetProperty("frontendUrl").GetString() == cofein.FrontendUrl &&
               !contextPayload.GetProperty("notificationsEnabled").GetBoolean(),
-            "Unlisted restaurant login context must expose only resolved public identity and notification policy without DB/auth dependencies");
+            "Unlisted restaurant login context must expose only resolved public identity, notification and dictation policy without DB/auth dependencies");
 
         // Numeric IDs and owner emails may legitimately coincide across separate restaurant databases.
         // A matching ID/email must never turn a session for one restaurant into access to another.

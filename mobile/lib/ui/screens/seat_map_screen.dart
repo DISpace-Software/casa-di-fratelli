@@ -286,6 +286,9 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                                   )
                                 : _ZoomableFloorMap(
                                     key: ValueKey('$zone:${plan.revision}'),
+                                    landmarks: plan.landmarks
+                                        .where((item) => item.zoneId == zone)
+                                        .toList(),
                                     tables: tables,
                                     selected: selected,
                                     onTap: _select,
@@ -328,6 +331,48 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                       ),
                     ],
                   ),
+                  if (plan.landmarks.any((item) => item.zoneId == zone))
+                    Padding(
+                      padding: EdgeInsets.only(top: 12),
+                      child: Wrap(
+                        spacing: 14,
+                        runSpacing: 7,
+                        children:
+                            {
+                                  for (final item in plan.landmarks.where(
+                                    (item) => item.zoneId == zone,
+                                  ))
+                                    item.kind: item,
+                                }.values
+                                .map(
+                                  (item) => Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        item.kind == 'window'
+                                            ? Icons.window_outlined
+                                            : item.kind == 'tv'
+                                            ? Icons.tv_rounded
+                                            : item.kind == 'wall'
+                                            ? Icons.horizontal_rule
+                                            : Icons.door_front_door_outlined,
+                                        size: 13,
+                                        color: SeatMapColors.lavender,
+                                      ),
+                                      SizedBox(width: 5),
+                                      Text(
+                                        landmarkLabel(item),
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: SeatMapColors.muted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                                .toList(),
+                      ),
+                    ),
                   if (selection.isNotEmpty && !valid && !loading)
                     Padding(
                       padding: EdgeInsets.only(top: 16),
@@ -465,10 +510,12 @@ class _ZoomableFloorMap extends StatefulWidget {
   const _ZoomableFloorMap({
     super.key,
     required this.tables,
+    this.landmarks = const [],
     required this.selected,
     required this.onTap,
   });
   final List<SeatTable> tables;
+  final List<FloorLandmark> landmarks;
   final Set<String> selected;
   final ValueChanged<SeatTable> onTap;
   @override
@@ -534,6 +581,7 @@ class _ZoomableFloorMapState extends State<_ZoomableFloorMap> {
                   height: height,
                   child: _FloorCanvas(
                     tables: widget.tables,
+                    landmarks: widget.landmarks,
                     selected: widget.selected,
                     onTap: widget.onTap,
                     demo: false,
@@ -562,12 +610,14 @@ class _ZoomableFloorMapState extends State<_ZoomableFloorMap> {
 class _FloorCanvas extends StatelessWidget {
   const _FloorCanvas({
     required this.tables,
+    this.landmarks = const [],
     required this.selected,
     required this.onTap,
     required this.demo,
     required this.terrace,
   });
   final List<SeatTable> tables;
+  final List<FloorLandmark> landmarks;
   final Set<String> selected;
   final ValueChanged<SeatTable> onTap;
   final bool demo, terrace;
@@ -584,7 +634,11 @@ class _FloorCanvas extends StatelessWidget {
             children: [
               Positioned.fill(
                 child: CustomPaint(
-                  painter: _RoomPainter(demo: demo, terrace: terrace),
+                  painter: _RoomPainter(
+                    demo: demo,
+                    terrace: terrace,
+                    landmarks: landmarks,
+                  ),
                 ),
               ),
               for (final table in tables)
@@ -658,7 +712,12 @@ class _FloorCanvas extends StatelessWidget {
 }
 
 class _RoomPainter extends CustomPainter {
-  const _RoomPainter({required this.demo, required this.terrace});
+  const _RoomPainter({
+    required this.demo,
+    required this.terrace,
+    this.landmarks = const [],
+  });
+  final List<FloorLandmark> landmarks;
   final bool demo, terrace;
   @override
   void paint(Canvas canvas, Size size) {
@@ -682,7 +741,10 @@ class _RoomPainter extends CustomPainter {
       ),
       wall,
     );
-    if (!demo) return;
+    if (!demo) {
+      _drawLandmarks(canvas, size);
+      return;
+    }
     final window = Paint()
       ..color = Color(0xFF9583AE)
       ..strokeWidth = 2;
@@ -717,6 +779,77 @@ class _RoomPainter extends CustomPainter {
     }
   }
 
+  void _drawLandmarks(Canvas canvas, Size size) {
+    final room = Rect.fromLTWH(18, 20, size.width - 36, size.height - 41);
+    for (final item in landmarks) {
+      final rect = Rect.fromLTWH(
+        room.left + room.width * item.x / 100,
+        room.top + room.height * item.y / 100,
+        (room.width * item.width / 100).clamp(3, room.width),
+        (room.height * item.height / 100).clamp(3, room.height),
+      );
+      final color = item.kind == 'window'
+          ? Color(0xFF85BED7)
+          : item.kind == 'wall'
+          ? Color(0xFF80778E)
+          : item.kind == 'tv'
+          ? Color(0xFFA0B2F2)
+          : Color(0xFFE2BC83);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, Radius.circular(3)),
+        Paint()..color = color.withValues(alpha: .16),
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, Radius.circular(3)),
+        Paint()
+          ..color = color
+          ..strokeWidth = 1.5
+          ..style = PaintingStyle.stroke,
+      );
+      if (item.kind == 'window') {
+        if (rect.height > rect.width) {
+          for (var y = rect.top + 14; y < rect.bottom; y += 24) {
+            canvas.drawLine(
+              Offset(rect.left, y),
+              Offset(rect.right, y),
+              Paint()
+                ..color = color
+                ..strokeWidth = 1,
+            );
+          }
+        } else {
+          for (var x = rect.left + 14; x < rect.right; x += 24) {
+            canvas.drawLine(
+              Offset(x, rect.top),
+              Offset(x, rect.bottom),
+              Paint()
+                ..color = color
+                ..strokeWidth = 1,
+            );
+          }
+        }
+      }
+      final label = landmarkLabel(item);
+      if (rect.height > rect.width && item.kind != 'tv') {
+        canvas.save();
+        canvas.translate(
+          rect.center.dx + (item.x < 10 ? -7 : 7),
+          rect.center.dy,
+        );
+        canvas.rotate(-1.57079632679);
+        _text(canvas, label, Offset.zero, bold: true);
+        canvas.restore();
+      } else {
+        final point = item.kind == 'tv'
+            ? rect.center + Offset(22, 0)
+            : item.kind == 'wall'
+            ? rect.center
+            : rect.center + Offset(0, item.y < 10 ? 13 : -13);
+        _text(canvas, label, point, bold: true);
+      }
+    }
+  }
+
   void _text(Canvas canvas, String value, Offset center, {bool bold = false}) {
     final painter = TextPainter(
       text: TextSpan(
@@ -738,7 +871,9 @@ class _RoomPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RoomPainter oldDelegate) =>
-      oldDelegate.terrace != terrace || oldDelegate.demo != demo;
+      oldDelegate.terrace != terrace ||
+      oldDelegate.demo != demo ||
+      oldDelegate.landmarks != landmarks;
 }
 
 class _TablePainter extends CustomPainter {
@@ -799,3 +934,16 @@ class _TablePainter extends CustomPainter {
   bool shouldRepaint(_TablePainter oldDelegate) =>
       oldDelegate.selected != selected || oldDelegate.occupied != occupied;
 }
+
+String landmarkLabel(FloorLandmark item) => item.label.isNotEmpty
+    ? item.label
+    : switch (item.kind) {
+        'window' => appStrings.mapWindow,
+        'entrance' => appStrings.mapEntrance,
+        'terraceEntrance' => appStrings.mapTerraceEntrance,
+        'restaurantEntrance' => appStrings.mapRestaurantEntrance,
+        'tv' => appStrings.mapTv,
+        'wall' => appStrings.mapWall,
+        'bar' => appStrings.mapBar,
+        _ => '',
+      };

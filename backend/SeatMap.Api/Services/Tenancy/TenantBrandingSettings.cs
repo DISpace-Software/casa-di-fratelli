@@ -20,6 +20,7 @@ public sealed class TenantBrandingSettings
     [StringLength(2000)] public string FacebookUrl { get; set; } = "";
     [StringLength(2000)] public string InstagramUrl { get; set; } = "";
     [Range(0, 1440)] public int PublicLeadMinutes { get; set; } = 15;
+    [Range(0, 1440)] public int GuestCancellationLeadMinutes { get; set; } = 180;
     [Range(1, 365)] public int PublicMaxReservationDaysAhead { get; set; } = 10;
     [Required] public string PublicLatestReservationTime { get; set; } = "21:00";
     [Required] public string AdminLatestReservationTime { get; set; } = "23:00";

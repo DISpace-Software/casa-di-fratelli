@@ -541,5 +541,55 @@
       }
     }
   },
-  "centreLabel": "Център"
+  "centreLabel": "Център",
+  "cancellationContactRequired": "Самостоятелната отмяна не е достъпна. Свържете се с ресторанта.",
+  "bookingAccessUnavailable": "Няма ключ за управление на тази резервация. Свържете се с ресторанта.",
+  "bookingUpdateFailed": "Резервацията не можа да бъде обновена. Проверете връзката и опитайте отново.",
+  "bookingAccessSaveFailed": "Резервацията е създадена, но ключът за отмяна не можа да бъде запазен. Не изтривайте приложението; при нужда се свържете с ресторанта.",
+  "bookingCancelled": "Резервацията е отменена",
+  "cancelBookingConfirmation": "Да отменим ли резервацията в {restaurant} за {date}, {time}?",
+  "@cancelBookingConfirmation": {
+    "placeholders": {
+      "restaurant": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cancellationRuleHours": "Отмяна в приложението е възможна до {hours} ч преди началото. След това се свържете с ресторанта.",
+  "@cancellationRuleHours": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "cancellationDeadlineLabel": "Отмяна до {deadline} · местно време на ресторанта",
+  "@cancellationDeadlineLabel": {
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
+  "callRestaurant": "Обадете се на ресторанта",
+  "phoneUnavailable": "Ресторантът все още не е посочил телефон.",
+  "couldNotOpenDialer": "Телефонът не можа да бъде отворен. Можете да копирате номера.",
+  "copyPhone": "Копирайте номера",
+  "phoneCopied": "Номерът е копиран",
+  "cancellingBooking": "Отменя се…",
+  "refreshBookings": "Обновете резервациите",
+  "bookingCompleted": "Завършена",
+  "mapWindow": "Прозорец",
+  "mapEntrance": "Вход",
+  "mapTerraceEntrance": "Към терасата",
+  "mapRestaurantEntrance": "Към ресторанта",
+  "mapTv": "Телевизор",
+  "mapWall": "Преградна стена",
+  "mapBar": "Бар"
 }

@@ -1,3 +1,9 @@
+import 'dart:async';
+
+import 'package:intl/intl.dart';
+import 'package:timezone/timezone.dart' as tz;
+
+import '../restaurant_contact.dart';
 import '../../l10n/language.dart';
 import 'account_screens.dart';
 
@@ -806,13 +812,46 @@ class BookingsScreen extends StatefulWidget {
 
 class _BookingsScreenState extends State<BookingsScreen> {
   bool history = false;
+  final Set<String> cancelling = {};
+  Timer? _clock;
+  @override
+  void initState() {
+    super.initState();
+    _clock = Timer.periodic(Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _clock?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _contact(Booking booking) => showRestaurantContact(
+    context,
+    restaurantName: booking.restaurantName,
+    phone: widget.controller.restaurantPhoneFor(booking),
+    reason: booking.managementToken.isEmpty && !booking.demo
+        ? context.l10n.bookingAccessUnavailable
+        : context.l10n.cancellationContactRequired,
+  );
+
+  String _deadline(Booking booking) {
+    final local = tz.TZDateTime.from(
+      widget.controller.repository.cancellationDeadline(booking),
+      tz.getLocation(booking.timeZone),
+    );
+    return DateFormat(
+      'd MMM, HH:mm',
+      widget.controller.appLanguageCode,
+    ).format(local);
+  }
+
   Future<void> _cancel(Booking booking) async {
-    if (!booking.demo) {
-      await _info(
-        context,
-        context.l10n.msgContactTheRestaurant,
-        context.l10n.msgOnlineCancellationIsNotAvailableYetPleaseCall,
-      );
+    if (cancelling.contains(booking.id)) return;
+    if (!widget.controller.repository.canCancelBooking(booking)) {
+      await _contact(booking);
       return;
     }
     final confirmed = await showDialog<bool>(
@@ -820,10 +859,10 @@ class _BookingsScreenState extends State<BookingsScreen> {
       builder: (context) => AlertDialog(
         title: Text(context.l10n.msgCancelThisBooking),
         content: Text(
-          context.l10n.msgPPPThisIsADemoBooking(
-            (booking.restaurantName).toString(),
-            (_date(booking.date)).toString(),
-            (booking.time).toString(),
+          context.l10n.cancelBookingConfirmation(
+            booking.restaurantName,
+            _date(booking.date),
+            booking.time,
           ),
         ),
         actions: [
@@ -839,24 +878,29 @@ class _BookingsScreenState extends State<BookingsScreen> {
       ),
     );
     if (confirmed != true) return;
+    if (!mounted) return;
+    setState(() => cancelling.add(booking.id));
     try {
       await widget.controller.cancelBooking(booking.id);
-      if (mounted) _snack(context, context.l10n.msgDemoBookingCancelled);
+      if (mounted) _snack(context, context.l10n.bookingCancelled);
     } catch (error) {
-      if (mounted) _snack(context, _error(error));
+      if (mounted) {
+        if (error is SeatMapException && error.code == 'CONTACT_RESTAURANT') {
+          await _contact(booking);
+        } else {
+          _snack(context, _error(error));
+        }
+      }
+    } finally {
+      if (mounted) setState(() => cancelling.remove(booking.id));
     }
   }
 
   bool _past(Booking booking) {
-    final parts = booking.time.split(':');
-    final moment = DateTime(
-      booking.date.year,
-      booking.date.month,
-      booking.date.day,
-      int.tryParse(parts.first) ?? 0,
-      int.tryParse(parts.last) ?? 0,
-    );
-    return booking.status == 'cancelled' || moment.isBefore(DateTime.now());
+    return ['cancelled', 'completed'].contains(booking.status) ||
+        widget.controller.repository
+            .bookingStartsAt(booking)
+            .isBefore(DateTime.now().toUtc());
   }
 
   @override
@@ -872,6 +916,19 @@ class _BookingsScreenState extends State<BookingsScreen> {
           PageHeading(
             context.l10n.msgMyBookings,
             subtitle: context.l10n.msgAllYourPlansForAGreatEvening,
+            trailing: IconButton(
+              tooltip: context.l10n.refreshBookings,
+              onPressed: widget.controller.refreshingBookings
+                  ? null
+                  : widget.controller.refreshBookings,
+              icon: widget.controller.refreshingBookings
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(Icons.refresh_rounded),
+            ),
           ),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 24),
@@ -1031,6 +1088,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                       ? context
                                             .l10n
                                             .msgConfirmYourBookingByEmail
+                                      : booking.status == 'completed'
+                                      ? context.l10n.bookingCompleted
                                       : context.l10n.msgConfirmed,
                                   style: TextStyle(
                                     fontSize: 11,
@@ -1043,7 +1102,43 @@ class _BookingsScreenState extends State<BookingsScreen> {
                             ],
                           ),
                           if (!history) ...[
-                            Divider(height: 31),
+                            SizedBox(height: 12),
+                            Text(
+                              context.l10n.cancellationRuleHours(
+                                (booking.cancellationLeadMinutes / 60)
+                                    .toStringAsFixed(0),
+                              ),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: SeatMapColors.muted,
+                                height: 1.5,
+                              ),
+                            ),
+                            if (widget.controller.repository.canCancelBooking(
+                              booking,
+                            )) ...[
+                              SizedBox(height: 5),
+                              Text(
+                                context.l10n.cancellationDeadlineLabel(
+                                  _deadline(booking),
+                                ),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: SeatMapColors.lavender,
+                                ),
+                              ),
+                            ],
+                            if (widget.controller
+                                .restaurantPhoneFor(booking)
+                                .isNotEmpty)
+                              TextButton.icon(
+                                onPressed: () => _contact(booking),
+                                icon: Icon(Icons.phone_outlined, size: 15),
+                                label: Text(
+                                  widget.controller.restaurantPhoneFor(booking),
+                                ),
+                              ),
+                            Divider(height: 20),
                             Row(
                               children: [
                                 Expanded(
@@ -1066,14 +1161,23 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                 ),
                                 Expanded(
                                   child: TextButton(
-                                    onPressed: () => _cancel(booking),
+                                    onPressed: cancelling.contains(booking.id)
+                                        ? null
+                                        : () => _cancel(booking),
                                     child: Text(
-                                      booking.demo
+                                      cancelling.contains(booking.id)
+                                          ? context.l10n.cancellingBooking
+                                          : widget.controller.repository
+                                                .canCancelBooking(booking)
                                           ? context.l10n.msgCancel
                                           : context.l10n.msgContact,
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: SeatMapColors.muted,
+                                        color:
+                                            widget.controller.repository
+                                                .canCancelBooking(booking)
+                                            ? SeatMapColors.lavender
+                                            : SeatMapColors.muted,
                                       ),
                                     ),
                                   ),
@@ -1087,6 +1191,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
                   ),
                 ),
                 SizedBox(height: 15),
+                if (widget.controller.bookingsError != null)
+                  DemoNotice(widget.controller.bookingsError!),
                 DemoNotice(
                   context.l10n.msgBookingsAreStoredOnThisDeviceTestBookings,
                 ),

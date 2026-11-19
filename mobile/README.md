@@ -20,7 +20,7 @@ On this machine, if Flutter is not on your PATH:
 
 For testing on your iPhone, see [the device guide](docs/IPHONE_TESTING.md).
 
-For a native device, use `flutter devices` and `flutter run -d <device-id>`. Android requires an Android SDK and a compatible JDK. iOS requires full Xcode, its platform SDKs, and signing for a physical device. This machine currently has only Xcode Command Line Tools and no Android SDK, so native packages have not been built or device-tested.
+For a native device, use `flutter devices` and `flutter run -d <device-id>`. Android requires an Android SDK and a compatible JDK. iOS requires full Xcode, its platform SDKs, and signing for a physical device. Xcode 26.3 is selected on this Mac; a signed release has been installed and launched on the user’s iPhone 14 Plus. Android still requires its SDK and device testing.
 
 ## Accounts
 
@@ -39,8 +39,8 @@ Only offline demo mode shows a one-tap test account button. This is local demo a
 - Four-tab navigation: overview, search, bookings, profile.
 - Restaurant search by name, cuisine and area, city selection and cuisine filters.
 - Date, time and party-size selection; restaurant menu; six-image demo photo gallery; favourites.
-- Table status, zones, capacity and allowed combination checks; selected-table summary and booking contact form with explicit privacy consent.
-- Booking result, email-confirmation-pending state, booking history and local demo cancellation.
+- Table status, zones, windows/entrances/TV/partition landmarks from the restaurant plan, capacity and allowed combination checks; selected-table summary and booking contact form with explicit privacy consent.
+- Booking result, email confirmation status refresh, device booking history, and real guest cancellation at least three hours before the reservation. Restaurant contact and tap-to-call after the cutoff.
 - Real guest registration/login, full editable server profile, password change, session revocation and account deletion.
 - Persisted local favourites, an offline test account and a labelled demo reminder preference.
 - Loading, empty, offline and conflict states. Real request failures never become fake successful bookings.
@@ -71,7 +71,7 @@ To override the backend, pass `--dart-define=SEATMAP_API_BASE_URL=https://your-a
 
 Use an API **origin**, without `/api` at the end. Live mode replaces the demo catalogue with the backend's published restaurants. The production catalogue publishes Casa di Fratelli and Cofein. Restaurant names, branding, floor plans, seasonal closures, blocked slots, menus and booking creation use the versioned restaurant API. The live catalogue does not invent Cosmos entries or restaurant ratings. The city and cuisine filters use available catalogue data; the current API does not provide a geographic search index, so unknown cities are not inferred.
 
-Real reservations are sent only after the user submits the contact form. For first-visit email confirmation, the app accurately shows a pending result; the current server email link opens the restaurant website. There is no guest booking status/read endpoint, so a live pending booking cannot currently refresh its status in the mobile app. Live cancellation directs the user to contact the restaurant; it does not pretend to cancel a server booking.
+Real reservations are sent only after the user submits the contact form. For first-visit email confirmation, the app accurately shows a pending result; the current server email link opens the restaurant website. New bookings receive a private management capability. The app refreshes their actual status when opening Bookings or resuming. Self cancellation is allowed through the server deadline (three hours before the start, in the restaurant’s timezone); later changes require contacting the restaurant. Older bookings without that capability remain contact-only. Contact data never proves ownership.
 
 Live identity and profile use the new guest API; favourites and the device's booking list remain local. The updated API and platform migration are deployed on Render. The app uses no admin credentials or admin endpoints. HTTP errors are shown to the user, and a request timeout is treated as an uncertain result rather than a safe retry.
 
@@ -105,9 +105,13 @@ GET  /api/v1/restaurants/{id}/closure
 GET  /api/v1/restaurants/{id}/reservations/blocked-slots
 GET  /api/v1/restaurants/{id}/menu
 POST /api/v1/restaurants/{id}/reservations
+GET  /api/v1/restaurants/{id}/reservations/{bookingId}/guest
+POST /api/v1/restaurants/{id}/reservations/{bookingId}/cancel
 ```
 
 Creation sends `guestName`, `phone`, `email`, `guestCount`, `area`, `reservedDate` (`YYYY-MM-DD` in the restaurant's calendar), `reservedTime` (`HH:mm`), string `tableIds`, `notes`, `privacyConsent`, and `marketingConsent`. Restaurant time calculations use the bundled IANA timezone database. Reservation IDs are stored with their restaurant ID to avoid collisions between restaurant databases.
+
+Guest status/cancellation require the booking-specific `X-Reservation-Token` header. The raw capability is returned once on creation and stored separately in iOS Keychain/Android encrypted storage; it is excluded from SharedPreferences metadata. The server stores only its SHA-256 hash. Cancel retries are idempotent, and deadline checks run inside the restaurant write transaction. Browser-preview capabilities last only for the current page session. See [the guest cancellation contract](../docs/guest-cancellation.md).
 
 ## Project layout
 

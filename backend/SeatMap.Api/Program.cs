@@ -27,6 +27,9 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("guest-auth", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(5), QueueLimit = 0 }));
+    options.AddPolicy("guest-reservations", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 60, Window = TimeSpan.FromMinutes(5), QueueLimit = 0 }));
 });
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -64,6 +67,7 @@ builder.Services.AddHttpClient<EmailService>(client =>
 builder.Services.AddScoped<ReservationConflictService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ReservationBookingService>();
+builder.Services.AddScoped<GuestReservationService>();
 builder.Services.AddScoped<IReservationBookingNotifications, ReservationBookingNotifications>();
 builder.Services.AddScoped<AdminAuthService>();
 builder.Services.AddScoped<AuditService>();

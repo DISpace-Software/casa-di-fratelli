@@ -1184,4 +1184,88 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get centreLabel => 'Център';
+
+  @override
+  String get cancellationContactRequired =>
+      'Самостоятелната отмяна не е достъпна. Свържете се с ресторанта.';
+
+  @override
+  String get bookingAccessUnavailable =>
+      'Няма ключ за управление на тази резервация. Свържете се с ресторанта.';
+
+  @override
+  String get bookingUpdateFailed =>
+      'Резервацията не можа да бъде обновена. Проверете връзката и опитайте отново.';
+
+  @override
+  String get bookingAccessSaveFailed =>
+      'Резервацията е създадена, но ключът за отмяна не можа да бъде запазен. Не изтривайте приложението; при нужда се свържете с ресторанта.';
+
+  @override
+  String get bookingCancelled => 'Резервацията е отменена';
+
+  @override
+  String cancelBookingConfirmation(
+    String restaurant,
+    String date,
+    String time,
+  ) {
+    return 'Да отменим ли резервацията в $restaurant за $date, $time?';
+  }
+
+  @override
+  String cancellationRuleHours(String hours) {
+    return 'Отмяна в приложението е възможна до $hours ч преди началото. След това се свържете с ресторанта.';
+  }
+
+  @override
+  String cancellationDeadlineLabel(String deadline) {
+    return 'Отмяна до $deadline · местно време на ресторанта';
+  }
+
+  @override
+  String get callRestaurant => 'Обадете се на ресторанта';
+
+  @override
+  String get phoneUnavailable => 'Ресторантът все още не е посочил телефон.';
+
+  @override
+  String get couldNotOpenDialer =>
+      'Телефонът не можа да бъде отворен. Можете да копирате номера.';
+
+  @override
+  String get copyPhone => 'Копирайте номера';
+
+  @override
+  String get phoneCopied => 'Номерът е копиран';
+
+  @override
+  String get cancellingBooking => 'Отменя се…';
+
+  @override
+  String get refreshBookings => 'Обновете резервациите';
+
+  @override
+  String get bookingCompleted => 'Завършена';
+
+  @override
+  String get mapWindow => 'Прозорец';
+
+  @override
+  String get mapEntrance => 'Вход';
+
+  @override
+  String get mapTerraceEntrance => 'Към терасата';
+
+  @override
+  String get mapRestaurantEntrance => 'Към ресторанта';
+
+  @override
+  String get mapTv => 'Телевизор';
+
+  @override
+  String get mapWall => 'Преградна стена';
+
+  @override
+  String get mapBar => 'Бар';
 }

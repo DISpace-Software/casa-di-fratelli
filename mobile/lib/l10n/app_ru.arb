@@ -541,5 +541,55 @@
       }
     }
   },
-  "centreLabel": "Центр"
+  "centreLabel": "Центр",
+  "cancellationContactRequired": "Самостоятельная отмена недоступна. Свяжитесь с рестораном.",
+  "bookingAccessUnavailable": "Нет ключа управления этой бронью. Свяжитесь с рестораном.",
+  "bookingUpdateFailed": "Не удалось обновить бронь. Проверьте соединение и повторите.",
+  "bookingAccessSaveFailed": "Бронь создана, но не удалось сохранить ключ отмены на устройстве. Не удаляйте приложение; при необходимости свяжитесь с рестораном.",
+  "bookingCancelled": "Бронь отменена",
+  "cancelBookingConfirmation": "Отменить бронь в {restaurant} на {date}, {time}?",
+  "@cancelBookingConfirmation": {
+    "placeholders": {
+      "restaurant": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cancellationRuleHours": "Отмена в приложении доступна не позднее чем за {hours} ч до начала. Позже — только через ресторан.",
+  "@cancellationRuleHours": {
+    "placeholders": {
+      "hours": {
+        "type": "String"
+      }
+    }
+  },
+  "cancellationDeadlineLabel": "Отменить до {deadline} · время ресторана",
+  "@cancellationDeadlineLabel": {
+    "placeholders": {
+      "deadline": {
+        "type": "String"
+      }
+    }
+  },
+  "callRestaurant": "Позвонить в ресторан",
+  "phoneUnavailable": "Телефон пока не указан рестораном.",
+  "couldNotOpenDialer": "Не удалось открыть телефон. Номер можно скопировать.",
+  "copyPhone": "Скопировать номер",
+  "phoneCopied": "Номер скопирован",
+  "cancellingBooking": "Отменяем…",
+  "refreshBookings": "Обновить брони",
+  "bookingCompleted": "Завершена",
+  "mapWindow": "Окно",
+  "mapEntrance": "Вход",
+  "mapTerraceEntrance": "На террасу",
+  "mapRestaurantEntrance": "В ресторан",
+  "mapTv": "Телевизор",
+  "mapWall": "Перегородка",
+  "mapBar": "Бар"
 }
