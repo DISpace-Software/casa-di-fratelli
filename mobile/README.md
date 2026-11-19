@@ -40,6 +40,7 @@ Only offline demo mode shows a one-tap test account button. This is local demo a
 - Restaurant search by name, cuisine and area, city selection and cuisine filters.
 - Date, time and party-size selection; restaurant menu; six-image demo photo gallery; favourites.
 - Table status, zones, windows/entrances/TV/partition landmarks from the restaurant plan, capacity and allowed combination checks; selected-table summary and booking contact form with explicit privacy consent.
+- Cofein's native architectural map preserves the website's walls, windows, bar, booths and table geometry in SeatMap's dark/lavender palette. Interior and exterior each have two detail views, pinch/pan, zoom buttons and fit-to-view. API table edits and availability refresh without resetting the camera; occupied tables and closed halls are hidden.
 - Booking result, email confirmation status refresh, device booking history, and real guest cancellation at least three hours before the reservation. Restaurant contact and tap-to-call after the cutoff.
 - Real guest registration with email code verification, login, full editable server profile, email password recovery, password change, session revocation and account deletion.
 - Foreground seat maps refresh every three seconds, including table edits, seasonal room closures and dated restaurant closures. See [email and live-map behavior](../docs/guest-email-and-live-map.md).
@@ -122,6 +123,7 @@ lib/data/         Demo data, HTTP adapter, map/availability rules
 lib/state/        UI state and local persistence
 lib/ui/           Theme and reusable components
 lib/ui/screens/   Discovery, detail, map, booking, profile and login
+lib/ui/maps/      Native Cofein architecture, furniture and map controls
 assets/           Bundled imagery, font licence, editable icon source
 android/          Android application project
 ios/             iOS application project
@@ -138,6 +140,18 @@ flutter build web --release --no-tree-shake-icons --no-wasm-dry-run
 ```
 
 Tests cover the actual reservation DTO, string table IDs, table areas, public holds, 180-minute conflicts and hall-block boundaries, no fake success on an API failure, durable demo booking occupancy/cancellation, test credentials, and discovery → detail → seat map → booking → bookings navigation at phone widths.
+
+Cofein tests also cover coordinate projection, API table edits, occupied tables, seasonal hall closures, stable camera updates, allowed table groups, and BG/EN/RU layouts at 320, 390 and 430 pt widths. To capture its real architecture without creating reservations, run from `mobile/`:
+
+```sh
+mkdir -p .local
+curl --fail --silent --show-error \
+  https://casa-di-fratelli-api.onrender.com/api/v1/restaurants/cofein/floor-plan \
+  --output .local/cofein-map.json
+flutter test test/cofein_map_widget_test.dart --dart-define=CAPTURE_COFEIN_VISUALS=true
+```
+
+These optional screenshots are written to `.local/visual-cofein-*.png`; ordinary tests use local fixtures and need no network.
 
 The supplied raster image is the design reference. No editable Figma link, component library or original restaurant photos were provided. Layout, colours, spacing and controls are reconstructed from that reference; the main interior imagery is AI-created to match its visual direction. See `assets/ASSETS.md` for provenance. Exact Figma-layer/pixel equivalence and native-device behaviour have not been certified.
 

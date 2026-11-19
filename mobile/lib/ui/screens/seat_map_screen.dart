@@ -11,6 +11,7 @@ import '../../data/seatmap_repository.dart';
 import '../../state/app_controller.dart';
 import '../components.dart';
 import '../theme.dart';
+import '../maps/cofein_seat_map.dart';
 import 'discovery_screens.dart';
 import 'support_screens.dart';
 
@@ -127,28 +128,23 @@ class _SeatMapScreenState extends State<SeatMapScreen>
         selected.remove(table.id);
         return;
       }
-      final existing = plan.tables
-          .where((item) => selected.contains(item.id))
-          .toList();
-      if (existing.isEmpty ||
-          table.capacity >= widget.controller.guestCount ||
-          existing.fold(0, (sum, item) => sum + item.capacity) >=
-              widget.controller.guestCount) {
-        selected.clear();
-      }
       final candidate = {...selected, table.id};
-      if (candidate.length > 1 &&
-          !plan.combinations.any(
+      // Keep valid partial groups, even when their seats already fit the party.
+      final canExtend =
+          candidate.length > 1 &&
+          candidate.length <= plan.publicMaxTables &&
+          plan.combinations.any(
             (combination) => candidate.every(combination.contains),
-          )) {
-        selected.clear();
-      }
+          );
+      if (!canExtend) selected.clear();
       selected.add(table.id);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final cofeinMap =
+        widget.restaurant.id == 'cofein' && !widget.controller.demoMode;
     final visibleZones = plan.zones.where((item) => item.active).toList();
     final tables = plan.tables
         .where((table) => table.zoneId == zone && !table.occupied)
@@ -207,12 +203,12 @@ class _SeatMapScreenState extends State<SeatMapScreen>
             ),
             Expanded(
               child: ListView(
-                padding: EdgeInsets.fromLTRB(24, 22, 24, 15),
+                padding: EdgeInsets.fromLTRB(24, cofeinMap ? 12 : 22, 24, 15),
                 children: [
                   Text(
                     context.l10n.msgChooseYourTable,
                     style: TextStyle(
-                      fontSize: 29,
+                      fontSize: cofeinMap ? 25 : 29,
                       height: 1.15,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -.85,
@@ -236,7 +232,7 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                       ),
                     ),
                   ),
-                  SizedBox(height: 19),
+                  SizedBox(height: cofeinMap ? 12 : 19),
                   SizedBox(
                     height: 36,
                     child: ListView.separated(
@@ -254,7 +250,7 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                       ),
                     ),
                   ),
-                  SizedBox(height: 19),
+                  SizedBox(height: cofeinMap ? 12 : 19),
                   if (plan.zones.every((item) => !item.active) && error == null)
                     DemoNotice(context.l10n.allZonesClosed),
                   if (error != null)
@@ -302,6 +298,36 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                             .l10n
                             .msgChooseAnotherRoomOrContactTheRestaurant,
                       ),
+                    )
+                  else if (cofeinMap)
+                    Stack(
+                      children: [
+                        CofeinSeatMap(
+                          key: const ValueKey('cofein-seat-map'),
+                          plan: plan,
+                          zoneId: zone,
+                          selected: selected,
+                          onTap: _select,
+                          language: AppLanguage.code,
+                          mapHeight: (MediaQuery.sizeOf(context).height * .44)
+                              .clamp(300.0, 440.0),
+                        ),
+                        if (loading)
+                          Positioned.fill(
+                            child: AbsorbPointer(
+                              child: ColoredBox(
+                                color: SeatMapColors.background.withValues(
+                                  alpha: .45,
+                                ),
+                                child: const Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     )
                   else
                     AspectRatio(
@@ -351,7 +377,7 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _Legend(
-                        color: Color(0xFF8270B1),
+                        color: const Color(0xFF8270B1),
                         label: context.l10n.msgAvailable,
                       ),
                       _Legend(
@@ -428,7 +454,12 @@ class _SeatMapScreenState extends State<SeatMapScreen>
         ),
       ),
       bottomNavigationBar: Container(
-        padding: EdgeInsets.fromLTRB(24, 18, 24, bottomInset(context) + 10),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          cofeinMap ? 12 : 18,
+          24,
+          bottomInset(context) + 10,
+        ),
         decoration: BoxDecoration(
           color: SeatMapColors.surface,
           border: Border(top: BorderSide(color: SeatMapColors.line)),
@@ -488,7 +519,7 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                 ),
               ],
             ),
-            SizedBox(height: 23),
+            SizedBox(height: cofeinMap ? 14 : 23),
             PrimaryButton(
               label: context.l10n.msgContinue,
               onPressed: valid

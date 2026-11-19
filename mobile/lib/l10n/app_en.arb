@@ -686,5 +686,17 @@
   },
   "menuCoffee": "Espresso",
   "menuLemonade": "Homemade lemonade",
-  "preorderCartLimit": "Choose up to 40 different items per preorder."
+  "preorderCartLimit": "Choose up to 40 different items per preorder.",
+  "mapZoomIn": "Zoom in",
+  "mapZoomOut": "Zoom out",
+  "cofeinMapGestureHint": "Pinch to zoom · drag to explore",
+  "cofeinAvailableTables": "{count} available",
+  "cofeinNoTablesInPart": "No tables are available in this part. Choose another part of the room.",
+  "@cofeinAvailableTables": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

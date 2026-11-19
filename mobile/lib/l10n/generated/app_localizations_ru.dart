@@ -1491,4 +1491,23 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get preorderCartLimit =>
       'В одном предзаказе можно выбрать до 40 разных позиций.';
+
+  @override
+  String get mapZoomIn => 'Приблизить';
+
+  @override
+  String get mapZoomOut => 'Отдалить';
+
+  @override
+  String get cofeinMapGestureHint =>
+      'Разведите пальцы для увеличения · сдвигайте карту';
+
+  @override
+  String cofeinAvailableTables(int count) {
+    return '$count свободно';
+  }
+
+  @override
+  String get cofeinNoTablesInPart =>
+      'В этой части нет свободных столов. Выберите другую часть зала.';
 }

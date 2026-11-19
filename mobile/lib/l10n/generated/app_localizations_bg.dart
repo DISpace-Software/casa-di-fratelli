@@ -1490,4 +1490,23 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get preorderCartLimit =>
       'Изберете до 40 различни артикула за една поръчка.';
+
+  @override
+  String get mapZoomIn => 'Увеличи';
+
+  @override
+  String get mapZoomOut => 'Намали';
+
+  @override
+  String get cofeinMapGestureHint =>
+      'Раздалечете пръсти за увеличение · плъзнете за преглед';
+
+  @override
+  String cofeinAvailableTables(int count) {
+    return '$count свободни';
+  }
+
+  @override
+  String get cofeinNoTablesInPart =>
+      'В тази част няма свободни маси. Изберете друга част на залата.';
 }

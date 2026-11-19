@@ -686,5 +686,17 @@
   },
   "menuCoffee": "Эспрессо",
   "menuLemonade": "Домашний лимонад",
-  "preorderCartLimit": "В одном предзаказе можно выбрать до 40 разных позиций."
+  "preorderCartLimit": "В одном предзаказе можно выбрать до 40 разных позиций.",
+  "mapZoomIn": "Приблизить",
+  "mapZoomOut": "Отдалить",
+  "cofeinMapGestureHint": "Разведите пальцы для увеличения · сдвигайте карту",
+  "cofeinAvailableTables": "{count} свободно",
+  "cofeinNoTablesInPart": "В этой части нет свободных столов. Выберите другую часть зала.",
+  "@cofeinAvailableTables": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

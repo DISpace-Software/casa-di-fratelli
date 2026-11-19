@@ -2707,6 +2707,36 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'В одном предзаказе можно выбрать до 40 разных позиций.'**
   String get preorderCartLimit;
+
+  /// No description provided for @mapZoomIn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Приблизить'**
+  String get mapZoomIn;
+
+  /// No description provided for @mapZoomOut.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отдалить'**
+  String get mapZoomOut;
+
+  /// No description provided for @cofeinMapGestureHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Разведите пальцы для увеличения · сдвигайте карту'**
+  String get cofeinMapGestureHint;
+
+  /// No description provided for @cofeinAvailableTables.
+  ///
+  /// In ru, this message translates to:
+  /// **'{count} свободно'**
+  String cofeinAvailableTables(int count);
+
+  /// No description provided for @cofeinNoTablesInPart.
+  ///
+  /// In ru, this message translates to:
+  /// **'В этой части нет свободных столов. Выберите другую часть зала.'**
+  String get cofeinNoTablesInPart;
 }
 
 class _AppLocalizationsDelegate

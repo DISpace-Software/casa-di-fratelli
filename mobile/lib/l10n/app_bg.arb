@@ -686,5 +686,17 @@
   },
   "menuCoffee": "Еспресо",
   "menuLemonade": "Домашна лимонада",
-  "preorderCartLimit": "Изберете до 40 различни артикула за една поръчка."
+  "preorderCartLimit": "Изберете до 40 различни артикула за една поръчка.",
+  "mapZoomIn": "Увеличи",
+  "mapZoomOut": "Намали",
+  "cofeinMapGestureHint": "Раздалечете пръсти за увеличение · плъзнете за преглед",
+  "cofeinAvailableTables": "{count} свободни",
+  "cofeinNoTablesInPart": "В тази част няма свободни маси. Изберете друга част на залата.",
+  "@cofeinAvailableTables": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

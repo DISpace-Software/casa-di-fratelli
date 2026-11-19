@@ -1487,4 +1487,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get preorderCartLimit =>
       'Choose up to 40 different items per preorder.';
+
+  @override
+  String get mapZoomIn => 'Zoom in';
+
+  @override
+  String get mapZoomOut => 'Zoom out';
+
+  @override
+  String get cofeinMapGestureHint => 'Pinch to zoom · drag to explore';
+
+  @override
+  String cofeinAvailableTables(int count) {
+    return '$count available';
+  }
+
+  @override
+  String get cofeinNoTablesInPart =>
+      'No tables are available in this part. Choose another part of the room.';
 }
