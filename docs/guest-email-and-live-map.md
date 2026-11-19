@@ -1,6 +1,6 @@
 # Guest email verification and live restaurant maps
 
-Mobile loads the restaurant floor plan, public blocking slots, seasonal zone settings and dated restaurant closure from the live restaurant API. While the map is visible and the app is in the foreground, it refreshes every three seconds without a loading overlay. Network latency is additional; this is polling, not an instantaneous push stream. Requests do not overlap. Responses for a superseded date/time/party size are discarded. Returning to the map or resuming the app also refreshes it.
+Mobile loads the restaurant floor plan, public blocking slots, seasonal zone settings and dated restaurant closure from the live restaurant API. While the map is visible and the app is in the foreground, it refreshes every three seconds without a loading overlay. Map geometry changes also refit the room; occupancy-only updates preserve the user’s zoom. Network latency is additional; this is polling, not an instantaneous push stream. Requests do not overlap. Responses for a superseded date/time/party size are discarded. Returning to the map or resuming the app also refreshes it.
 
 Moving, adding, deleting or deactivating tables therefore changes the open mobile map. Removing a selected table, moving it to another room, closing its room or occupying it clears the invalid selection. Closed rooms remain labelled **Closed** with disabled tabs; another open room is selected automatically. Dated whole-restaurant closures disable all rooms on affected dates. Seasonal closure remains in force until staff reopen the room. Casa's `openTerrace` uses the existing live seasonal setting; no closure is hardcoded in Flutter.
 
@@ -10,7 +10,7 @@ Availability is fetched again before submitting a booking. The server remains au
 
 Platform account mail uses a dedicated `IGuestEmailSender` and Resend, independent of restaurant notification switches (including Cofein's disabled booking notifications).
 
-- Registration saves an unverified account and returns a challenge, without a session token. Entering the emailed six-digit code verifies email and creates a session.
+- Registration saves an unverified account and returns a challenge, without a session token. Entering the emailed six-digit code verifies email, revokes any earlier sessions (including unverified legacy sessions), and creates a fresh session.
 - Login rejects an unverified account with `403 EMAIL_NOT_VERIFIED`; mobile offers the verification screen. Existing accounts also need to verify their email once. Previously issued sessions for unverified accounts are refused.
 - Forgot password accepts an email and returns the same challenge-shaped response for known and unknown accounts. Unknown accounts receive no mail. Mobile does not reveal whether the email exists.
 - A valid reset code changes the password, verifies email ownership, clears login lockout and revokes all existing sessions. It does not automatically log the user in.

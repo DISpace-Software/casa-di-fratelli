@@ -559,6 +559,14 @@ class _ZoomableFloorMap extends StatefulWidget {
 class _ZoomableFloorMapState extends State<_ZoomableFloorMap> {
   final transformation = TransformationController();
   bool fitted = false;
+  String _geometry(List<SeatTable> tables) =>
+      tables.map((t) => '${t.id}:${t.x}:${t.y}:${t.wide}').join('|');
+  @override
+  void didUpdateWidget(covariant _ZoomableFloorMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_geometry(oldWidget.tables) != _geometry(widget.tables)) fitted = false;
+  }
+
   @override
   void dispose() {
     transformation.dispose();

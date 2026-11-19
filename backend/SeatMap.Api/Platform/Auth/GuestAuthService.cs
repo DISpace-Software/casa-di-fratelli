@@ -199,6 +199,9 @@ public sealed class GuestAuthService(PlatformDbContext db, GuestPasswordHasher h
         var challenge = await ConsumeCodeAsync(request, "verify", ct);
         var profile = await db.GuestProfiles.SingleAsync(x => x.Id == challenge.GuestProfileId, ct);
         profile.EmailVerifiedAtUtc = Now;
+        // Do not revive sessions issued before verification (including legacy clients).
+        await db.GuestSessions.Where(x => x.GuestProfileId == profile.Id && x.RevokedAtUtc == null)
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.RevokedAtUtc, Now), ct);
         var result = await CreateSessionAsync(profile, ct);
         await transaction.CommitAsync(ct);
         return result;

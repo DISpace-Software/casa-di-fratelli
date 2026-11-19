@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 using SeatMap.Api.Controllers;
 using SeatMap.Api.Platform;
 using SeatMap.Api.Platform.Auth;
+using SeatMap.Api.Platform.Models;
 using SeatMap.Api.Platform.Data;
 using SeatMap.Api.Services.Tenancy;
 
@@ -72,7 +73,18 @@ try
     var pending = await created.Content.ReadFromJsonAsync<JsonElement>();
     Check(!pending.TryGetProperty("token", out _), "Registration cannot create a session before email verification");
     Check((await client.PostAsJsonAsync("/api/v1/guest/login", new { register.Email, register.Password })).StatusCode == HttpStatusCode.Forbidden, "Unverified login requires email verification");
+    const string legacyToken = "legacy-unverified-session-token-created-before-verification";
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
+        var guestId = await db.GuestCredentials.Where(x => x.NormalizedEmail == register.Email.ToLowerInvariant()).Select(x => x.GuestProfileId).SingleAsync();
+        db.GuestSessions.Add(new GuestSession { GuestProfileId = guestId, TokenHash = GuestAuthService.HashToken(legacyToken), CreatedAtUtc = clock.GetUtcNow().UtcDateTime, ExpiresAtUtc = clock.GetUtcNow().AddDays(1).UtcDateTime });
+        await db.SaveChangesAsync();
+    }
     var auth = await Verify(pending);
+    client.DefaultRequestHeaders.Authorization = new("Bearer", legacyToken);
+    Check((await client.GetAsync("/api/v1/guest/me")).StatusCode == HttpStatusCode.Unauthorized, "Email verification never revives a legacy unverified session");
+    client.DefaultRequestHeaders.Authorization = null;
     var token = auth.GetProperty("token").GetString()!;
     Check(created.Headers.CacheControl?.NoStore == true && !created.Headers.Contains("X-Tenant-Id"), "Account responses are not cached and have no restaurant context");
     var profile = auth.GetProperty("profile");
@@ -84,7 +96,7 @@ try
     {
         var db = scope.ServiceProvider.GetRequiredService<PlatformDbContext>();
         var createdId = profile.GetProperty("id").GetGuid();
-        var credential = await db.GuestCredentials.SingleAsync(x => x.GuestProfileId == createdId); var session = await db.GuestSessions.SingleAsync(x => x.GuestProfileId == createdId);
+        var credential = await db.GuestCredentials.SingleAsync(x => x.GuestProfileId == createdId); var session = await db.GuestSessions.SingleAsync(x => x.GuestProfileId == createdId && x.RevokedAtUtc == null);
         Check(credential.PasswordHash != register.Password && session.TokenHash != token && session.TokenHash == GuestAuthService.HashToken(token), "Database persists password and token hashes only");
     }
     var second = await client.PostAsJsonAsync("/api/v1/guest/register", new { firstName = "Другой", lastName = "Гость", email = $"second-{runId}@example.test", phone = "+359888123457", password = register.Password, confirmPassword = register.Password, privacyConsent = true });
