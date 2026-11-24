@@ -14,6 +14,12 @@ import '../data/guest_account_repository.dart';
 import '../data/booking_access_store.dart';
 
 class AppController extends ChangeNotifier {
+  int preorderRevision = 0;
+  void preordersChanged() {
+    preorderRevision++;
+    notifyListeners();
+  }
+
   AppController({
     SeatMapRepository? repository,
     GuestAccountRepository? accounts,

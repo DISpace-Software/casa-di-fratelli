@@ -121,6 +121,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('orders-history')));
+      await tester.pumpAndSettle();
       expect(find.text('No bacon'), findsOneWidget);
       await tester.tap(find.text('Edit preorder'));
       await tester.pumpAndSettle();

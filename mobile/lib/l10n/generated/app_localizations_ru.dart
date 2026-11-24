@@ -1567,4 +1567,22 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get preorderLocalSaveFailed =>
       'Не удалось сохранить корзину на устройстве. Оставьте экран открытым и попробуйте ещё раз.';
+
+  @override
+  String get ordersTab => 'Заказы';
+
+  @override
+  String get ordersSubtitle => 'Всё для вашего визита';
+
+  @override
+  String get ordersActive => 'Активные';
+
+  @override
+  String get ordersHistoryEmpty => 'Здесь появятся заказы прошедших визитов.';
+
+  @override
+  String get ordersNotSent => 'Черновик не отправлен на кухню.';
+
+  @override
+  String get ordersUnpaidDraft => 'Неоплаченный черновик';
 }

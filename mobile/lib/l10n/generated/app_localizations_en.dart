@@ -1563,4 +1563,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get preorderLocalSaveFailed =>
       'Could not save the cart on this device. Keep this screen open and try again.';
+
+  @override
+  String get ordersTab => 'Orders';
+
+  @override
+  String get ordersSubtitle => 'Everything for your visit';
+
+  @override
+  String get ordersActive => 'Active';
+
+  @override
+  String get ordersHistoryEmpty => 'Orders from past visits will appear here.';
+
+  @override
+  String get ordersNotSent => 'This draft has not been sent to the kitchen.';
+
+  @override
+  String get ordersUnpaidDraft => 'Unpaid draft';
 }

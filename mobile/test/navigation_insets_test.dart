@@ -33,7 +33,7 @@ void main() {
       await tester.pumpAndSettle();
       final safeBottom = 844 - inset;
       final navigation = find.byKey(const ValueKey('app-bottom-navigation'));
-      for (var index = 0; index < 4; index++) {
+      for (var index = 0; index < 5; index++) {
         final tab = find.byKey(ValueKey('navigation-tab-$index'));
         final label = find.descendant(of: tab, matching: find.byType(Text));
         expect(label, findsOneWidget);

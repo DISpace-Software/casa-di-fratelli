@@ -2839,6 +2839,42 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось сохранить корзину на устройстве. Оставьте экран открытым и попробуйте ещё раз.'**
   String get preorderLocalSaveFailed;
+
+  /// No description provided for @ordersTab.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказы'**
+  String get ordersTab;
+
+  /// No description provided for @ordersSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Всё для вашего визита'**
+  String get ordersSubtitle;
+
+  /// No description provided for @ordersActive.
+  ///
+  /// In ru, this message translates to:
+  /// **'Активные'**
+  String get ordersActive;
+
+  /// No description provided for @ordersHistoryEmpty.
+  ///
+  /// In ru, this message translates to:
+  /// **'Здесь появятся заказы прошедших визитов.'**
+  String get ordersHistoryEmpty;
+
+  /// No description provided for @ordersNotSent.
+  ///
+  /// In ru, this message translates to:
+  /// **'Черновик не отправлен на кухню.'**
+  String get ordersNotSent;
+
+  /// No description provided for @ordersUnpaidDraft.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неоплаченный черновик'**
+  String get ordersUnpaidDraft;
 }
 
 class _AppLocalizationsDelegate

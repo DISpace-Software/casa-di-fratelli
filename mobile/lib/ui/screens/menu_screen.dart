@@ -1081,6 +1081,7 @@ class _PreorderCartScreenState extends State<PreorderCartScreen> {
         offset = result['serveOffsetMinutes'] as int? ?? offset;
       }
       if (mounted) setState(() => saved = true);
+      widget.controller.preordersChanged();
       try {
         await _persistCart();
       } catch (e) {
@@ -1448,23 +1449,86 @@ class _PreorderCartScreenState extends State<PreorderCartScreen> {
 }
 
 class PreordersScreen extends StatefulWidget {
-  const PreordersScreen({super.key, required this.controller});
+  const PreordersScreen({
+    super.key,
+    required this.controller,
+    this.active = true,
+    this.embedded = false,
+    this.onActiveCountChanged,
+  });
   final AppController controller;
+  final bool active, embedded;
+  final ValueChanged<int>? onActiveCountChanged;
   @override
   State<PreordersScreen> createState() => _PreordersScreenState();
 }
 
-class _PreordersScreenState extends State<PreordersScreen> {
+class _PreordersScreenState extends State<PreordersScreen>
+    with WidgetsBindingObserver {
   final entries = <({Booking booking, Map<String, dynamic> draft})>[];
   bool loading = true;
+  bool history = false;
+  int loadGeneration = 0;
+  String bookingSignature = '';
+  final photos = <String, Map<int, MenuDish>>{};
+  String _signature() {
+    final bookings = widget.controller.bookings
+        .map(
+          (b) =>
+              '${b.restaurantId}:${b.id}:${b.status}:${b.startsAtUtc}:${b.managementToken}',
+        )
+        .join('|');
+    return '${widget.controller.preorderRevision}:$bookings';
+  }
+
+  void _bookingsChanged() {
+    if (_signature() != bookingSignature) _load();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _load();
+  }
+
+  @override
+  void didUpdateWidget(covariant PreordersScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active && !oldWidget.active) _load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.controller.removeListener(_bookingsChanged);
+    super.dispose();
+  }
+
+  DateTime _starts(Booking b) => widget.controller.repository
+      .cancellationDeadline(b)
+      .add(Duration(minutes: b.cancellationLeadMinutes));
+  bool _isActive(Booking b, Map<String, dynamic> draft) =>
+      !['cancelled', 'completed', 'no_show'].contains(b.status) &&
+      !['Cancelled', 'Completed', 'Refunded'].contains(draft['status']) &&
+      _starts(b).isAfter(DateTime.now());
+  void _reportCount() {
+    final count = entries.where((e) => _isActive(e.booking, e.draft)).length;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.onActiveCountChanged?.call(count);
+    });
+  }
+
   String? error;
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.controller.addListener(_bookingsChanged);
     _load();
   }
 
   Future<void> _load() async {
+    final generation = ++loadGeneration;
+    bookingSignature = _signature();
     setState(() {
       loading = true;
       error = null;
@@ -1472,7 +1536,7 @@ class _PreordersScreenState extends State<PreordersScreen> {
     final next = <({Booking booking, Map<String, dynamic> draft})>[];
     try {
       final prefs = await SharedPreferences.getInstance();
-      for (final booking in widget.controller.bookings) {
+      for (final booking in List<Booking>.of(widget.controller.bookings)) {
         if (!booking.demo && booking.managementToken.isEmpty) continue;
         try {
           final drafts = booking.demo
@@ -1484,7 +1548,7 @@ class _PreordersScreenState extends State<PreordersScreen> {
             next.add((booking: booking, draft: draft));
           }
         } catch (e) {
-          if (mounted) {
+          if (mounted && generation == loadGeneration) {
             setState(
               () => error = e is StateError
                   ? context.l10n.preorderLocalSaveFailed
@@ -1493,14 +1557,36 @@ class _PreordersScreenState extends State<PreordersScreen> {
           }
         }
       }
-      if (mounted) {
+      if (mounted && generation == loadGeneration) {
         setState(() {
           entries.clear();
           entries.addAll(next);
+          entries.sort(
+            (a, b) => _starts(b.booking).compareTo(_starts(a.booking)),
+          );
         });
+        _reportCount();
+        for (final id in next.map((e) => e.booking.restaurantId).toSet()) {
+          final restaurant = widget.controller.restaurants
+              .where((r) => r.id == id)
+              .firstOrNull;
+          if (restaurant == null || photos.containsKey(id)) continue;
+          try {
+            final menu = await widget.controller.repository.loadMenu(
+              restaurant,
+            );
+            if (mounted && generation == loadGeneration) {
+              setState(
+                () => photos[id] = {for (final dish in menu) dish.id: dish},
+              );
+            }
+          } catch (_) {
+            /* Snapshot text remains available without photos. */
+          }
+        }
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && generation == loadGeneration) {
         setState(
           () => error = e is StateError
               ? context.l10n.preorderLocalSaveFailed
@@ -1508,7 +1594,9 @@ class _PreordersScreenState extends State<PreordersScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => loading = false);
+      if (mounted && generation == loadGeneration) {
+        setState(() => loading = false);
+      }
     }
   }
 
@@ -1548,155 +1636,339 @@ class _PreordersScreenState extends State<PreordersScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      toolbarHeight: 72,
-      title: Text(
-        context.l10n.myPreorders,
-        maxLines: 2,
-        style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
-      ),
-      actions: [
-        IconButton(
-          onPressed: loading ? null : _load,
-          icon: Icon(Icons.refresh_rounded),
+  Widget build(BuildContext context) {
+    final visible = entries
+        .where((e) => _isActive(e.booking, e.draft) != history)
+        .toList();
+    if (!history) {
+      visible.sort((a, b) => _starts(a.booking).compareTo(_starts(b.booking)));
+    }
+    return Scaffold(
+      appBar: widget.embedded
+          ? null
+          : AppBar(title: Text(context.l10n.ordersTab)),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: ListView(
+          key: const PageStorageKey('orders-list'),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'SeatMap',
+                    style: TextStyle(
+                      color: SeatMapColors.lavender,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 20,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: context.l10n.msgRefreshAvailability,
+                  onPressed: loading ? null : _load,
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Text(
+              context.l10n.ordersTab,
+              style: const TextStyle(
+                fontSize: 34,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -1,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              context.l10n.ordersSubtitle,
+              style: const TextStyle(
+                color: SeatMapColors.muted,
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: SeatMapColors.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: SeatMapColors.line),
+              ),
+              child: Row(
+                children: [
+                  for (final item in [false, true])
+                    Expanded(
+                      child: Semantics(
+                        selected: history == item,
+                        button: true,
+                        child: TextButton(
+                          key: ValueKey(
+                            item ? 'orders-history' : 'orders-active',
+                          ),
+                          style: TextButton.styleFrom(
+                            backgroundColor: history == item
+                                ? SeatMapColors.lavender
+                                : Colors.transparent,
+                            foregroundColor: history == item
+                                ? SeatMapColors.background
+                                : SeatMapColors.muted,
+                            minimumSize: const Size(0, 48),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          onPressed: () => setState(() => history = item),
+                          child: Text(
+                            item
+                                ? context.l10n.msgHistory
+                                : context.l10n.ordersActive,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (loading)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            if (error != null) ...[
+              Text(error!, style: const TextStyle(color: SeatMapColors.peach)),
+              TextButton(
+                onPressed: _load,
+                child: Text(context.l10n.msgTryAgain246),
+              ),
+            ],
+            if (!loading && visible.isEmpty && error == null)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 44,
+                  horizontal: 16,
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      history
+                          ? Icons.history_rounded
+                          : Icons.shopping_bag_outlined,
+                      size: 48,
+                      color: SeatMapColors.lavender,
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      history
+                          ? context.l10n.ordersHistoryEmpty
+                          : context.l10n.preordersEmpty,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: SeatMapColors.muted,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            for (final entry in visible) _card(entry.booking, entry.draft),
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _card(Booking booking, Map<String, dynamic> draft) => Container(
+    key: ValueKey('preorder-${draft['id']}'),
+    margin: const EdgeInsets.only(bottom: 20),
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: SeatMapColors.surface,
+      borderRadius: BorderRadius.circular(26),
+      border: Border.all(color: SeatMapColors.line),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          booking.restaurantName,
+          style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${booking.date.day}.${booking.date.month}.${booking.date.year} · ${booking.time} · ${context.l10n.msgTable} ${booking.tableLabel}',
+          style: const TextStyle(color: SeatMapColors.muted, height: 1.5),
+        ),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: SeatMapColors.peach.withValues(alpha: .14),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            draft['status'] == 'Draft'
+                ? context.l10n.ordersUnpaidDraft
+                : draft['status'].toString(),
+            style: const TextStyle(
+              color: SeatMapColors.peach,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        for (final item in draft['items'] as List? ?? [])
+          _line(booking, item as Map),
+        if ((draft['notes'] as String? ?? '').isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 12),
+            child: Text(
+              draft['notes'] as String,
+              style: const TextStyle(color: SeatMapColors.muted, height: 1.5),
+            ),
+          ),
+        const Divider(height: 32),
+        SizedBox(
+          width: double.infinity,
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 16,
+            runSpacing: 8,
+            children: [
+              Text(
+                context.l10n.preorderTotal,
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                '${((draft['totalMinor'] as num? ?? 0) / 100).toStringAsFixed(2)} €',
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_canEdit(booking, draft)) ...[
+          const SizedBox(height: 22),
+          PrimaryButton(
+            label: context.l10n.editPreorder,
+            icon: Icons.edit_outlined,
+            onPressed: () => _edit(booking, draft),
+          ),
+        ] else if (draft['status'] == 'Draft') ...[
+          const SizedBox(height: 16),
+          Text(
+            context.l10n.preorderEditingClosed,
+            style: const TextStyle(color: SeatMapColors.muted, height: 1.5),
+          ),
+          TextButton.icon(
+            onPressed: () {
+              final restaurant = widget.controller.restaurants
+                  .where((r) => r.id == booking.restaurantId)
+                  .firstOrNull;
+              showRestaurantContact(
+                context,
+                restaurantName: booking.restaurantName,
+                phone: restaurant?.phone ?? booking.restaurantPhone,
+              );
+            },
+            icon: const Icon(Icons.phone_outlined),
+            label: Text(context.l10n.preorderContactRestaurant),
+          ),
+        ],
+        if (draft['status'] == 'Draft') ...[
+          const SizedBox(height: 14),
+          Text(
+            context.l10n.ordersNotSent,
+            style: const TextStyle(
+              color: SeatMapColors.muted,
+              fontSize: 12,
+              height: 1.5,
+            ),
+          ),
+        ],
       ],
     ),
-    body: loading
-        ? Center(child: CircularProgressIndicator())
-        : RefreshIndicator(
-            onRefresh: _load,
-            child: ListView(
-              padding: EdgeInsets.all(24),
-              physics: AlwaysScrollableScrollPhysics(),
+  );
+  Widget _line(Booking booking, Map item) {
+    final dish = photos[booking.restaurantId]?[item['menuItemId']];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: SizedBox(
+              width: 56,
+              height: 56,
+              child: dish == null
+                  ? Container(
+                      color: SeatMapColors.lavenderSoft,
+                      child: const Icon(
+                        Icons.restaurant_rounded,
+                        color: SeatMapColors.peach,
+                      ),
+                    )
+                  : DishPhoto(dish: dish),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (error != null) ...[
-                  Text(error!, style: TextStyle(color: SeatMapColors.peach)),
-                  TextButton(
-                    onPressed: _load,
-                    child: Text(context.l10n.msgTryAgain246),
+                Text(
+                  '${item['quantity']} × ${item['name']}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
                   ),
-                ],
-                if (entries.isEmpty && error == null)
+                ),
+                if ((item['notes'] as String? ?? '').isNotEmpty)
                   Padding(
-                    padding: EdgeInsets.symmetric(vertical: 60),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.restaurant_menu_rounded,
-                          size: 48,
-                          color: SeatMapColors.lavender,
-                        ),
-                        SizedBox(height: 20),
-                        Text(
-                          context.l10n.preordersEmpty,
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                    padding: const EdgeInsets.only(top: 5),
+                    child: Text(
+                      item['notes'] as String,
+                      style: const TextStyle(
+                        color: SeatMapColors.muted,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
                     ),
                   ),
-                for (final entry in entries)
-                  Card(
-                    margin: EdgeInsets.only(bottom: 18),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      side: BorderSide(color: SeatMapColors.line),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            entry.booking.restaurantName,
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            '${entry.booking.date.day}.${entry.booking.date.month} · ${entry.booking.time} · ${entry.booking.tableLabel}',
-                            style: TextStyle(color: SeatMapColors.muted),
-                          ),
-                          SizedBox(height: 14),
-                          Text(
-                            entry.draft['status'] == 'Draft'
-                                ? context.l10n.preorderDraftStatus
-                                : entry.draft['status'].toString(),
-                            style: TextStyle(color: SeatMapColors.peach),
-                          ),
-                          Divider(height: 28),
-                          for (final item
-                              in entry.draft['items'] as List? ?? [])
-                            Padding(
-                              padding: EdgeInsets.only(bottom: 8),
-                              child: Text(
-                                '${item['quantity']} × ${item['name']}${(item['notes'] as String? ?? '').isEmpty ? '' : '\n${item['notes']}'}',
-                              ),
-                            ),
-                          if ((entry.draft['notes'] as String? ?? '')
-                              .isNotEmpty)
-                            Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12),
-                              child: Text(
-                                entry.draft['notes'] as String,
-                                style: TextStyle(
-                                  color: SeatMapColors.muted,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ),
-                          Text(
-                            '${((entry.draft['totalMinor'] as num? ?? 0) / 100).toStringAsFixed(2)} €',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
-                              color: SeatMapColors.lavender,
-                            ),
-                          ),
-                          if (_canEdit(entry.booking, entry.draft)) ...[
-                            SizedBox(height: 18),
-                            PrimaryButton(
-                              label: context.l10n.editPreorder,
-                              icon: Icons.edit_outlined,
-                              onPressed: () =>
-                                  _edit(entry.booking, entry.draft),
-                            ),
-                          ] else if (entry.draft['status'] == 'Draft') ...[
-                            SizedBox(height: 14),
-                            Text(
-                              context.l10n.preorderEditingClosed,
-                              style: TextStyle(color: SeatMapColors.muted),
-                            ),
-                            TextButton.icon(
-                              onPressed: () {
-                                final restaurant = widget.controller.restaurants
-                                    .where(
-                                      (r) => r.id == entry.booking.restaurantId,
-                                    )
-                                    .firstOrNull;
-                                if (restaurant != null) {
-                                  showRestaurantContact(
-                                    context,
-                                    restaurantName: restaurant.name,
-                                    phone: restaurant.phone,
-                                  );
-                                }
-                              },
-                              icon: Icon(Icons.phone_outlined),
-                              label: Text(
-                                context.l10n.preorderContactRestaurant,
-                              ),
-                            ),
-                          ],
-                        ],
+                if (item['unitMinor'] is num)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 5),
+                    child: Text(
+                      '${(((item['unitMinor'] as num) * (item['quantity'] as num)) / 100).toStringAsFixed(2)} €',
+                      style: const TextStyle(
+                        color: SeatMapColors.lavender,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
               ],
             ),
           ),
-  );
+        ],
+      ),
+    );
+  }
 }

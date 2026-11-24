@@ -715,5 +715,11 @@
   "preorderContactRestaurant": "Contact restaurant",
   "bookingHistorySaveFailed": "Your booking details could not be saved on this device. Keep the details shown and contact the restaurant if needed.",
   "preorderSplitPortions": "Different instructions for each portion",
-  "preorderLocalSaveFailed": "Could not save the cart on this device. Keep this screen open and try again."
+  "preorderLocalSaveFailed": "Could not save the cart on this device. Keep this screen open and try again.",
+  "ordersTab": "Orders",
+  "ordersSubtitle": "Everything for your visit",
+  "ordersActive": "Active",
+  "ordersHistoryEmpty": "Orders from past visits will appear here.",
+  "ordersNotSent": "This draft has not been sent to the kitchen.",
+  "ordersUnpaidDraft": "Unpaid draft"
 }

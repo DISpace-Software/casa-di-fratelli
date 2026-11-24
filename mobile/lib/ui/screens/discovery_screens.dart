@@ -63,6 +63,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   }
 
   int tab = 0;
+  int activeOrders = 0;
   bool favoritesOnly = false;
   void openRestaurant(Restaurant restaurant) => Navigator.of(context).push(
     MaterialPageRoute<void>(
@@ -101,11 +102,22 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             ),
             BookingsScreen(
               controller: widget.controller,
+              onOrders: () => setState(() => tab = 3),
               onOpenRestaurant: (id) {
                 final matches = widget.controller.restaurants.where(
                   (restaurant) => restaurant.id == id,
                 );
                 if (matches.isNotEmpty) openRestaurant(matches.first);
+              },
+            ),
+            PreordersScreen(
+              controller: widget.controller,
+              embedded: true,
+              active: tab == 3,
+              onActiveCountChanged: (count) {
+                if (mounted && count != activeOrders) {
+                  setState(() => activeOrders = count);
+                }
               },
             ),
             ProfileScreen(
@@ -121,7 +133,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       bottomNavigationBar: Container(
         key: const ValueKey('app-bottom-navigation'),
         // Keep the tab content above Android buttons and the iOS home indicator.
-        height: 64 + bottomInset(context),
+        height:
+            64 +
+            (MediaQuery.textScalerOf(context).scale(10) - 10).clamp(0, 24) +
+            bottomInset(context),
         padding: EdgeInsets.fromLTRB(13, 7, 13, bottomInset(context) + 1),
         decoration: BoxDecoration(
           color: SeatMapColors.background,
@@ -132,7 +147,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             _nav(0, Icons.home_outlined, context.l10n.msgDiscover),
             _nav(1, Icons.search_rounded, context.l10n.msgSearch),
             _nav(2, Icons.calendar_month_outlined, context.l10n.msgBookings),
-            _nav(3, Icons.person_outline_rounded, context.l10n.msgProfile),
+            _nav(3, Icons.shopping_bag_outlined, context.l10n.ordersTab),
+            _nav(4, Icons.person_outline_rounded, context.l10n.msgProfile),
           ],
         ),
       ),
@@ -156,7 +172,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedContainer(
-                duration: Duration(milliseconds: 180),
+                duration: reduceSeatMapMotion(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 180),
                 width: 39,
                 height: 26,
                 decoration: BoxDecoration(
@@ -165,12 +183,47 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Icon(
-                  icon,
-                  color: selected
-                      ? SeatMapColors.lavender
-                      : SeatMapColors.muted,
-                  size: 22,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(
+                      icon,
+                      color: selected
+                          ? SeatMapColors.lavender
+                          : SeatMapColors.muted,
+                      size: 22,
+                    ),
+                    if (index == 3 && activeOrders > 0)
+                      Positioned(
+                        right: -5,
+                        top: -5,
+                        child: Container(
+                          key: const ValueKey('orders-count'),
+                          constraints: const BoxConstraints(
+                            minWidth: 17,
+                            minHeight: 17,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 1,
+                          ),
+                          decoration: const BoxDecoration(
+                            color: SeatMapColors.lavender,
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                          ),
+                          child: Text(
+                            activeOrders > 99 ? '99+' : '$activeOrders',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: SeatMapColors.background,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
               SizedBox(height: 5),
@@ -350,15 +403,17 @@ class DiscoveryScreen extends StatelessWidget {
           SizedBox(height: 24),
           Row(
             children: [
-              Text(
-                context.l10n.msgForASpecialEvening,
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -.5,
+              Expanded(
+                child: Text(
+                  context.l10n.msgForASpecialEvening,
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -.5,
+                  ),
                 ),
               ),
-              Spacer(),
+              SizedBox(width: 12),
               Icon(
                 Icons.auto_awesome_outlined,
                 size: 19,

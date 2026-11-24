@@ -1566,4 +1566,23 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get preorderLocalSaveFailed =>
       'Количката не можа да се запази на устройството. Оставете екрана отворен и опитайте отново.';
+
+  @override
+  String get ordersTab => 'Поръчки';
+
+  @override
+  String get ordersSubtitle => 'Всичко за вашето посещение';
+
+  @override
+  String get ordersActive => 'Активни';
+
+  @override
+  String get ordersHistoryEmpty =>
+      'Тук ще се появят поръчките от минали посещения.';
+
+  @override
+  String get ordersNotSent => 'Черновата не е изпратена към кухнята.';
+
+  @override
+  String get ordersUnpaidDraft => 'Неплатена чернова';
 }

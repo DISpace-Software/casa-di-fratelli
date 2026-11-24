@@ -185,7 +185,7 @@ void main() {
       SeatMapApp(controller: controller, previewChrome: false),
     );
     await tester.pump(const Duration(milliseconds: 500));
-    final profileTab = find.byKey(const ValueKey('navigation-tab-3'));
+    final profileTab = find.byKey(const ValueKey('navigation-tab-4'));
     expect(find.byKey(_introKey), findsOneWidget);
     expect(tester.widget<Semantics>(profileTab).properties.selected, isFalse);
 
