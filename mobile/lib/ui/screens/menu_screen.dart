@@ -1,4 +1,7 @@
 import 'dart:convert';
+
+import 'package:intl/intl.dart';
+
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -1466,6 +1469,7 @@ class PreordersScreen extends StatefulWidget {
 class _PreordersScreenState extends State<PreordersScreen>
     with WidgetsBindingObserver {
   final entries = <({Booking booking, Map<String, dynamic> draft})>[];
+  final issues = <({Booking booking, bool accessDenied})>[];
   bool loading = true;
   bool history = false;
   int loadGeneration = 0;
@@ -1534,10 +1538,14 @@ class _PreordersScreenState extends State<PreordersScreen>
       error = null;
     });
     final next = <({Booking booking, Map<String, dynamic> draft})>[];
+    final failures = <({Booking booking, bool accessDenied})>[];
     try {
       final prefs = await SharedPreferences.getInstance();
       for (final booking in List<Booking>.of(widget.controller.bookings)) {
-        if (!booking.demo && booking.managementToken.isEmpty) continue;
+        if (!booking.demo && booking.managementToken.isEmpty) {
+          failures.add((booking: booking, accessDenied: true));
+          continue;
+        }
         try {
           final drafts = booking.demo
               ? (jsonDecode(
@@ -1548,17 +1556,18 @@ class _PreordersScreenState extends State<PreordersScreen>
             next.add((booking: booking, draft: draft));
           }
         } catch (e) {
-          if (mounted && generation == loadGeneration) {
-            setState(
-              () => error = e is StateError
-                  ? context.l10n.preorderLocalSaveFailed
-                  : e.toString(),
-            );
-          }
+          failures.add((
+            booking: booking,
+            accessDenied:
+                e is SeatMapException && e.code == 'RESERVATION_NOT_FOUND',
+          ));
         }
       }
       if (mounted && generation == loadGeneration) {
         setState(() {
+          issues
+            ..clear()
+            ..addAll(failures);
           entries.clear();
           entries.addAll(next);
           entries.sort(
@@ -1753,7 +1762,10 @@ class _PreordersScreenState extends State<PreordersScreen>
                 child: Text(context.l10n.msgTryAgain246),
               ),
             ],
-            if (!loading && visible.isEmpty && error == null)
+            if (!loading &&
+                visible.isEmpty &&
+                error == null &&
+                !issues.any((i) => _isActive(i.booking, {}) != history))
               Padding(
                 padding: const EdgeInsets.symmetric(
                   vertical: 44,
@@ -1783,11 +1795,65 @@ class _PreordersScreenState extends State<PreordersScreen>
                 ),
               ),
             for (final entry in visible) _card(entry.booking, entry.draft),
+            if (!loading)
+              for (final issue in issues.where(
+                (i) => _isActive(i.booking, {}) != history,
+              ))
+                _issueCard(issue.booking, issue.accessDenied),
           ],
         ),
       ),
     );
   }
+
+  Widget _issueCard(Booking booking, bool accessDenied) => Container(
+    key: ValueKey('order-issue-${booking.id}'),
+    margin: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: SeatMapColors.surface,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: SeatMapColors.line),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          booking.restaurantName,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '${DateFormat('dd.MM.yyyy').format(booking.date)} · ${booking.time} · ${booking.tableLabel}',
+          style: const TextStyle(color: SeatMapColors.muted),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          accessDenied
+              ? context.l10n.ordersAccessUnavailable
+              : context.l10n.ordersLoadFailed,
+          style: const TextStyle(color: SeatMapColors.muted, height: 1.5),
+        ),
+        TextButton.icon(
+          icon: Icon(
+            accessDenied ? Icons.phone_outlined : Icons.refresh_rounded,
+          ),
+          label: Text(
+            accessDenied
+                ? context.l10n.preorderContactRestaurant
+                : context.l10n.msgTryAgain246,
+          ),
+          onPressed: accessDenied
+              ? () => showRestaurantContact(
+                  context,
+                  restaurantName: booking.restaurantName,
+                  phone: widget.controller.restaurantPhoneFor(booking),
+                )
+              : _load,
+        ),
+      ],
+    ),
+  );
 
   Widget _card(Booking booking, Map<String, dynamic> draft) => Container(
     key: ValueKey('preorder-${draft['id']}'),

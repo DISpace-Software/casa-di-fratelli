@@ -1585,4 +1585,12 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get ordersUnpaidDraft => 'Неплатена чернова';
+
+  @override
+  String get ordersAccessUnavailable =>
+      'Достъпът до поръчките за тази резервация не може да бъде потвърден. Свържете се с ресторанта.';
+
+  @override
+  String get ordersLoadFailed =>
+      'Поръчките за тази резервация не можаха да се заредят. Опитайте отново.';
 }

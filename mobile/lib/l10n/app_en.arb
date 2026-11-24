@@ -721,5 +721,7 @@
   "ordersActive": "Active",
   "ordersHistoryEmpty": "Orders from past visits will appear here.",
   "ordersNotSent": "This draft has not been sent to the kitchen.",
-  "ordersUnpaidDraft": "Unpaid draft"
+  "ordersUnpaidDraft": "Unpaid draft",
+  "ordersAccessUnavailable": "Orders for this booking are unavailable because access could not be verified. Contact the restaurant.",
+  "ordersLoadFailed": "Could not load orders for this booking. Please try again."
 }

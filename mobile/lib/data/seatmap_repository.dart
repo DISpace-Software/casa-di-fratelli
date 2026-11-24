@@ -766,7 +766,10 @@ class SeatMapRepository {
   String _preorderPath(Booking booking) {
     final id = booking.id.split(':').last;
     if (!RegExp(r'^\d+$').hasMatch(id) || booking.managementToken.isEmpty) {
-      throw SeatMapException(appStrings.bookingAccessUnavailable);
+      throw SeatMapException(
+        appStrings.bookingAccessUnavailable,
+        code: 'RESERVATION_NOT_FOUND',
+      );
     }
     return '/api/v1/restaurants/${Uri.encodeComponent(booking.restaurantId)}/reservations/$id/preorders';
   }

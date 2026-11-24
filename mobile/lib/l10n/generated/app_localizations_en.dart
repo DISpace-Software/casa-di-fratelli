@@ -1581,4 +1581,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ordersUnpaidDraft => 'Unpaid draft';
+
+  @override
+  String get ordersAccessUnavailable =>
+      'Orders for this booking are unavailable because access could not be verified. Contact the restaurant.';
+
+  @override
+  String get ordersLoadFailed =>
+      'Could not load orders for this booking. Please try again.';
 }

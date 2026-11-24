@@ -1585,4 +1585,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get ordersUnpaidDraft => 'Неоплаченный черновик';
+
+  @override
+  String get ordersAccessUnavailable =>
+      'Не удалось подтвердить доступ к заказам этой брони. Свяжитесь с рестораном.';
+
+  @override
+  String get ordersLoadFailed =>
+      'Не удалось загрузить заказы этой брони. Попробуйте ещё раз.';
 }

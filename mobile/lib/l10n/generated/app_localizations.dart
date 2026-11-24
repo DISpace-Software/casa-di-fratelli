@@ -2875,6 +2875,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Неоплаченный черновик'**
   String get ordersUnpaidDraft;
+
+  /// No description provided for @ordersAccessUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось подтвердить доступ к заказам этой брони. Свяжитесь с рестораном.'**
+  String get ordersAccessUnavailable;
+
+  /// No description provided for @ordersLoadFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить заказы этой брони. Попробуйте ещё раз.'**
+  String get ordersLoadFailed;
 }
 
 class _AppLocalizationsDelegate
