@@ -94,6 +94,36 @@ internal static class PreorderChecks
         var edited = await service.UpdateDraftAsync(booking.Id,draft.Id,key,edit);
         Check(edited.Id==draft.Id && edited.TotalMinor==1734 && edited.Notes=="Salad: no bacon" && await db.ReservationPreorders.CountAsync()==1,"Editing must update the same cart with server prices and notes");
         Check((await service.UpdateDraftAsync(booking.Id,draft.Id,key,edit)).Revision==edited.Revision,"Edit retries must be idempotent");
+        var delayedCreate = await service.CreateDraftAsync(booking.Id,key,request);
+        Check(delayedCreate.Id==draft.Id && delayedCreate.Notes==edited.Notes && await db.ReservationPreorders.CountAsync()==1,
+            "Create retries after edits must return the same current draft without duplicating or reverting it");
+        var laterEdit = new PreorderDraftRequest {IdempotencyKey=Guid.NewGuid(),ExpectedRevision=edited.Revision,Language="en",Items=[new(1,1,"No bacon"),new(1,1,"Extra sauce")],Notes="Two guests"};
+        var later = await service.UpdateDraftAsync(booking.Id,draft.Id,key,laterEdit);
+        Check(later.Items.Count==2 && later.Items.Any(x=>x.Notes=="No bacon") && later.TotalMinor==2468,
+            "Separate portions retain their own comments and server prices");
+        Check((await service.UpdateDraftAsync(booking.Id,draft.Id,key,edit)).Revision==later.Revision,
+            "A delayed older update must not overwrite a newer edit");
+        Check((await service.CreateDraftAsync(booking.Id,key,request)).Id==later.Id && await db.ReservationPreorders.CountAsync()==1,
+            "The original create operation remains recoverable after multiple edits");
+        await using (var reopened = new AppDbContext(optionsBuilder.Options))
+        {
+            var reopenedBrand = new TenantBrandingService(reopened,tenant,new ConfigurationBuilder().Build(),NullLogger<TenantBrandingService>.Instance);
+            var reopenedPlans = new FloorPlanService(reopened,tenant);
+            var reopenedService = new GuestPreorderService(reopened,new PreorderPolicyService(reopened,clock),reopenedBrand,clock,
+                new RestaurantClosureService(reopened,tenant),new SeasonalZoneService(reopened,reopenedPlans));
+            var recovered = await reopenedService.CreateDraftAsync(booking.Id,key,request);
+            Check(recovered.Id==later.Id && recovered.Revision==later.Revision && recovered.Items.Any(x=>x.Notes=="No bacon") &&
+                await reopened.ReservationPreorders.CountAsync()==1,"Create retry must recover the latest cart from persistent storage in a fresh service");
+            Check((await reopenedService.UpdateDraftAsync(booking.Id,draft.Id,key,edit)).Revision==later.Revision,
+                "A fresh service must retain older update keys without rolling back newer changes");
+        }
+        var conflicting = new PreorderDraftRequest { IdempotencyKey=edit.IdempotencyKey, ExpectedRevision=later.Revision, Language="en", Items=[new(1,1)] };
+        await Reject(()=>service.UpdateDraftAsync(booking.Id,draft.Id,key,conflicting),409,"PREORDER_REQUEST_CONFLICT");
+        await Reject(()=>service.CreateDraftAsync(booking.Id,key,edit),409,"PREORDER_REQUEST_CONFLICT");
+        var returnToEarlier = new PreorderDraftRequest {IdempotencyKey=Guid.NewGuid(),ExpectedRevision=later.Revision,Language="en",Items=[new(1,1),new(2,2)],Notes="Salad: no bacon",ServeOffsetMinutes=45};
+        var returned = await service.UpdateDraftAsync(booking.Id,draft.Id,key,returnToEarlier);
+        Check(returned.Revision!=edited.Revision && returned.TotalMinor==edited.TotalMinor,
+            "Returning to identical cart contents must not resurrect an old revision (ABA)");
         edit.IdempotencyKey=Guid.NewGuid(); edit.Notes="stale";
         await Reject(()=>service.UpdateDraftAsync(booking.Id,draft.Id,key,edit),409,"PREORDER_CHANGED");
         edit.ExpectedRevision=edited.Revision;
@@ -101,6 +131,8 @@ internal static class PreorderChecks
         await Reject(()=>service.UpdateDraftAsync(booking.Id,draft.Id,key,edit),409,"PREORDER_NOT_EDITABLE");
         stored.Status="Draft"; await db.SaveChangesAsync();
         var bad=new PreorderDraftRequest {Items=[new(1,1),new(1,2)]};await Reject(()=>service.QuoteAsync(booking.Id,key,bad),400,"PREORDER_ITEMS_INVALID");
+        bad.Items=[new(1,11,"A"),new(1,10,"B")];await Reject(()=>service.QuoteAsync(booking.Id,key,bad),400,"PREORDER_ITEMS_INVALID");
+        bad.Items=[new(1,1,new string('x',201))];await Reject(()=>service.QuoteAsync(booking.Id,key,bad),400,"PREORDER_ITEMS_INVALID");
         bad.Items=[new(1,0)];await Reject(()=>service.QuoteAsync(booking.Id,key,bad),400,"PREORDER_ITEMS_INVALID");
         bad.Items=[new(999,1)];await Reject(()=>service.QuoteAsync(booking.Id,key,bad),409,"PREORDER_MENU_CHANGED");
         request.ServeOffsetMinutes=17;await Reject(()=>service.QuoteAsync(booking.Id,key,request),400,"PREORDER_TIME_INVALID");request.ServeOffsetMinutes=30;

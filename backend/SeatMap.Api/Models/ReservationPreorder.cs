@@ -7,6 +7,7 @@ public sealed class ReservationPreorder
     public int ReservationId { get; set; }
     public Reservation Reservation { get; set; } = null!;
     public Guid IdempotencyKey { get; set; }
+    public string OperationsJson { get; set; } = "{}";
     public string RequestHash { get; set; } = "";
     public string Status { get; set; } = "Draft";
     public string Currency { get; set; } = "EUR";

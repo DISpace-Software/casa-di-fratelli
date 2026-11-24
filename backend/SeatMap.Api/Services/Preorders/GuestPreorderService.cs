@@ -10,7 +10,7 @@ using SeatMap.Api.Services.Tenancy;
 
 namespace SeatMap.Api.Services.Preorders;
 
-public sealed record PreorderLineRequest([Range(1, int.MaxValue)] int MenuItemId, [Range(1, 20)] int Quantity);
+public sealed record PreorderLineRequest([Range(1, int.MaxValue)] int MenuItemId, [Range(1, 20)] int Quantity, [StringLength(200)] string Notes = "");
 public sealed class PreorderDraftRequest
 {
     public Guid IdempotencyKey { get; set; }
@@ -20,7 +20,7 @@ public sealed class PreorderDraftRequest
     [StringLength(500)] public string Notes { get; set; } = "";
     [RegularExpression("^(bg|en|ru)$")] public string Language { get; set; } = "bg";
 }
-public sealed record PreorderLine(int MenuItemId, string Name, int Quantity, long UnitMinor, string Kind);
+public sealed record PreorderLine(int MenuItemId, string Name, int Quantity, long UnitMinor, string Kind, string Notes = "");
 public sealed record PreorderQuote(string Currency, long TotalMinor, DateTime ServeAtUtc, IReadOnlyList<PreorderLine> Items,
     bool BookingConfirmed, bool FullPrepaymentRequired = true, bool CardPaymentsAvailable = false);
 public sealed record PreorderDraftDto(Guid Id, int ReservationId, string Status, string Currency, long TotalMinor,
@@ -46,7 +46,7 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
     }
     private static void ValidateItems(PreorderDraftRequest request)
     {
-        if (request.Items == null || request.Items.Count is < 1 or > 40 || request.Items.Any(x => x == null || x.MenuItemId < 1 || x.Quantity is < 1 or > 20) || request.Items.Select(x => x.MenuItemId).Distinct().Count() != request.Items.Count)
+        if (request.Items == null || request.Items.Count is < 1 or > 40 || request.Items.Any(x => x == null || x.MenuItemId < 1 || x.Quantity is < 1 or > 20 || (x.Notes?.Length ?? 0) > 200) || request.Items.Select(x => (x.MenuItemId, Notes: (x.Notes ?? "").Trim())).Distinct().Count() != request.Items.Count || request.Items.GroupBy(x => x.MenuItemId).Any(g => g.Sum(x => x.Quantity) > 20))
             throw new PreorderException(400, "PREORDER_ITEMS_INVALID", "Choose valid menu items and quantities.");
     }
     private async Task<PreorderQuote> QuoteAsync(Reservation reservation, PreorderDraftRequest request)
@@ -66,7 +66,7 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
         if (request.ServeOffsetMinutes is < 0 or > 120 || request.ServeOffsetMinutes % 15 != 0)
             throw new PreorderException(400, "PREORDER_TIME_INVALID", "Choose a serving time within two hours of your reservation, in 15-minute steps.");
         var items = request.Items;
-        var ids = items.Select(x => x.MenuItemId).ToArray();
+        var ids = items.Select(x => x.MenuItemId).Distinct().ToArray();
         var menu = await db.MenuItems.AsNoTracking().Where(x => ids.Contains(x.Id) && x.IsActive).ToDictionaryAsync(x => x.Id);
         if (menu.Count != ids.Length || menu.Values.Any(x => x.Price <= 0 || x.Price > 10000 || decimal.Round(x.Price, 2) != x.Price))
             throw new PreorderException(409, "PREORDER_MENU_CHANGED", "Some menu items are no longer available. Refresh the menu.");
@@ -74,7 +74,7 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
             var item = menu[x.MenuItemId];
             var name = request.Language == "en" ? item.NameEn : request.Language == "ru" ? item.NameRu : item.NameBg;
             return new PreorderLine(item.Id, string.IsNullOrWhiteSpace(name) ? item.NameBg : name, x.Quantity,
-                checked((long)(item.Price * 100)), item.Department.Equals("Bar", StringComparison.OrdinalIgnoreCase) ? "Drink" : "Dish");
+                checked((long)(item.Price * 100)), item.Department.Equals("Bar", StringComparison.OrdinalIgnoreCase) ? "Drink" : "Dish", (x.Notes ?? "").Trim());
         }).ToArray();
         return new("EUR", checked(lines.Sum(x => checked(x.UnitMinor * x.Quantity))), starts.Value.AddMinutes(request.ServeOffsetMinutes), lines, reservation.Status == "Approved");
     }
@@ -89,13 +89,9 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
         var reservation = await OwnAsync(reservationId, token); await RequireEnabledAsync();
         if (request.IdempotencyKey == Guid.Empty) throw new PreorderException(400, "PREORDER_REQUEST_ID_REQUIRED", "A request ID is required.");
         ValidateItems(request);
-        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {
-            Items = request.Items.OrderBy(x => x.MenuItemId), request.ServeOffsetMinutes, Notes = (request.Notes ?? "").Trim(), request.Language }, Json))));
-        var existing = await db.ReservationPreorders.SingleOrDefaultAsync(x => x.ReservationId == reservationId && x.IdempotencyKey == request.IdempotencyKey);
-        if (existing != null) {
-            if (existing.RequestHash != hash) throw new PreorderException(409, "PREORDER_REQUEST_CONFLICT", "This request ID was already used for another cart.");
-            return Describe(existing);
-        }
+        var hash = RequestHash(request);
+        var replay = await ReplayAsync(reservationId, null, request.IdempotencyKey, hash);
+        if (replay != null) return Describe(replay);
         var quote = await QuoteAsync(reservation, request);
         if (!quote.BookingConfirmed) throw new PreorderException(409, "PREORDER_BOOKING_UNCONFIRMED", "Confirm your reservation before saving a preorder.");
         if (await db.ReservationPreorders.CountAsync(x => x.ReservationId == reservationId) >= 20)
@@ -106,6 +102,7 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
             RequestHash = hash, TotalMinor = quote.TotalMinor, CommissionBasisPoints = policy.CommissionBasisPoints,
             CommissionMinor = commission, RestaurantNetMinor = quote.TotalMinor - commission,
             ServeAtUtc = quote.ServeAtUtc, ItemsJson = JsonSerializer.Serialize(quote.Items, Json), Notes = (request.Notes ?? "").Trim(), CreatedAtUtc = time.GetUtcNow().UtcDateTime };
+        draft.OperationsJson = JsonSerializer.Serialize(new Dictionary<Guid, string> { [request.IdempotencyKey] = "create:" + hash }, Json);
         db.ReservationPreorders.Add(draft); await db.SaveChangesAsync(); await transaction.CommitAsync();
         return Describe(draft);
     }
@@ -118,16 +115,19 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
         if (draft.Status != "Draft") throw new PreorderException(409, "PREORDER_NOT_EDITABLE", "Contact the restaurant to change a submitted order.");
         if (request.IdempotencyKey == Guid.Empty) throw new PreorderException(400, "PREORDER_REQUEST_ID_REQUIRED", "A request ID is required.");
         ValidateItems(request);
-        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {
-            Items = request.Items.OrderBy(x => x.MenuItemId), request.ServeOffsetMinutes, Notes = (request.Notes ?? "").Trim(), request.Language }, Json))));
-        if (draft.IdempotencyKey == request.IdempotencyKey && draft.RequestHash == hash) return Describe(draft);
-        if (request.ExpectedRevision != draft.RequestHash)
+        var hash = RequestHash(request);
+        var replay = await ReplayAsync(reservationId, preorderId, request.IdempotencyKey, hash);
+        if (replay != null) return Describe(replay);
+        if (request.ExpectedRevision != Revision(draft))
             throw new PreorderException(409, "PREORDER_CHANGED", "This preorder changed. Reopen it before editing.");
         if (await db.ReservationPreorders.AnyAsync(x => x.Id != preorderId && x.ReservationId == reservationId && x.IdempotencyKey == request.IdempotencyKey))
             throw new PreorderException(409, "PREORDER_REQUEST_CONFLICT", "Request ID already used.");
         var quote = await QuoteAsync(reservation, request);
         if (!quote.BookingConfirmed) throw new PreorderException(409, "PREORDER_BOOKING_UNCONFIRMED", "Confirm your reservation before saving a preorder.");
-        draft.IdempotencyKey = request.IdempotencyKey;
+        var operations = Operations(draft);
+        if (operations.Count >= 1000) throw new PreorderException(429, "PREORDER_DRAFT_LIMIT", "Too many edits. Contact the restaurant.");
+        operations[request.IdempotencyKey] = "update:" + hash;
+        draft.OperationsJson = JsonSerializer.Serialize(operations, Json);
         draft.RequestHash = hash;
         draft.TotalMinor = quote.TotalMinor;
         draft.CommissionMinor = Commission(quote.TotalMinor, draft.CommissionBasisPoints);
@@ -137,6 +137,40 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
         draft.Notes = (request.Notes ?? "").Trim();
         await db.SaveChangesAsync(); await transaction.CommitAsync();
         return Describe(draft);
+    }
+    // Keep every accepted operation so delayed retries cannot recreate or roll back a cart.
+    private static Dictionary<Guid, string> Operations(ReservationPreorder draft) =>
+        JsonSerializer.Deserialize<Dictionary<Guid, string>>(draft.OperationsJson, Json) ?? new();
+    private async Task<ReservationPreorder?> ReplayAsync(int reservationId, Guid? preorderId, Guid key, string hash)
+    {
+        foreach (var draft in await db.ReservationPreorders.Where(x => x.ReservationId == reservationId).ToListAsync())
+        {
+            var operations = Operations(draft);
+            if (!operations.TryGetValue(key, out var accepted)) continue;
+            var expected = (preorderId.HasValue ? "update:" : "create:") + hash;
+            // Legacy entries predate operation kinds, but still protect their retained key.
+            if ((accepted != expected && accepted != "legacy:" + hash) || (preorderId.HasValue && draft.Id != preorderId))
+                throw new PreorderException(409, "PREORDER_REQUEST_CONFLICT", "This request ID was already used for another cart.");
+            return draft;
+        }
+        return null;
+    }
+    private static string Revision(ReservationPreorder draft)
+    {
+        var operations = Operations(draft);
+        // Preserve revisions held by pre-upgrade clients until the first new edit.
+        if (operations.Values.All(x => x.StartsWith("legacy:", StringComparison.Ordinal))) return draft.RequestHash;
+        var history = string.Join(":", operations.Keys.Select(x => x.ToString("N")).OrderBy(x => x, StringComparer.Ordinal));
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(draft.RequestHash + ":" + history)));
+    }
+    private static string RequestHash(PreorderDraftRequest request)
+    {
+        object items = request.Items.All(x => string.IsNullOrWhiteSpace(x.Notes))
+            ? request.Items.OrderBy(x => x.MenuItemId).Select(x => (object)new { x.MenuItemId, x.Quantity }).ToArray()
+            : request.Items.OrderBy(x => x.MenuItemId).ThenBy(x => (x.Notes ?? "").Trim(), StringComparer.Ordinal)
+                .Select(x => (object)new { x.MenuItemId, x.Quantity, Notes = (x.Notes ?? "").Trim() }).ToArray();
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {
+            Items = items, request.ServeOffsetMinutes, Notes = (request.Notes ?? "").Trim(), request.Language }, Json))));
     }
     public async Task<IReadOnlyList<PreorderDraftDto>> ListAsync(int reservationId, string? token)
     {
@@ -153,5 +187,5 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
     }
     public static long Commission(long totalMinor, int basisPoints) => checked((long)decimal.Round((decimal)totalMinor * basisPoints / 10000, 0, MidpointRounding.AwayFromZero));
     private static PreorderDraftDto Describe(ReservationPreorder draft) => new(draft.Id, draft.ReservationId, draft.Status, draft.Currency, draft.TotalMinor,
-        draft.ServeAtUtc, JsonSerializer.Deserialize<PreorderLine[]>(draft.ItemsJson, Json) ?? [], draft.Notes, draft.CreatedAtUtc, draft.RequestHash);
+        draft.ServeAtUtc, JsonSerializer.Deserialize<PreorderLine[]>(draft.ItemsJson, Json) ?? [], draft.Notes, draft.CreatedAtUtc, Revision(draft));
 }

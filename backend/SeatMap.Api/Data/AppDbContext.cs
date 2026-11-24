@@ -42,6 +42,7 @@ public class AppDbContext : DbContext
     {
         modelBuilder.Entity<ReservationPreorder>(entity => {
             entity.HasKey(x => x.Id);
+            entity.Property(x => x.OperationsJson).IsRequired();
             entity.Property(x => x.RequestHash).HasMaxLength(64).IsRequired();
             entity.Property(x => x.Status).HasMaxLength(30).IsRequired();
             entity.Property(x => x.Currency).HasMaxLength(3).IsRequired();

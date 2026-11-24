@@ -267,6 +267,7 @@ namespace SeatMap.Api.Migrations
                 b.Property<Guid>("Id").HasColumnType("uuid");
                 b.Property<int>("ReservationId").HasColumnType("integer");
                 b.Property<Guid>("IdempotencyKey").HasColumnType("uuid");
+                b.Property<string>("OperationsJson").IsRequired().HasColumnType("text");
                 b.Property<string>("RequestHash").IsRequired().HasMaxLength(64).HasColumnType("character varying(64)");
                 b.Property<string>("Status").IsRequired().HasMaxLength(30).HasColumnType("character varying(30)");
                 b.Property<string>("Currency").IsRequired().HasMaxLength(3).HasColumnType("character varying(3)");
