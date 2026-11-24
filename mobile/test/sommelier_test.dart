@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -42,6 +44,16 @@ class WineRepository extends fixture.MenuRepository {
 }
 
 void main() {
+  setUpAll(() async {
+    if (const bool.fromEnvironment('CAPTURE_VISUALS')) {
+      await (FontLoader(
+        'Inter',
+      )..addFont(rootBundle.load('assets/fonts/Inter.ttf'))).load();
+      await (FontLoader(
+        'MaterialIcons',
+      )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
+    }
+  });
   testWidgets('verified pairing, budget and wine selection', (tester) async {
     fixture.phone(tester);
     SharedPreferences.setMockInitialValues({});
@@ -81,15 +93,15 @@ void main() {
     );
     if (const bool.fromEnvironment('CAPTURE_VISUALS')) {
       await tester.runAsync(() async {
-      final boundary = tester.renderObject<RenderRepaintBoundary>(
-        find.byType(RepaintBoundary).first,
-      );
-      final image = await boundary.toImage(pixelRatio: 2);
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      await Directory('.local').create(recursive: true);
-      await File('.local/sommelier.png')
-          .writeAsBytes(bytes!.buffer.asUint8List());
-      image.dispose();
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byType(RepaintBoundary).first,
+        );
+        final image = await boundary.toImage(pixelRatio: 2);
+        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+        await Directory('.local').create(recursive: true);
+        await File('.local/sommelier.png')
+            .writeAsBytes(bytes!.buffer.asUint8List());
+        image.dispose();
       });
     }
     expect(tester.takeException(), isNull);

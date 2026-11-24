@@ -56,6 +56,7 @@ Check((await Query(new() { DishId = 1, Style = "red" })).GetProperty("recommenda
 var offer = await db.SommelierProfiles.SingleAsync(x => x.MenuItemId == 2); offer.Available = false; await db.SaveChangesAsync();
 Check((await Query(new() { DishId = 1 })).GetProperty("recommendations").GetArrayLength() == 0, "Unavailable wine excluded");
 var foodProfile = await db.SommelierProfiles.SingleAsync(x => x.MenuItemId == 1); foodProfile.Verified = false; offer.Available = true; await db.SaveChangesAsync();
+Check((await Query(new() { DishId = 1, MaxPriceMinor = 1 })).GetProperty("status").GetString() == "no_match", "Empty generic budget result is clearly reported");
 var fallback = await Query(new() { DishId = 1 });
 Check(fallback.GetProperty("status").GetString() == "consultation" && fallback.GetProperty("recommendations").GetArrayLength() == 0, "Generic wine is consultation, not invented pairing");
 await using var otherConnection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:"); await otherConnection.OpenAsync();

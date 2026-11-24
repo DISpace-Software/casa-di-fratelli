@@ -58,7 +58,7 @@ public sealed class SommelierController(AppDbContext db, IServiceProvider servic
                 wineName = x.NameBg, volume = x.Weight, priceMinor = (long)decimal.Round(x.Price * 100), currency = "EUR", reasons = Array.Empty<string>()
             }).ToArray();
         // Generic menu positions are displayed as consultation options, never claimed as pairings.
-        return Ok(new { status = wineItems.Length == 0 ? "no_wines" : "consultation", recommendations = Array.Empty<object>(), menuOptions = options });
+        return Ok(new { status = wineItems.Length == 0 ? "no_wines" : options.Length == 0 ? "no_match" : "consultation", recommendations = Array.Empty<object>(), menuOptions = options });
     }
 
     [HttpGet("configuration"), AdminAuthorize(AdminRoleAccess.Owner, AdminRoleAccess.Developer, AdminRoleAccess.Administrator)]
