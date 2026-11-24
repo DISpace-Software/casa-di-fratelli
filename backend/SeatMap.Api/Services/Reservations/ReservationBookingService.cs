@@ -1,4 +1,6 @@
 using System.Security.Cryptography;
+using System.Text.Json;
+using SeatMap.Api.Services.Waitlist;
 using SeatMap.Api.Data;
 using SeatMap.Api.Dtos;
 using SeatMap.Api.Models;
@@ -32,9 +34,22 @@ public sealed class ReservationBookingService(
     private readonly IReservationBookingNotifications _notifications = notifications;
     private readonly TimeProvider _time = time;
 
-    public async Task<ReservationBookingResult> CreateAsync(CreateReservationRequest request, AdminPrincipal? administrator = null)
+    public async Task<ReservationBookingResult> CreateAsync(CreateReservationRequest request, AdminPrincipal? administrator = null, WaitlistAcceptance? acceptance = null)
     {
         await using var transaction = await RestaurantWriteTransaction.BeginAsync(_db);
+        WaitlistEntry? accepted = null;
+        if (acceptance != null)
+        {
+            accepted = await _db.WaitlistEntries.SingleOrDefaultAsync(x => x.Id == acceptance.Id && x.GuestId == acceptance.GuestId);
+            if (accepted == null) return ReservationBookingResult.NotFound(new { code = "NOT_FOUND" });
+            if (accepted.OfferId != acceptance.OfferId) return ReservationBookingResult.Conflict(new { code = "OFFER_EXPIRED" });
+            if (accepted.Status == "booked") return ReservationBookingResult.Success(new { alreadyBooked = true, id = accepted.ReservationId });
+            if (accepted.Status != "offered" || accepted.ExpiresAtUtc <= _time.GetUtcNow().UtcDateTime)
+                return ReservationBookingResult.Conflict(new { code = "OFFER_EXPIRED" });
+            request = new CreateReservationRequest { GuestName = accepted.GuestName, Phone = accepted.Phone, Email = accepted.Email,
+                GuestCount = accepted.Guests, ReservedDate = accepted.Date, ReservedTime = accepted.OfferTime!, Area = accepted.Area,
+                PrivacyConsent = true, TableIds = JsonSerializer.Deserialize<List<string>>(accepted.TableIdsJson)! };
+        }
         var brand = await branding.GetAsync();
         var now = ReservationTimeRules.GetRestaurantNow(brand, _time);
         if (request.CreatedByAdmin && administrator == null)
@@ -142,7 +157,7 @@ public sealed class ReservationBookingService(
             }
         }
 
-        var conflict = await _reservationConflictService.FindTableConflictAsync(request.ReservedDate, request.ReservedTime, tableIds, includeHallBlocks: !request.CreatedByAdmin);
+        var conflict = await _reservationConflictService.FindTableConflictAsync(request.ReservedDate, request.ReservedTime, tableIds, includeHallBlocks: !request.CreatedByAdmin, excludeWaitlistId: accepted?.Id);
 
         if (conflict != null)
         {
@@ -157,7 +172,7 @@ public sealed class ReservationBookingService(
                     x.IsArrived ||
                     x.EmailConfirmedAtUtc != null));
         var automaticConfirmation = branding.ReservationConfirmationMode == ReservationConfirmationMode.Automatic;
-        var requiresEmailConfirmation = !automaticConfirmation && !request.CreatedByAdmin && !hasConfirmedReservationWithEmail;
+        var requiresEmailConfirmation = accepted == null && !automaticConfirmation && !request.CreatedByAdmin && !hasConfirmedReservationWithEmail;
         var confirmationToken = requiresEmailConfirmation ? CreateEmailConfirmationToken() : null;
         var managementToken = request.CreatedByAdmin ? null : GuestReservationService.CreateToken();
 
@@ -184,7 +199,7 @@ public sealed class ReservationBookingService(
             GuestManagementTokenHash = managementToken == null ? null : GuestReservationService.HashToken(managementToken),
             EmailConfirmationExpiresAtUtc = confirmationToken == null ? null : _time.GetUtcNow().UtcDateTime.AddDays(2),
             // Approving a booking automatically is not proof of email ownership.
-            EmailConfirmedAtUtc = requiresEmailConfirmation || automaticConfirmation ? null : _time.GetUtcNow().UtcDateTime,
+            EmailConfirmedAtUtc = accepted != null ? _time.GetUtcNow().UtcDateTime : requiresEmailConfirmation || automaticConfirmation ? null : _time.GetUtcNow().UtcDateTime,
             Tables = tableIds.Select(id => new ReservationTable
             {
                 TableCode = id
@@ -200,6 +215,12 @@ public sealed class ReservationBookingService(
 
         // One SaveChanges commits the booking, table links and CRM changes atomically.
         await _db.SaveChangesAsync();
+        if (accepted != null)
+        {
+            accepted.Status = "booked"; accepted.ReservationId = reservation.Id; accepted.ExpiresAtUtc = null;
+            accepted.UpdatedAtUtc = _time.GetUtcNow().UtcDateTime;
+            await _db.SaveChangesAsync();
+        }
         await transaction.CommitAsync();
         if (!requiresEmailConfirmation && !request.CreatedByAdmin)
             await TryNotifyAsync(() => _notifications.NotifyConfirmedAsync(reservation), reservation.Id);

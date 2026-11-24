@@ -1,3 +1,4 @@
+import WaitlistPanel from '../components/admin/WaitlistPanel';
 import SommelierSettings from '../components/admin/SommelierSettings';
 import { restaurantAssetUrl } from "../domain/adminMap/restaurantAssets";
 import { getTenantPushRegistration } from "../domain/adminMap/pushRegistration";
@@ -9629,6 +9630,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                   </div>
                 }
               >
+                {["Administrator", "Owner", "Developer"].includes(currentAdminRole) && <WaitlistPanel adminFetch={adminFetch} language={adminLanguage} />}
                 {showCreateReservation && (
                   <div className="mb-6 overflow-hidden rounded-[26px] border border-[#c9a56a]/22 bg-[radial-gradient(circle_at_top_left,rgba(201,165,106,0.16),transparent_36%),rgba(0,0,0,0.2)] p-5 shadow-2xl shadow-black/20">
                     <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">

@@ -261,6 +261,8 @@ class AppController extends ChangeNotifier {
   ) async {
     await accounts.resetPassword(challengeId, code, password, confirmation);
     isLoggedIn = false;
+    waitlistEntries = [];
+    waitlistError = null;
     profile = GuestProfile();
     notifyListeners();
   }
@@ -276,6 +278,8 @@ class AppController extends ChangeNotifier {
       profile = GuestProfile();
     }
     isLoggedIn = false;
+    waitlistEntries = [];
+    waitlistError = null;
     await _preferences?.setBool('seatmap.demoLogin', false);
     notifyListeners();
   }
@@ -286,6 +290,8 @@ class AppController extends ChangeNotifier {
     } on GuestAccountException catch (exception) {
       if (exception.status == 401) {
         isLoggedIn = false;
+        waitlistEntries = [];
+        waitlistError = null;
         profile = GuestProfile();
         notifyListeners();
       }
@@ -302,6 +308,8 @@ class AppController extends ChangeNotifier {
       () => accounts.changePassword(current, password, confirmation),
     );
     isLoggedIn = false;
+    waitlistEntries = [];
+    waitlistError = null;
     profile = GuestProfile();
     notifyListeners();
   }
@@ -309,6 +317,8 @@ class AppController extends ChangeNotifier {
   Future<void> deleteAccount(String password) async {
     await _authenticated(() => accounts.deleteAccount(password));
     isLoggedIn = false;
+    waitlistEntries = [];
+    waitlistError = null;
     profile = GuestProfile();
     notifyListeners();
   }
@@ -339,6 +349,8 @@ class AppController extends ChangeNotifier {
       if (emailChanged) {
         await accounts.forgetSession();
         isLoggedIn = false;
+        waitlistEntries = [];
+        waitlistError = null;
       }
     }
     notifyListeners();
@@ -411,6 +423,98 @@ class AppController extends ChangeNotifier {
     await _saveBookings();
     notifyListeners();
     return booking;
+  }
+
+  List<Map<String, dynamic>> waitlistEntries = [];
+  String? waitlistError;
+  bool refreshingWaitlist = false;
+  Duration waitlistClockOffset = Duration.zero;
+  Future<void> refreshWaitlist() async {
+    if (refreshingWaitlist) return;
+    if (!isLoggedIn || demoMode) {
+      if (waitlistEntries.isNotEmpty) {
+        waitlistEntries = [];
+        notifyListeners();
+      }
+      return;
+    }
+    refreshingWaitlist = true;
+    final owner = profile.id;
+    final updated = <Map<String, dynamic>>[];
+    String? failure;
+    try {
+      final data = await _authenticated(() => accounts.waitlistInbox());
+      final server = DateTime.tryParse(data['serverTimeUtc']?.toString() ?? '');
+      if (server != null) {
+        waitlistClockOffset = server.difference(DateTime.now().toUtc());
+      }
+      updated.addAll(
+        (data['entries'] as List? ?? []).map(
+          (e) => Map<String, dynamic>.from(e),
+        ),
+      );
+      final failed = List<String>.from(data['failedRestaurantIds'] ?? []);
+      if (failed.isNotEmpty) {
+        failure = appStrings.waitlistLoadFailed;
+        updated.addAll(
+          waitlistEntries.where((e) => failed.contains(e['restaurantId'])),
+        );
+      }
+    } catch (_) {
+      failure = appStrings.waitlistLoadFailed;
+      updated.addAll(waitlistEntries);
+    }
+    if (isLoggedIn && owner == profile.id) {
+      waitlistEntries = updated;
+      waitlistError = failure;
+    }
+    refreshingWaitlist = false;
+    notifyListeners();
+  }
+
+  Future<void> confirmWaitlist(
+    Restaurant restaurant,
+    String entryId,
+    String offerId,
+  ) async {
+    final response = await accounts.waitlist(
+      restaurant.id,
+      path: '/$entryId/confirm',
+      method: 'POST',
+      body: {'offerId': offerId},
+    );
+    var booking = Booking(
+      id: '${restaurant.id}:${response['id']}',
+      restaurantId: restaurant.id,
+      restaurantName: restaurant.name,
+      restaurantImage: restaurant.imageAsset,
+      date: DateTime.parse(response['reservedDate']),
+      time: response['reservedTime'],
+      guests: response['guestCount'],
+      tableIds: List<String>.from(response['tableIds']),
+      tableLabel: (response['tableIds'] as List).join(' + '),
+      guestName: response['guestName'],
+      phone: profile.phone,
+      status: response['status'] == 'Approved' ? 'confirmed' : 'pending',
+      demo: false,
+      restaurantPhone: restaurant.phone,
+      timeZone: restaurant.timeZone,
+      managementToken: response['managementToken'],
+      cancellationLeadMinutes: restaurant.cancellationLeadMinutes,
+    );
+    if (response['guestReservation'] is Map) {
+      booking = repository.withGuestStatus(
+        booking,
+        Map<String, dynamic>.from(response['guestReservation']),
+      );
+    }
+    await bookingAccess.write(booking.id, booking.managementToken);
+    bookings.removeWhere((b) => b.id == booking.id);
+    bookings.insert(0, booking);
+    _bookingRevision++;
+    await _saveBookings();
+    await refreshWaitlist();
+    notifyListeners();
   }
 
   String restaurantPhoneFor(Booking booking) => restaurants

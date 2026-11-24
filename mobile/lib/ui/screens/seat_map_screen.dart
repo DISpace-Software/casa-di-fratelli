@@ -14,6 +14,7 @@ import '../theme.dart';
 import '../maps/cofein_seat_map.dart';
 import 'discovery_screens.dart';
 import 'support_screens.dart';
+import 'waitlist_screen.dart';
 
 class SeatMapScreen extends StatefulWidget {
   const SeatMapScreen({
@@ -298,17 +299,53 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                     )
                   else if (tables.isEmpty && !loading)
                     Container(
-                      height: 365,
+                      constraints: const BoxConstraints(minHeight: 365),
+                      padding: const EdgeInsets.only(bottom: 20),
                       decoration: BoxDecoration(
                         color: SeatMapColors.surface,
                         borderRadius: BorderRadius.circular(22),
                       ),
-                      child: EmptyStateIcon(
-                        icon: Icons.chair_alt_outlined,
-                        title: context.l10n.noAvailableTables,
-                        text: context
-                            .l10n
-                            .msgChooseAnotherRoomOrContactTheRestaurant,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          EmptyStateIcon(
+                            icon: Icons.chair_alt_outlined,
+                            title: context.l10n.noAvailableTables,
+                            text: context
+                                .l10n
+                                .msgChooseAnotherRoomOrContactTheRestaurant,
+                          ),
+                          if (!widget.controller.demoMode &&
+                              zone.isNotEmpty &&
+                              widget.controller.guestCount <=
+                                  plan.publicMaxGuests)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: FilledButton.icon(
+                                onPressed: () async {
+                                  final joined = await Navigator.push<bool>(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => WaitlistScreen(
+                                        controller: widget.controller,
+                                        restaurant: widget.restaurant,
+                                        area: zone,
+                                      ),
+                                    ),
+                                  );
+                                  if (joined == true && context.mounted) {
+                                    widget.onViewBookings?.call();
+                                    Navigator.of(context)
+                                        .popUntil((route) => route.isFirst);
+                                  }
+                                },
+                                icon: const Icon(Icons.notifications_outlined),
+                                label: Text(context.l10n.waitlistJoin),
+                              ),
+                            ),
+                        ],
                       ),
                     )
                   else if (cofeinMap)

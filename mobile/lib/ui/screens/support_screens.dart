@@ -1,3 +1,5 @@
+import 'waitlist_screen.dart';
+
 import 'dart:async';
 
 import 'package:intl/intl.dart';
@@ -940,7 +942,10 @@ class _BookingsScreenState extends State<BookingsScreen> {
               tooltip: context.l10n.refreshBookings,
               onPressed: widget.controller.refreshingBookings
                   ? null
-                  : widget.controller.refreshBookings,
+                  : () async {
+                      await widget.controller.refreshBookings();
+                      await widget.controller.refreshWaitlist();
+                    },
               icon: widget.controller.refreshingBookings
                   ? SizedBox(
                       width: 18,
@@ -985,7 +990,17 @@ class _BookingsScreenState extends State<BookingsScreen> {
                   ),
                 ),
                 SizedBox(height: 22),
-                if (bookings.isEmpty)
+                WaitlistCards(controller: widget.controller, history: history),
+                if (bookings.isEmpty &&
+                    !widget.controller.waitlistEntries.any(
+                      (e) =>
+                          history ==
+                          [
+                            'booked',
+                            'cancelled',
+                            'expired',
+                          ].contains(e['status']),
+                    ))
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 45),
                     child: Column(

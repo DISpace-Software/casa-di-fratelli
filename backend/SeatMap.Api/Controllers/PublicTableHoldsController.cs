@@ -52,6 +52,8 @@ public class PublicTableHoldsController : ControllerBase
         if (request.ReservedDate < await RestaurantTodayAsync())
             return BadRequest(new { message = "A public table hold cannot be created for a past date." });
 
+        if (await new ReservationConflictService(_db).FindWaitlistConflictAsync(request.ReservedDate, "00:00 - 23:59", tableIds) != null)
+            return Conflict(new { code = "WAITLIST_HOLD", message = "Close the active waitlist offer before blocking this table." });
         var existing = await _db.PublicTableHolds
             .Where(x => x.ReservedDate == request.ReservedDate)
             .ToListAsync();

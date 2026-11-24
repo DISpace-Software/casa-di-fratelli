@@ -362,6 +362,36 @@ namespace SeatMap.Api.Migrations
                 {
                     b.HasOne("SeatMap.Api.Models.MenuItem", null).WithMany().HasForeignKey("MenuItemId").OnDelete(DeleteBehavior.Cascade).IsRequired();
                 });
+
+            modelBuilder.Entity("SeatMap.Api.Services.Waitlist.WaitlistEntry", b => {
+                b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uuid");
+                b.Property<Guid>("GuestId").HasColumnType("uuid");
+                b.Property<string>("GuestName").IsRequired().HasMaxLength(120).HasColumnType("character varying(120)");
+                b.Property<string>("Email").IsRequired().HasMaxLength(254).HasColumnType("character varying(254)");
+                b.Property<string>("Phone").IsRequired().HasMaxLength(30).HasColumnType("character varying(30)");
+                b.Property<string>("Language").IsRequired().HasMaxLength(3).HasColumnType("character varying(3)");
+                b.Property<DateOnly>("Date").HasColumnType("date");
+                b.Property<int>("Guests").HasColumnType("integer");
+                b.Property<string>("Area").IsRequired().HasMaxLength(100).HasColumnType("character varying(100)");
+                b.Property<string>("TimesJson").IsRequired().HasColumnType("text");
+                b.Property<string>("Status").IsRequired().HasMaxLength(20).HasColumnType("character varying(20)");
+                b.Property<DateTime>("CreatedAtUtc").HasColumnType("timestamp with time zone");
+                b.Property<DateTime>("QueueAtUtc").HasColumnType("timestamp with time zone");
+                b.Property<DateTime>("UpdatedAtUtc").HasColumnType("timestamp with time zone");
+                b.Property<Guid?>("OfferId").HasColumnType("uuid");
+                b.Property<string>("TableIdsJson").IsRequired().HasColumnType("text");
+                b.Property<string>("OfferTime").HasColumnType("text");
+                b.Property<DateTime?>("ExpiresAtUtc").HasColumnType("timestamp with time zone");
+                b.Property<int?>("ReservationId").HasColumnType("integer");
+                b.Property<DateTime?>("NotificationLeaseUntilUtc").HasColumnType("timestamp with time zone");
+                b.Property<DateTime?>("EmailSentAtUtc").HasColumnType("timestamp with time zone");
+                b.Property<DateTime?>("PushSentAtUtc").HasColumnType("timestamp with time zone");
+                b.Property<int>("NotificationAttempts").HasColumnType("integer");
+                b.HasKey("Id");
+                b.HasIndex("GuestId", "Date");
+                b.HasIndex("Status", "Date", "QueueAtUtc");
+                b.ToTable("WaitlistEntries");
+            });
 #pragma warning restore 612, 618
         }
     }

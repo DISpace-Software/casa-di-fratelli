@@ -1681,4 +1681,85 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get sommelierFilters => 'Уточни избора (по желание)';
+
+  @override
+  String get waitlistTitle => 'Лист на чакащи';
+
+  @override
+  String get waitlistJoin => 'Извести ме за маса';
+
+  @override
+  String get waitlistIntro =>
+      'Изберете удобно време. Ще ви предложим маса, ако се освободи подходяща.';
+
+  @override
+  String get waitlistNotice =>
+      'Това е заявка, не резервация. Предложението ще дойде на потвърдения ви имейл и ще се появи тук. Push известията още не са налични.';
+
+  @override
+  String get waitlistLogin =>
+      'Влезте с потвърден имейл и попълнен телефон, за да получавате предложения.';
+
+  @override
+  String get waitlistSaved => 'Заявката е запазена в „Резервации“.';
+
+  @override
+  String get waitlistWaiting => 'В очакване';
+
+  @override
+  String get waitlistOffered => 'Освободи се маса за вас';
+
+  @override
+  String get waitlistPaused => 'Изчакването е на пауза';
+
+  @override
+  String get waitlistExpired => 'Предложението изтече. Обновете списъка.';
+
+  @override
+  String get waitlistUnavailable =>
+      'Ресторантът временно е спрял листа на чакащи.';
+
+  @override
+  String get waitlistInvalid => 'Проверете датата, часа, броя гости и зоната.';
+
+  @override
+  String get waitlistLoadFailed =>
+      'Листът на чакащи не се обнови. Опитайте отново.';
+
+  @override
+  String get waitlistConfirm => 'Потвърди резервацията';
+
+  @override
+  String get waitlistDecline => 'Откажи предложението';
+
+  @override
+  String get waitlistCancel => 'Откажи заявката';
+
+  @override
+  String get waitlistResume => 'Продължи изчакването';
+
+  @override
+  String get waitlistEdit => 'Промени заявката';
+
+  @override
+  String get waitlistTimer => 'Време за потвърждение';
+
+  @override
+  String get waitlistNotBooked => 'Масата още не е резервирана.';
+
+  @override
+  String get waitlistBooked => 'Резервацията е създадена';
+
+  @override
+  String get waitlistClosed => 'Заявката е затворена';
+
+  @override
+  String get waitlistEditNotice =>
+      'След промяна или подновяване заявката заема ново място в опашката.';
+
+  @override
+  String get waitlistTimes => 'Удобни часове — до 5 варианта';
+
+  @override
+  String get waitlistOpen => 'Виж предложението';
 }

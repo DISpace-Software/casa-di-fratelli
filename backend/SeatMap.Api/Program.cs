@@ -65,6 +65,9 @@ builder.Services.AddHttpClient<EmailService>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(5);
 });
+builder.Services.AddHttpClient<SeatMap.Api.Services.Waitlist.WaitlistEmailSender>(client => client.Timeout = TimeSpan.FromSeconds(5));
+builder.Services.AddScoped<SeatMap.Api.Services.Waitlist.WaitlistService>();
+builder.Services.AddHostedService<SeatMap.Api.Services.Waitlist.WaitlistHostedService>();
 builder.Services.AddScoped<ReservationConflictService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ReservationBookingService>();

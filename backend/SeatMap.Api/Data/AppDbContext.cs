@@ -11,6 +11,7 @@ public class AppDbContext : DbContext
 
     public DbSet<SeatMap.Api.Services.Sommelier.SommelierProfile> SommelierProfiles => Set<SeatMap.Api.Services.Sommelier.SommelierProfile>();
 
+    public DbSet<SeatMap.Api.Services.Waitlist.WaitlistEntry> WaitlistEntries => Set<SeatMap.Api.Services.Waitlist.WaitlistEntry>();
     public DbSet<Reservation> Reservations => Set<Reservation>();
     public DbSet<ReservationTable> ReservationTables => Set<ReservationTable>();
     public DbSet<MenuItem> MenuItems => Set<MenuItem>();
@@ -42,6 +43,10 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<SeatMap.Api.Services.Waitlist.WaitlistEntry>(e => {
+            e.HasIndex(x => new { x.Status, x.Date, x.QueueAtUtc });
+            e.HasIndex(x => new { x.GuestId, x.Date });
+        });
         modelBuilder.Entity<SeatMap.Api.Services.Sommelier.SommelierProfile>(e => {
             e.Property(x => x.MenuItemId).ValueGeneratedNever();
             e.HasOne<MenuItem>().WithMany().HasForeignKey(x => x.MenuItemId).OnDelete(DeleteBehavior.Cascade);

@@ -1677,4 +1677,84 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sommelierFilters => 'Refine pairing (optional)';
+
+  @override
+  String get waitlistTitle => 'Waitlist';
+
+  @override
+  String get waitlistJoin => 'Notify me about a table';
+
+  @override
+  String get waitlistIntro =>
+      'Choose suitable times. We will offer you a matching table when one becomes available.';
+
+  @override
+  String get waitlistNotice =>
+      'This is a request, not a booking. Offers arrive at your verified email and appear here. Push notifications are not available yet.';
+
+  @override
+  String get waitlistLogin =>
+      'Sign in with a verified email and a phone number to receive offers.';
+
+  @override
+  String get waitlistSaved => 'Your request is saved in Reservations.';
+
+  @override
+  String get waitlistWaiting => 'Waiting';
+
+  @override
+  String get waitlistOffered => 'A table is available for you';
+
+  @override
+  String get waitlistPaused => 'Waiting paused';
+
+  @override
+  String get waitlistExpired => 'This offer has expired. Refresh the list.';
+
+  @override
+  String get waitlistUnavailable => 'The restaurant has paused its waitlist.';
+
+  @override
+  String get waitlistInvalid => 'Check the date, times, party size and zone.';
+
+  @override
+  String get waitlistLoadFailed =>
+      'Could not refresh the waitlist. Please try again.';
+
+  @override
+  String get waitlistConfirm => 'Confirm booking';
+
+  @override
+  String get waitlistDecline => 'Decline offer';
+
+  @override
+  String get waitlistCancel => 'Cancel request';
+
+  @override
+  String get waitlistResume => 'Resume waiting';
+
+  @override
+  String get waitlistEdit => 'Edit request';
+
+  @override
+  String get waitlistTimer => 'Time to confirm';
+
+  @override
+  String get waitlistNotBooked => 'The table is not booked yet.';
+
+  @override
+  String get waitlistBooked => 'Booking created';
+
+  @override
+  String get waitlistClosed => 'Request closed';
+
+  @override
+  String get waitlistEditNotice =>
+      'Editing or resuming places your request at the end of the matching queue.';
+
+  @override
+  String get waitlistTimes => 'Suitable times — up to 5';
+
+  @override
+  String get waitlistOpen => 'View offer';
 }

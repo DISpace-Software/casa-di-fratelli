@@ -117,6 +117,11 @@ public sealed class FloorPlanService(AppDbContext db, ICurrentTenant tenant)
             if (Select(plan, Reservations.PublicTableHoldSelection.DeserializeTableIds(hold.TableIdsJson), null, 0, true).Error != null)
                 throw new ArgumentException($"Remove table hold #{hold.Id} before changing its tables.");
 
+        var offerNow = DateTime.UtcNow;
+        var offers = await db.WaitlistEntries.AsNoTracking().Where(x => x.Status == "offered" && x.ExpiresAtUtc > offerNow).ToListAsync();
+        foreach (var offer in offers)
+            if (Select(plan, JsonSerializer.Deserialize<List<string>>(offer.TableIdsJson), offer.Area, offer.Guests).Error != null)
+                throw new ArgumentException("Close the active waitlist offer before changing its table.");
         var saved = plan with { Revision = Guid.NewGuid().ToString("N") };
         var json = JsonSerializer.Serialize(saved, Json);
         var oldValue = await db.AppSettings.AsNoTracking().Where(x => x.Key == StorageKey).Select(x => x.Value).SingleOrDefaultAsync();

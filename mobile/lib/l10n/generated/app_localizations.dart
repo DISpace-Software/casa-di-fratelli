@@ -3043,6 +3043,156 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Уточнить подбор (необязательно)'**
   String get sommelierFilters;
+
+  /// No description provided for @waitlistTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Лист ожидания'**
+  String get waitlistTitle;
+
+  /// No description provided for @waitlistJoin.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сообщить о свободном столе'**
+  String get waitlistJoin;
+
+  /// No description provided for @waitlistIntro.
+  ///
+  /// In ru, this message translates to:
+  /// **'Выберите удобное время. Если появится подходящий стол, мы предложим его вам.'**
+  String get waitlistIntro;
+
+  /// No description provided for @waitlistNotice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это запрос, а не бронь. Предложение придёт на подтверждённый email и появится здесь. Системные push пока недоступны.'**
+  String get waitlistNotice;
+
+  /// No description provided for @waitlistLogin.
+  ///
+  /// In ru, this message translates to:
+  /// **'Войдите в аккаунт с подтверждённым email и заполненным телефоном, чтобы получать предложения.'**
+  String get waitlistLogin;
+
+  /// No description provided for @waitlistSaved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрос сохранён. Он доступен в «Резервации».'**
+  String get waitlistSaved;
+
+  /// No description provided for @waitlistWaiting.
+  ///
+  /// In ru, this message translates to:
+  /// **'В ожидании'**
+  String get waitlistWaiting;
+
+  /// No description provided for @waitlistOffered.
+  ///
+  /// In ru, this message translates to:
+  /// **'Для вас освободился стол'**
+  String get waitlistOffered;
+
+  /// No description provided for @waitlistPaused.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ожидание на паузе'**
+  String get waitlistPaused;
+
+  /// No description provided for @waitlistExpired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Срок предложения истёк. Обновите список.'**
+  String get waitlistExpired;
+
+  /// No description provided for @waitlistUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ресторан временно приостановил лист ожидания.'**
+  String get waitlistUnavailable;
+
+  /// No description provided for @waitlistInvalid.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте дату, время, количество гостей и доступность зоны.'**
+  String get waitlistInvalid;
+
+  /// No description provided for @waitlistLoadFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось обновить лист ожидания. Попробуйте ещё раз.'**
+  String get waitlistLoadFailed;
+
+  /// No description provided for @waitlistConfirm.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтвердить бронь'**
+  String get waitlistConfirm;
+
+  /// No description provided for @waitlistDecline.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отказаться от предложения'**
+  String get waitlistDecline;
+
+  /// No description provided for @waitlistCancel.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить запрос'**
+  String get waitlistCancel;
+
+  /// No description provided for @waitlistResume.
+  ///
+  /// In ru, this message translates to:
+  /// **'Продолжить ожидание'**
+  String get waitlistResume;
+
+  /// No description provided for @waitlistEdit.
+  ///
+  /// In ru, this message translates to:
+  /// **'Изменить запрос'**
+  String get waitlistEdit;
+
+  /// No description provided for @waitlistTimer.
+  ///
+  /// In ru, this message translates to:
+  /// **'Время на подтверждение'**
+  String get waitlistTimer;
+
+  /// No description provided for @waitlistNotBooked.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стол ещё не забронирован.'**
+  String get waitlistNotBooked;
+
+  /// No description provided for @waitlistBooked.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бронь создана'**
+  String get waitlistBooked;
+
+  /// No description provided for @waitlistClosed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Запрос закрыт'**
+  String get waitlistClosed;
+
+  /// No description provided for @waitlistEditNotice.
+  ///
+  /// In ru, this message translates to:
+  /// **'После изменения или возобновления запрос займёт новое место в очереди.'**
+  String get waitlistEditNotice;
+
+  /// No description provided for @waitlistTimes.
+  ///
+  /// In ru, this message translates to:
+  /// **'Удобное время — до 5 вариантов'**
+  String get waitlistTimes;
+
+  /// No description provided for @waitlistOpen.
+  ///
+  /// In ru, this message translates to:
+  /// **'Посмотреть предложение'**
+  String get waitlistOpen;
 }
 
 class _AppLocalizationsDelegate

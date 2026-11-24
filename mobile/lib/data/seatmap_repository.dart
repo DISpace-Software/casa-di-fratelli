@@ -570,7 +570,7 @@ class SeatMapRepository {
     );
     return guestStatus == null
         ? booking
-        : _withGuestStatus(booking, guestStatus);
+        : withGuestStatus(booking, guestStatus);
   }
 
   DateTime bookingStartsAt(Booking booking) {
@@ -597,7 +597,7 @@ class SeatMapRepository {
       ['confirmed', 'pending'].contains(booking.status) &&
       !_now().toUtc().isAfter(cancellationDeadline(booking));
 
-  Booking _withGuestStatus(Booking booking, Map<String, dynamic> value) {
+  Booking withGuestStatus(Booking booking, Map<String, dynamic> value) {
     if ('${booking.restaurantId}:${value['id']}' != booking.id ||
         value['status'] is! String) {
       throw SeatMapException(appStrings.bookingUpdateFailed);
@@ -639,7 +639,7 @@ class SeatMapRepository {
       headers: {'X-Reservation-Token': booking.managementToken},
       guestManagement: true,
     );
-    return _withGuestStatus(booking, _object(data));
+    return withGuestStatus(booking, _object(data));
   }
 
   Future<Booking> cancelBooking(Booking booking) async {
@@ -659,7 +659,7 @@ class SeatMapRepository {
       headers: {'X-Reservation-Token': booking.managementToken},
       guestManagement: true,
     );
-    return _withGuestStatus(booking, _object(data));
+    return withGuestStatus(booking, _object(data));
   }
 
   static bool canSelect(FloorPlan plan, List<SeatTable> tables, int guests) {

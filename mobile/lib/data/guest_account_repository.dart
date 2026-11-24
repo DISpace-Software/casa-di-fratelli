@@ -74,10 +74,15 @@ class GuestAccountRepository {
     String method = 'GET',
     Map<String, dynamic>? body,
     bool authenticated = true,
+    String? restaurantId,
   }) async {
     final request = http.Request(
       method,
-      Uri.parse('$baseUrl/api/v1/guest/$path'),
+      Uri.parse(
+        restaurantId == null
+            ? '$baseUrl/api/v1/guest/$path'
+            : '$baseUrl/api/v1/restaurants/${Uri.encodeComponent(restaurantId)}/waitlist$path',
+      ),
     );
     request.headers.addAll({
       'Accept': 'application/json',
@@ -145,6 +150,14 @@ class GuestAccountRepository {
   }
 
   String? _messageForCode(String? code) => switch (code) {
+    'OFFER_EXPIRED' || 'WAITLIST_CLOSED' => appStrings.waitlistExpired,
+    'WAITLIST_PAUSED' => appStrings.waitlistUnavailable,
+    'TIMES_INVALID' ||
+    'DATE_INVALID' ||
+    'ZONE_CLOSED' ||
+    'PARTY_SIZE' ||
+    'NO_SUITABLE_TABLE' => appStrings.waitlistInvalid,
+    'VERIFIED_PROFILE_REQUIRED' => appStrings.waitlistLogin,
     'EMAIL_NOT_VERIFIED' => appStrings.emailNotVerified,
     'INVALID_EMAIL_CODE' => appStrings.invalidEmailCode,
     'EMAIL_DELIVERY_FAILED' => appStrings.emailDeliveryFailed,
@@ -157,6 +170,19 @@ class GuestAccountRepository {
     'RATE_LIMITED' => appStrings.msgTooManyAttemptsPleaseTryAgainInMinutes,
     _ => null,
   };
+
+  Future<Map<String, dynamic>> waitlistInbox() async =>
+      Map<String, dynamic>.from(await _request('waitlist') as Map);
+
+  Future<Map<String, dynamic>> waitlist(
+    String restaurantId, {
+    String path = '',
+    String method = 'GET',
+    Map<String, dynamic>? body,
+  }) async => Map<String, dynamic>.from(
+    await _request(path, restaurantId: restaurantId, method: method, body: body)
+        as Map,
+  );
 
   Future<GuestProfile?> restore() async {
     _token = await _store.read();

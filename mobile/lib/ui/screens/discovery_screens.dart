@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../motion.dart';
 import '../restaurant_contact.dart';
 import '../../l10n/language.dart';
@@ -45,21 +47,34 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
+  Timer? waitlistTimer;
+  bool foreground = true;
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    waitlistTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (foreground) widget.controller.refreshWaitlist();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) widget.controller.refreshWaitlist();
+    });
   }
 
   @override
   void dispose() {
+    waitlistTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) widget.controller.refreshBookings();
+    foreground = state == AppLifecycleState.resumed;
+    if (foreground) {
+      widget.controller.refreshBookings();
+      widget.controller.refreshWaitlist();
+    }
   }
 
   int tab = 0;
@@ -129,6 +144,30 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           ],
         ),
       ),
+      bottomSheet:
+          tab != 2 &&
+              widget.controller.isLoggedIn &&
+              widget.controller.waitlistEntries.any(
+                (e) =>
+                    e['status'] == 'offered' &&
+                    (DateTime.tryParse(e['expiresAtUtc'] ?? '')?.isAfter(
+                          DateTime.now().toUtc().add(
+                            widget.controller.waitlistClockOffset,
+                          ),
+                        ) ??
+                        false),
+              )
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: FilledButton.icon(
+                  onPressed: () => setState(() => tab = 2),
+                  icon: const Icon(Icons.notifications_active_outlined),
+                  label: Text(context.l10n.waitlistOpen),
+                ),
+              ),
+            )
+          : null,
       bottomNavigationBar: Container(
         key: const ValueKey('app-bottom-navigation'),
         // Keep the tab content above Android buttons and the iOS home indicator.

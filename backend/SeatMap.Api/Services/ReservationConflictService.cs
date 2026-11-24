@@ -90,12 +90,26 @@ public class ReservationConflictService
         return values;
     }
 
+    public async Task<TableConflict?> FindWaitlistConflictAsync(DateOnly reservedDate, string reservedTime, List<string> tableIds, Guid? excludeWaitlistId = null)
+    {
+        var now = DateTime.UtcNow;
+        var offers = await _db.WaitlistEntries.AsNoTracking().Where(x => x.Status == "offered" && x.Date == reservedDate && x.ExpiresAtUtc > now && x.Id != excludeWaitlistId).ToListAsync();
+        foreach (var offer in offers)
+        {
+            var ids = System.Text.Json.JsonSerializer.Deserialize<List<string>>(offer.TableIdsJson) ?? [];
+            if (ids.Any(id => tableIds.Contains(id, StringComparer.OrdinalIgnoreCase)) &&
+                ExpandReservationTimes(reservedTime).Any(a => ExpandReservationTimes(offer.OfferTime ?? "").Any(b => Math.Min(Math.Abs((a-b).TotalMinutes), 1440-Math.Abs((a-b).TotalMinutes)) < TableBufferMinutes)))
+                return new TableConflict(0, offer.OfferTime!, ids);
+        }
+        return null;
+    }
+
     public async Task<TableConflict?> FindTableConflictAsync(
         DateOnly reservedDate,
         string reservedTime,
         List<string> tableIds,
         int? excludeReservationId = null,
-        bool includeHallBlocks = true)
+        bool includeHallBlocks = true, Guid? excludeWaitlistId = null)
     {
         // Keep the exact configured ID as well as its case-folded form. Some
         // database collations do not uppercase Cyrillic suffixes such as 29а.
@@ -110,6 +124,8 @@ public class ReservationConflictService
                 x.Tables.Any(t => canonicalIds.Contains(t.TableCode.ToUpper())))
             .ToListAsync();
 
+        var held = await FindWaitlistConflictAsync(reservedDate, reservedTime, tableIds, excludeWaitlistId);
+        if (held != null) return held;
         var targetTimes = ExpandReservationTimes(reservedTime);
 
         if (targetTimes.Count == 0)

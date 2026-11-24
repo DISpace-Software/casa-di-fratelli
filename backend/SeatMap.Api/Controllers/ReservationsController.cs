@@ -182,7 +182,11 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             IsPublicHold = true
         }));
 
-        return Ok(blocked);
+        var offerNow = DateTime.UtcNow;
+        var offers = await _db.WaitlistEntries.AsNoTracking().Where(x => x.Status == "offered" && x.ExpiresAtUtc > offerNow && x.Date >= today && x.Date <= lastPublicReservationDate).ToListAsync();
+        return Ok(blocked.Concat(offers.Select(x => (object)new {
+            ReservedDate = x.Date, ReservedTime = x.OfferTime, TableIds = System.Text.Json.JsonSerializer.Deserialize<List<string>>(x.TableIdsJson), IsWaitlistHold = true
+        })));
     }
 
     [HttpPost]
@@ -237,6 +241,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
 
         var reservedDate = DateOnly.FromDateTime(now);
         var reservedTime = $"{now.Hour:00}:{now.Minute:00}";
+        if (await _reservationConflictService.FindWaitlistConflictAsync(reservedDate, reservedTime, tableIds) is { } waitlistConflict)
+            return Conflict(ReservationConflictService.ToConflictResponse(waitlistConflict));
         var occupiedReservation = await _db.Reservations
             .Include(x => x.Tables)
             .FirstOrDefaultAsync(x =>
@@ -782,6 +788,8 @@ public class ReservationsController : ControllerBase, IAsyncActionFilter
             ? times[0]
             : $"{times.First()} - {times.Last()}";
 
+        if (await _reservationConflictService.FindWaitlistConflictAsync(request.ReservedDate, blockTime, tableIds) is { } waitlistConflict)
+            return Conflict(ReservationConflictService.ToConflictResponse(waitlistConflict));
         var block = new Reservation
         {
             GuestName = "Admin block",
