@@ -102,7 +102,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             ),
             BookingsScreen(
               controller: widget.controller,
-              onOrders: () => setState(() => tab = 3),
               onOpenRestaurant: (id) {
                 final matches = widget.controller.restaurants.where(
                   (restaurant) => restaurant.id == id,

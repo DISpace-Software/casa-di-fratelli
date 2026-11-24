@@ -823,11 +823,9 @@ class BookingsScreen extends StatefulWidget {
     super.key,
     required this.controller,
     this.onOpenRestaurant,
-    this.onOrders,
   });
   final AppController controller;
   final ValueChanged<String>? onOpenRestaurant;
-  final VoidCallback? onOrders;
   @override
   State<BookingsScreen> createState() => _BookingsScreenState();
 }
@@ -956,22 +954,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
             padding: EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
-                Padding(
-                  padding: EdgeInsets.only(bottom: 18),
-                  child: PrimaryButton(
-                    label: context.l10n.myPreorders,
-                    icon: Icons.restaurant_menu_rounded,
-                    onPressed:
-                        widget.onOrders ??
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                PreordersScreen(controller: widget.controller),
-                          ),
-                        ),
-                  ),
-                ),
                 Container(
                   padding: EdgeInsets.all(5),
                   decoration: BoxDecoration(
