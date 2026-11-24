@@ -32,3 +32,12 @@ For PostgreSQL migration scripts use AppDbContextFactory's `--postgres` design-t
 `dotnet run --project backend/SeatMap.SommelierChecks`: scoring conflicts, explanations, verification, budget/style/serving filters, availability, generic fallback and two-database isolation.
 
 Flutter sommelier tests exercise budget parsing, real recommendation display and generic consultation without a misleading order action. Menu/cart regression tests remain in the suite. Admin component has a successful production build and ESLint check. PostgreSQL migration scripts were exercised in a disposable local database with rule/profile reads.
+
+## Release evidence — 24 November 2026
+
+- Restaurant migrations applied to Casa and Cofein using the database owner. Cofein runtime CRUD/read access verified as `cofein_app`.
+- Platform job `job-dc2t3irrjlhs73dmr360` succeeded and seeded five shared rules; restaurant startup migration policy was not changed.
+- Shared administration deployment `dpl_7KhuRZEME5kVon3sobm91mJkHeuc` promoted to the existing `seatmap-admin-eight.vercel.app` alias. Staged and public HTML matched the reviewed standalone package.
+- Live API reads: Casa `no_wines`, Cofein `consultation` with four menu options, conflicting tenant selectors rejected, configuration endpoint requires authentication, invalid budget rejected.
+- Backend: 17 sommelier checks plus existing guest/account checks passed. Mobile: 77 passed, 8 optional visuals skipped; separate sommelier image capture inspected. Flutter analysis and admin component ESLint clean; admin production build passed.
+- iPhone 14 Plus: version 1.1.0 (8) installed. Automatic launch denied because the device was locked; manual launch remains to be observed.
