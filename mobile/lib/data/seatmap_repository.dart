@@ -146,6 +146,8 @@ class SeatMapRepository {
         throw SeatMapException(
           code == 'PREORDERS_DISABLED'
               ? appStrings.preordersNotOffered
+              : code == 'PREORDER_CHANGED'
+              ? appStrings.preorderChanged
               : code == 'PREORDER_MENU_CHANGED'
               ? appStrings.preorderMenuChanged
               : code == 'PREORDER_TOO_LATE'
@@ -474,6 +476,11 @@ class SeatMapRepository {
     String? email,
     String? notes,
   }) async {
+    if (restaurant.id == 'casa-di-fratelli' && guests > 8) {
+      throw SeatMapException(
+        appStrings.msgForPGuestsPleaseContactTheRestaurant(guests.toString()),
+      );
+    }
     if (!demoMode && !timesFor(restaurant, date).contains(time)) {
       throw SeatMapException(
         appStrings.msgChooseAnAvailableTimeDuringTheRestaurantOpening,
@@ -770,6 +777,18 @@ class SeatMapRepository {
   ) async => _object(
     await _request(
       _preorderPath(booking),
+      body: body,
+      headers: {'X-Reservation-Token': booking.managementToken},
+      guestManagement: true,
+    ),
+  );
+  Future<Map<String, dynamic>> updatePreorderDraft(
+    Booking booking,
+    String id,
+    Map<String, dynamic> body,
+  ) async => _object(
+    await _request(
+      '${_preorderPath(booking)}/${Uri.encodeComponent(id)}',
       body: body,
       headers: {'X-Reservation-Token': booking.managementToken},
       guestManagement: true,

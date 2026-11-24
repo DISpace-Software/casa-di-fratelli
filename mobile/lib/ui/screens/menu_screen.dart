@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:material_ui/material_ui.dart';
 
 import '../../domain/menu.dart';
@@ -18,17 +20,23 @@ class MenuScreen extends StatefulWidget {
     required this.controller,
     required this.restaurant,
     this.booking,
+    this.draft,
   });
   final AppController controller;
   final Restaurant restaurant;
   final Booking? booking;
+  final Map<String, dynamic>? draft;
   @override
   State<MenuScreen> createState() => _MenuScreenState();
 }
 
 class _MenuScreenState extends State<MenuScreen> {
   final search = TextEditingController();
+  Map<String, dynamic>? editingDraft;
+  String? editingNotes;
+  int? editingOffset;
   List<MenuDish> dishes = [];
+  List<int> unavailableItems = [];
   PreorderSettings policy = const PreorderSettings();
   final quantities = <int, int>{};
   String category = '', query = '';
@@ -44,6 +52,10 @@ class _MenuScreenState extends State<MenuScreen> {
   @override
   void initState() {
     super.initState();
+    editingDraft = widget.draft;
+    for (final item in (widget.draft?['items'] as List? ?? [])) {
+      quantities[item['menuItemId'] as int] = item['quantity'] as int;
+    }
     _load();
   }
 
@@ -65,6 +77,19 @@ class _MenuScreenState extends State<MenuScreen> {
       final settings = await widget.controller.repository
           .preorderSettings(widget.restaurant)
           .catchError((_) => const PreorderSettings());
+      final missing = quantities.keys
+          .where(
+            (id) => !result.any((dish) => dish.id == id && dish.priceMinor > 0),
+          )
+          .toList();
+      if (missing.isNotEmpty && mounted) {
+        setState(() {
+          unavailableItems = missing;
+          error = context.l10n.preorderMenuChanged;
+        });
+        return;
+      }
+      unavailableItems = [];
       if (mounted) {
         setState(() {
           dishes = result;
@@ -156,7 +181,7 @@ class _MenuScreenState extends State<MenuScreen> {
     ),
   );
   Future<void> _cart() async {
-    await Navigator.push<void>(
+    final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
         builder: (_) => PreorderCartScreen(
@@ -165,10 +190,19 @@ class _MenuScreenState extends State<MenuScreen> {
           booking: widget.booking!,
           dishes: dishes,
           quantities: Map.of(quantities),
+          draft: editingDraft,
+          initialNotes: editingNotes,
+          initialOffset: editingOffset,
+          onFormChanged: (draft, text, shift) {
+            editingDraft = draft;
+            editingNotes = text;
+            editingOffset = shift;
+          },
           policy: policy,
         ),
       ),
     );
+    if (result != null && mounted) Navigator.pop(context, result);
   }
 
   @override
@@ -209,7 +243,22 @@ class _MenuScreenState extends State<MenuScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(context.l10n.msgCouldNotLoadTheMenuPleaseTryLater),
+                    Text(
+                      unavailableItems.isEmpty
+                          ? context.l10n.msgCouldNotLoadTheMenuPleaseTryLater
+                          : context.l10n.preorderMenuChanged,
+                    ),
+                    for (final id in unavailableItems)
+                      TextButton.icon(
+                        icon: Icon(Icons.remove_circle_outline),
+                        label: Text(
+                          '${context.l10n.removeMenuItem}: ${(editingDraft?['items'] as List? ?? []).where((item) => item['menuItemId'] == id).firstOrNull?['name'] ?? id}',
+                        ),
+                        onPressed: () {
+                          quantities.remove(id);
+                          _load();
+                        },
+                      ),
                     SizedBox(height: 16),
                     TextButton(
                       onPressed: _load,
@@ -640,19 +689,48 @@ class PreorderCartScreen extends StatefulWidget {
     required this.dishes,
     required this.quantities,
     required this.policy,
+    this.draft,
+    this.initialNotes,
+    this.initialOffset,
+    this.onFormChanged,
   });
+  final String? initialNotes;
+  final int? initialOffset;
+  final void Function(Map<String, dynamic>?, String, int)? onFormChanged;
   final AppController controller;
   final Restaurant restaurant;
   final Booking booking;
   final List<MenuDish> dishes;
   final Map<int, int> quantities;
   final PreorderSettings policy;
+  final Map<String, dynamic>? draft;
   @override
   State<PreorderCartScreen> createState() => _PreorderCartScreenState();
 }
 
 class _PreorderCartScreenState extends State<PreorderCartScreen> {
   final notes = TextEditingController();
+  Map<String, dynamic>? activeDraft;
+  @override
+  void initState() {
+    super.initState();
+    activeDraft = widget.draft;
+    notes.text = widget.initialNotes ?? widget.draft?['notes'] as String? ?? '';
+    final served = DateTime.tryParse(
+      widget.draft?['serveAtUtc'] as String? ?? '',
+    );
+    if (served != null) {
+      final start = widget.controller.repository
+          .cancellationDeadline(widget.booking)
+          .add(Duration(minutes: widget.booking.cancellationLeadMinutes));
+      offset = served.difference(start).inMinutes.clamp(0, 120);
+      offset = (offset ~/ 15) * 15;
+    } else {
+      offset = widget.draft?['serveOffsetMinutes'] as int? ?? 0;
+    }
+    offset = widget.initialOffset ?? offset;
+  }
+
   int offset = 0;
   bool consent = false, busy = false, saved = false, pricesUpdated = false;
   final serverPrices = <int, int>{};
@@ -680,6 +758,7 @@ class _PreorderCartScreenState extends State<PreorderCartScreen> {
 
   @override
   void dispose() {
+    widget.onFormChanged?.call(activeDraft, notes.text, offset);
     notes.dispose();
     super.dispose();
   }
@@ -696,20 +775,52 @@ class _PreorderCartScreenState extends State<PreorderCartScreen> {
       error = null;
     });
     try {
-      if (!widget.booking.demo) {
-        final result = await widget.controller.repository.savePreorderDraft(
-          widget.booking,
-          {
-            'idempotencyKey': requestId,
-            'items': [
-              for (final d in selected)
-                {'menuItemId': d.id, 'quantity': widget.quantities[d.id]},
-            ],
-            'serveOffsetMinutes': offset,
-            'notes': notes.text.trim(),
-            'language': widget.controller.appLanguageCode,
-          },
-        );
+      final body = <String, dynamic>{
+        'idempotencyKey': requestId,
+        'expectedRevision': activeDraft?['revision'],
+        'items': [
+          for (final d in selected)
+            {'menuItemId': d.id, 'quantity': widget.quantities[d.id]},
+        ],
+        'serveOffsetMinutes': offset,
+        'notes': notes.text.trim(),
+        'language': widget.controller.appLanguageCode,
+      };
+      final Map<String, dynamic> result;
+      if (widget.booking.demo) {
+        result = {
+          ...body,
+          'id': activeDraft?['id'] ?? requestId,
+          'status': 'Draft',
+          'totalMinor': total,
+          'items': [
+            for (final d in selected)
+              {
+                'menuItemId': d.id,
+                'name': d.name,
+                'quantity': widget.quantities[d.id],
+                'unitMinor': d.priceMinor,
+              },
+          ],
+        };
+        final prefs = await SharedPreferences.getInstance();
+        final key = 'demo-preorders-${widget.booking.id}';
+        final values = (jsonDecode(prefs.getString(key) ?? '[]') as List)
+            .cast<Map<String, dynamic>>();
+        values.removeWhere((d) => d['id'] == result['id']);
+        values.add(result);
+        await prefs.setString(key, jsonEncode(values));
+      } else {
+        result = activeDraft == null
+            ? await widget.controller.repository.savePreorderDraft(
+                widget.booking,
+                body,
+              )
+            : await widget.controller.repository.updatePreorderDraft(
+                widget.booking,
+                activeDraft!['id'] as String,
+                body,
+              );
         final original = total;
         final lines = result['items'];
         if (lines is List) {
@@ -722,7 +833,10 @@ class _PreorderCartScreenState extends State<PreorderCartScreen> {
         }
         pricesUpdated = original != total;
       }
-      if (mounted) setState(() => saved = true);
+      if (mounted) {
+        setState(() => saved = true);
+        activeDraft = result;
+      }
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
     } finally {
@@ -732,7 +846,16 @@ class _PreorderCartScreenState extends State<PreorderCartScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(context.l10n.preorderCartTitle)),
+    appBar: AppBar(
+      title: Text(context.l10n.preorderCartTitle),
+      actions: [
+        if (saved)
+          TextButton(
+            onPressed: () => Navigator.pop(context, activeDraft),
+            child: Text(context.l10n.msgDone),
+          ),
+      ],
+    ),
     body: ListView(
       padding: EdgeInsets.fromLTRB(24, 12, 24, 28),
       children: [
@@ -812,7 +935,10 @@ class _PreorderCartScreenState extends State<PreorderCartScreen> {
           maxLength: 500,
           maxLines: 3,
           onChanged: (_) => setState(_changed),
-          decoration: InputDecoration(labelText: context.l10n.preorderNotes),
+          decoration: InputDecoration(
+            labelText: context.l10n.preorderNotes,
+            hintText: context.l10n.preorderNotesHint,
+          ),
         ),
         SizedBox(height: 12),
         Row(
@@ -946,5 +1072,212 @@ class _PreorderCartScreenState extends State<PreorderCartScreen> {
         ],
       ),
     ),
+  );
+}
+
+class PreordersScreen extends StatefulWidget {
+  const PreordersScreen({super.key, required this.controller});
+  final AppController controller;
+  @override
+  State<PreordersScreen> createState() => _PreordersScreenState();
+}
+
+class _PreordersScreenState extends State<PreordersScreen> {
+  final entries = <({Booking booking, Map<String, dynamic> draft})>[];
+  bool loading = true;
+  String? error;
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    final next = <({Booking booking, Map<String, dynamic> draft})>[];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (final booking in widget.controller.bookings) {
+        if (!booking.demo && booking.managementToken.isEmpty) continue;
+        try {
+          final drafts = booking.demo
+              ? (jsonDecode(
+                  prefs.getString('demo-preorders-${booking.id}') ?? '[]',
+                ) as List).cast<Map<String, dynamic>>()
+              : await widget.controller.repository.preorderDrafts(booking);
+          for (final draft in drafts) {
+            next.add((booking: booking, draft: draft));
+          }
+        } catch (e) {
+          if (mounted) setState(() => error = e.toString());
+        }
+      }
+      if (mounted) {
+        setState(() {
+          entries.clear();
+          entries.addAll(next);
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  Future<void> _edit(Booking booking, Map<String, dynamic> draft) async {
+    final restaurant = widget.controller.restaurants
+        .where((r) => r.id == booking.restaurantId)
+        .firstOrNull;
+    if (restaurant == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.msgCouldNotLoadTheMenuPleaseTryLater),
+        ),
+      );
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MenuScreen(
+          controller: widget.controller,
+          restaurant: restaurant,
+          booking: booking,
+          draft: draft,
+        ),
+      ),
+    );
+    if (mounted) await _load();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(
+      toolbarHeight: 72,
+      title: Text(
+        context.l10n.myPreorders,
+        maxLines: 2,
+        style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+      ),
+      actions: [
+        IconButton(
+          onPressed: loading ? null : _load,
+          icon: Icon(Icons.refresh_rounded),
+        ),
+      ],
+    ),
+    body: loading
+        ? Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh: _load,
+            child: ListView(
+              padding: EdgeInsets.all(24),
+              physics: AlwaysScrollableScrollPhysics(),
+              children: [
+                if (error != null) ...[
+                  Text(error!, style: TextStyle(color: SeatMapColors.peach)),
+                  TextButton(
+                    onPressed: _load,
+                    child: Text(context.l10n.msgTryAgain246),
+                  ),
+                ],
+                if (entries.isEmpty && error == null)
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 60),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.restaurant_menu_rounded,
+                          size: 48,
+                          color: SeatMapColors.lavender,
+                        ),
+                        SizedBox(height: 20),
+                        Text(
+                          context.l10n.preordersEmpty,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                for (final entry in entries)
+                  Card(
+                    margin: EdgeInsets.only(bottom: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      side: BorderSide(color: SeatMapColors.line),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entry.booking.restaurantName,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            '${entry.booking.date.day}.${entry.booking.date.month} · ${entry.booking.time} · ${entry.booking.tableLabel}',
+                            style: TextStyle(color: SeatMapColors.muted),
+                          ),
+                          SizedBox(height: 14),
+                          Text(
+                            entry.draft['status'] == 'Draft'
+                                ? context.l10n.preorderDraftStatus
+                                : entry.draft['status'].toString(),
+                            style: TextStyle(color: SeatMapColors.peach),
+                          ),
+                          Divider(height: 28),
+                          for (final item
+                              in entry.draft['items'] as List? ?? [])
+                            Padding(
+                              padding: EdgeInsets.only(bottom: 8),
+                              child: Text(
+                                '${item['quantity']} × ${item['name']}',
+                              ),
+                            ),
+                          if ((entry.draft['notes'] as String? ?? '')
+                              .isNotEmpty)
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: Text(
+                                entry.draft['notes'] as String,
+                                style: TextStyle(
+                                  color: SeatMapColors.muted,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ),
+                          Text(
+                            '${((entry.draft['totalMinor'] as num? ?? 0) / 100).toStringAsFixed(2)} €',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: SeatMapColors.lavender,
+                            ),
+                          ),
+                          if (entry.draft['status'] == 'Draft') ...[
+                            SizedBox(height: 18),
+                            PrimaryButton(
+                              label: context.l10n.editPreorder,
+                              icon: Icons.edit_outlined,
+                              onPressed: () =>
+                                  _edit(entry.booking, entry.draft),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
   );
 }

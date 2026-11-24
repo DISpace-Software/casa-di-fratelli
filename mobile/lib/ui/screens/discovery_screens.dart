@@ -1,3 +1,4 @@
+import '../motion.dart';
 import '../restaurant_contact.dart';
 import '../../l10n/language.dart';
 
@@ -1045,6 +1046,7 @@ class RestaurantScreen extends StatefulWidget {
 }
 
 class _RestaurantScreenState extends State<RestaurantScreen> {
+  bool groupContactShown = false;
   late Restaurant restaurant;
   bool loading = false;
   String? error;
@@ -1077,6 +1079,19 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
       final result = await widget.controller.loadRestaurantDetail(restaurant);
       if (mounted) {
         setState(() => restaurant = result);
+        if (!groupContactShown &&
+            restaurant.id == 'casa-di-fratelli' &&
+            widget.controller.guestCount > 8) {
+          groupContactShown = true;
+          showRestaurantContact(
+            context,
+            restaurantName: restaurant.name,
+            phone: restaurant.phone,
+            reason: context.l10n.msgForPGuestsPleaseContactTheRestaurant(
+              widget.controller.guestCount.toString(),
+            ),
+          );
+        }
         if (!widget.controller.demoMode && availableTimes.isEmpty) {
           widget.controller.setSearch(
             date: DateTime.now().add(Duration(days: 1)),
@@ -1259,7 +1274,11 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
                       Expanded(
                         child: ChoicePill(
                           guestLabel(widget.controller.guestCount),
-                          onTap: () => chooseGuests(context, widget.controller),
+                          onTap: () => chooseGuests(
+                            context,
+                            widget.controller,
+                            restaurant: restaurant,
+                          ),
                         ),
                       ),
                     ],
@@ -1353,9 +1372,24 @@ class _RestaurantScreenState extends State<RestaurantScreen> {
           border: Border(top: BorderSide(color: SeatMapColors.line)),
         ),
         child: PrimaryButton(
-          label: context.l10n.msgChooseATable,
+          label:
+              restaurant.id == 'casa-di-fratelli' &&
+                  widget.controller.guestCount > 8
+              ? context.l10n.callRestaurant
+              : context.l10n.msgChooseATable,
           loading: loading,
-          onPressed: error != null || availableTimes.isEmpty
+          onPressed:
+              restaurant.id == 'casa-di-fratelli' &&
+                  widget.controller.guestCount > 8
+              ? () => showRestaurantContact(
+                  context,
+                  restaurantName: restaurant.name,
+                  phone: restaurant.phone,
+                  reason: context.l10n.msgForPGuestsPleaseContactTheRestaurant(
+                    widget.controller.guestCount.toString(),
+                  ),
+                )
+              : error != null || availableTimes.isEmpty
               ? null
               : () => Navigator.push(
                   context,
@@ -1528,9 +1562,11 @@ Future<void> chooseTime(
 
 Future<void> chooseGuests(
   BuildContext context,
-  AppController controller,
-) async {
-  var guests = controller.guestCount;
+  AppController controller, {
+  Restaurant? restaurant,
+}) async {
+  final casa = restaurant?.id == 'casa-di-fratelli';
+  var guests = casa ? controller.guestCount.clamp(1, 8) : controller.guestCount;
   await showSeatMapSheet<void>(
     context,
     title: context.l10n.msgHowManyGuests,
@@ -1548,11 +1584,21 @@ Future<void> chooseGuests(
                 padding: EdgeInsets.symmetric(horizontal: 35),
                 child: Column(
                   children: [
-                    Text(
-                      '$guests',
-                      style: TextStyle(
-                        fontSize: 38,
-                        fontWeight: FontWeight.w600,
+                    AnimatedSwitcher(
+                      duration: Duration(
+                        milliseconds: reduceSeatMapMotion(context) ? 0 : 200,
+                      ),
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: ScaleTransition(scale: animation, child: child),
+                      ),
+                      child: Text(
+                        '$guests',
+                        key: ValueKey(guests),
+                        style: TextStyle(
+                          fontSize: 38,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                     Text(
@@ -1563,7 +1609,21 @@ Future<void> chooseGuests(
                 ),
               ),
               IconButton.outlined(
-                onPressed: guests < 20 ? () => setState(() => guests++) : null,
+                onPressed: guests < 20
+                    ? () {
+                        if (casa && guests >= 8) {
+                          showRestaurantContact(
+                            context,
+                            restaurantName: restaurant!.name,
+                            phone: restaurant.phone,
+                            reason: context.l10n
+                                .msgForPGuestsPleaseContactTheRestaurant('9'),
+                          );
+                        } else {
+                          setState(() => guests++);
+                        }
+                      }
+                    : null,
                 icon: Icon(Icons.add_rounded),
               ),
             ],

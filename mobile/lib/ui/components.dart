@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'theme.dart';
+import 'motion.dart';
 
 double topInset(BuildContext context) =>
     kIsWeb ? 44 : MediaQuery.paddingOf(context).top;
@@ -40,40 +41,45 @@ class PrimaryButton extends StatelessWidget {
   final bool loading;
   final IconData? icon;
   @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 50,
-    width: double.infinity,
-    child: FilledButton(
-      onPressed: loading ? null : onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: SeatMapColors.lavender,
-        foregroundColor: SeatMapColors.background,
-        disabledBackgroundColor: SeatMapColors.elevated,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-      ),
-      child: loading
-          ? const SizedBox(
-              width: 21,
-              height: 21,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Row(
-              children: [
-                if (icon != null) const SizedBox(width: 22),
-                Expanded(
-                  child: Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+  Widget build(BuildContext context) => PressFeedback(
+    enabled: !loading && onPressed != null,
+    child: SizedBox(
+      height: 50,
+      width: double.infinity,
+      child: FilledButton(
+        onPressed: loading ? null : onPressed,
+        style: FilledButton.styleFrom(
+          backgroundColor: SeatMapColors.lavender,
+          foregroundColor: SeatMapColors.background,
+          disabledBackgroundColor: SeatMapColors.elevated,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+        ),
+        child: loading
+            ? const SizedBox(
+                width: 21,
+                height: 21,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Row(
+                children: [
+                  if (icon != null) const SizedBox(width: 22),
+                  Expanded(
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-                if (icon != null) Icon(icon, size: 21),
-              ],
-            ),
+                  if (icon != null) Icon(icon, size: 21),
+                ],
+              ),
+      ),
     ),
   );
 }

@@ -1,3 +1,5 @@
+import 'motion.dart';
+
 import 'package:material_ui/material_ui.dart';
 
 abstract final class SeatMapColors {
@@ -84,11 +86,11 @@ ThemeData seatMapTheme() => ThemeData(
   ),
   pageTransitionsTheme: const PageTransitionsTheme(
     builders: {
-      TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
-      TargetPlatform.iOS: FadeForwardsPageTransitionsBuilder(),
-      TargetPlatform.macOS: FadeForwardsPageTransitionsBuilder(),
-      TargetPlatform.windows: FadeForwardsPageTransitionsBuilder(),
-      TargetPlatform.linux: FadeForwardsPageTransitionsBuilder(),
+      TargetPlatform.android: SeatMapPageTransitions(),
+      TargetPlatform.iOS: SeatMapPageTransitions(),
+      TargetPlatform.macOS: SeatMapPageTransitions(),
+      TargetPlatform.windows: SeatMapPageTransitions(),
+      TargetPlatform.linux: SeatMapPageTransitions(),
     },
   ),
 );

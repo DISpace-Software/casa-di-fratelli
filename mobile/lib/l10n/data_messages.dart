@@ -213,6 +213,14 @@ class DataMessages {
     };
     return value;
   }
+  String msgForPGuestsPleaseContactTheRestaurant(String p0) {
+    final value = switch (language) {
+      'bg' => "За {p0} гости се свържете с ресторанта.",
+      'en' => "For {p0} guests, please contact the restaurant.",
+      _ => "Для {p0} гостей свяжитесь с рестораном.",
+    };
+    return value.replaceAll('{p0}', p0);
+  }
   String get msgInvalidRestaurantCatalogue {
     final value = switch (language) {
       'bg' => "Невалиден каталог с ресторанти.",
@@ -490,6 +498,14 @@ class DataMessages {
       'bg' => "Предварителната поръчка не е запазена. Проверете резервацията и опитайте отново.",
       'en' => "Could not save the preorder. Check your booking and try again.",
       _ => "Не удалось сохранить предзаказ. Проверьте бронь и попробуйте ещё раз.",
+    };
+    return value;
+  }
+  String get preorderChanged {
+    final value = switch (language) {
+      'bg' => "Поръчката е променена. Отворете я отново, за да заредите актуалната версия.",
+      'en' => "This preorder has changed. Reopen it to load the latest version.",
+      _ => "Предзаказ изменился. Откройте его заново, чтобы загрузить актуальную версию.",
     };
     return value;
   }

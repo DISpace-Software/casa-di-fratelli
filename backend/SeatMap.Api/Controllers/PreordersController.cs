@@ -31,6 +31,8 @@ public sealed class PreordersController(PreorderPolicyService policies, GuestPre
     public async Task<IActionResult> Quote(int id, PreorderDraftRequest request) { Response.Headers.CacheControl = "no-store"; return Ok(await preorders.QuoteAsync(id, Token, request)); }
     [HttpPost("~/api/v1/restaurants/{restaurantId}/reservations/{id:int}/preorders"), EnableRateLimiting("guest-reservations")]
     public async Task<IActionResult> Draft(int id, PreorderDraftRequest request) { Response.Headers.CacheControl = "no-store"; return Ok(await preorders.CreateDraftAsync(id, Token, request)); }
+    [HttpPost("~/api/v1/restaurants/{restaurantId}/reservations/{id:int}/preorders/{preorderId:guid}"), EnableRateLimiting("guest-reservations")]
+    public async Task<IActionResult> Update(int id, Guid preorderId, PreorderDraftRequest request) { Response.Headers.CacheControl = "no-store"; return Ok(await preorders.UpdateDraftAsync(id, preorderId, Token, request)); }
     [HttpGet("~/api/v1/restaurants/{restaurantId}/reservations/{id:int}/preorders"), EnableRateLimiting("guest-reservations")]
     public async Task<IActionResult> List(int id) { Response.Headers.CacheControl = "no-store"; return Ok(await preorders.ListAsync(id, Token)); }
     [HttpPost("~/api/v1/restaurants/{restaurantId}/reservations/{id:int}/preorders/{preorderId:guid}/checkout"), EnableRateLimiting("guest-reservations")]

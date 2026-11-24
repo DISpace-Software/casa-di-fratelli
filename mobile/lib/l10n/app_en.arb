@@ -698,5 +698,11 @@
         "type": "int"
       }
     }
-  }
+  },
+  "myPreorders": "My preorders",
+  "preordersEmpty": "Your saved preorders will appear here. Open a booking to choose dishes.",
+  "editPreorder": "Edit preorder",
+  "preorderDraftStatus": "Draft · not sent to the kitchen",
+  "preorderNotesHint": "For example: pasta without bacon; sauce on the side.",
+  "preorderChanged": "This preorder has changed. Reopen it to load the latest version."
 }

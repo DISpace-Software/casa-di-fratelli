@@ -2737,6 +2737,42 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'В этой части нет свободных столов. Выберите другую часть зала.'**
   String get cofeinNoTablesInPart;
+
+  /// No description provided for @myPreorders.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мои предзаказы'**
+  String get myPreorders;
+
+  /// No description provided for @preordersEmpty.
+  ///
+  /// In ru, this message translates to:
+  /// **'Здесь появятся сохранённые предзаказы. Откройте бронирование, чтобы выбрать блюда.'**
+  String get preordersEmpty;
+
+  /// No description provided for @editPreorder.
+  ///
+  /// In ru, this message translates to:
+  /// **'Изменить предзаказ'**
+  String get editPreorder;
+
+  /// No description provided for @preorderDraftStatus.
+  ///
+  /// In ru, this message translates to:
+  /// **'Черновик · ещё не передан на кухню'**
+  String get preorderDraftStatus;
+
+  /// No description provided for @preorderNotesHint.
+  ///
+  /// In ru, this message translates to:
+  /// **'Например: паста без бекона; соус отдельно.'**
+  String get preorderNotesHint;
+
+  /// No description provided for @preorderChanged.
+  ///
+  /// In ru, this message translates to:
+  /// **'Предзаказ изменился. Откройте его заново, чтобы загрузить актуальную версию.'**
+  String get preorderChanged;
 }
 
 class _AppLocalizationsDelegate

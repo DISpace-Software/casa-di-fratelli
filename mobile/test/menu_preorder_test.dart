@@ -1,4 +1,7 @@
 import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -79,6 +82,7 @@ void phone(WidgetTester tester) {
 }
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
   test(
     'menu preserves server IDs, cents, departments and active photos',
     () async {
@@ -362,6 +366,46 @@ void main() {
     );
     await tester.pumpAndSettle();
     await capture('cart-review');
+    controller.bookings = [booking];
+    controller.restaurants = [restaurant];
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'demo-preorders-${booking.id}',
+      jsonEncode([
+        {
+          'id': 'visual-draft',
+          'status': 'Draft',
+          'notes': 'Паста без бекон. Сосът отделно.',
+          'totalMinor': 3050,
+          'items': [
+            {
+              'menuItemId': 1,
+              'name': 'Бурата',
+              'quantity': 1,
+              'unitMinor': 1250,
+            },
+            {
+              'menuItemId': 2,
+              'name': 'Ризото',
+              'quantity': 1,
+              'unitMinor': 1800,
+            },
+          ],
+        },
+      ]),
+    );
+    await tester.pumpWidget(
+      RepaintBoundary(
+        key: key,
+        child: MaterialApp(
+          theme: seatMapTheme(),
+          home: PreordersScreen(controller: controller),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await capture('preorders-review');
+
     expect(tester.takeException(), isNull);
   }, skip: !const bool.fromEnvironment('CAPTURE_VISUALS'));
 }

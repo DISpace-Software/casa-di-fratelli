@@ -95,7 +95,10 @@ class _SeatMapScreenState extends State<SeatMapScreen>
         selected.removeWhere(
           (id) => !plan.tables.any(
             (table) =>
-                table.id == id && table.zoneId == zone && !table.occupied,
+                table.id == id &&
+                table.zoneId == zone &&
+                !table.occupied &&
+                table.capacity >= widget.controller.guestCount,
           ),
         );
         if (selected.isEmpty &&
@@ -121,7 +124,11 @@ class _SeatMapScreenState extends State<SeatMapScreen>
   }
 
   void _select(SeatTable table) {
-    if (table.occupied || loading) return;
+    if (table.occupied ||
+        loading ||
+        table.capacity < widget.controller.guestCount) {
+      return;
+    }
     HapticFeedback.selectionClick();
     setState(() {
       if (selected.contains(table.id)) {
@@ -147,7 +154,12 @@ class _SeatMapScreenState extends State<SeatMapScreen>
         widget.restaurant.id == 'cofein' && !widget.controller.demoMode;
     final visibleZones = plan.zones.where((item) => item.active).toList();
     final tables = plan.tables
-        .where((table) => table.zoneId == zone && !table.occupied)
+        .where(
+          (table) =>
+              table.zoneId == zone &&
+              !table.occupied &&
+              table.capacity >= widget.controller.guestCount,
+        )
         .toList();
     final selection = plan.tables
         .where((table) => selected.contains(table.id))
@@ -305,6 +317,7 @@ class _SeatMapScreenState extends State<SeatMapScreen>
                         CofeinSeatMap(
                           key: const ValueKey('cofein-seat-map'),
                           plan: plan,
+                          guestCount: widget.controller.guestCount,
                           zoneId: zone,
                           selected: selected,
                           onTap: _select,

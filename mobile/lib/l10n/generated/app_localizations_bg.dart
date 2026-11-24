@@ -1509,4 +1509,24 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get cofeinNoTablesInPart =>
       'В тази част няма свободни маси. Изберете друга част на залата.';
+
+  @override
+  String get myPreorders => 'Моите предварителни поръчки';
+
+  @override
+  String get preordersEmpty =>
+      'Тук ще се показват запазените поръчки. Отворете резервация, за да изберете ястия.';
+
+  @override
+  String get editPreorder => 'Редактиране на поръчката';
+
+  @override
+  String get preorderDraftStatus => 'Чернова · не е изпратена към кухнята';
+
+  @override
+  String get preorderNotesHint => 'Например: паста без бекон; сосът отделно.';
+
+  @override
+  String get preorderChanged =>
+      'Поръчката е променена. Отворете я отново, за да заредите актуалната версия.';
 }

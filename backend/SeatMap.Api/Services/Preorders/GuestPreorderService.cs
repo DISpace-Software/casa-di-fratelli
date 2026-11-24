@@ -14,6 +14,7 @@ public sealed record PreorderLineRequest([Range(1, int.MaxValue)] int MenuItemId
 public sealed class PreorderDraftRequest
 {
     public Guid IdempotencyKey { get; set; }
+    [StringLength(64)] public string? ExpectedRevision { get; set; }
     [Required, MinLength(1), MaxLength(40)] public List<PreorderLineRequest> Items { get; set; } = [];
     [Range(0, 120)] public int ServeOffsetMinutes { get; set; }
     [StringLength(500)] public string Notes { get; set; } = "";
@@ -23,7 +24,7 @@ public sealed record PreorderLine(int MenuItemId, string Name, int Quantity, lon
 public sealed record PreorderQuote(string Currency, long TotalMinor, DateTime ServeAtUtc, IReadOnlyList<PreorderLine> Items,
     bool BookingConfirmed, bool FullPrepaymentRequired = true, bool CardPaymentsAvailable = false);
 public sealed record PreorderDraftDto(Guid Id, int ReservationId, string Status, string Currency, long TotalMinor,
-    DateTime ServeAtUtc, IReadOnlyList<PreorderLine> Items, string Notes, DateTime CreatedAtUtc, bool FullPrepaymentRequired = true, bool CardPaymentsAvailable = false);
+    DateTime ServeAtUtc, IReadOnlyList<PreorderLine> Items, string Notes, DateTime CreatedAtUtc, string Revision, bool FullPrepaymentRequired = true, bool CardPaymentsAvailable = false);
 
 public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService policies, TenantBrandingService branding, TimeProvider time, RestaurantClosureService closures, SeasonalZoneService zones)
 {
@@ -108,6 +109,35 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
         db.ReservationPreorders.Add(draft); await db.SaveChangesAsync(); await transaction.CommitAsync();
         return Describe(draft);
     }
+    public async Task<PreorderDraftDto> UpdateDraftAsync(int reservationId, Guid preorderId, string? token, PreorderDraftRequest request)
+    {
+        await using var transaction = await RestaurantWriteTransaction.BeginAsync(db);
+        var reservation = await OwnAsync(reservationId, token); await RequireEnabledAsync();
+        var draft = await db.ReservationPreorders.SingleOrDefaultAsync(x => x.Id == preorderId && x.ReservationId == reservationId);
+        if (draft == null) throw Missing();
+        if (draft.Status != "Draft") throw new PreorderException(409, "PREORDER_NOT_EDITABLE", "Contact the restaurant to change a submitted order.");
+        if (request.IdempotencyKey == Guid.Empty) throw new PreorderException(400, "PREORDER_REQUEST_ID_REQUIRED", "A request ID is required.");
+        ValidateItems(request);
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new {
+            Items = request.Items.OrderBy(x => x.MenuItemId), request.ServeOffsetMinutes, Notes = (request.Notes ?? "").Trim(), request.Language }, Json))));
+        if (draft.IdempotencyKey == request.IdempotencyKey && draft.RequestHash == hash) return Describe(draft);
+        if (request.ExpectedRevision != draft.RequestHash)
+            throw new PreorderException(409, "PREORDER_CHANGED", "This preorder changed. Reopen it before editing.");
+        if (await db.ReservationPreorders.AnyAsync(x => x.Id != preorderId && x.ReservationId == reservationId && x.IdempotencyKey == request.IdempotencyKey))
+            throw new PreorderException(409, "PREORDER_REQUEST_CONFLICT", "Request ID already used.");
+        var quote = await QuoteAsync(reservation, request);
+        if (!quote.BookingConfirmed) throw new PreorderException(409, "PREORDER_BOOKING_UNCONFIRMED", "Confirm your reservation before saving a preorder.");
+        draft.IdempotencyKey = request.IdempotencyKey;
+        draft.RequestHash = hash;
+        draft.TotalMinor = quote.TotalMinor;
+        draft.CommissionMinor = Commission(quote.TotalMinor, draft.CommissionBasisPoints);
+        draft.RestaurantNetMinor = quote.TotalMinor - draft.CommissionMinor;
+        draft.ServeAtUtc = quote.ServeAtUtc;
+        draft.ItemsJson = JsonSerializer.Serialize(quote.Items, Json);
+        draft.Notes = (request.Notes ?? "").Trim();
+        await db.SaveChangesAsync(); await transaction.CommitAsync();
+        return Describe(draft);
+    }
     public async Task<IReadOnlyList<PreorderDraftDto>> ListAsync(int reservationId, string? token)
     {
         await OwnAsync(reservationId, token);
@@ -123,5 +153,5 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
     }
     public static long Commission(long totalMinor, int basisPoints) => checked((long)decimal.Round((decimal)totalMinor * basisPoints / 10000, 0, MidpointRounding.AwayFromZero));
     private static PreorderDraftDto Describe(ReservationPreorder draft) => new(draft.Id, draft.ReservationId, draft.Status, draft.Currency, draft.TotalMinor,
-        draft.ServeAtUtc, JsonSerializer.Deserialize<PreorderLine[]>(draft.ItemsJson, Json) ?? [], draft.Notes, draft.CreatedAtUtc);
+        draft.ServeAtUtc, JsonSerializer.Deserialize<PreorderLine[]>(draft.ItemsJson, Json) ?? [], draft.Notes, draft.CreatedAtUtc, draft.RequestHash);
 }

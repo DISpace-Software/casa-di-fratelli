@@ -954,6 +954,20 @@ class _BookingsScreenState extends State<BookingsScreen> {
             padding: EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               children: [
+                Padding(
+                  padding: EdgeInsets.only(bottom: 18),
+                  child: PrimaryButton(
+                    label: context.l10n.myPreorders,
+                    icon: Icons.restaurant_menu_rounded,
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            PreordersScreen(controller: widget.controller),
+                      ),
+                    ),
+                  ),
+                ),
                 Container(
                   padding: EdgeInsets.all(5),
                   decoration: BoxDecoration(

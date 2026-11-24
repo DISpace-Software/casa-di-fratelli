@@ -108,7 +108,46 @@ Finder _view(String id) => find.byKey(ValueKey('cofein-view-$id'));
 
 void main() {
   testWidgets(
-    'a configured three-table group can be completed after its partial capacity fits',
+    'Casa map shows six-seat tables for six guests and restores smaller tables for two',
+    (tester) async {
+      _phone(tester);
+      final repository = _MapRepository(_plan);
+      final controller = AppController(
+        repository: repository,
+        initialLanguage: 'en',
+      );
+      controller.setSearch(guests: 6);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: seatMapTheme(),
+          home: SeatMapScreen(
+            controller: controller,
+            restaurant: const Restaurant(
+              id: 'casa-di-fratelli',
+              name: 'Casa di Fratelli',
+              floorPlan: _plan,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('T19'), findsNothing);
+      expect(find.text('T20'), findsNothing);
+      expect(find.text('T23'), findsOneWidget);
+      controller.setSearch(guests: 2);
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(find.text('T19'), findsOneWidget);
+      expect(find.text('T20'), findsOneWidget);
+      expect(find.text('T23'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      repository.close();
+    },
+  );
+
+  testWidgets(
+    'six guests hide smaller tables even when a combination is configured',
     (tester) async {
       _phone(tester);
       const plan = FloorPlan(
@@ -136,7 +175,7 @@ void main() {
             label: 'C',
             x: 65,
             y: 20,
-            capacity: 2,
+            capacity: 6,
           ),
           SeatTable(
             id: 'D',
@@ -144,7 +183,7 @@ void main() {
             label: 'D',
             x: 90,
             y: 20,
-            capacity: 2,
+            capacity: 8,
           ),
         ],
         publicMaxGuests: 8,
@@ -179,26 +218,22 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      await select('A');
-      await select('B');
-      expect(find.text('Tables A + B'), findsOneWidget);
-      expect(
-        tester.widget<PrimaryButton>(find.byType(PrimaryButton)).onPressed,
-        isNull,
-      );
+      expect(_table('A'), findsNothing);
+      expect(_table('B'), findsNothing);
+      expect(_table('C'), findsOneWidget);
+      expect(_table('D'), findsOneWidget);
       await select('C');
-      expect(find.text('Tables A + B + C'), findsOneWidget);
+      expect(find.text('Table C'), findsOneWidget);
       expect(
         tester.widget<PrimaryButton>(find.byType(PrimaryButton)).onPressed,
         isNotNull,
       );
-      await select('D');
-      expect(find.text('Table D'), findsOneWidget);
-      expect(
-        tester.widget<PrimaryButton>(find.byType(PrimaryButton)).onPressed,
-        isNull,
-      );
-      expect(find.text('Tables A + B + C'), findsNothing);
+      controller.setSearch(guests: 8);
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(_table('C'), findsNothing);
+      expect(_table('D'), findsOneWidget);
+      expect(find.text('Table C'), findsNothing);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       repository.close();

@@ -1505,4 +1505,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get cofeinNoTablesInPart =>
       'No tables are available in this part. Choose another part of the room.';
+
+  @override
+  String get myPreorders => 'My preorders';
+
+  @override
+  String get preordersEmpty =>
+      'Your saved preorders will appear here. Open a booking to choose dishes.';
+
+  @override
+  String get editPreorder => 'Edit preorder';
+
+  @override
+  String get preorderDraftStatus => 'Draft · not sent to the kitchen';
+
+  @override
+  String get preorderNotesHint =>
+      'For example: pasta without bacon; sauce on the side.';
+
+  @override
+  String get preorderChanged =>
+      'This preorder has changed. Reopen it to load the latest version.';
 }

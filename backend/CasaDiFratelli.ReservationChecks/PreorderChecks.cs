@@ -88,6 +88,18 @@ internal static class PreorderChecks
         await Reject(()=>service.CheckoutAsync(booking.Id,draft.Id,key),503,"CARD_PAYMENTS_NOT_CONNECTED");
         Check(!await db.PreorderPayments.AnyAsync() && !await db.DiningOrders.AnyAsync(),"Unconfigured checkout must have no financial or kitchen side effects");
         request.Notes="changed"; await Reject(()=>service.CreateDraftAsync(booking.Id,key,request),409,"PREORDER_REQUEST_CONFLICT");request.Notes="";
+        var edit = new PreorderDraftRequest { IdempotencyKey=Guid.NewGuid(), ExpectedRevision=draft.Revision, Language="en", Items=[new(1,1),new(2,2)], Notes="Salad: no bacon", ServeOffsetMinutes=45 };
+        await Reject(()=>service.UpdateDraftAsync(booking.Id,draft.Id,null,edit),404,"RESERVATION_NOT_FOUND");
+        await Reject(()=>service.UpdateDraftAsync(booking.Id,Guid.NewGuid(),key,edit),404,"RESERVATION_NOT_FOUND");
+        var edited = await service.UpdateDraftAsync(booking.Id,draft.Id,key,edit);
+        Check(edited.Id==draft.Id && edited.TotalMinor==1734 && edited.Notes=="Salad: no bacon" && await db.ReservationPreorders.CountAsync()==1,"Editing must update the same cart with server prices and notes");
+        Check((await service.UpdateDraftAsync(booking.Id,draft.Id,key,edit)).Revision==edited.Revision,"Edit retries must be idempotent");
+        edit.IdempotencyKey=Guid.NewGuid(); edit.Notes="stale";
+        await Reject(()=>service.UpdateDraftAsync(booking.Id,draft.Id,key,edit),409,"PREORDER_CHANGED");
+        edit.ExpectedRevision=edited.Revision;
+        stored.Status="Paid"; await db.SaveChangesAsync();
+        await Reject(()=>service.UpdateDraftAsync(booking.Id,draft.Id,key,edit),409,"PREORDER_NOT_EDITABLE");
+        stored.Status="Draft"; await db.SaveChangesAsync();
         var bad=new PreorderDraftRequest {Items=[new(1,1),new(1,2)]};await Reject(()=>service.QuoteAsync(booking.Id,key,bad),400,"PREORDER_ITEMS_INVALID");
         bad.Items=[new(1,0)];await Reject(()=>service.QuoteAsync(booking.Id,key,bad),400,"PREORDER_ITEMS_INVALID");
         bad.Items=[new(999,1)];await Reject(()=>service.QuoteAsync(booking.Id,key,bad),409,"PREORDER_MENU_CHANGED");

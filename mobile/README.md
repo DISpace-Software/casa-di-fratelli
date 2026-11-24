@@ -38,10 +38,14 @@ Only offline demo mode shows a one-tap test account button. This is local demo a
 - Reference-matched dark/lavender discovery, restaurant detail, and interactive seat-map screens; bundled Inter font and restaurant photographs.
 - Four-tab navigation: overview, search, bookings, profile.
 - Restaurant search by name, cuisine and area, city selection and cuisine filters.
+- Casa di Fratelli permits up to eight guests online; attempting a ninth guest opens the restaurant phone. Larger groups selected in discovery see the contact dialog when opening Casa. The booking adapter also enforces this limit.
 - Date, time and party-size selection; restaurant menu; six-image demo photo gallery; favourites.
+- Both restaurant maps hide tables with fewer seats than the selected party size, including undersized combination members; availability refresh clears selections that no longer fit.
 - Table status, zones, windows/entrances/TV/partition landmarks from the restaurant plan, capacity and allowed combination checks; selected-table summary and booking contact form with explicit privacy consent.
 - Cofein's native architectural map preserves the website's walls, windows, bar, booths and table geometry in SeatMap's dark/lavender palette. Interior and exterior each have two detail views, pinch/pan, zoom buttons and fit-to-view. API table edits and availability refresh without resetting the camera; occupied tables and closed halls are hidden.
 - Booking result, email confirmation status refresh, device booking history, and real guest cancellation at least three hours before the reservation. Restaurant contact and tap-to-call after the cutoff.
+- **Bookings → My preorders** lists saved carts with dishes, quantities, notes and totals. Editing reopens the menu with the saved quantities and preserves notes and serving time when returning to add dishes. Saving updates the same draft; the API checks the private booking capability, revision, active reservation and 30-minute cutoff. Unavailable dishes require explicit removal. Demo drafts persist locally. These remain unpaid drafts until a real payment/fulfillment integration exists. Deploy the API update endpoint before distributing the updated mobile app.
+- Short fade/slide route transitions, button press feedback and guest-count transitions respect reduced-motion settings.
 - Real guest registration with email code verification, login, full editable server profile, email password recovery, password change, session revocation and account deletion.
 - Foreground seat maps refresh every three seconds, including table edits, seasonal room closures and dated restaurant closures. See [email and live-map behavior](../docs/guest-email-and-live-map.md).
 - Persisted local favourites, an offline test account and a labelled demo reminder preference.

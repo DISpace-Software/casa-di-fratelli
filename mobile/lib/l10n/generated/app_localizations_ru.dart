@@ -1510,4 +1510,24 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get cofeinNoTablesInPart =>
       'В этой части нет свободных столов. Выберите другую часть зала.';
+
+  @override
+  String get myPreorders => 'Мои предзаказы';
+
+  @override
+  String get preordersEmpty =>
+      'Здесь появятся сохранённые предзаказы. Откройте бронирование, чтобы выбрать блюда.';
+
+  @override
+  String get editPreorder => 'Изменить предзаказ';
+
+  @override
+  String get preorderDraftStatus => 'Черновик · ещё не передан на кухню';
+
+  @override
+  String get preorderNotesHint => 'Например: паста без бекона; соус отдельно.';
+
+  @override
+  String get preorderChanged =>
+      'Предзаказ изменился. Откройте его заново, чтобы загрузить актуальную версию.';
 }

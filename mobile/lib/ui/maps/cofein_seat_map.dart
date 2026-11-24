@@ -18,10 +18,12 @@ class CofeinSeatMap extends StatefulWidget {
     required this.selected,
     required this.onTap,
     this.language = 'bg',
+    this.guestCount = 1,
     this.mapHeight = 440,
   });
 
   final FloorPlan plan;
+  final int guestCount;
   final String zoneId, language;
   final Set<String> selected;
   final ValueChanged<SeatTable> onTap;
@@ -115,6 +117,7 @@ class _CofeinSeatMapState extends State<CofeinSeatMap>
           (table) =>
               table.zoneId == widget.zoneId &&
               !table.occupied &&
+              table.capacity >= widget.guestCount &&
               view.tableIds.contains(table.id),
         )
         .toList();
@@ -310,7 +313,12 @@ class _CofeinSeatMapState extends State<CofeinSeatMap>
   ) {
     final chosen = view.id == active;
     final available = widget.plan.tables
-        .where((table) => view.tableIds.contains(table.id) && !table.occupied)
+        .where(
+          (table) =>
+              view.tableIds.contains(table.id) &&
+              !table.occupied &&
+              table.capacity >= widget.guestCount,
+        )
         .length;
     return Semantics(
       selected: chosen,
@@ -345,7 +353,9 @@ class _CofeinSeatMapState extends State<CofeinSeatMap>
                         tables: widget.plan.tables
                             .where(
                               (t) =>
-                                  view.tableIds.contains(t.id) && !t.occupied,
+                                  view.tableIds.contains(t.id) &&
+                                  !t.occupied &&
+                                  t.capacity >= widget.guestCount,
                             )
                             .toList(),
                       ),
