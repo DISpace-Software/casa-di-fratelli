@@ -70,6 +70,8 @@ public sealed class GuestPreorderService(AppDbContext db, PreorderPolicyService 
         var menu = await db.MenuItems.AsNoTracking().Where(x => ids.Contains(x.Id) && x.IsActive).ToDictionaryAsync(x => x.Id);
         if (menu.Count != ids.Length || menu.Values.Any(x => x.Price <= 0 || x.Price > 10000 || decimal.Round(x.Price, 2) != x.Price))
             throw new PreorderException(409, "PREORDER_MENU_CHANGED", "Some menu items are no longer available. Refresh the menu.");
+        if (await db.SommelierProfiles.AnyAsync(x => ids.Contains(x.MenuItemId) && x.Kind == "wine" && !x.Available))
+            throw new PreorderException(409, "PREORDER_MENU_CHANGED", "A selected wine is no longer available.");
         var lines = items.OrderBy(x => x.MenuItemId).Select(x => {
             var item = menu[x.MenuItemId];
             var name = request.Language == "en" ? item.NameEn : request.Language == "ru" ? item.NameRu : item.NameBg;

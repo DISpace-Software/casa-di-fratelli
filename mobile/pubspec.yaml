@@ -1,7 +1,7 @@
 name: seatmap_mobile
 description: SeatMap restaurant discovery and seat-map booking MVP for iOS and Android.
 publish_to: none
-version: 1.0.6+7
+version: 1.1.0+8
 
 environment:
   sdk: '>=3.14.0 <4.0.0'

@@ -763,6 +763,26 @@ class SeatMapRepository {
           _object(await _request('${_path(restaurant)}/preorders/settings')),
         );
 
+  Future<Map<String, dynamic>> sommelier(
+    Restaurant restaurant,
+    int dishId, {
+    String? serving,
+    String? style,
+    int? maxPriceMinor,
+  }) async {
+    if (demoMode) return {'status': 'not_configured', 'recommendations': []};
+    final query = Uri(
+      queryParameters: {
+        'dishId': '$dishId',
+        'language': AppLanguage.code,
+        'serving': ?serving,
+        'style': ?style,
+        if (maxPriceMinor != null) 'maxPriceMinor': '$maxPriceMinor',
+      },
+    ).query;
+    return _object(await _request('${_path(restaurant)}/sommelier?$query'));
+  }
+
   String _preorderPath(Booking booking) {
     final id = booking.id.split(':').last;
     if (!RegExp(r'^\d+$').hasMatch(id) || booking.managementToken.isEmpty) {

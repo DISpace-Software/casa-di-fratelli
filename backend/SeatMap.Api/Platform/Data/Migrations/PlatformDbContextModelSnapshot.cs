@@ -272,6 +272,65 @@ namespace SeatMap.Api.Platform.Data.Migrations
                     b.ToTable("GuestSessions");
                 });
 
+            modelBuilder.Entity("SeatMap.Api.Services.Sommelier.SommelierRule", b =>
+                {
+                    b.Property<string>("Code")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Weight")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Code");
+
+                    b.ToTable("SommelierRules");
+                });
+
+            modelBuilder.Entity("SeatMap.Api.Services.Sommelier.SommelierWine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Acidity")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("Alcohol")
+                        .HasColumnType("numeric");
+
+                    b.Property<int>("Body")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Style")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Sweetness")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Tannin")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Verified")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SommelierWines");
+                });
+
             modelBuilder.Entity("SeatMap.Api.Platform.Models.GuestCredential", b =>
                 {
                     b.HasOne("SeatMap.Api.Platform.Models.GuestProfile", "Profile")

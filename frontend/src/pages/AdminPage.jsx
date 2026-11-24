@@ -1,3 +1,4 @@
+import SommelierSettings from '../components/admin/SommelierSettings';
 import { restaurantAssetUrl } from "../domain/adminMap/restaurantAssets";
 import { getTenantPushRegistration } from "../domain/adminMap/pushRegistration";
 import { getZoneName } from "../domain/reservations/floorPlanNames";
@@ -10956,6 +10957,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                   </div>
                 }
               >
+                <SommelierSettings adminFetch={adminFetch} language={adminLanguage} />
                 {menuMode === "form" ? (
                   <form onSubmit={saveMenuItem} className="space-y-5">
                     <div className="rounded-[26px] border border-white/10 bg-black/20 p-5 md:p-6">

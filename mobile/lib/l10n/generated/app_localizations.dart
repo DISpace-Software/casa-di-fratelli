@@ -2887,6 +2887,156 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось загрузить заказы этой брони. Попробуйте ещё раз.'**
   String get ordersLoadFailed;
+
+  /// No description provided for @sommelierTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Онлайн-сомелье'**
+  String get sommelierTitle;
+
+  /// No description provided for @sommelierSubtitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подберём вино к блюду из ассортимента этого ресторана.'**
+  String get sommelierSubtitle;
+
+  /// No description provided for @sommelierDish.
+  ///
+  /// In ru, this message translates to:
+  /// **'Блюдо'**
+  String get sommelierDish;
+
+  /// No description provided for @sommelierServing.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подача'**
+  String get sommelierServing;
+
+  /// No description provided for @sommelierAny.
+  ///
+  /// In ru, this message translates to:
+  /// **'Без предпочтений'**
+  String get sommelierAny;
+
+  /// No description provided for @sommelierGlass.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бокал'**
+  String get sommelierGlass;
+
+  /// No description provided for @sommelierBottle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бутылка'**
+  String get sommelierBottle;
+
+  /// No description provided for @sommelierStyle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Стиль вина'**
+  String get sommelierStyle;
+
+  /// No description provided for @sommelierWhite.
+  ///
+  /// In ru, this message translates to:
+  /// **'Белое'**
+  String get sommelierWhite;
+
+  /// No description provided for @sommelierRed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Красное'**
+  String get sommelierRed;
+
+  /// No description provided for @sommelierRose.
+  ///
+  /// In ru, this message translates to:
+  /// **'Розе'**
+  String get sommelierRose;
+
+  /// No description provided for @sommelierSparkling.
+  ///
+  /// In ru, this message translates to:
+  /// **'Игристое'**
+  String get sommelierSparkling;
+
+  /// No description provided for @sommelierDessert.
+  ///
+  /// In ru, this message translates to:
+  /// **'Десертное'**
+  String get sommelierDessert;
+
+  /// No description provided for @sommelierBudget.
+  ///
+  /// In ru, this message translates to:
+  /// **'Максимум за бокал / бутылку, € (необязательно)'**
+  String get sommelierBudget;
+
+  /// No description provided for @sommelierBudgetInvalid.
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите сумму больше 0 и не больше 100 000 €.'**
+  String get sommelierBudgetInvalid;
+
+  /// No description provided for @sommelierFind.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подобрать вино'**
+  String get sommelierFind;
+
+  /// No description provided for @sommelierFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось загрузить подбор. Попробуйте ещё раз.'**
+  String get sommelierFailed;
+
+  /// No description provided for @sommelierNoMatch.
+  ///
+  /// In ru, this message translates to:
+  /// **'По выбранным условиям подходящих вин не найдено. Попробуйте изменить предпочтения или спросите официанта.'**
+  String get sommelierNoMatch;
+
+  /// No description provided for @sommelierUnconfigured.
+  ///
+  /// In ru, this message translates to:
+  /// **'Для точного подбора ресторану нужно уточнить характеристики блюда и вин. Спросите официанта о сочетании.'**
+  String get sommelierUnconfigured;
+
+  /// No description provided for @sommelierBalance.
+  ///
+  /// In ru, this message translates to:
+  /// **'Насыщенность вина близка к интенсивности блюда.'**
+  String get sommelierBalance;
+
+  /// No description provided for @sommelierFreshness.
+  ///
+  /// In ru, this message translates to:
+  /// **'Свежая кислотность помогает сбалансировать насыщенное, жирное блюдо.'**
+  String get sommelierFreshness;
+
+  /// No description provided for @sommelierSweetness.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сладость вина соответствует сладости блюда.'**
+  String get sommelierSweetness;
+
+  /// No description provided for @sommelierSpice.
+  ///
+  /// In ru, this message translates to:
+  /// **'Небольшая сладость, мягкие танины и умеренный алкоголь подходят к остроте блюда.'**
+  String get sommelierSpice;
+
+  /// No description provided for @sommelierNoWines.
+  ///
+  /// In ru, this message translates to:
+  /// **'В меню этого ресторана пока нет вин. Уточните у официанта, есть ли отдельная винная карта.'**
+  String get sommelierNoWines;
+
+  /// No description provided for @sommelierConsultation.
+  ///
+  /// In ru, this message translates to:
+  /// **'В меню есть эти винные позиции, но их сорт и характеристики не уточнены. Это не персональный подбор: спросите официанта, какой вариант подойдёт к выбранному блюду.'**
+  String get sommelierConsultation;
 }
 
 class _AppLocalizationsDelegate

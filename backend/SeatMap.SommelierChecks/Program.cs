@@ -1,0 +1,67 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using SeatMap.Api.Services.Sommelier;
+var checks = 0;
+void Check(bool condition, string name) { if (!condition) throw new Exception(name); checks++; }
+var dish = new SommelierProfile { Verified = true, Body = 2, Fat = 4 };
+var wine = new SommelierWine { Verified = true, Body = 2, Acidity = 4, Alcohol = 12 };
+var rules = SommelierScoring.Defaults;
+var match = SommelierScoring.Score(dish, wine, rules);
+Check(match.HasValue && match.Value.Reasons.Contains("freshness"), "Rich food gets acidity explanation");
+wine.Verified = false;
+Check(SommelierScoring.Score(dish, wine, rules) == null, "Unverified wine excluded");
+wine.Verified = true; dish.Verified = false;
+Check(SommelierScoring.Score(dish, wine, rules) == null, "Unverified dish excluded");
+dish.Verified = true; dish.Sweetness = 4;
+Check(SommelierScoring.Score(dish, wine, rules) == null, "Dry wine rejected with sweet dessert");
+wine.Sweetness = 4;
+Check(SommelierScoring.Score(dish, wine, rules)?.Reasons.Contains("sweetness") == true, "Sweetness match explained");
+dish.Sweetness = 0; dish.Heat = 5; wine.Tannin = 5;
+Check(SommelierScoring.Score(dish, wine, rules) == null, "High tannin rejected with chilli");
+wine.Tannin = 0; wine.Alcohol = 15;
+Check(SommelierScoring.Score(dish, wine, rules) == null, "High alcohol rejected with chilli");
+wine.Alcohol = 12; wine.Sweetness = 1;
+Check(SommelierScoring.Score(dish, wine, rules)?.Reasons.Contains("spice") == true, "Gentle spicy pairing explained");
+dish.Heat = 0; dish.Acidity = 5; wine.Acidity = 1;
+Check(SommelierScoring.Score(dish, wine, rules) == null, "Low acid wine rejected with acidic dish");
+Console.WriteLine($"Sommelier: {checks} checks passed");
+
+// Exercise the real controller against two isolated restaurant databases.
+await using var connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+await connection.OpenAsync();
+await using var db = new SeatMap.Api.Data.AppDbContext(new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<SeatMap.Api.Data.AppDbContext>().UseSqlite(connection).Options);
+await db.Database.EnsureCreatedAsync();
+await using var platformConnection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+await platformConnection.OpenAsync();
+await using var platform = new SeatMap.Api.Platform.Data.PlatformDbContext(new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<SeatMap.Api.Platform.Data.PlatformDbContext>().UseSqlite(platformConnection).Options);
+await platform.Database.EnsureCreatedAsync();
+var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection().AddSingleton(platform).BuildServiceProvider();
+var controller = new SeatMap.Api.Controllers.SommelierController(db, services, new SeatMap.Api.Services.AuditService(db));
+controller.ControllerContext = new Microsoft.AspNetCore.Mvc.ControllerContext { HttpContext = new Microsoft.AspNetCore.Http.DefaultHttpContext() };
+var actualWine = new SommelierWine { Name = "Test wine", Source = "Test fixture", Verified = true, Body = 2, Acidity = 4, Alcohol = 12 };
+platform.SommelierWines.Add(actualWine);
+platform.SommelierRules.AddRange(SommelierScoring.Defaults.Select(x => new SommelierRule { Code = x.Key, Weight = x.Value }));
+await platform.SaveChangesAsync();
+db.MenuItems.AddRange(new SeatMap.Api.Models.MenuItem { Id = 1, NameBg = "Dish", Price = 10 }, new SeatMap.Api.Models.MenuItem { Id = 2, NameBg = "Wine", NameEn = "Wine", Category = "wine", Price = 8 });
+db.SommelierProfiles.AddRange(new SommelierProfile { MenuItemId = 1, Kind = "dish", Verified = true, Body = 2, Fat = 4 }, new SommelierProfile { MenuItemId = 2, Kind = "wine", Verified = true, Available = true, WineId = actualWine.Id, Serving = "glass" });
+await db.SaveChangesAsync();
+async Task<System.Text.Json.JsonElement> Query(SommelierRequest request) {
+ var result = (Microsoft.AspNetCore.Mvc.OkObjectResult)await controller.Recommend(request);
+ return System.Text.Json.JsonSerializer.SerializeToElement(result.Value);
+}
+Check((await Query(new() { DishId = 1 })).GetProperty("recommendations").GetArrayLength() == 1, "Available local wine recommended");
+Check((await Query(new() { DishId = 1, MaxPriceMinor = 799 })).GetProperty("recommendations").GetArrayLength() == 0, "Budget enforced");
+Check((await Query(new() { DishId = 1, Serving = "bottle" })).GetProperty("recommendations").GetArrayLength() == 0, "Serving enforced");
+Check((await Query(new() { DishId = 1, Style = "red" })).GetProperty("recommendations").GetArrayLength() == 0, "Style enforced");
+var offer = await db.SommelierProfiles.SingleAsync(x => x.MenuItemId == 2); offer.Available = false; await db.SaveChangesAsync();
+Check((await Query(new() { DishId = 1 })).GetProperty("recommendations").GetArrayLength() == 0, "Unavailable wine excluded");
+var foodProfile = await db.SommelierProfiles.SingleAsync(x => x.MenuItemId == 1); foodProfile.Verified = false; offer.Available = true; await db.SaveChangesAsync();
+var fallback = await Query(new() { DishId = 1 });
+Check(fallback.GetProperty("status").GetString() == "consultation" && fallback.GetProperty("recommendations").GetArrayLength() == 0, "Generic wine is consultation, not invented pairing");
+await using var otherConnection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:"); await otherConnection.OpenAsync();
+await using var otherDb = new SeatMap.Api.Data.AppDbContext(new Microsoft.EntityFrameworkCore.DbContextOptionsBuilder<SeatMap.Api.Data.AppDbContext>().UseSqlite(otherConnection).Options); await otherDb.Database.EnsureCreatedAsync();
+otherDb.MenuItems.Add(new SeatMap.Api.Models.MenuItem { Id = 1, NameBg = "Other dish", Price = 9 }); await otherDb.SaveChangesAsync();
+var otherController = new SeatMap.Api.Controllers.SommelierController(otherDb, services, new SeatMap.Api.Services.AuditService(otherDb)) { ControllerContext = controller.ControllerContext };
+var otherResult = (Microsoft.AspNetCore.Mvc.OkObjectResult)await otherController.Recommend(new() { DishId = 1 });
+Check(System.Text.Json.JsonSerializer.SerializeToElement(otherResult.Value).GetProperty("status").GetString() == "no_wines", "Other restaurant cannot recommend first restaurant wine");
+Console.WriteLine($"Sommelier: {checks} checks passed including database/controller isolation");

@@ -142,7 +142,11 @@ void main() {
     expect(find.text('Burrata'), findsNothing);
     await tester.enterText(find.byType(TextField), '');
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byTooltip('Add to preorder').first);
+    await tester.scrollUntilVisible(
+      find.byTooltip('Add to preorder').first.hitTestable(),
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.byTooltip('Add to preorder').first);
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Drinks'));

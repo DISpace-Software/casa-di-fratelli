@@ -1,3 +1,5 @@
+import 'sommelier_screen.dart';
+
 import 'dart:convert';
 
 import 'package:intl/intl.dart';
@@ -264,6 +266,15 @@ class _MenuScreenState extends State<MenuScreen> {
                 fontWeight: FontWeight.w700,
               ),
             ),
+            if (!dish.drink)
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.pop(sheet);
+                  _sommelier(dish);
+                },
+                icon: const Icon(Icons.wine_bar_outlined),
+                label: Text(context.l10n.sommelierFind),
+              ),
             SizedBox(height: 22),
             PrimaryButton(
               label: canOrder && dish.priceMinor > 0
@@ -279,6 +290,24 @@ class _MenuScreenState extends State<MenuScreen> {
       ),
     ),
   );
+  Future<void> _sommelier([MenuDish? dish]) async {
+    final id = await Navigator.push<int>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SommelierScreen(
+          controller: widget.controller,
+          restaurant: widget.restaurant,
+          dishes: dishes,
+          dish: dish,
+          canOrder: canOrder,
+        ),
+      ),
+    );
+    if (!mounted || id == null) return;
+    final wine = dishes.where((d) => d.id == id).firstOrNull;
+    if (wine != null && canOrder) _quantity(wine, 1);
+  }
+
   Future<void> _cart() async {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
@@ -375,6 +404,19 @@ class _MenuScreenState extends State<MenuScreen> {
             )
           : CustomScrollView(
               slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                      vertical: 8,
+                    ),
+                    child: OutlinedButton.icon(
+                      onPressed: () => _sommelier(),
+                      icon: const Icon(Icons.wine_bar_outlined),
+                      label: Text(context.l10n.sommelierTitle),
+                    ),
+                  ),
+                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(22, 8, 22, 20),

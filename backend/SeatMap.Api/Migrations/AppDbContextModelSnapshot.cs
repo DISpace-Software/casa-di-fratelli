@@ -17,6 +17,60 @@ namespace SeatMap.Api.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.20");
 
+            modelBuilder.Entity("SeatMap.Api.Services.Sommelier.SommelierProfile", b =>
+                {
+                    b.Property<int>("MenuItemId")
+                         .ValueGeneratedNever()
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Acidity")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Available")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Body")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Fat")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Heat")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("text");
+
+                    b.Property<string>("Serving")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Sweetness")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Umami")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Verified")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("WineId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("MenuItemId");
+
+                    b.ToTable("SommelierProfiles");
+                });
+
             modelBuilder.Entity("SeatMap.Api.Models.BlacklistEntry", b =>
                 {
                     b.Property<int>("Id")
@@ -304,6 +358,10 @@ namespace SeatMap.Api.Migrations
                 b.HasOne("SeatMap.Api.Models.ReservationPreorder", "Preorder").WithMany().HasForeignKey("ReservationPreorderId").OnDelete(DeleteBehavior.Restrict).IsRequired();
                 b.Navigation("Preorder");
             });
+            modelBuilder.Entity("SeatMap.Api.Services.Sommelier.SommelierProfile", b =>
+                {
+                    b.HasOne("SeatMap.Api.Models.MenuItem", null).WithMany().HasForeignKey("MenuItemId").OnDelete(DeleteBehavior.Cascade).IsRequired();
+                });
 #pragma warning restore 612, 618
         }
     }

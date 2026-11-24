@@ -1589,4 +1589,89 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get ordersLoadFailed =>
       'Could not load orders for this booking. Please try again.';
+
+  @override
+  String get sommelierTitle => 'Online sommelier';
+
+  @override
+  String get sommelierSubtitle =>
+      'Pair your dish with wine from this restaurant.';
+
+  @override
+  String get sommelierDish => 'Dish';
+
+  @override
+  String get sommelierServing => 'Serving';
+
+  @override
+  String get sommelierAny => 'No preference';
+
+  @override
+  String get sommelierGlass => 'Glass';
+
+  @override
+  String get sommelierBottle => 'Bottle';
+
+  @override
+  String get sommelierStyle => 'Wine style';
+
+  @override
+  String get sommelierWhite => 'White';
+
+  @override
+  String get sommelierRed => 'Red';
+
+  @override
+  String get sommelierRose => 'Rosé';
+
+  @override
+  String get sommelierSparkling => 'Sparkling';
+
+  @override
+  String get sommelierDessert => 'Dessert';
+
+  @override
+  String get sommelierBudget => 'Maximum per glass / bottle, € (optional)';
+
+  @override
+  String get sommelierBudgetInvalid =>
+      'Enter an amount greater than 0 and up to €100,000.';
+
+  @override
+  String get sommelierFind => 'Find a wine';
+
+  @override
+  String get sommelierFailed => 'Could not load pairings. Please try again.';
+
+  @override
+  String get sommelierNoMatch =>
+      'No suitable wines match these preferences. Adjust your filters or ask your waiter.';
+
+  @override
+  String get sommelierUnconfigured =>
+      'The restaurant needs to confirm dish and wine profiles for an accurate pairing. Ask your waiter for advice.';
+
+  @override
+  String get sommelierBalance =>
+      'The wine’s body matches the intensity of the dish.';
+
+  @override
+  String get sommelierFreshness =>
+      'Fresh acidity balances the richness of the dish.';
+
+  @override
+  String get sommelierSweetness =>
+      'The wine has enough sweetness to complement the dish.';
+
+  @override
+  String get sommelierSpice =>
+      'Some sweetness, gentle tannins and moderate alcohol suit the chilli heat.';
+
+  @override
+  String get sommelierNoWines =>
+      'There are no wines in this restaurant’s menu yet. Ask your waiter about a separate wine list.';
+
+  @override
+  String get sommelierConsultation =>
+      'These wine options are on the menu, but their profiles are not confirmed. This is not a pairing recommendation: ask your waiter which option suits your dish.';
 }

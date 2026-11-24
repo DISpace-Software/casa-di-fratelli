@@ -1593,4 +1593,91 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get ordersLoadFailed =>
       'Не удалось загрузить заказы этой брони. Попробуйте ещё раз.';
+
+  @override
+  String get sommelierTitle => 'Онлайн-сомелье';
+
+  @override
+  String get sommelierSubtitle =>
+      'Подберём вино к блюду из ассортимента этого ресторана.';
+
+  @override
+  String get sommelierDish => 'Блюдо';
+
+  @override
+  String get sommelierServing => 'Подача';
+
+  @override
+  String get sommelierAny => 'Без предпочтений';
+
+  @override
+  String get sommelierGlass => 'Бокал';
+
+  @override
+  String get sommelierBottle => 'Бутылка';
+
+  @override
+  String get sommelierStyle => 'Стиль вина';
+
+  @override
+  String get sommelierWhite => 'Белое';
+
+  @override
+  String get sommelierRed => 'Красное';
+
+  @override
+  String get sommelierRose => 'Розе';
+
+  @override
+  String get sommelierSparkling => 'Игристое';
+
+  @override
+  String get sommelierDessert => 'Десертное';
+
+  @override
+  String get sommelierBudget =>
+      'Максимум за бокал / бутылку, € (необязательно)';
+
+  @override
+  String get sommelierBudgetInvalid =>
+      'Укажите сумму больше 0 и не больше 100 000 €.';
+
+  @override
+  String get sommelierFind => 'Подобрать вино';
+
+  @override
+  String get sommelierFailed =>
+      'Не удалось загрузить подбор. Попробуйте ещё раз.';
+
+  @override
+  String get sommelierNoMatch =>
+      'По выбранным условиям подходящих вин не найдено. Попробуйте изменить предпочтения или спросите официанта.';
+
+  @override
+  String get sommelierUnconfigured =>
+      'Для точного подбора ресторану нужно уточнить характеристики блюда и вин. Спросите официанта о сочетании.';
+
+  @override
+  String get sommelierBalance =>
+      'Насыщенность вина близка к интенсивности блюда.';
+
+  @override
+  String get sommelierFreshness =>
+      'Свежая кислотность помогает сбалансировать насыщенное, жирное блюдо.';
+
+  @override
+  String get sommelierSweetness =>
+      'Сладость вина соответствует сладости блюда.';
+
+  @override
+  String get sommelierSpice =>
+      'Небольшая сладость, мягкие танины и умеренный алкоголь подходят к остроте блюда.';
+
+  @override
+  String get sommelierNoWines =>
+      'В меню этого ресторана пока нет вин. Уточните у официанта, есть ли отдельная винная карта.';
+
+  @override
+  String get sommelierConsultation =>
+      'В меню есть эти винные позиции, но их сорт и характеристики не уточнены. Это не персональный подбор: спросите официанта, какой вариант подойдёт к выбранному блюду.';
 }

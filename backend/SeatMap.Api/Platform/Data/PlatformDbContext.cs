@@ -6,6 +6,9 @@ namespace SeatMap.Api.Platform.Data;
 // Deliberately independent of AppDbContext and CurrentTenant.
 public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> options) : DbContext(options)
 {
+    public DbSet<SeatMap.Api.Services.Sommelier.SommelierWine> SommelierWines => Set<SeatMap.Api.Services.Sommelier.SommelierWine>();
+    public DbSet<SeatMap.Api.Services.Sommelier.SommelierRule> SommelierRules => Set<SeatMap.Api.Services.Sommelier.SommelierRule>();
+
     public DbSet<GuestProfile> GuestProfiles => Set<GuestProfile>();
     public DbSet<GuestFavorite> GuestFavorites => Set<GuestFavorite>();
     public DbSet<GuestReservationReference> GuestReservationReferences => Set<GuestReservationReference>();

@@ -1593,4 +1593,89 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get ordersLoadFailed =>
       'Поръчките за тази резервация не можаха да се заредят. Опитайте отново.';
+
+  @override
+  String get sommelierTitle => 'Онлайн сомелиер';
+
+  @override
+  String get sommelierSubtitle =>
+      'Вино към ястието от асортимента на този ресторант.';
+
+  @override
+  String get sommelierDish => 'Ястие';
+
+  @override
+  String get sommelierServing => 'Сервиране';
+
+  @override
+  String get sommelierAny => 'Без предпочитания';
+
+  @override
+  String get sommelierGlass => 'Чаша';
+
+  @override
+  String get sommelierBottle => 'Бутилка';
+
+  @override
+  String get sommelierStyle => 'Стил вино';
+
+  @override
+  String get sommelierWhite => 'Бяло';
+
+  @override
+  String get sommelierRed => 'Червено';
+
+  @override
+  String get sommelierRose => 'Розе';
+
+  @override
+  String get sommelierSparkling => 'Пенливо';
+
+  @override
+  String get sommelierDessert => 'Десертно';
+
+  @override
+  String get sommelierBudget => 'Максимум за чаша / бутилка, € (по избор)';
+
+  @override
+  String get sommelierBudgetInvalid => 'Въведете сума над 0 и до 100 000 €.';
+
+  @override
+  String get sommelierFind => 'Избери вино';
+
+  @override
+  String get sommelierFailed =>
+      'Препоръките не можаха да се заредят. Опитайте отново.';
+
+  @override
+  String get sommelierNoMatch =>
+      'Няма подходящи вина за избраните условия. Променете предпочитанията или попитайте сервитьора.';
+
+  @override
+  String get sommelierUnconfigured =>
+      'За точен избор са нужни уточнени характеристики на ястието и вината. Попитайте сервитьора за съчетание.';
+
+  @override
+  String get sommelierBalance =>
+      'Плътността на виното съответства на интензивността на ястието.';
+
+  @override
+  String get sommelierFreshness =>
+      'Свежата киселинност балансира богатото, мазно ястие.';
+
+  @override
+  String get sommelierSweetness =>
+      'Сладостта на виното съответства на сладостта на ястието.';
+
+  @override
+  String get sommelierSpice =>
+      'Лека сладост, меки танини и умерен алкохол подхождат на лютивината.';
+
+  @override
+  String get sommelierNoWines =>
+      'В менюто на този ресторант все още няма вина. Попитайте сервитьора за отделна винена листа.';
+
+  @override
+  String get sommelierConsultation =>
+      'В менюто има тези винени позиции, но видът и характеристиките не са уточнени. Това не е персонална препоръка: попитайте сервитьора кой вариант подхожда на ястието.';
 }
