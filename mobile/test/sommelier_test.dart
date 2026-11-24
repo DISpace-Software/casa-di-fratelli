@@ -17,6 +17,7 @@ import 'menu_preorder_test.dart' as fixture;
 class WineRepository extends fixture.MenuRepository {
   String status = 'ok';
   int? requestedBudget;
+  final requestedDishes = <int>[];
   @override
   Future<Map<String, dynamic>> sommelier(
     Restaurant restaurant,
@@ -25,6 +26,7 @@ class WineRepository extends fixture.MenuRepository {
     String? style,
     int? maxPriceMinor,
   }) async {
+    requestedDishes.add(dishId);
     requestedBudget = maxPriceMinor;
     final items = [
       {
@@ -75,6 +77,16 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
+    expect(find.text('Restaurant wine'), findsOneWidget);
+    expect(repository.requestedBudget, isNull);
+    expect(repository.requestedDishes, [fixture.dishes.first.id]);
+    await tester.tap(find.byType(DropdownButtonFormField<int>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Risotto').last);
+    await tester.pumpAndSettle();
+    expect(repository.requestedDishes.last, fixture.dishes[1].id);
+    await tester.tap(find.text('Refine pairing (optional)'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '10,50');
     await tester.ensureVisible(find.text('Find a wine'));
@@ -131,9 +143,6 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.text('Find a wine'));
-      await tester.tap(find.text('Find a wine'));
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.textContaining('This is not a pairing recommendation'),

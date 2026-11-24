@@ -38,6 +38,11 @@ class _SommelierScreenState extends State<SommelierScreen> {
   void initState() {
     super.initState();
     dishId = widget.dish?.id;
+    if (dishId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) search();
+      });
+    }
   }
 
   @override
@@ -144,70 +149,82 @@ class _SommelierScreenState extends State<SommelierScreen> {
                   ),
                 )
                 .toList(),
-            onChanged: (id) => setState(() {
-              dishId = id;
-              reset();
-            }),
+            onChanged: (id) {
+              setState(() {
+                dishId = id;
+                reset();
+              });
+              search();
+            },
           ),
           const SizedBox(height: 18),
-          DropdownButtonFormField<String>(
-            initialValue: 'any',
-            decoration: InputDecoration(
-              labelText: context.l10n.sommelierServing,
-            ),
-            items: [
-              DropdownMenuItem(
-                value: 'any',
-                child: Text(context.l10n.sommelierAny),
+          ExpansionTile(
+            title: Text(context.l10n.sommelierFilters),
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: 'any',
+                decoration: InputDecoration(
+                  labelText: context.l10n.sommelierServing,
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: 'any',
+                    child: Text(context.l10n.sommelierAny),
+                  ),
+                  DropdownMenuItem(
+                    value: 'glass',
+                    child: Text(context.l10n.sommelierGlass),
+                  ),
+                  DropdownMenuItem(
+                    value: 'bottle',
+                    child: Text(context.l10n.sommelierBottle),
+                  ),
+                ],
+                onChanged: (value) => setState(() {
+                  serving = value == 'any' ? null : value;
+                  reset();
+                }),
               ),
-              DropdownMenuItem(
-                value: 'glass',
-                child: Text(context.l10n.sommelierGlass),
+              const SizedBox(height: 18),
+              DropdownButtonFormField<String>(
+                initialValue: 'any',
+                decoration: InputDecoration(
+                  labelText: context.l10n.sommelierStyle,
+                ),
+                items: [
+                  for (final pair in [
+                    ('any', context.l10n.sommelierAny),
+                    ('white', context.l10n.sommelierWhite),
+                    ('red', context.l10n.sommelierRed),
+                    ('rose', context.l10n.sommelierRose),
+                    ('sparkling', context.l10n.sommelierSparkling),
+                    ('dessert', context.l10n.sommelierDessert),
+                  ])
+                    DropdownMenuItem(value: pair.$1, child: Text(pair.$2)),
+                ],
+                onChanged: (value) => setState(() {
+                  style = value == 'any' ? null : value;
+                  reset();
+                }),
               ),
-              DropdownMenuItem(
-                value: 'bottle',
-                child: Text(context.l10n.sommelierBottle),
+              const SizedBox(height: 18),
+              TextField(
+                controller: budget,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: context.l10n.sommelierBudget,
+                ),
+                onChanged: (_) => setState(reset),
+              ),
+              const SizedBox(height: 22),
+              FilledButton.icon(
+                onPressed: loading || dishId == null ? null : search,
+                icon: const Icon(Icons.wine_bar_outlined),
+                label: Text(context.l10n.sommelierFind),
               ),
             ],
-            onChanged: (value) => setState(() {
-              serving = value == 'any' ? null : value;
-              reset();
-            }),
-          ),
-          const SizedBox(height: 18),
-          DropdownButtonFormField<String>(
-            initialValue: 'any',
-            decoration: InputDecoration(labelText: context.l10n.sommelierStyle),
-            items: [
-              for (final pair in [
-                ('any', context.l10n.sommelierAny),
-                ('white', context.l10n.sommelierWhite),
-                ('red', context.l10n.sommelierRed),
-                ('rose', context.l10n.sommelierRose),
-                ('sparkling', context.l10n.sommelierSparkling),
-                ('dessert', context.l10n.sommelierDessert),
-              ])
-                DropdownMenuItem(value: pair.$1, child: Text(pair.$2)),
-            ],
-            onChanged: (value) => setState(() {
-              style = value == 'any' ? null : value;
-              reset();
-            }),
-          ),
-          const SizedBox(height: 18),
-          TextField(
-            controller: budget,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: context.l10n.sommelierBudget,
-            ),
-            onChanged: (_) => setState(reset),
-          ),
-          const SizedBox(height: 22),
-          FilledButton.icon(
-            onPressed: loading || dishId == null ? null : search,
-            icon: const Icon(Icons.wine_bar_outlined),
-            label: Text(context.l10n.sommelierFind),
           ),
           if (loading)
             const Padding(

@@ -1599,7 +1599,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get sommelierSubtitle =>
-      'Подберём вино к блюду из ассортимента этого ресторана.';
+      'Выберите блюдо — мы сразу подберём вино из меню ресторана.';
 
   @override
   String get sommelierDish => 'Блюдо';
@@ -1680,4 +1680,7 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get sommelierConsultation =>
       'В меню есть эти винные позиции, но их сорт и характеристики не уточнены. Это не персональный подбор: спросите официанта, какой вариант подойдёт к выбранному блюду.';
+
+  @override
+  String get sommelierFilters => 'Уточнить подбор (необязательно)';
 }

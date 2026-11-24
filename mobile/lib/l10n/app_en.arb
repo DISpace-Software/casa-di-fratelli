@@ -725,7 +725,7 @@
   "ordersAccessUnavailable": "Orders for this booking are unavailable because access could not be verified. Contact the restaurant.",
   "ordersLoadFailed": "Could not load orders for this booking. Please try again.",
   "sommelierTitle": "Online sommelier",
-  "sommelierSubtitle": "Pair your dish with wine from this restaurant.",
+  "sommelierSubtitle": "Choose a dish to instantly find a wine from this restaurant’s menu.",
   "sommelierDish": "Dish",
   "sommelierServing": "Serving",
   "sommelierAny": "No preference",
@@ -748,5 +748,6 @@
   "sommelierSweetness": "The wine has enough sweetness to complement the dish.",
   "sommelierSpice": "Some sweetness, gentle tannins and moderate alcohol suit the chilli heat.",
   "sommelierNoWines": "There are no wines in this restaurant’s menu yet. Ask your waiter about a separate wine list.",
-  "sommelierConsultation": "These wine options are on the menu, but their profiles are not confirmed. This is not a pairing recommendation: ask your waiter which option suits your dish."
+  "sommelierConsultation": "These wine options are on the menu, but their profiles are not confirmed. This is not a pairing recommendation: ask your waiter which option suits your dish.",
+  "sommelierFilters": "Refine pairing (optional)"
 }

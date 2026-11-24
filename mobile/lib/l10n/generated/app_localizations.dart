@@ -2897,7 +2897,7 @@ abstract class AppLocalizations {
   /// No description provided for @sommelierSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Подберём вино к блюду из ассортимента этого ресторана.'**
+  /// **'Выберите блюдо — мы сразу подберём вино из меню ресторана.'**
   String get sommelierSubtitle;
 
   /// No description provided for @sommelierDish.
@@ -3037,6 +3037,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'В меню есть эти винные позиции, но их сорт и характеристики не уточнены. Это не персональный подбор: спросите официанта, какой вариант подойдёт к выбранному блюду.'**
   String get sommelierConsultation;
+
+  /// No description provided for @sommelierFilters.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уточнить подбор (необязательно)'**
+  String get sommelierFilters;
 }
 
 class _AppLocalizationsDelegate

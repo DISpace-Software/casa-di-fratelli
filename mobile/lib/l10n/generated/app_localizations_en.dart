@@ -1595,7 +1595,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sommelierSubtitle =>
-      'Pair your dish with wine from this restaurant.';
+      'Choose a dish to instantly find a wine from this restaurant’s menu.';
 
   @override
   String get sommelierDish => 'Dish';
@@ -1674,4 +1674,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get sommelierConsultation =>
       'These wine options are on the menu, but their profiles are not confirmed. This is not a pairing recommendation: ask your waiter which option suits your dish.';
+
+  @override
+  String get sommelierFilters => 'Refine pairing (optional)';
 }
