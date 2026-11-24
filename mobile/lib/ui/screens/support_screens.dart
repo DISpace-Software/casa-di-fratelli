@@ -1158,36 +1158,6 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                   widget.controller.restaurantPhoneFor(booking),
                                 ),
                               ),
-                            TextButton.icon(
-                              icon: Icon(
-                                Icons.restaurant_menu_rounded,
-                                size: 17,
-                              ),
-                              label: Text(context.l10n.viewRestaurantMenu),
-                              onPressed: () {
-                                final restaurant =
-                                    widget.controller.restaurants
-                                        .where(
-                                          (r) => r.id == booking.restaurantId,
-                                        )
-                                        .firstOrNull ??
-                                    Restaurant(
-                                      id: booking.restaurantId,
-                                      name: booking.restaurantName,
-                                      imageAsset: booking.restaurantImage,
-                                    );
-                                Navigator.push<void>(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => MenuScreen(
-                                      controller: widget.controller,
-                                      restaurant: restaurant,
-                                      booking: booking,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
                             Divider(height: 20),
                             Row(
                               children: [

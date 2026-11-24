@@ -33,6 +33,9 @@ END
 $check$;
 
 -- Resolve the same relationship used by cancellation's paid-preorder guard.
+-- Resolve the columns used by the guest order list, even for an empty table.
+SELECT "OperationsJson" FROM "ReservationPreorders" WHERE false;
+
 -- No reservation identifiers, contact data or payment values are returned.
 SELECT 'preorder-runtime-access-ok' AS check_result, current_user AS runtime_role
 FROM (SELECT p."Id"
