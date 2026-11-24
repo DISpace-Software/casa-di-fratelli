@@ -6,6 +6,7 @@ import '../../domain/cofein_geometry.dart';
 import '../../domain/models.dart';
 import '../../l10n/language.dart';
 import '../theme.dart';
+import '../motion.dart';
 import 'cofein_painters.dart';
 
 /// Cofein's architectural scene uses the same API coordinates as the website.
@@ -75,6 +76,11 @@ class _CofeinSeatMapState extends State<CofeinSeatMap>
 
   void _animateCamera(Matrix4 target) {
     animation.stop();
+    if (reduceSeatMapMotion(context)) {
+      cameraTween = null;
+      transformation.value = target;
+      return;
+    }
     cameraTween = Matrix4Tween(
       begin: transformation.value.clone(),
       end: target,

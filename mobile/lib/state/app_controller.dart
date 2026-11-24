@@ -473,10 +473,17 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> _saveBookings() async {
-    await _preferences?.setString(
-      'seatmap.bookings',
-      jsonEncode(bookings.map((booking) => booking.toJson()).toList()),
-    );
+    // A completed server operation remains successful if device storage fails.
+    // Keep its result in memory and surface the persistence warning separately.
+    try {
+      final saved = await _preferences?.setString(
+        'seatmap.bookings',
+        jsonEncode(bookings.map((booking) => booking.toJson()).toList()),
+      );
+      if (saved == false) bookingsError = appStrings.bookingHistorySaveFailed;
+    } catch (_) {
+      bookingsError = appStrings.bookingHistorySaveFailed;
+    }
   }
 
   Future<void> setDemoNotifications(bool value) async {

@@ -2773,6 +2773,72 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Предзаказ изменился. Откройте его заново, чтобы загрузить актуальную версию.'**
   String get preorderChanged;
+
+  /// No description provided for @preorderDishNotes.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пожелания к блюду'**
+  String get preorderDishNotes;
+
+  /// No description provided for @preorderDecrease.
+  ///
+  /// In ru, this message translates to:
+  /// **'Убрать одну порцию'**
+  String get preorderDecrease;
+
+  /// No description provided for @preorderIncrease.
+  ///
+  /// In ru, this message translates to:
+  /// **'Добавить порцию'**
+  String get preorderIncrease;
+
+  /// No description provided for @preorderSaving.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сохраняем…'**
+  String get preorderSaving;
+
+  /// No description provided for @preorderRetrySave.
+  ///
+  /// In ru, this message translates to:
+  /// **'Повторить сохранение'**
+  String get preorderRetrySave;
+
+  /// No description provided for @preorderRecoverPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Результат прошлого сохранения ещё не подтверждён. Повторите тот же запрос, прежде чем менять заказ.'**
+  String get preorderRecoverPending;
+
+  /// No description provided for @preorderEditingClosed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Редактирование закрывается за 30 минут до визита и недоступно для неактивных броней. Для изменений свяжитесь с рестораном.'**
+  String get preorderEditingClosed;
+
+  /// No description provided for @preorderContactRestaurant.
+  ///
+  /// In ru, this message translates to:
+  /// **'Связаться с рестораном'**
+  String get preorderContactRestaurant;
+
+  /// No description provided for @bookingHistorySaveFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось сохранить данные брони на этом устройстве. Сохраните показанные детали и при необходимости свяжитесь с рестораном.'**
+  String get bookingHistorySaveFailed;
+
+  /// No description provided for @preorderSplitPortions.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отдельные пожелания к каждой порции'**
+  String get preorderSplitPortions;
+
+  /// No description provided for @preorderLocalSaveFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось сохранить корзину на устройстве. Оставьте экран открытым и попробуйте ещё раз.'**
+  String get preorderLocalSaveFailed;
 }
 
 class _AppLocalizationsDelegate

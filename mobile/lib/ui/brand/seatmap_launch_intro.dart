@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:material_ui/material_ui.dart';
 
 import '../theme.dart';
+import '../motion.dart';
 import 'seatmap_initial_paths.dart';
 import 'seatmap_letter_morph.dart';
 import 'seatmap_monogram.dart';
@@ -35,7 +36,7 @@ class _SeatMapLaunchIntroState extends State<SeatMapLaunchIntro>
   void didChangeDependencies() {
     super.didChangeDependencies();
     final reduceMotion =
-        MediaQuery.disableAnimationsOf(context) ||
+        reduceSeatMapMotion(context) ||
         MediaQuery.accessibleNavigationOf(context);
     if (!_started || (reduceMotion && !_reduceMotion)) {
       _started = true;

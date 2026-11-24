@@ -1530,4 +1530,41 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get preorderChanged =>
       'Предзаказ изменился. Откройте его заново, чтобы загрузить актуальную версию.';
+
+  @override
+  String get preorderDishNotes => 'Пожелания к блюду';
+
+  @override
+  String get preorderDecrease => 'Убрать одну порцию';
+
+  @override
+  String get preorderIncrease => 'Добавить порцию';
+
+  @override
+  String get preorderSaving => 'Сохраняем…';
+
+  @override
+  String get preorderRetrySave => 'Повторить сохранение';
+
+  @override
+  String get preorderRecoverPending =>
+      'Результат прошлого сохранения ещё не подтверждён. Повторите тот же запрос, прежде чем менять заказ.';
+
+  @override
+  String get preorderEditingClosed =>
+      'Редактирование закрывается за 30 минут до визита и недоступно для неактивных броней. Для изменений свяжитесь с рестораном.';
+
+  @override
+  String get preorderContactRestaurant => 'Связаться с рестораном';
+
+  @override
+  String get bookingHistorySaveFailed =>
+      'Не удалось сохранить данные брони на этом устройстве. Сохраните показанные детали и при необходимости свяжитесь с рестораном.';
+
+  @override
+  String get preorderSplitPortions => 'Отдельные пожелания к каждой порции';
+
+  @override
+  String get preorderLocalSaveFailed =>
+      'Не удалось сохранить корзину на устройстве. Оставьте экран открытым и попробуйте ещё раз.';
 }

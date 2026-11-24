@@ -704,5 +704,16 @@
   "editPreorder": "Edit preorder",
   "preorderDraftStatus": "Draft · not sent to the kitchen",
   "preorderNotesHint": "For example: pasta without bacon; sauce on the side.",
-  "preorderChanged": "This preorder has changed. Reopen it to load the latest version."
+  "preorderChanged": "This preorder has changed. Reopen it to load the latest version.",
+  "preorderDishNotes": "Dish instructions",
+  "preorderDecrease": "Remove one",
+  "preorderIncrease": "Add one",
+  "preorderSaving": "Saving…",
+  "preorderRetrySave": "Retry saving",
+  "preorderRecoverPending": "The previous save is not confirmed yet. Retry to recover the same request safely before making changes.",
+  "preorderEditingClosed": "Editing closes 30 minutes before your visit and is unavailable for inactive bookings. Contact the restaurant for changes.",
+  "preorderContactRestaurant": "Contact restaurant",
+  "bookingHistorySaveFailed": "Your booking details could not be saved on this device. Keep the details shown and contact the restaurant if needed.",
+  "preorderSplitPortions": "Different instructions for each portion",
+  "preorderLocalSaveFailed": "Could not save the cart on this device. Keep this screen open and try again."
 }

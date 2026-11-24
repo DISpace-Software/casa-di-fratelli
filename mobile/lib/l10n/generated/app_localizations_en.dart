@@ -1526,4 +1526,41 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get preorderChanged =>
       'This preorder has changed. Reopen it to load the latest version.';
+
+  @override
+  String get preorderDishNotes => 'Dish instructions';
+
+  @override
+  String get preorderDecrease => 'Remove one';
+
+  @override
+  String get preorderIncrease => 'Add one';
+
+  @override
+  String get preorderSaving => 'Saving…';
+
+  @override
+  String get preorderRetrySave => 'Retry saving';
+
+  @override
+  String get preorderRecoverPending =>
+      'The previous save is not confirmed yet. Retry to recover the same request safely before making changes.';
+
+  @override
+  String get preorderEditingClosed =>
+      'Editing closes 30 minutes before your visit and is unavailable for inactive bookings. Contact the restaurant for changes.';
+
+  @override
+  String get preorderContactRestaurant => 'Contact restaurant';
+
+  @override
+  String get bookingHistorySaveFailed =>
+      'Your booking details could not be saved on this device. Keep the details shown and contact the restaurant if needed.';
+
+  @override
+  String get preorderSplitPortions => 'Different instructions for each portion';
+
+  @override
+  String get preorderLocalSaveFailed =>
+      'Could not save the cart on this device. Keep this screen open and try again.';
 }

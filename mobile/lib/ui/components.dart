@@ -43,9 +43,11 @@ class PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => PressFeedback(
     enabled: !loading && onPressed != null,
-    child: SizedBox(
-      height: 50,
-      width: double.infinity,
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: 50,
+        minWidth: double.infinity,
+      ),
       child: FilledButton(
         onPressed: loading ? null : onPressed,
         style: FilledButton.styleFrom(
@@ -55,7 +57,7 @@ class PrimaryButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
         ),
         child: loading
             ? const SizedBox(

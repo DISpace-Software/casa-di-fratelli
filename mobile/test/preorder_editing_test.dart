@@ -132,16 +132,13 @@ void main() {
       await tester.tap(find.textContaining('Your order ·'));
       await tester.pumpAndSettle();
       expect(find.text('Burrata\n× 1'), findsOneWidget);
-      final field = find.byType(TextField);
-      await tester.ensureVisible(field);
-      await tester.enterText(field, 'No bacon; sauce separately');
+      final field = find.byKey(const ValueKey('preorder-general-notes'));
       await tester.scrollUntilVisible(
-        find.byType(CheckboxListTile),
+        field,
         200,
-        scrollable: find.byType(Scrollable).last,
+        scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.byType(CheckboxListTile));
-      await tester.pumpAndSettle();
+      await tester.enterText(field, 'No bacon; sauce separately');
       await tester.tap(find.text('Save unpaid draft'));
       await tester.pumpAndSettle();
       final prefs = await SharedPreferences.getInstance();

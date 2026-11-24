@@ -155,31 +155,20 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byType(PrimaryButton));
     await tester.pumpAndSettle();
-    expect(find.text('19.00 €'), findsOneWidget);
+
     expect(find.text('Burrata\n× 1'), findsOneWidget);
     expect(find.text('Lemonade\n× 1'), findsOneWidget);
     expect(
       tester.widget<PrimaryButton>(find.byType(PrimaryButton)).onPressed,
-      isNull,
+      isNotNull,
     );
-    final consent = find.byType(CheckboxListTile);
-    await tester.scrollUntilVisible(
-      consent,
-      200,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.tap(consent);
-    await tester.pumpAndSettle();
-    expect(
-      tester.widget<PrimaryButton>(find.byType(PrimaryButton)).onPressed,
-      isNull,
-    );
+    expect(find.byType(CheckboxListTile), findsNothing);
     await tester.tap(find.text('Save unpaid draft'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.text('Demo draft prepared. No order or payment was created.'),
       200,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find.byType(Scrollable).first,
     );
     expect(
       find.text('Demo draft prepared. No order or payment was created.'),
@@ -366,6 +355,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     await capture('cart-review');
+    tester.platformDispatcher.textScaleFactorTestValue = 1.6;
+    await tester.pumpAndSettle();
+    await capture('cart-large-review');
+    expect(tester.takeException(), isNull);
+    tester.platformDispatcher.clearTextScaleFactorTestValue();
+    await tester.pumpAndSettle();
     controller.bookings = [booking];
     controller.restaurants = [restaurant];
     final prefs = await SharedPreferences.getInstance();

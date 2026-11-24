@@ -1529,4 +1529,41 @@ class AppLocalizationsBg extends AppLocalizations {
   @override
   String get preorderChanged =>
       'Поръчката е променена. Отворете я отново, за да заредите актуалната версия.';
+
+  @override
+  String get preorderDishNotes => 'Бележка към ястието';
+
+  @override
+  String get preorderDecrease => 'Премахни порция';
+
+  @override
+  String get preorderIncrease => 'Добави порция';
+
+  @override
+  String get preorderSaving => 'Запазване…';
+
+  @override
+  String get preorderRetrySave => 'Повтори запазването';
+
+  @override
+  String get preorderRecoverPending =>
+      'Предишното запазване още не е потвърдено. Повторете същата заявка, преди да променяте поръчката.';
+
+  @override
+  String get preorderEditingClosed =>
+      'Редактирането приключва 30 минути преди посещението и не е достъпно за неактивни резервации. За промени се свържете с ресторанта.';
+
+  @override
+  String get preorderContactRestaurant => 'Свържи се с ресторанта';
+
+  @override
+  String get bookingHistorySaveFailed =>
+      'Данните за резервацията не можаха да се запазят на това устройство. Запазете показаните детайли и при нужда се свържете с ресторанта.';
+
+  @override
+  String get preorderSplitPortions => 'Отделни бележки за всяка порция';
+
+  @override
+  String get preorderLocalSaveFailed =>
+      'Количката не можа да се запази на устройството. Оставете екрана отворен и опитайте отново.';
 }
