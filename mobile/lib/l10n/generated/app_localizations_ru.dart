@@ -1765,4 +1765,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get waitlistOpen => 'Посмотреть предложение';
+
+  @override
+  String get waitlistRecover => 'Восстановить бронь в приложении';
 }

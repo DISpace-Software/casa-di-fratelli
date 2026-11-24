@@ -116,6 +116,35 @@ void main() {
       await tester.tap(find.text('Confirm booking'));
       await tester.pumpAndSettle();
       expect(controller.confirmed, 1);
+      controller.waitlistEntries = [
+        {
+          'id': 'entry',
+          'offerId': 'offer',
+          'restaurantId': fixture.restaurant.id,
+          'reservationId': 42,
+          'date': '2026-11-28',
+          'guests': 4,
+          'times': ['19:30'],
+          'status': 'booked',
+        },
+      ];
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: seatMapTheme(),
+          home: Scaffold(
+            body: WaitlistCards(
+              key: const ValueKey('recovery'),
+              controller: controller,
+              history: true,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Restore booking in the app'), findsOneWidget);
+      await tester.tap(find.text('Restore booking in the app'));
+      await tester.pumpAndSettle();
+      expect(controller.confirmed, 2);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox());
       controller.dispose();

@@ -774,5 +774,6 @@
   "waitlistClosed": "Request closed",
   "waitlistEditNotice": "Editing or resuming places your request at the end of the matching queue.",
   "waitlistTimes": "Suitable times — up to 5",
-  "waitlistOpen": "View offer"
+  "waitlistOpen": "View offer",
+  "waitlistRecover": "Restore booking in the app"
 }

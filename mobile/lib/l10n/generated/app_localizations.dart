@@ -3193,6 +3193,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Посмотреть предложение'**
   String get waitlistOpen;
+
+  /// No description provided for @waitlistRecover.
+  ///
+  /// In ru, this message translates to:
+  /// **'Восстановить бронь в приложении'**
+  String get waitlistRecover;
 }
 
 class _AppLocalizationsDelegate

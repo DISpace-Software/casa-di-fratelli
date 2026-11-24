@@ -39,3 +39,12 @@ Migration `20261124213328_Waitlist` only creates `WaitlistEntries` and its two i
 `dotnet run --project backend/SeatMap.WaitlistChecks` checks eligibility, verified identity, idempotency, exclusive holds, expiry, rollover, access boundaries and real HTTP join → inbox → confirmation. Optional `WAITLIST_TEST_POSTGRES` must point to a dedicated database named `seatmap_waitlist_checks_*`; it also checks parallel allocator and confirmation requests. No actual guests are contacted.
 
 Mobile checks cover explicit confirmation, expiry, authenticated offer version, and visual layout. The complete pre-existing mobile suite and reservation regression suite were also run. Screenshot: `mobile/.local/waitlist-offer.png` (synthetic fixture, not a real reservation).
+
+## Rollout evidence
+
+- Published backend commit `e401b9b`, Render deployment `dep-dc30pb60tbcc738ttc9g` reached `live`.
+- Applied the additive migration to Casa and Cofein; verified the Cofein application role can read the new table.
+- Published admin deployment `dpl_2EG3Kr3f87TPtvi4yx8wiXTcYmuo`; staged and public HTML matched the packaged build.
+- Live guest inbox, restaurant waitlist and staff endpoints reject unauthenticated requests (401); mismatched restaurant selectors return 404; both existing blocked-slot APIs return 200.
+- 29 waitlist checks including HTTP and mocked email transport; separate PostgreSQL run passed 23 checks including parallel workers/confirmation. Existing reservation regression passed. No live booking was created and no real guest was emailed by the test runs.
+- Mobile history offers a recovery action for a confirmed request whose booking/capability is missing locally, covering lost responses and a different device.

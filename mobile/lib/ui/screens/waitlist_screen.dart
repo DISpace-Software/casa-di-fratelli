@@ -366,6 +366,19 @@ class _WaitlistCardsState extends State<WaitlistCards> {
               onPressed: pending ? null : () => act(e, 'decline'),
               child: Text(l.waitlistDecline),
             ),
+          ] else if (e['status'] == 'booked' &&
+              e['offerId'] != null &&
+              restaurant != null &&
+              !widget.controller.bookings.any(
+                (b) =>
+                    b.id == "${e['restaurantId']}:${e['reservationId']}" &&
+                    b.managementToken.isNotEmpty,
+              )) ...[
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: pending ? null : () => act(e, 'confirm'),
+              child: Text(l.waitlistRecover),
+            ),
           ] else if (!widget.history) ...[
             const SizedBox(height: 16),
             Text(

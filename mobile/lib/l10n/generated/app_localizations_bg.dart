@@ -1762,4 +1762,7 @@ class AppLocalizationsBg extends AppLocalizations {
 
   @override
   String get waitlistOpen => 'Виж предложението';
+
+  @override
+  String get waitlistRecover => 'Възстанови резервацията в приложението';
 }

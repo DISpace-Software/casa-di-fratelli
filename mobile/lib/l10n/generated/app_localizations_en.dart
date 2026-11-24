@@ -1757,4 +1757,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get waitlistOpen => 'View offer';
+
+  @override
+  String get waitlistRecover => 'Restore booking in the app';
 }
