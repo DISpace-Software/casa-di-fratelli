@@ -61,6 +61,8 @@ Evidence and boundaries:
 - Live read-only probes returned expected 401 for anonymous inbox/admin, 404 for mismatched tenants and 200 for both restaurants' blocked slots. No production bookings or real guest emails were created by these checks.
 - Email provider responses were simulated. Physical-phone user interaction and real email delivery remain outside this automated evidence; APNs remains unavailable on the current free signing team.
 
-Mobile audit: all six waitlist widget/controller tests passed and `flutter analyze` reported no issues. The broader run passed 82 other checks (eight pre-existing skips); its only failure was a new test's scroll positioning, corrected and verified in the six-test run. Screenshots were rendered from synthetic fixtures, not live guest data.
+Mobile audit: all six waitlist widget/controller tests passed and `flutter analyze` reported no issues. After correcting the new test's scroll positioning, the final full suite passed 83 checks with eight pre-existing skips. Screenshots were rendered from synthetic fixtures, not live guest data.
 
 Audit fixes rollout: backend commit `772b9b9`, Render deployment `dep-dc32f0cs728c738gt7tg` live; admin deployment `dpl_8PuvR4RaACLkogknJHfbLNNBNX1t` promoted after protected HTML matched the packaged build. Mobile release version: 1.2.1 (11).
+
+SeatMap 1.2.1 (11) release build succeeded and was installed on the paired iPhone 14 Plus. Remote launch timed out (`Network.NWError 60`); physical-phone UI operation was not observed. Open the installed app manually.
