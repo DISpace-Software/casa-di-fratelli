@@ -60,6 +60,10 @@ Check(a.Status == "offered" && b.Status == "waiting", "Earliest matching guest g
 Check(await conflicts.FindTableConflictAsync(date, "20:30", ["T1"], includeHallBlocks: false) != null, "Hold blocks staff and overlapping times");
 var normal = new SeatMap.Api.Dtos.CreateReservationRequest { GuestName = "Other", Phone = "+359888123458", Email = "other@example.test", GuestCount = 4, Area = "inside", ReservedDate = date, ReservedTime = "19:00", TableIds = ["T1"], PrivacyConsent = true };
 Check((await booking.CreateAsync(normal)).Kind == ReservationBookingResultKind.Conflict, "Ordinary booking cannot steal offered table");
+normal.CreatedByAdmin = true;
+Check((await booking.CreateAsync(normal, new AdminPrincipal(1, "Test staff", "staff@example.test", "Administrator"))).Kind == ReservationBookingResultKind.Conflict,
+    "Staff booking cannot steal offered table");
+normal.CreatedByAdmin = false;
 Check((await booking.CreateAsync(new(), acceptance: new(a.Id, second.Id, a.OfferId!.Value))).Kind == ReservationBookingResultKind.NotFound, "Another guest cannot accept an offer");
 Check((await booking.CreateAsync(new(), acceptance: new(a.Id, first.Id, Guid.NewGuid()))).Kind == ReservationBookingResultKind.Conflict, "Stale offer version rejected");
 a.ExpiresAtUtc = DateTime.UtcNow.AddSeconds(-1); await db.SaveChangesAsync();
@@ -78,6 +82,48 @@ await queue.ChangeAsync(a.Id, first.Id, "resume");
 Check(a.Status == "waiting", "Explicit resume returns to waiting");
 await queue.ChangeAsync(a.Id, first.Id, "cancel");
 Check(a.Status == "cancelled", "Cancellation persists");
+// Changes made by restaurant staff must invalidate or suppress offers.
+var closureGuest = Guest("closure");
+var closureRequest = req with { Date = date.AddDays(2) };
+await queue.JoinAsync(closureGuest, closureRequest);
+var closureEntry = await db.WaitlistEntries.SingleAsync(x => x.GuestId == closureGuest.Id);
+await zones.SetClosedAsync("inside", true);
+await queue.TickAsync();
+Check(closureEntry.Status == "waiting", "Seasonally closed zone does not receive offers");
+await zones.SetClosedAsync("inside", false);
+await queue.TickAsync();
+Check(closureEntry.Status == "offered", "Reopened zone resumes allocation");
+await zones.SetClosedAsync("inside", true);
+await queue.TickAsync();
+Check(closureEntry.Status == "paused" && closureEntry.ExpiresAtUtc == null, "Closing a zone withdraws its existing offer");
+await zones.SetClosedAsync("inside", false);
+await queue.ChangeAsync(closureEntry.Id, closureGuest.Id, "resume");
+await closure.SaveAsync(new(true, closureRequest.Date, closureRequest.Date, "Test closure"));
+await queue.TickAsync();
+Check(closureEntry.Status == "waiting", "Restaurant closure suppresses allocation");
+await closure.SaveAsync(new(false, closureRequest.Date, closureRequest.Date, ""));
+await queue.TickAsync();
+await closure.SaveAsync(new(true, closureRequest.Date, closureRequest.Date, "Test closure"));
+await queue.TickAsync();
+Check(closureEntry.Status == "paused", "Restaurant closure withdraws existing offer");
+await closure.SaveAsync(new(false, closureRequest.Date, closureRequest.Date, ""));
+await queue.ChangeAsync(closureEntry.Id, closureGuest.Id, "cancel");
+var limitGuest = Guest("limit");
+for (var day = 4; day <= 6; day++)
+{
+    await queue.JoinAsync(limitGuest, req with { Date = date.AddDays(day) });
+    var entry = await db.WaitlistEntries.SingleAsync(x => x.GuestId == limitGuest.Id && x.Date == date.AddDays(day));
+    await queue.ChangeAsync(entry.Id, limitGuest.Id, "decline");
+}
+Check((await queue.JoinAsync(limitGuest, req with { Date = date.AddDays(7) })).Kind == ReservationBookingResultKind.RateLimited,
+    "Paused requests cannot bypass the three-date limit");
+var fullDate = date.AddDays(4);
+for (var n = 0; n < 200; n++) db.WaitlistEntries.Add(new() { GuestId = Guid.NewGuid(), Date = fullDate, Guests = 4, Area = "inside", TimesJson = "[\"19:00\"]", Status = "waiting" });
+await db.SaveChangesAsync();
+await queue.JoinAsync(closureGuest, req with { Date = date.AddDays(2) });
+var moveEntry = await db.WaitlistEntries.SingleAsync(x => x.GuestId == closureGuest.Id && x.Status == "waiting");
+Check((await queue.ChangeAsync(moveEntry.Id, closureGuest.Id, "edit", req with { Date = fullDate })).Kind == ReservationBookingResultKind.RateLimited,
+    "Editing a date cannot overfill the daily queue limit");
 if (postgres != null)
 {
     await queue.JoinAsync(first, req with { Date = date.AddDays(1) });

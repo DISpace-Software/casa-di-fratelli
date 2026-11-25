@@ -39,13 +39,17 @@ static class HttpChecks
     builder.Services.AddScoped<TenantBrandingService>(); builder.Services.AddScoped<FloorPlanService>(); builder.Services.AddScoped<SeasonalZoneService>();
     builder.Services.AddScoped<RestaurantClosureService>(); builder.Services.AddScoped<ReservationConflictService>(); builder.Services.AddScoped<WaitlistService>(); builder.Services.AddScoped<ReservationBookingService>();
     builder.Services.AddScoped<IReservationBookingNotifications, NoNotifications>();
+    builder.Services.AddScoped<GuestReservationService>();
     builder.Services.AddControllers().AddApplicationPart(typeof(WaitlistController).Assembly);
     builder.Services.AddRateLimiter(o => { foreach (var key in new[] { "guest-auth", "guest-reservations" }) o.AddPolicy(key, _ => System.Threading.RateLimiting.RateLimitPartition.GetNoLimiter("tests")); });
     await using var app = builder.Build(); app.UseRouting(); app.UseRateLimiter(); app.UseMiddleware<TenantResolutionMiddleware>(); app.MapControllers();
     const string token = "waitlist-http-isolated-test-session-token";
+    const string otherToken = "waitlist-http-other-guest-session-token";
     using (var scope = app.Services.CreateScope()) {
         var p = scope.ServiceProvider.GetRequiredService<PlatformDbContext>(); await p.Database.EnsureCreatedAsync();
         p.GuestProfiles.Add(guest); p.GuestSessions.Add(new() { GuestProfileId = guest.Id, TokenHash = GuestAuthService.HashToken(token), CreatedAtUtc = DateTime.UtcNow, ExpiresAtUtc = DateTime.UtcNow.AddHours(1) }); await p.SaveChangesAsync();
+        var other = new GuestProfile { IdentityIssuer = "test", IdentitySubject = "other", DisplayName = "Other", Email = "other-http@example.test", Phone = "+359888765432", EmailVerifiedAtUtc = DateTime.UtcNow };
+        p.GuestProfiles.Add(other); p.GuestSessions.Add(new() { GuestProfileId = other.Id, TokenHash = GuestAuthService.HashToken(otherToken), CreatedAtUtc = DateTime.UtcNow, ExpiresAtUtc = DateTime.UtcNow.AddHours(1) }); await p.SaveChangesAsync();
     }
     await app.StartAsync();
     try {
@@ -53,15 +57,53 @@ static class HttpChecks
       const string path = "/api/v1/restaurants/test/waitlist";
       check((await http.GetAsync(path)).StatusCode == HttpStatusCode.Unauthorized, "HTTP guest queue rejects anonymous access");
       http.DefaultRequestHeaders.Authorization = new("Bearer", token);
+      var existingCapability = GuestReservationService.CreateToken();
+      int existingId;
+      using (var scope = app.Services.CreateScope()) {
+          var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+          var occupied = new SeatMap.Api.Models.Reservation { GuestName = "Earlier guest", Phone = "+359888999999", Email = "earlier@example.test", GuestCount = 4, ReservedDate = date, ReservedTime = "19:00", Area = "inside", Status = "Approved", GuestManagementTokenHash = GuestReservationService.HashToken(existingCapability), Tables = [new() { TableCode = "T1" }] };
+          db.Reservations.Add(occupied); await db.SaveChangesAsync(); existingId = occupied.Id;
+      }
       var joined = await http.PostAsJsonAsync(path, new WaitlistRequest(date, 4, "inside", ["19:00"]));
       check(joined.IsSuccessStatusCode, "HTTP authenticated join succeeds");
       var entry = await joined.Content.ReadFromJsonAsync<JsonElement>(); var id = entry.GetProperty("id").GetGuid();
       using (var scope = app.Services.CreateScope()) { scope.ServiceProvider.GetRequiredService<CurrentTenant>().Resolve(tenant); await scope.ServiceProvider.GetRequiredService<WaitlistService>().TickAsync(); }
+      var waitingInbox = await http.GetFromJsonAsync<JsonElement>("/api/v1/guest/waitlist");
+      check(waitingInbox.GetProperty("entries").EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == id).GetProperty("status").GetString() == "waiting", "HTTP occupied table leaves guest waiting");
+      using (var earlier = new HttpClient { BaseAddress = http.BaseAddress }) {
+          earlier.DefaultRequestHeaders.Add("X-Reservation-Token", existingCapability);
+          check((await earlier.PostAsync($"/api/v1/restaurants/test/reservations/{existingId}/cancel", null)).IsSuccessStatusCode, "HTTP existing guest cancels and releases table");
+      }
+      using (var scope = app.Services.CreateScope()) { scope.ServiceProvider.GetRequiredService<CurrentTenant>().Resolve(tenant); await scope.ServiceProvider.GetRequiredService<WaitlistService>().TickAsync(); }
       var inbox = await http.GetFromJsonAsync<JsonElement>("/api/v1/guest/waitlist");
       var offered = inbox.GetProperty("entries").EnumerateArray().Single(x => x.GetProperty("id").GetGuid() == id);
       check(offered.GetProperty("status").GetString() == "offered" && offered.GetProperty("restaurantId").GetString() == "test", "HTTP inbox restores personal offer across restaurants");
+      http.DefaultRequestHeaders.Authorization = new("Bearer", otherToken);
+      check((await http.PostAsJsonAsync($"{path}/{id}/confirm", new { offerId = offered.GetProperty("offerId").GetGuid() })).StatusCode == HttpStatusCode.NotFound, "HTTP another guest cannot accept the offer");
+      check((await http.PostAsync($"{path}/{id}/cancel", null)).StatusCode == HttpStatusCode.NotFound, "HTTP another guest cannot cancel the request");
+      http.DefaultRequestHeaders.Authorization = new("Bearer", token);
       var accepted = await http.PostAsJsonAsync($"{path}/{id}/confirm", new { offerId = offered.GetProperty("offerId").GetGuid() });
-      check(accepted.IsSuccessStatusCode && (await accepted.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("managementToken").GetString()!.Length >= 32, "HTTP confirmation returns a usable booking capability");
+      check(accepted.IsSuccessStatusCode, "HTTP confirmation succeeds");
+      var confirmed = await accepted.Content.ReadFromJsonAsync<JsonElement>();
+      var bookingId = confirmed.GetProperty("id").GetInt32();
+      var capability = confirmed.GetProperty("managementToken").GetString()!;
+      var guestPath = $"/api/v1/restaurants/test/reservations/{bookingId}/guest";
+      using var guestHttp = new HttpClient { BaseAddress = http.BaseAddress };
+      check((await guestHttp.GetAsync(guestPath)).StatusCode == HttpStatusCode.NotFound, "HTTP booking status rejects a missing capability");
+      guestHttp.DefaultRequestHeaders.Add("X-Reservation-Token", capability);
+      var status = await guestHttp.GetAsync(guestPath);
+      check(status.IsSuccessStatusCode && (await status.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("status").GetString() == "Approved", "HTTP returned capability reads the approved reservation");
+      var recovered = await http.PostAsJsonAsync($"{path}/{id}/confirm", new { offerId = offered.GetProperty("offerId").GetGuid() });
+      var recovery = await recovered.Content.ReadFromJsonAsync<JsonElement>();
+      check(recovered.IsSuccessStatusCode && recovery.GetProperty("id").GetInt32() == bookingId, "HTTP lost confirmation response recovers same reservation");
+      check((await guestHttp.GetAsync(guestPath)).StatusCode == HttpStatusCode.NotFound, "HTTP recovery revokes previous capability");
+      guestHttp.DefaultRequestHeaders.Remove("X-Reservation-Token");
+      guestHttp.DefaultRequestHeaders.Add("X-Reservation-Token", recovery.GetProperty("managementToken").GetString());
+      check((await guestHttp.GetAsync(guestPath)).IsSuccessStatusCode, "HTTP recovered capability manages the reservation");
+      using (var scope = app.Services.CreateScope()) {
+          var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+          check(await db.Reservations.CountAsync(x => x.ReservedDate == date && x.Email == guest.Email) == 1, "HTTP confirmation retry creates exactly one reservation");
+      }
       var cancelled = await http.PostAsync($"{path}/{id}/cancel", null);
       check(cancelled.StatusCode == HttpStatusCode.Conflict, "HTTP cannot cancel confirmed booking as a queue request");
       http.DefaultRequestHeaders.Add("X-Tenant-Id", "unknown");

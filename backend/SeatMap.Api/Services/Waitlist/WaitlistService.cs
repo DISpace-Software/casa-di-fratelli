@@ -51,7 +51,7 @@ public sealed class WaitlistService(AppDbContext db, FloorPlanService plans, Sea
         if (existing != null) return ReservationBookingResult.Success(Describe(existing));
         if (await db.WaitlistEntries.CountAsync(x => x.Date == request.Date && (x.Status == "waiting" || x.Status == "offered" || x.Status == "paused")) >= 200)
             return ReservationBookingResult.RateLimited(new { code = "WAITLIST_LIMIT" });
-        if (await db.WaitlistEntries.CountAsync(x => x.GuestId == guest.Id && (x.Status == "waiting" || x.Status == "offered")) >= 3) return ReservationBookingResult.RateLimited(new { code = "WAITLIST_LIMIT" });
+        if (await db.WaitlistEntries.CountAsync(x => x.GuestId == guest.Id && (x.Status == "waiting" || x.Status == "offered" || x.Status == "paused")) >= 3) return ReservationBookingResult.RateLimited(new { code = "WAITLIST_LIMIT" });
         var e = new WaitlistEntry { GuestId = guest.Id, GuestName = guest.DisplayName, Email = guest.Email, Phone = guest.Phone,
             Language = guest.PreferredLanguage, Date = request.Date, Guests = request.Guests, Area = request.Area,
             TimesJson = JsonSerializer.Serialize(request.Times.Order()), CreatedAtUtc = UtcNow, QueueAtUtc = UtcNow, UpdatedAtUtc = UtcNow };
@@ -77,6 +77,9 @@ public sealed class WaitlistService(AppDbContext db, FloorPlanService plans, Sea
                 if (await ValidateAsync(request) is { } error) return ReservationBookingResult.Invalid(new { code = error });
                 if (await db.WaitlistEntries.AnyAsync(x => x.Id != id && x.GuestId == guestId && x.Date == request.Date && (x.Status == "waiting" || x.Status == "offered" || x.Status == "paused")))
                     return ReservationBookingResult.Conflict(new { code = "WAITLIST_EXISTS" });
+                if (await db.WaitlistEntries.CountAsync(x => x.Id != id && x.Date == request.Date && (x.Status == "waiting" || x.Status == "offered" || x.Status == "paused")) >= 200 ||
+                    await db.WaitlistEntries.CountAsync(x => x.Id != id && x.GuestId == guestId && (x.Status == "waiting" || x.Status == "offered" || x.Status == "paused")) >= 3)
+                    return ReservationBookingResult.RateLimited(new { code = "WAITLIST_LIMIT" });
                 e.Date = request.Date; e.Guests = request.Guests; e.Area = request.Area;
                 e.TimesJson = JsonSerializer.Serialize(request.Times.Order()); e.Status = "waiting"; e.QueueAtUtc = UtcNow;
                 break;
@@ -97,13 +100,14 @@ public sealed class WaitlistService(AppDbContext db, FloorPlanService plans, Sea
         var settings = await SettingsAsync();
         var entries = await db.WaitlistEntries.Where(x => x.Status == "waiting" || x.Status == "offered" || x.Status == "paused").OrderBy(x => x.QueueAtUtc).ThenBy(x => x.Id).ToListAsync();
         var closed = await closures.GetAsync();
+        var closedAreas = await zones.GetClosedAreasAsync();
         foreach (var e in entries)
         {
             if (e.Date < DateOnly.FromDateTime(local) || Times(e).All(t => ReservationTimeRules.IsPast(e.Date, t, local) || ReservationTimeRules.IsTooSoon(e.Date, t, local, brand.PublicLeadMinutes)))
                 e.Status = "expired";
             else if (e.Status == "offered" && e.ExpiresAtUtc <= now) e.Status = "paused";
             // A closure or map edit can invalidate an offer. Do not keep a misleading countdown.
-            else if (e.Status == "offered" && (RestaurantClosureService.Contains(closed, e.Date) ||
+            else if (e.Status == "offered" && (RestaurantClosureService.Contains(closed, e.Date) || closedAreas.Contains(e.Area) ||
                 (await plans.SelectAsync(JsonSerializer.Deserialize<List<string>>(e.TableIdsJson), e.Area, e.Guests, publicBooking: true)).Error != null ||
                 await IsHeldAsync(e.Date, JsonSerializer.Deserialize<List<string>>(e.TableIdsJson) ?? []))) e.Status = "paused";
             if (e.Status != "offered") e.ExpiresAtUtc = null;
@@ -114,7 +118,7 @@ public sealed class WaitlistService(AppDbContext db, FloorPlanService plans, Sea
             var plan = await plans.GetAsync();
             foreach (var e in entries.Where(x => x.Status == "waiting"))
             {
-                if (RestaurantClosureService.Contains(closed, e.Date)) continue;
+                if (RestaurantClosureService.Contains(closed, e.Date) || closedAreas.Contains(e.Area)) continue;
                 var choices = plan.Tables.Select(t => new List<string> { t.Id }).Concat(plan.Combinations)
                     .OrderBy(ids => plan.Tables.Where(t => ids.Contains(t.Id)).Sum(t => t.Seats)).ToList();
                 foreach (var slot in Times(e).Order())
