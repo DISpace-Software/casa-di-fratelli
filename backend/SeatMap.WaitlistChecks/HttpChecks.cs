@@ -33,6 +33,10 @@ static class HttpChecks
     builder.Services.Configure<TenantResolutionOptions>(x => { x.RequireKnownTenant = true; x.DefaultTenant = tenant; x.Tenants = [tenant]; });
     builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlite(restaurant));
     builder.Services.AddDbContext<PlatformDbContext>(o => o.UseSqlite(platform));
+    builder.Services.AddScoped<SeatMap.Api.Application.Waitlist.ConfirmWaitlistOffer>();
+    builder.Services.AddScoped<SeatMap.Api.Application.Waitlist.AdministerWaitlist>();
+    builder.Services.AddScoped<AuditService>();
+    builder.Services.AddScoped<SeatMap.Api.Application.Waitlist.GetGuestWaitlistInbox>();
     builder.Services.AddScoped<CurrentTenant>(); builder.Services.AddScoped<ICurrentTenant>(s => s.GetRequiredService<CurrentTenant>());
     builder.Services.AddSingleton(TimeProvider.System); builder.Services.AddSingleton<GuestPasswordHasher>(); builder.Services.AddScoped<GuestAuthService>();
     builder.Services.AddSingleton<IGuestEmailSender, Mail>();
@@ -103,6 +107,29 @@ static class HttpChecks
       using (var scope = app.Services.CreateScope()) {
           var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
           check(await db.Reservations.CountAsync(x => x.ReservedDate == date && x.Email == guest.Email) == 1, "HTTP confirmation retry creates exactly one reservation");
+      }
+      using (var scope = app.Services.CreateScope()) {
+          scope.ServiceProvider.GetRequiredService<CurrentTenant>().Resolve(tenant);
+          var staff = scope.ServiceProvider.GetRequiredService<SeatMap.Api.Application.Waitlist.AdministerWaitlist>();
+          var actor = new Microsoft.AspNetCore.Http.DefaultHttpContext();
+          var invalidSettings = await staff.UpdateSettingsAsync(new(true, 1), actor);
+          check(invalidSettings.Kind == ReservationBookingResultKind.Invalid, "Staff workflow preserves offer-duration validation");
+          var changedSettings = await staff.UpdateSettingsAsync(new(true, 5), actor);
+          var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+          check(changedSettings.Kind == ReservationBookingResultKind.Success &&
+              await db.AuditLogs.AnyAsync(x => x.Action == "waitlist.settings"), "Staff settings and audit persist together");
+          var platformDisabled = new SeatMap.Api.Application.Waitlist.AdministerWaitlist(
+              db, scope.ServiceProvider.GetRequiredService<WaitlistService>(),
+              scope.ServiceProvider.GetRequiredService<AuditService>(), scope.ServiceProvider.GetRequiredService<FloorPlanService>());
+          var unavailable = await platformDisabled.JoinAsync(new(guest.Email, new(date, 4, "inside", ["19:00"]), true), actor);
+          check(unavailable.Kind == ReservationBookingResultKind.Unavailable &&
+              unavailable.ToActionResult() is Microsoft.AspNetCore.Mvc.StatusCodeResult { StatusCode: 503 },
+              "Disabled platform is an explicit unavailable outcome mapped to legacy 503");
+          check(ReservationBookingResult.Invalid(null).ToActionResult() is Microsoft.AspNetCore.Mvc.BadRequestResult &&
+              ReservationBookingResult.NotFound(null).ToActionResult() is Microsoft.AspNetCore.Mvc.NotFoundResult,
+              "Empty application failures preserve legacy status-only HTTP results");
+          var closeBooked = await staff.CancelAsync(id, new("test"), actor);
+          check(closeBooked.Kind == ReservationBookingResultKind.Conflict, "Staff workflow cannot cancel a converted queue entry");
       }
       var cancelled = await http.PostAsync($"{path}/{id}/cancel", null);
       check(cancelled.StatusCode == HttpStatusCode.Conflict, "HTTP cannot cancel confirmed booking as a queue request");
