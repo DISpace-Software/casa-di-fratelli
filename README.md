@@ -1,12 +1,14 @@
 # SeatMap / Casa di Fratelli
 
-SeatMap is a restaurant SaaS platform currently running Casa di Fratelli as the first production restaurant.
+SeatMap is a restaurant platform serving Casa di Fratelli and Cofein through a shared API and isolated restaurant databases.
 
 The current product includes a public restaurant website, online reservations, an interactive table map, CRM, orders, kitchen/bar workflows, inventory, marketing campaigns, events, admin roles, push notifications, and operational maintenance tools.
 
 ## Current Architecture
 
-- `backend/SeatMap.Api` - ASP.NET Core API, PostgreSQL, EF Core migrations, background services, email, push, CRM, orders, inventory, and marketing.
+- `backend/SeatMap.Domain` - framework-independent reservation policies.
+- `backend/SeatMap.Api` - ASP.NET Core host, application workflows, PostgreSQL adapters, migrations and background workers.
+- `mobile` - Flutter guest application with domain policies, data adapters and presentation.
 - `frontend` - Vite/React public website, menu, reservation UX, and admin CRM.
 - `docs` - SaaS architecture notes and operating guidelines.
 
@@ -49,8 +51,7 @@ On startup the API runs EF migrations and the compatibility bootstrapper.
 ## SaaS Direction
 
 The SeatMap platform foundation now includes an opt-in separate profile database,
-a public restaurant directory and versioned restaurant read and booking routes. Guest login,
-profile-backed booking and booking projection delivery are not yet implemented.
+a public restaurant directory, guest authentication, profile-backed booking, and versioned restaurant routes. The shared guest profile database is separate from restaurant operational databases.
 See [platform preparation and rollout](docs/seatmap-platform.md) for the exact
 boundary, migration commands and remaining release requirements.
 
@@ -73,7 +74,8 @@ The Flutter app is in [`mobile/`](mobile/README.md), targeting iOS and Android w
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
+- [Architecture and dependency rules](docs/architecture.md)
+- [Contributor guide](CONTRIBUTING.md)
 - [SeatMap transition audit and staged plan](docs/seatmap-transition-audit.md)
 - [Multi-tenancy](docs/multi-tenancy.md)
 - [SeatMap platform and mobile preparation](docs/seatmap-platform.md)

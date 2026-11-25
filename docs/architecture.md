@@ -1,105 +1,173 @@
-# SeatMap Architecture Audit
+# SeatMap architecture
 
-For the verified state as of 3 November 2026 and the next incremental steps,
-see [SeatMap transition audit](seatmap-transition-audit.md). The notes below
-provide broader architectural context; they predate the platform foundation
-and shared booking service extraction.
+Updated 26 November 2026. This is a map of the implemented system and its
+incremental refactoring boundaries, not a claim that every legacy class is already
+Clean Architecture. See [contribution rules](../CONTRIBUTING.md) and the detailed
+[server](../backend/ARCHITECTURE.md), [mobile](../mobile/ARCHITECTURE.md) and
+[web](../frontend/ARCHITECTURE.md) guides.
 
-## Executive Summary
+## Shape of the system
 
-The project has strong product depth for a first restaurant: reservations, table map, CRM, ordering, kitchen/bar workflows, inventory, marketing, events, roles, push notifications, and maintenance tooling already exist.
+SeatMap is a modular monolith with a React web client and Flutter guest client.
+One ASP.NET Core host serves multiple restaurants. Each restaurant has its own
+operational database; shared guest identities live in a separate platform database.
+This deployment shape is independent of the code layers: a bounded context does
+not need a microservice, a separate database or an interface for every class.
 
-The main architectural gap is that the codebase is still shaped as a single-restaurant application. It is not yet cleanly separated into Domain/Application/Infrastructure/API layers, and tenant isolation is only beginning. The correct path is incremental extraction, not a rewrite.
+```mermaid
+flowchart LR
+    Web[React public site and staff admin] --> HTTP[ASP.NET HTTP adapters]
+    Mobile[Flutter guest app] --> HTTP
+    HTTP --> Cases[Application workflows]
+    Workers[Background workers] --> Cases
+    Cases --> Domain[Domain policies]
+    Cases --> EF[EF persistence adapters]
+    Cases --> Delivery[Email and notification adapters]
+    EF --> Restaurant[(Resolved restaurant database)]
+    EF --> Platform[(Shared guest database)]
+```
 
-## What Was Found
+The diagram shows responsibilities. Much legacy persistence and orchestration still
+resides inside `SeatMap.Api`; it has not all moved into separate Application and
+Infrastructure projects. `SeatMap.Domain` is the extracted dependency-free core.
+Do not disguise remaining coupling by renaming folders.
 
-- Backend is an ASP.NET Core API with EF Core and PostgreSQL.
-- Models, services, controllers, migrations, background jobs, and infrastructure live in one API project.
-- Inventory exists with ingredients, recipes, stock movements, audits, auto deduction, and extras.
-- Operational soft delete exists for reservations, orders, and order items.
-- Audit logging exists and is used in important admin workflows.
-- Role logic exists in `AdminRoleAccess`.
-- Public frontend is reasonably modular.
-- Admin frontend is concentrated in `AdminPage.jsx`, which is now the largest UI risk.
-- Tenant resolution and dedicated database routing now exist in the API.
+## Business contexts and ownership
 
-## Architectural Problems
+| Context | Owns | Collaborates with |
+| --- | --- | --- |
+| Guest identity | Verified account, sessions, profile, language | Restaurant workflows receive the authenticated guest; they do not implement passwords |
+| Restaurant tenancy | Tenant resolution, connection selection, branding, hours, timezone | Every restaurant workflow and background scope |
+| Seating and reservations | Floor plan, configured combinations, capacity, availability, reservation lifecycle | Waitlist uses the same conflict/booking rules |
+| Waitlist | Request, queue position, exclusive offer, expiry, acceptance | Reservation creation owns the final booking; notification is delivery after allocation |
+| Menu and sommelier | Actual menu items, wine inventory and pairing rules | Preorders reference restaurant menu; recommendations cannot invent stock |
+| Preorders and dining orders | Guest drafts, line notes, revisions, kitchen/bar and payment workflow | Reservations identify the visit; inventory handles consumption |
+| Inventory | Ingredients, recipes, movements and consumption | Dining-order completion triggers existing stock workflow |
+| Staff operations | Roles, audit, maintenance, reporting and marketing | Uses restaurant scope and preserves authorization on every write |
 
-1. Single project backend
+These are ownership boundaries, not eight newly isolated projects. Feature-specific
+rules should remain in their owning module; do not grow a miscellaneous `Utils`
+folder or a universal service that knows all contexts.
 
-   Domain entities are EF models and sit directly inside the API project. This is acceptable for an early product, but it will slow SaaS scaling.
+## Dependency rules
 
-2. Controllers are too large
+- **Domain** expresses deterministic rules using supplied values. It does not
+  depend on controllers, EF, Flutter widgets, React, HTTP clients or storage.
+- **Application** coordinates a business operation. It owns sequencing, scope,
+  authorization inputs, transaction boundaries and idempotency decisions.
+- **Adapters** translate transport/persistence details into the operation's inputs
+  and outputs. JSON mapping belongs here, not in a view or a policy.
+- **Presentation** renders state and dispatches actions. UI validation improves
+  feedback; it cannot replace server enforcement.
+- **Composition roots** wire implementations: server `Program.cs`, mobile app
+  initialization, and web feature composition. Do not resolve services globally
+  from domain objects.
 
-   `ReservationsController`, `DiningOrdersController`, and `InventoryController` contain significant business workflow logic. Over time, this should move to application services/use cases.
+Use dependency inversion for an actual boundary, not to add pass-through classes.
+Existing EF Core contexts already provide change tracking and unit-of-work
+behavior; a generic repository wrapper would not automatically improve isolation.
+CQRS here means distinguishing commands from queries when useful, not requiring
+MediatR or separate read databases. Event sourcing and microservices are not part
+of this refactor.
 
-3. Admin frontend is too concentrated
+`python3 scripts/check-architecture.py` guards imports in the extracted domain
+areas. This is a source dependency check, not a proof of architectural correctness.
+It also checks static local web imports for cycles. It deliberately excludes web
+test fixtures and documents the existing Flutter geometry dependency on `dart:ui`.
+Other legacy areas remain review-enforced.
 
-   `AdminPage.jsx` is over 10k lines. It should be split by bounded context: reservations, orders, inventory, marketing, users, maintenance, reports.
+## Invariants that must survive refactoring
 
-4. Tenant isolation uses dedicated databases
+### Tenant and identity boundaries
 
-   HTTP requests now resolve a tenant before `AppDbContext` is constructed.
-   Each tenant maps to its own connection string, startup initialization and
-   background jobs iterate tenant-by-tenant, and backup files are separated by
-   tenant. Shared-database mode remains intentionally unsupported.
+Resolve one tenant before constructing its operational context. Background work
+creates a fresh scope per restaurant. A global guest inbox aggregates authorized
+reads across scopes; it must not reuse a tenant context or expose another guest's
+rows. Platform identity and staff authorization are separate concepts.
 
-5. Floor map model is still not fully domain-driven
+### Booking consistency
 
-   The current map works, but the SaaS target needs explicit `FloorPlan`, `FloorSection`, `RestaurantTable`, `MapElement`, and `TableLink` entities.
+A map preview can become stale. The final write rechecks capacity, configured
+combinations, closures, public holds and existing reservations under the restaurant
+write lock. Waitlist offers take part in that same lock/conflict model. Preserve
+this transaction across extraction; moving each check into a separately committed
+service would introduce races.
 
-6. Table combination logic should be link-driven
+A waitlist request progresses through waiting/offered/paused and terminal states.
+An accepted offer creates a reservation exactly once. Decline or expiry pauses the
+request; an explicit resume returns it to the back of the queue. Recovery of a lost
+confirmation response returns the same booking and rotates its guest capability.
+The allocator polls; a newly free table is publicly bookable until an offer is
+actually allocated. This is not a strict priority guarantee over direct bookings.
 
-   Future table combinations should depend on stored `TableLink` rules rather than coordinate assumptions.
+### Time and effects
 
-## What Should Be Fixed Next
+Restaurant dates and wall-clock times use the configured restaurant timezone;
+expiration timestamps use UTC. Pass time into pure policies and use an injected
+clock in orchestrators when supported. Never infer restaurant time from a browser's
+or server's local timezone.
 
-1. Extract backend projects gradually:
+Persist the outcome before external delivery. Waitlist mail uses a persisted lease
+and provider idempotency key; provider failure does not roll back allocation.
+System iOS push is not enabled for the current personal-team provisioning profile.
+An in-app banner or an email attempt must not be described as delivered APNs push.
 
-   - `SeatMap.Domain`
-   - `SeatMap.Application`
-   - `SeatMap.Infrastructure`
-   - `SeatMap.Api`
+### Client state and compatibility
 
-2. Move business workflows from controllers into use-case services:
+Keep network DTO conversion in data modules. Preserve account ownership checks
+across asynchronous responses. Storage and API field names are compatibility
+contracts even if internal names become clearer. Generated localization, EF
+migrations and persisted snapshots need their own generation/migration workflow;
+formatting them as part of a cleanup creates unnecessary risk.
 
-   - create reservation
-   - move reservation
-   - release table
-   - create dining order
-   - complete/pay order
-   - deduct inventory
-   - run marketing campaigns
+## What this refactor does and does not establish
 
-3. Extract tenant branding and operational settings:
+The accompanying layer guides describe the specific extractions, public entry
+points and verification commands. Business behavior, database schema and public
+routes are intended to remain unchanged. Review the diff and behavior tests before
+publishing; this architectural work does not itself require a production migration.
 
-   - restaurant name, phone and email identity
-   - opening hours and timezone
-   - email/push templates
-   - frontend theme and feature flags
+Remaining large modules include the staff admin composition page, several mobile
+screens and legacy dining/inventory/reservation HTTP controllers. Continue by
+extracting a complete operation with its input, rule, transaction and tests, then
+switch callers. Do not declare a whole bounded context migrated after extracting
+one helper. A useful next order is staff reservation commands, dining-order
+completion and inventory consumption, then the corresponding admin panels.
 
-4. Split admin frontend into feature modules.
+## Further reading
 
-5. Formalize map domain with table links and floor plans.
+- [Server structure](../backend/ARCHITECTURE.md)
+- [Mobile structure](../mobile/ARCHITECTURE.md)
+- [Web structure](../frontend/ARCHITECTURE.md)
+- [Tenant routing](multi-tenancy.md)
+- [Shared booking workflow](shared-booking.md)
+- [Waitlist behavior and operational limitations](waitlist.md)
+- [Preorders and revisions](preorders-and-mobile-menu.md)
+- [Platform rollout](seatmap-platform.md)
 
-## What Should Not Be Done Now
+Earlier dated audits in `docs/` remain historical records, not the source of truth
+for current module placement.
 
-- Do not rewrite the project from scratch.
-- Do not move all files into Clean Architecture projects in one huge commit.
-- Do not add `TenantId` columns to every table until the tenant strategy is confirmed.
-- Do not change live restaurant behavior while introducing SaaS foundations.
+## Refactor verification — 26 November 2026
 
-## SaaS Readiness
+This change was reviewed in separate backend, mobile and frontend workstreams.
+It is isolated on `refactor/architecture-2026-11-26`; it is not a production release.
 
-Current state: strong restaurant product, early SaaS foundation.
+| Area | Evidence |
+| --- | --- |
+| Domain dependencies | 30 source files pass the boundary guard; deliberate forbidden-import and cycle probes are rejected |
+| Web module graph | 129 modules checked, no static local import cycles |
+| Server | Solution build succeeded; 9 independent domain and 52 waitlist checks pass; reservation, tenancy, guest, platform and sommelier regression suites pass |
+| Flutter | Final complete run: 87 passed, 8 existing skips; analyzer reports no issues |
+| React | 154 domain/contract and 38 Cofein checks pass; changed-source ESLint and all three Vite builds pass |
+| Browser | Actual Chromium exercises waitlist interactions with fixture HTTP and initializes the extracted admin modules without runtime errors |
 
-Readiness estimate:
+The 65 declarations extracted from `AdminPage` retain their prior syntax trees
+apart from comments/locations. The page shrank from 12,936 to 7,281 lines; that is
+meaningful separation, not completion of all remaining dashboard orchestration.
+The former 2,082-line mobile menu module now provides compatibility exports for
+separate browsing, cart and orders screens.
 
-- Product depth: high
-- Single restaurant stability: medium-high
-- SaaS tenant data isolation: medium-high
-- Operational tooling: medium-high
-- Code modularity: medium
-
-Recommended next milestone: tenant branding/settings extraction and gradual
-admin frontend feature decomposition.
+Existing web bundle-size warnings remain. These tests do not exercise every
+operational admin interaction, real provider delivery or a physical phone. No
+schema migration or live guest data change forms part of this refactor.
