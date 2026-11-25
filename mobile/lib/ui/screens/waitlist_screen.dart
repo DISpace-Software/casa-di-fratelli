@@ -43,6 +43,13 @@ class _WaitlistScreenState extends State<WaitlistScreen> {
           ? [widget.controller.selectedTime]
           : List<String>.from(widget.entry!['times']),
     );
+    selected.retainAll(
+      widget.controller.repository.timesFor(
+        widget.restaurant,
+        date,
+        extraLeadMinutes: 5,
+      ),
+    );
   }
 
   Future<void> save() async {
@@ -56,6 +63,17 @@ class _WaitlistScreenState extends State<WaitlistScreen> {
       if (!mounted) return;
       setState(() {});
       if (!widget.controller.isLoggedIn) return;
+    }
+    selected.retainAll(
+      widget.controller.repository.timesFor(
+        widget.restaurant,
+        date,
+        extraLeadMinutes: 5,
+      ),
+    );
+    if (selected.isEmpty) {
+      setState(() {});
+      return;
     }
     setState(() {
       busy = true;
@@ -91,6 +109,7 @@ class _WaitlistScreenState extends State<WaitlistScreen> {
     final times = widget.controller.repository.timesFor(
       widget.restaurant,
       date,
+      extraLeadMinutes: 5,
     );
     final zone =
         widget.restaurant.floorPlan.zones
@@ -268,7 +287,10 @@ class _WaitlistCardsState extends State<WaitlistCards> {
       children: [
         if (error != null || widget.controller.waitlistError != null)
           TextButton.icon(
-            onPressed: widget.controller.refreshWaitlist,
+            onPressed: () async {
+              setState(() => error = null);
+              await widget.controller.refreshWaitlist();
+            },
             icon: const Icon(Icons.refresh),
             label: Text(error ?? widget.controller.waitlistError!),
           ),
@@ -336,7 +358,7 @@ class _WaitlistCardsState extends State<WaitlistCards> {
           ),
           const SizedBox(height: 18),
           Text(
-            restaurant?.name ?? e['restaurantId'],
+            restaurant?.name ?? e['restaurantName'] ?? e['restaurantId'],
             style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),

@@ -48,3 +48,19 @@ Mobile checks cover explicit confirmation, expiry, authenticated offer version, 
 - Live guest inbox, restaurant waitlist and staff endpoints reject unauthenticated requests (401); mismatched restaurant selectors return 404; both existing blocked-slot APIs return 200.
 - 29 waitlist checks including HTTP and mocked email transport; separate PostgreSQL run passed 23 checks including parallel workers/confirmation. Existing reservation regression passed. No live booking was created and no real guest was emailed by the test runs.
 - Mobile history offers a recovery action for a confirmed request whose booking/capability is missing locally, covering lost responses and a different device.
+
+## Agent audit — 2026-11-25
+
+Three agents independently exercised the backend, mobile flow and admin panel. Fixed allocator behavior for seasonal zone closure (including withdrawing a live offer), paused-request quota bypass and moving a request into a full day. Mobile now removes unavailable times before submission, accounts for the waitlist's additional five-minute lead, clears retried action errors and discards a confirmation response after the signed-in account changes. Admin countdown uses server time, pause uses the saved duration, fractional durations are rejected, polling preserves operation errors and exhausted mail retries are labelled accurately.
+
+Evidence and boundaries:
+
+- 47 backend checks passed with a real loopback HTTP flow: occupied table → request → existing guest cancels through the capability endpoint → allocation → offer inbox → confirmation → approved booking read with returned capability → lost-response recovery. Cross-owner access is rejected and recovery revokes the prior capability.
+- 34 checks passed against a dedicated PostgreSQL database, including concurrent allocation and concurrent confirmation with exactly one reservation. Existing reservation regression suite passed.
+- Actual Chromium exercised the real admin component and CSS with intercepted fixture responses: fetch retry, clock skew, pause/save, date filter, failed/successful staff request and cancellation. No browser runtime errors. Repeat with Node 22 and `npm run test:waitlist-browser` in `frontend` (install Playwright Chromium or set `PLAYWRIGHT_CHROMIUM_EXECUTABLE`). This is not a logged-in production admin test.
+- Live read-only probes returned expected 401 for anonymous inbox/admin, 404 for mismatched tenants and 200 for both restaurants' blocked slots. No production bookings or real guest emails were created by these checks.
+- Email provider responses were simulated. Physical-phone user interaction and real email delivery remain outside this automated evidence; APNs remains unavailable on the current free signing team.
+
+Mobile audit: all six waitlist widget/controller tests passed and `flutter analyze` reported no issues. The broader run passed 82 other checks (eight pre-existing skips); its only failure was a new test's scroll positioning, corrected and verified in the six-test run. Screenshots were rendered from synthetic fixtures, not live guest data.
+
+Audit fixes rollout: backend commit `772b9b9`, Render deployment `dep-dc32f0cs728c738gt7tg` live; admin deployment `dpl_8PuvR4RaACLkogknJHfbLNNBNX1t` promoted after protected HTML matched the packaged build. Mobile release version: 1.2.1 (11).

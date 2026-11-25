@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -10,6 +11,7 @@ import 'package:http/testing.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:seatmap_mobile/data/guest_account_repository.dart';
+import 'package:seatmap_mobile/data/seatmap_repository.dart';
 import 'package:seatmap_mobile/domain/models.dart';
 import 'package:seatmap_mobile/state/app_controller.dart';
 import 'package:seatmap_mobile/ui/screens/waitlist_screen.dart';
@@ -19,8 +21,11 @@ import 'guest_account_test.dart' as auth;
 import 'menu_preorder_test.dart' as fixture;
 
 class QueueController extends AppController {
-  QueueController()
-    : super(initialLanguage: 'en', repository: fixture.MenuRepository());
+  QueueController({super.accounts, SeatMapRepository? repository})
+    : super(
+        initialLanguage: 'en',
+        repository: repository ?? fixture.MenuRepository(),
+      );
   int confirmed = 0;
   @override
   Future<void> refreshWaitlist() async {}
@@ -36,7 +41,164 @@ class QueueController extends AppController {
   }
 }
 
+class TimeRepository extends fixture.MenuRepository {
+  List<String> slots = ['19:00', '19:15', '19:30', '19:45', '20:00', '20:15'];
+  @override
+  List<String> timesFor(
+    Restaurant restaurant,
+    DateTime date, {
+    int extraLeadMinutes = 0,
+  }) => slots;
+}
+
 void main() {
+  test('confirmation response after account change cannot save another guest booking', () async {
+    SharedPreferences.setMockInitialValues({});
+    final response = Completer<http.Response>();
+    final started = Completer<void>();
+    final api = GuestAccountRepository(
+      baseUrl: 'https://api.example.test',
+      store: auth.MemorySessions()..token = auth.token,
+      client: MockClient((request) async {
+        if (request.url.path.endsWith('/confirm')) {
+          started.complete();
+          return response.future;
+        }
+        return http.Response('{}', 200);
+      }),
+    );
+    final controller = AppController(
+      initialLanguage: 'en',
+      accounts: api,
+      repository: fixture.MenuRepository(),
+    );
+    await controller.initialize();
+    controller.isLoggedIn = true;
+    controller.profile = auth.profile;
+    final operation = controller.confirmWaitlist(
+      fixture.restaurant,
+      'entry',
+      'offer',
+    );
+    await started.future;
+    controller.profile = const GuestProfile(id: 'different-guest');
+    response.complete(http.Response('{}', 200));
+    await operation;
+    expect(controller.bookings, isEmpty);
+    controller.dispose();
+  });
+
+  testWidgets(
+    'join removes invisible inherited time and submits only five selected times',
+    (tester) async {
+      fixture.phone(tester);
+      SharedPreferences.setMockInitialValues({});
+      final requests = <Map<String, dynamic>>[];
+      final sessions = auth.MemorySessions()..token = auth.token;
+      final api = GuestAccountRepository(
+        baseUrl: 'https://api.example.test',
+        store: sessions,
+        client: MockClient((request) async {
+          if (request.method == 'POST') {
+            requests.add(Map<String, dynamic>.from(jsonDecode(request.body)));
+          }
+          return http.Response('{}', 200);
+        }),
+      );
+      final repo = TimeRepository();
+      final controller = QueueController(accounts: api, repository: repo);
+      await controller.initialize();
+      controller.isLoggedIn = true;
+      controller.selectedTime = '18:00';
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: seatMapTheme(),
+          home: WaitlistScreen(
+            controller: controller,
+            restaurant: fixture.restaurant,
+            area: 'inside',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+        isNull,
+      );
+      for (final time in repo.slots) {
+        await tester.ensureVisible(find.text(time));
+        await tester.tap(find.text(time));
+        await tester.pump();
+      }
+      expect(
+        tester
+            .widget<FilterChip>(find.widgetWithText(FilterChip, '20:15'))
+            .selected,
+        false,
+      );
+      final scroll = tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position;
+      scroll.jumpTo(scroll.maxScrollExtent);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(FilledButton));
+      await tester.pumpAndSettle();
+      expect(requests.single['times'], repo.slots.take(5).toList());
+      expect(requests.single['area'], 'inside');
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+      controller.dispose();
+    },
+  );
+  testWidgets('slot expiring while form is open is not sent', (tester) async {
+    fixture.phone(tester);
+    SharedPreferences.setMockInitialValues({});
+    var calls = 0;
+    final api = GuestAccountRepository(
+      baseUrl: 'https://api.example.test',
+      store: auth.MemorySessions()..token = auth.token,
+      client: MockClient((request) async {
+        calls++;
+        return http.Response('{}', 200);
+      }),
+    );
+    final repo = TimeRepository();
+    final controller = QueueController(accounts: api, repository: repo);
+    await controller.initialize();
+    controller.isLoggedIn = true;
+    controller.selectedTime = '19:00';
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: seatMapTheme(),
+        home: WaitlistScreen(
+          controller: controller,
+          restaurant: fixture.restaurant,
+          area: 'inside',
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    calls = 0;
+    repo.slots = ['19:15'];
+    final scroll = tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position;
+    scroll.jumpTo(scroll.maxScrollExtent);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FilledButton));
+    await tester.pumpAndSettle();
+    expect(calls, 0);
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      isNull,
+    );
+    await tester.pumpWidget(const SizedBox());
+    controller.dispose();
+  });
   test(
     'waitlist uses authenticated restaurant route and offer version',
     () async {

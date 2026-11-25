@@ -477,12 +477,17 @@ class AppController extends ChangeNotifier {
     String entryId,
     String offerId,
   ) async {
-    final response = await accounts.waitlist(
-      restaurant.id,
-      path: '/$entryId/confirm',
-      method: 'POST',
-      body: {'offerId': offerId},
+    final owner = profile.id;
+    final ownerPhone = profile.phone;
+    final response = await _authenticated(
+      () => accounts.waitlist(
+        restaurant.id,
+        path: '/$entryId/confirm',
+        method: 'POST',
+        body: {'offerId': offerId},
+      ),
     );
+    if (!isLoggedIn || profile.id != owner) return;
     var booking = Booking(
       id: '${restaurant.id}:${response['id']}',
       restaurantId: restaurant.id,
@@ -494,7 +499,7 @@ class AppController extends ChangeNotifier {
       tableIds: List<String>.from(response['tableIds']),
       tableLabel: (response['tableIds'] as List).join(' + '),
       guestName: response['guestName'],
-      phone: profile.phone,
+      phone: ownerPhone,
       status: response['status'] == 'Approved' ? 'confirmed' : 'pending',
       demo: false,
       restaurantPhone: restaurant.phone,
@@ -509,6 +514,7 @@ class AppController extends ChangeNotifier {
       );
     }
     await bookingAccess.write(booking.id, booking.managementToken);
+    if (!isLoggedIn || profile.id != owner) return;
     bookings.removeWhere((b) => b.id == booking.id);
     bookings.insert(0, booking);
     _bookingRevision++;

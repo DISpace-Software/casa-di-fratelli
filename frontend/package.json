@@ -16,7 +16,8 @@
     "build:admin": "vite build --config vite.admin.config.js",
     "dev:cofein": "vite --config vite.cofein.config.js --host 127.0.0.1 --port 5175 --strictPort",
     "build:cofein": "vite build --config vite.cofein.config.js",
-    "test:cofein": "node --test src/cofein/*.test.js"
+    "test:cofein": "node --test src/cofein/*.test.js",
+    "test:waitlist-browser": "node tests/waitlist.browser.mjs"
   },
   "dependencies": {
     "react": "^19.2.4",
@@ -32,6 +33,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "playwright": "^1.65.1",
     "tailwindcss": "^4.2.2",
     "vite": "^8.0.1"
   }

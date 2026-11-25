@@ -440,7 +440,11 @@ class SeatMapRepository {
 
   DateTime _restaurantNow(Restaurant restaurant) =>
       tz.TZDateTime.from(_now().toUtc(), tz.getLocation(restaurant.timeZone));
-  List<String> timesFor(Restaurant restaurant, DateTime date) {
+  List<String> timesFor(
+    Restaurant restaurant,
+    DateTime date, {
+    int extraLeadMinutes = 0,
+  }) {
     final now = _restaurantNow(restaurant);
     final day = DateTime(date.year, date.month, date.day),
         today = DateTime(now.year, now.month, now.day);
@@ -455,7 +459,11 @@ class SeatMapRepository {
       minute += 15
     ) {
       if (day == today &&
-          minute < now.hour * 60 + now.minute + restaurant.leadMinutes) {
+          minute <
+              now.hour * 60 +
+                  now.minute +
+                  restaurant.leadMinutes +
+                  extraLeadMinutes) {
         continue;
       }
       times.add(
