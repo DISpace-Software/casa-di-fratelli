@@ -1,17 +1,16 @@
-import '../l10n/language.dart';
-
 import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
-
 import 'dart:ui' show Locale, PlatformDispatcher;
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../domain/models.dart';
-import '../data/seatmap_repository.dart';
-import '../data/guest_account_repository.dart';
 import '../data/booking_access_store.dart';
+import '../data/booking_response_mapper.dart';
+import '../data/guest_account_repository.dart';
+import '../data/seatmap_repository.dart';
+import '../data/waitlist_inbox_snapshot.dart';
+import '../domain/models.dart';
+import '../l10n/language.dart';
 
 class AppController extends ChangeNotifier {
   int preorderRevision = 0;
@@ -444,22 +443,13 @@ class AppController extends ChangeNotifier {
     String? failure;
     try {
       final data = await _authenticated(() => accounts.waitlistInbox());
-      final server = DateTime.tryParse(data['serverTimeUtc']?.toString() ?? '');
-      if (server != null) {
-        waitlistClockOffset = server.difference(DateTime.now().toUtc());
+      final snapshot = WaitlistInboxSnapshot.fromJson(data);
+      final serverTime = snapshot.serverTimeUtc;
+      if (serverTime != null) {
+        waitlistClockOffset = serverTime.difference(DateTime.now().toUtc());
       }
-      updated.addAll(
-        (data['entries'] as List? ?? []).map(
-          (e) => Map<String, dynamic>.from(e),
-        ),
-      );
-      final failed = List<String>.from(data['failedRestaurantIds'] ?? []);
-      if (failed.isNotEmpty) {
-        failure = appStrings.waitlistLoadFailed;
-        updated.addAll(
-          waitlistEntries.where((e) => failed.contains(e['restaurantId'])),
-        );
-      }
+      updated.addAll(snapshot.mergeWith(waitlistEntries));
+      if (snapshot.isPartial) failure = appStrings.waitlistLoadFailed;
     } catch (_) {
       failure = appStrings.waitlistLoadFailed;
       updated.addAll(waitlistEntries);
@@ -488,31 +478,11 @@ class AppController extends ChangeNotifier {
       ),
     );
     if (!isLoggedIn || profile.id != owner) return;
-    var booking = Booking(
-      id: '${restaurant.id}:${response['id']}',
-      restaurantId: restaurant.id,
-      restaurantName: restaurant.name,
-      restaurantImage: restaurant.imageAsset,
-      date: DateTime.parse(response['reservedDate']),
-      time: response['reservedTime'],
-      guests: response['guestCount'],
-      tableIds: List<String>.from(response['tableIds']),
-      tableLabel: (response['tableIds'] as List).join(' + '),
-      guestName: response['guestName'],
+    final booking = BookingResponseMapper.fromWaitlistConfirmation(
+      restaurant: restaurant,
+      response: response,
       phone: ownerPhone,
-      status: response['status'] == 'Approved' ? 'confirmed' : 'pending',
-      demo: false,
-      restaurantPhone: restaurant.phone,
-      timeZone: restaurant.timeZone,
-      managementToken: response['managementToken'],
-      cancellationLeadMinutes: restaurant.cancellationLeadMinutes,
     );
-    if (response['guestReservation'] is Map) {
-      booking = repository.withGuestStatus(
-        booking,
-        Map<String, dynamic>.from(response['guestReservation']),
-      );
-    }
     await bookingAccess.write(booking.id, booking.managementToken);
     if (!isLoggedIn || profile.id != owner) return;
     bookings.removeWhere((b) => b.id == booking.id);
