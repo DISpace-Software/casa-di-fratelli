@@ -11,7 +11,7 @@ import CofeinVisitControls from './CofeinVisitControls.jsx';
 import { getCofeinMapGeometry, getCofeinBookingViews, cofeinViewLabel } from '../domain/floorPlans/cofeinGeometry.js';
 import './cofein-booking.css';
 
-const choiceLabel = option => option.tableIds.length === 1 ? `Маса ${option.tableIds[0]}` : `${option.tableIds.length} маси заедно`;
+const choiceLabel = option => option.tableIds.length === 1 ? 'Избрана маса' : `${option.tableIds.length} маси заедно`;
 const dateLabel = date => date.split('-').reverse().join('.');
 const guestsLabel = guests => `${guests} ${guests === 1 ? 'гост' : 'гости'}`;
 const EMPTY_CONTACT = { guestName: '', phone: '', email: '', notes: '', privacyConsent: false };
@@ -300,7 +300,7 @@ export default function CofeinBooking({ onClose, onBusyChange }) {
         {submission.result && <><p className="cofein-booking-reference">Резервация №{submission.result.id}</p><dl className="cofein-booking-receipt">
           <div><dt>Кога</dt><dd>{dateLabel(submission.result.reservedDate)} · {submission.result.reservedTime}</dd></div>
           <div><dt>Гости</dt><dd>{guestsLabel(submission.result.guestCount)}</dd></div>
-          <div><dt>Къде</dt><dd>{submission.result.zoneName}<br />Маса {submission.result.tableIds.join(' + ')}</dd></div>
+          <div><dt>Къде</dt><dd>{submission.result.zoneName}</dd></div>
         </dl></>}
         {submission.status === 'unknown' && <>
           {telephone && <a className="cofein-booking-primary" href={`tel:${telephone}`}><BookingIcon kind="phone" />{phoneLabel}</a>}
@@ -320,17 +320,17 @@ export default function CofeinBooking({ onClose, onBusyChange }) {
               <div className="cofein-booking-map-header"><div><h3 ref={mapHeadingRef} tabIndex={-1}>{areaTitle || 'Вашата маса'}</h3><p role="status">{availabilityText}</p></div>
               </div>
               {!isSearchValid ? <div className="cofein-booking-map-placeholder">
-                {activeView && <CofeinMapPreview geometry={mapGeometry} view={activeView} tables={mapTables} />}
+                {activeView && <CofeinMapPreview showTableNumbers={false} geometry={mapGeometry} view={activeView} tables={mapTables} />}
                 <div><BookingIcon kind="calendar" /><h3>Кога ще ни посетите?</h3><p>Изберете дата, час и гости, за да видите свободните маси в {areaTitle || 'залата'}.</p></div>
               </div> : <>
                 {availability.status === 'error' && <div className="cofein-booking-status" role="alert"><p>{bookingErrorMessage(availability.error)}</p><button className="cofein-booking-text-button" type="button" onClick={retryAvailability}>Опитай отново</button></div>}
                   {views.length > 1 && <div className="cofein-booking-sections" role="group" aria-label={`Части на ${areaTitle}`}>
                     {views.map(view => <button type="button" key={view.id} aria-pressed={activeView?.id === view.id} onClick={() => changeMapView(view.id)}>
-                      <span className="cofein-booking-section-preview"><CofeinMapPreview geometry={mapGeometry} view={view} tables={mapTables} /></span>
+                      <span className="cofein-booking-section-preview"><CofeinMapPreview showTableNumbers={false} geometry={mapGeometry} view={view} tables={mapTables} /></span>
                       <span><strong>{cofeinViewLabel(view, 'bg')}</strong><small>{view.tableIds.length} маси</small></span><span className="cofein-booking-section-check" aria-hidden="true">{activeView?.id === view.id ? '✓' : ''}</span>
                     </button>)}
                   </div>}
-                  {activeView ? <CofeinMapExplorer zones={displayPlan.zones} geometryTables={displayPlan.tables} tables={mapTables} states={tableStates} selectedIds={fresh ? selected?.tableIds || [] : []} scopeZoneId={activeArea} hideNavigation viewId={activeView.id} onViewChange={changeMapView}
+                  {activeView ? <CofeinMapExplorer showTableNumbers={false} zones={displayPlan.zones} geometryTables={displayPlan.tables} tables={mapTables} states={tableStates} selectedIds={fresh ? selected?.tableIds || [] : []} scopeZoneId={activeArea} hideNavigation viewId={activeView.id} onViewChange={changeMapView}
                     onTableSelect={table => selectOption(getMapSelectionOption(mapOptions, table.id, selectedKey))} /> : <div className="cofein-booking-empty"><p>В тази зала още няма маси за онлайн резервация.</p></div>}
                   <div className="cofein-booking-map-caption"><div className="cofein-booking-legend" aria-label="Легенда"><span>Свободна</span><span>Избрана</span><span>Недостъпна</span></div><span>Увеличете за по-близък изглед</span></div>
                 {fresh && !options.length && <div className="cofein-booking-empty"><p>{current.closed ? 'Изберете друга дата за Вашето посещение.' : 'Няма подходяща свободна маса тук. Променете часа или залата.'}</p><button type="button" className="cofein-booking-text-button cofein-booking-mobile-edit" onClick={editVisit}>Промени посещението</button><a href={`tel:${telephone}`}>Обадете ни се</a></div>}

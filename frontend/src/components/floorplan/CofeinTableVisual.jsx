@@ -10,7 +10,7 @@ function Seat({ x, y, width = 22, height = 16, rotate = 0, fill }) {
   </g>;
 }
 
-export default function CofeinTableVisual({ table, placement, status = "available", selected = false, svgGroup = false }) {
+export default function CofeinTableVisual({ table, placement, status = "available", selected = false, svgGroup = false, showTableNumber = true }) {
   const uid = useId().replace(/:/g, "");
   const Element = svgGroup ? "g" : "svg";
   const p = placement || projectCofeinTable(table);
@@ -70,8 +70,8 @@ export default function CofeinTableVisual({ table, placement, status = "availabl
       <rect className="cofein-map-table-status-ring" x={-tableWidth / 2 - 2.5} y={-tableHeight / 2 - 2.5} width={tableWidth + 5} height={tableHeight + 5} rx="5" fill="none" strokeWidth="2.5" />
     </g>
     <g className="cofein-map-table-type">
-      <text className="cofein-map-table-id" y={compact ? 0 : -2} fontSize={labelFontSize} textLength={fittedLabel ? labelWidth : undefined} lengthAdjust="spacingAndGlyphs" textAnchor="middle">{label}</text>
-      <g transform={`translate(0 ${compact ? 10 : 11})`}>
+      {showTableNumber && <text className="cofein-map-table-id" y={compact ? 0 : -2} fontSize={labelFontSize} textLength={fittedLabel ? labelWidth : undefined} lengthAdjust="spacingAndGlyphs" textAnchor="middle">{label}</text>}
+      <g transform={`translate(0 ${showTableNumber ? (compact ? 10 : 11) : 2})`}>
         <circle cx="-7" cy="-3.5" r="1.6" fill="currentColor" />
         <path d="M-10 1C-10-3-4-3-4 1Z" fill="currentColor" />
         <text className="cofein-map-table-seats" x="3" y="1" fontSize={compact ? 7 : 9} textAnchor="middle">{table.seats}</text>

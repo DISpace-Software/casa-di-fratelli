@@ -16,7 +16,7 @@ const centered = (points) => ({ x: (points[0].x + points[1].x) / 2, y: (points[0
 const distance = (points) => Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y);
 
 /** Architecture is presentation; availability and selectable IDs always come from the caller. */
-export default function CofeinMapExplorer({ tables, zones, geometryTables = tables, states = {}, selectedIds = [], onTableSelect, onTableMove, viewId = 'all', onViewChange, language = 'bg', scopeZoneId, hideNavigation = false, cameraView }) {
+export default function CofeinMapExplorer({ tables, zones, geometryTables = tables, states = {}, selectedIds = [], onTableSelect, onTableMove, viewId = 'all', onViewChange, language = 'bg', scopeZoneId, hideNavigation = false, showTableNumbers = true, cameraView }) {
   const geometry = useMemo(() => getCofeinMapGeometry(zones ?? [...new Set(tables.map(table => table.area))].map(id => ({ id, name: id, isActive: true })), geometryTables), [zones, tables, geometryTables]);
   const { width: worldWidth, height: worldHeight } = geometry.world;
   const minScale = geometry.minScale;
@@ -243,7 +243,7 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
             const state = states[table.id] || { status: 'unknown', selectable: false, label: text.unknown };
             const selected = selectedSet.has(table.id);
             return <button key={table.id} type="button" className="cofein-map-table-button" disabled={!state.selectable} aria-pressed={selected}
-              aria-label={`${text.table} ${table.id}, ${table.seats} ${text.seats}${state.label ? `, ${state.label}` : ''}`} title={`${text.table} ${table.id} · ${table.seats} ${text.seats}${state.label ? ` · ${state.label}` : ''}`}
+              aria-label={`${text.table}${showTableNumbers ? ` ${table.id}` : ''}, ${table.seats} ${text.seats}${state.label ? `, ${state.label}` : ''}`} title={`${text.table}${showTableNumbers ? ` ${table.id}` : ''} · ${table.seats} ${text.seats}${state.label ? ` · ${state.label}` : ''}`}
               data-table-id={table.id} data-status={state.status} data-map-status={state.status} style={{ left: placement.x, top: placement.y, width: placement.width, height: placement.height }}
               onClick={() => { if (state.selectable) onTableSelect?.(table); }}
               onFocus={(event) => { if (event.currentTarget.matches(':focus-visible')) ensureTableVisible(table); }}
@@ -255,7 +255,7 @@ export default function CofeinMapExplorer({ tables, zones, geometryTables = tabl
                 onTableMove(table, next);
                 ensureTableVisible({ ...table, ...next });
               }}>
-              <CofeinTableVisual table={table} placement={placement} status={state.status} selected={selected} />
+              <CofeinTableVisual showTableNumber={showTableNumbers} table={table} placement={placement} status={state.status} selected={selected} />
             </button>;
           })}
         </div>
