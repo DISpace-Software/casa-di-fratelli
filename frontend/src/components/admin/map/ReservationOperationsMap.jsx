@@ -37,6 +37,7 @@ import { isCasaTenant } from '../../../admin/tenant.js';
 
 export function ReservationOperationsMap({
   text,
+  leadingStatistic,
   language = "bg",
   layout,
   reservations,
@@ -953,6 +954,7 @@ export function ReservationOperationsMap({
               className="flex overflow-hidden rounded-2xl border border-[#f2d39a]/30 bg-[#100d09]/88 shadow-[0_16px_45px_rgba(0,0,0,0.45)] backdrop-blur-xl"
               aria-label={adminLocalText(language, "Текуща заетост", "Current occupancy", "Текущая занятость")}
             >
+              {leadingStatistic && <>{leadingStatistic}<div className="w-px bg-white/10" /></>}
               <div className="min-w-[64px] px-2 py-1.5 text-center sm:min-w-[76px] sm:px-2.5 sm:py-2">
                 <div className="text-[7px] font-bold uppercase tracking-[0.12em] text-white/55 sm:text-[8px]">
                   {adminLocalText(language, "Гости сега", "Guests now", "Гостей сейчас")}
