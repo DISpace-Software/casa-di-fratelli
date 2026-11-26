@@ -117,7 +117,7 @@ and returns only:
 {
   "tenantId": "cofein",
   "name": "Cofein",
-  "frontendUrl": "https://cofein.vercel.app",
+  "frontendUrl": "https://www.cofeinclub.com",
   "notificationsEnabled": false
 }
 ```
