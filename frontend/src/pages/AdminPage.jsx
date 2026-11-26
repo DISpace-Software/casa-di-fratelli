@@ -3383,7 +3383,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     });
   };
 
-  const showTodayGuestSummary = isCasaTenant && !isProductionRole;
+  const showTodayGuestSummary = !isProductionRole;
 
   return (
     <div className="admin-page luxury-shell min-h-screen text-white">
