@@ -1,3 +1,4 @@
+import TodayGuestSummary from '../components/admin/TodayGuestSummary.jsx';
 import { isCasaTenant } from '../admin/tenant.js';
 import { adminText, adminLocalText } from '../i18n/adminText.js';
 import { showBrowserNotification, getReadyAdminPushRegistration, urlBase64ToUint8Array } from '../admin/browser/notifications.js';
@@ -175,6 +176,8 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
   const [developerSection, setDeveloperSection] = React.useState("service");
   const [adminLanguage, setAdminLanguage] = React.useState("bg");
   const [reservations, setReservations] = React.useState([]);
+  const [reservationsLoaded, setReservationsLoaded] = React.useState(false);
+  const [reservationsStale, setReservationsStale] = React.useState(false);
   const [diningOrders, setDiningOrders] = React.useState([]);
   const [menuItems, setMenuItems] = React.useState([]);
   const [eventItems, setEventItems] = React.useState([]);
@@ -424,7 +427,10 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     try {
       const reservationsData = await fetchJsonOrEmpty(`${API_BASE_URL}/api/reservations`, [], withAdminToken());
       setReservations(Array.isArray(reservationsData) ? reservationsData.map(normalizeReservation).filter((reservation) => reservation.status !== "Cancelled") : []);
+      setReservationsLoaded(true);
+      setReservationsStale(false);
     } catch (error) {
+      setReservationsStale(true);
       console.error("Failed to load reservations", error);
       if (!silent) {
         setAdminError(error?.message || "Failed to load reservations.");
@@ -3094,7 +3100,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
     const intervalId = window.setInterval(() => {
       if (document.visibilityState !== "visible") return;
-      if (!liveDataTabs.has(activeTab)) return;
+      if (!liveDataTabs.has(activeTab) && !isCasaTenant) return;
       if (shouldPauseLiveDataRefresh) return;
       void refreshLiveData();
     }, 5000);
@@ -3377,13 +3383,15 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
     });
   };
 
+  const showTodayGuestSummary = isCasaTenant && !isProductionRole;
+
   return (
     <div className="admin-page luxury-shell min-h-screen text-white">
       <div className="mx-auto max-w-[1500px] px-5 py-8 md:px-8">
         <div className={`admin-hero-panel luxury-panel relative mb-8 rounded-[28px] flex flex-col ${
           isDashboard
             ? "min-h-[236px] p-6 pr-24 pb-24 md:min-h-[232px] md:p-8 md:pr-32 md:pb-8"
-            : "min-h-[156px] p-4 pr-20 pb-24 md:min-h-[148px] md:p-5 md:pr-32 md:pb-5"
+            : `min-h-[156px] p-4 pr-20 pb-24 md:p-5 md:pr-32 ${showTodayGuestSummary ? "md:min-h-[200px] md:pb-24" : "md:min-h-[148px] md:pb-5"}`
         }`}>
           <button
             type="button"
@@ -3416,9 +3424,14 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
             )}
           </div>
 
+          {showTodayGuestSummary && (
+            <TodayGuestSummary reservations={reservations} language={adminLanguage}
+              timeZone={branding.timeZoneId} loaded={reservationsLoaded} stale={reservationsStale} />
+          )}
+
           <div
             className={`admin-header-controls absolute bottom-5 right-5 flex w-auto items-center justify-end gap-3 ${
-              isDashboard
+              isDashboard || showTodayGuestSummary
                 ? "md:bottom-7 md:right-7"
                 : "md:bottom-auto md:right-32 md:top-1/2 md:-translate-y-1/2"
             }`}
