@@ -4,6 +4,8 @@ SeatMap is a multi-restaurant platform developed by **DISpace Software**. It bri
 
 ## Start here
 
+- **[Developer onboarding](CONTRIBUTING.md)** — setup, application guides, ownership, review and publication.
+
 - **[SeatMap Control](https://seatmap-control.vercel.app)** — navigation to restaurant sites, administration, source code, workspaces and hosting dashboards. Sign in with a Vercel account that has access to the project. Restaurant administrator access is separate.
 - **[Casa di Fratelli](https://casadifratelli.bg)** · **[Cofein](https://www.cofeinclub.com)** — public restaurant websites.
 - **[Mobile app setup](mobile/README.md)** — Flutter configuration and development instructions.

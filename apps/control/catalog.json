@@ -14,7 +14,8 @@
       "dependsOn": [
         "api",
         "shared-web"
-      ]
+      ],
+      "guide": "docs/developers/casa.md"
     },
     {
       "id": "cofein",
@@ -28,7 +29,8 @@
       "dependsOn": [
         "api",
         "shared-web"
-      ]
+      ],
+      "guide": "docs/developers/cofein.md"
     },
     {
       "id": "admin",
@@ -41,7 +43,8 @@
       "dependsOn": [
         "api",
         "shared-web"
-      ]
+      ],
+      "guide": "docs/developers/admin.md"
     },
     {
       "id": "api",
@@ -55,7 +58,8 @@
       "dependsOn": [
         "restaurant-databases",
         "platform-database"
-      ]
+      ],
+      "guide": "docs/developers/backend.md"
     },
     {
       "id": "mobile",
@@ -66,7 +70,8 @@
       "note": "Приложение гостей для iOS и Android. Сборка и установка выполняются через Flutter и Xcode.",
       "dependsOn": [
         "api"
-      ]
+      ],
+      "guide": "docs/developers/mobile.md"
     },
     {
       "id": "shared-web",
@@ -75,7 +80,8 @@
       "source": "frontend/src",
       "workspace": "platform",
       "note": "Общие изменения требуют проверки Casa, Cofein и админки. Это библиотечный код, а не отдельный сервис.",
-      "dependsOn": []
+      "dependsOn": [],
+      "guide": "CONTRIBUTING.md"
     },
     {
       "id": "restaurant-databases",
@@ -84,7 +90,8 @@
       "source": "backend/SeatMap.Api",
       "workspace": "backend",
       "note": "Ресторан определяется до создания DbContext. Подключения и секреты здесь не отображаются.",
-      "dependsOn": []
+      "dependsOn": [],
+      "guide": "docs/developers/backend.md"
     },
     {
       "id": "platform-database",
@@ -93,7 +100,8 @@
       "source": "backend/SeatMap.Api/Platform",
       "workspace": "backend",
       "note": "Общая идентичность гостей; данные бронирований принадлежат ресторану.",
-      "dependsOn": []
+      "dependsOn": [],
+      "guide": "docs/developers/backend.md"
     }
   ]
 }

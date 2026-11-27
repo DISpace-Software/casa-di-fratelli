@@ -24,8 +24,9 @@ publish `frontend/dist` to the Cofein/admin project or reuse another project's I
    jobs. No production credentials are available to those tests.
 2. Review schema changes and compatibility with currently deployed clients.
 3. Merge only the tested, current PR head. Force pushes/deletion of `main` are
-   blocked. The solo-maintainer setup requires PRs and passing checks, not an
-   impossible self-approval by a second reviewer.
+   blocked. At least one independent approving review is required; after CODEOWNERS
+   reaches main, that approval must be from a matching code owner. New commits
+   dismiss stale approvals. See CONTRIBUTING.md.
 4. Vercel production aliasing is blocked until both GitHub checks pass. Web projects build independently. Verify the production `/release.json`,
    tenant admin route, site, menu and availability; do not create a real booking.
 5. Render uses `checksPass`, with `backend/**` build filtering (excluding Markdown). API release requires the migration assessment below. Keep automatic schema

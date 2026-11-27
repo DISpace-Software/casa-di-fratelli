@@ -102,8 +102,8 @@ ownership; they do not expose SQL consoles or database credentials.
 | Mobile UI | Flutter analyze/tests + relevant flow | App build/distribution |
 
 Build commands and the existing static packaging scripts remain compatible.
-This policy is documented, not a newly installed CI pipeline. There are no
-unrequested production releases in this reorganization.
+The required web/backend CI checks and production deployment gates are now installed.
+See [developer onboarding](../CONTRIBUTING.md) and [release operations](release-operations.md).
 
 ## Evidence
 

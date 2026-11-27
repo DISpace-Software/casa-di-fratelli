@@ -36,6 +36,7 @@ function render() {
     card.append(actions);
     const links = node('div', null, 'links');
     links.append(link('Код ↗', source(item.source)), link('Workspace ↗', source(`workspaces/${item.workspace}.code-workspace`)));
+    if (item.guide) links.append(link('Инструкция разработчика ↗', source(item.guide)));
     if (item.hosting) links.append(link('Хостинг и логи ↗', item.hosting));
     card.append(links);
     if (item.dependsOn.length) card.append(node('p', 'Использует: ' + item.dependsOn.map(id => catalog.components.find(c => c.id === id)?.name || id).join(' · '), 'dependencies'));
@@ -57,7 +58,7 @@ async function load() {
     if (!response.ok) throw new Error('catalog unavailable');
     catalog = await response.json();
     render();
-    document.querySelector('#resources').append(link('GitHub ↗', catalog.repository), link('Архитектура и разработка ↗', source('docs/development-workspaces.md')), link('Доступ и публикация Control ↗', source('apps/control/README.md')), link('Настройки доступа ↗', 'https://vercel.com/stepan2215s-projects/seatmap-control/settings/deployment-protection'));
+    document.querySelector('#resources').append(link('GitHub ↗', catalog.repository), link('Первый запуск и публикация ↗', source('CONTRIBUTING.md')), link('Архитектура и разработка ↗', source('docs/development-workspaces.md')), link('Доступ и публикация Control ↗', source('apps/control/README.md')), link('Настройки доступа ↗', 'https://vercel.com/stepan2215s-projects/seatmap-control/settings/deployment-protection'));
     document.querySelector('#revision').textContent = `Исходники: ${catalog.branch}. Версии production проверяйте в хостинге каждого компонента.`;
   } catch {
     document.querySelector('#error').textContent = 'Каталог не загрузился. Обновите страницу или проверьте доступ к проекту Vercel.';
