@@ -36,9 +36,12 @@ export default function MarketingHistory({ adminLanguage, adminFetch, refreshVer
   const inputClass = "min-h-11 min-w-0 rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-sm";
   const locale = adminLanguage === "bg" ? "bg-BG" : adminLanguage === "en" ? "en-GB" : "ru-RU";
   return (
-    <section className="mb-6 rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:p-5" aria-label={t.title}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <details className="group/history mb-6 rounded-3xl border border-white/10 bg-white/[0.04] p-4 sm:p-5" aria-label={t.title}>
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2d39a] [&::-webkit-details-marker]:hidden">
         <h3 className="text-lg font-semibold">{t.title}</h3>
+        <span aria-hidden="true" className="text-2xl text-[#f2d39a] transition-transform motion-reduce:transition-none group-open/history:rotate-180">⌄</span>
+      </summary>
+      <div className="mt-3 flex justify-end">
         <button type="button" className="ghost-button min-h-11 rounded-2xl px-4 py-2" onClick={() => setReload((n) => n + 1)} disabled={busy}>{t.refresh}</button>
       </div>
       <p className="mt-2 text-sm text-white/60">{t.note}</p>
@@ -69,6 +72,6 @@ export default function MarketingHistory({ adminLanguage, adminFetch, refreshVer
           </div>}
         </>}
       </div>
-    </section>
+    </details>
   );
 }

@@ -3564,8 +3564,8 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
 
             <div className={`mb-8 grid gap-5 ${isOperationalRole ? "" : "xl:grid-cols-2"}`}>
               {!isOperationalRole && (
-              <div className="rounded-[26px] border border-white/10 bg-black/20 p-4 md:p-5">
-                <div className="mb-4 flex items-center justify-between gap-3">
+              <details className="group/reservation-list self-start rounded-[26px] border border-white/10 bg-black/20 p-4 md:p-5">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f2d39a] [&::-webkit-details-marker]:hidden">
                   <div>
                     <div className="section-kicker">
                       {adminLanguage === "bg" ? "Резервации" : "Reservations"}
@@ -3576,6 +3576,10 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                         : (adminLanguage === "bg" ? "Следващите 5 резервации" : "Next 5 reservations")}
                     </h2>
                   </div>
+                  <span aria-hidden="true" className="text-2xl text-[#f2d39a] transition-transform motion-reduce:transition-none group-open/reservation-list:rotate-180">⌄</span>
+                </summary>
+
+                <div className="mt-4 grid gap-5">
                   <button
                     type="button"
                     onClick={() => setActiveTab("reservations")}
@@ -3583,9 +3587,6 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                   >
                     {a.tabs.reservations}
                   </button>
-                </div>
-
-                <div className="grid gap-5">
                   {dashboardReservationSections.map((section) => (
                     <section key={section.key}>
                       {statsPeriod === "today" && (
@@ -3637,7 +3638,7 @@ function AdminPageContent({ adminToken, adminUser, onAdminLogout, onMenuChanged,
                     </section>
                   ))}
                 </div>
-              </div>
+              </details>
               )}
 
               {isProVersion && <div className="rounded-[26px] border border-white/10 bg-black/20 p-4 md:p-5">
