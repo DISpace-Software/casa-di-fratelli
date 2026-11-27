@@ -26,9 +26,9 @@ publish `frontend/dist` to the Cofein/admin project or reuse another project's I
 3. Merge only the tested, current PR head. Force pushes/deletion of `main` are
    blocked. The solo-maintainer setup requires PRs and passing checks, not an
    impossible self-approval by a second reviewer.
-4. Web projects build independently. Verify the production `/release.json`,
+4. Vercel production aliasing is blocked until both GitHub checks pass. Web projects build independently. Verify the production `/release.json`,
    tenant admin route, site, menu and availability; do not create a real booking.
-5. API release requires the migration assessment below. Keep automatic schema
+5. Render uses `checksPass`, with `backend/**` build filtering (excluding Markdown). API release requires the migration assessment below. Keep automatic schema
    mutation disabled. Check the API catalog and each restaurant's read endpoints.
 6. Record deployed SHA and deployment IDs. A failed build must leave the previous
    successful deployment serving traffic.
@@ -77,3 +77,15 @@ A future shared SeatMap sender requires domain ownership/DNS verification,
 server-side credentials, tenant-aware branding and Reply-To routing. Do not enable
 email merely by wiring the website or renaming a repository. Do not send test mail
 to restaurant customers.
+
+## Health checks and current limitations
+
+Render probes `/api/v1/restaurants`, a public read-only catalog endpoint. This
+checks HTTP application readiness; it is not a deep probe of every restaurant
+database, email delivery or booking transaction. Check tenant-specific read flows
+after rollout. Do not report this shallow probe as proof of complete system health.
+
+The restaurant PostgreSQL service previously allowed external access from all IPs.
+Before narrowing its allowlist, verify all consumers (including external admin
+tools) and internal API connection paths. Backup restoration has not been exercised
+by this release setup. No database or email credentials are copied into GitHub.

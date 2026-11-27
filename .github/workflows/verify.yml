@@ -22,6 +22,8 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - run: python3 scripts/check-architecture.py
+      - run: python3 -m unittest discover -s tools/dev-hub -p test_server.py
       - run: npm --prefix frontend ci
       - run: npm --prefix frontend test
       - run: npm --prefix frontend run test:cofein
