@@ -1,0 +1,25 @@
+Use case: infographic-diagram
+Asset type: actual raster infographic for a Russian technical documentation guide, image 05 of 05.
+Primary request: Create one polished landscape infographic, approximately 16:10, with large crisp readable Russian typography. Clearly distinguish the release workflow from the runtime hosting and data flow.
+Style: premium technical editorial design, flat vector-like raster artwork. Warm ivory #F5F1E8 background, near-black text, deep teal for API/data, copper for frontend, slate for supporting tools. Rounded cards, extremely subtle borders, thin directional arrows, consistent generous whitespace. Clean modern sans-serif Cyrillic typography. No photographs, 3D, fake brand logos, gradients, clutter, watermarks, tiny text, or code screenshots.
+Composition: small header at top left, large title below. Upper third contains a six-step horizontal release workflow, numbered 1–6. Lower half contains a distinct runtime diagram headed "После публикации". A narrow explanatory callout sits above footer. Use generous space between the two diagrams.
+Exact header text: "SEATMAP • 17.11.2026"
+Exact title: "Как изменения попадают на сайт"
+Upper workflow, exact labels, in order with thin left-to-right arrows:
+1. "Отдельный worktree"
+2. "Проверки и сборка"
+3. "Статический пакет" and sublabel "Файлы + хеши"
+4. "Vercel: staged" and sublabel "Проверка версии"
+5. "Публикация alias"
+6. "Проверка live"
+Do not put GitHub auto-deploy in this workflow.
+Lower runtime diagram, exact structure and arrow direction:
+On the left, copper-outlined container labelled "Vercel · статические файлы" contains three small stacked cards: "Сайт Casa", "Сайт Cofein", "Общая админка".
+One thin arrow goes FROM the Vercel container TO a central card labelled "Браузер". Arrow label: "HTML · CSS · JS". The browser receives the files.
+One thin arrow goes FROM "Браузер" TO a deep teal card labelled "Render" with main text "SeatMap.Api". Arrow label: "HTTPS · JSON". This is the browser's direct API request.
+FROM SeatMap.Api, split into two arrows to two logical database cards in a shared light-teal container labelled "PostgreSQL · базы ресторанов". Database labels: "База Casa" and "База Cofein". Sublabel across the container: "Изоляция данных по ресторану". Do not imply two separate physical servers.
+Absolutely no direct Vercel-to-Render runtime arrow and no API-proxy implication. The Browser must visibly sit between the static-hosting and API nodes. API and database labels must remain large and readable.
+Bottom explanatory callout, exact text: "API публикуется отдельно. Последний релиз интерфейса не менял API."
+Factual constraints: three static frontend applications share one Render API; the latest UI commit does not identify the deployed backend version; do not add any backend commit number, auto-deployment claim, extra service, guest platform, or invented endpoint.
+Footer: "05/05" at left and "Фактическая схема · подробности в документации" at right.
+Text must be exactly as specified, with correct Russian spelling. Prioritize factual arrow directions, readable typography, and clear separation of release workflow versus runtime data flow.

@@ -92,6 +92,7 @@ dotnet build backend/SeatMap.Api/SeatMap.Api.csproj
 
 ## Documentation
 
+- [Визуальный путеводитель: проект, GitHub, архитектура, бронирование и публикация — 17.11.2026](docs/visual-guide/README.md)
 - [Architecture](docs/architecture.md)
 - [Multi-tenancy](docs/multi-tenancy.md)
 - [Shared booking service](docs/shared-booking.md)
