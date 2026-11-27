@@ -17,8 +17,8 @@ public sealed class WaitlistService(AppDbContext db, FloorPlanService plans, Sea
     public async Task<WaitlistSettings> SettingsAsync() => JsonSerializer.Deserialize<WaitlistSettings>(
         await db.AppSettings.Where(x => x.Key == SettingsKey).Select(x => x.Value).SingleOrDefaultAsync() ?? "{}", Json) ?? new();
     public static List<string> Times(WaitlistEntry entry) => JsonSerializer.Deserialize<List<string>>(entry.TimesJson) ?? [];
-    public static object Describe(WaitlistEntry e) => new { e.Id, e.Date, e.Guests, e.Area, Times = Times(e), e.Status,
-        e.OfferId, e.OfferTime, TableIds = JsonSerializer.Deserialize<List<string>>(e.TableIdsJson), e.ExpiresAtUtc, e.ReservationId, e.CreatedAtUtc, e.EmailSentAtUtc, e.PushSentAtUtc };
+    public static object Describe(WaitlistEntry entry) => new { entry.Id, entry.Date, entry.Guests, entry.Area, Times = Times(entry), entry.Status,
+        entry.OfferId, entry.OfferTime, TableIds = JsonSerializer.Deserialize<List<string>>(entry.TableIdsJson), entry.ExpiresAtUtc, entry.ReservationId, entry.CreatedAtUtc, entry.EmailSentAtUtc, entry.PushSentAtUtc };
     private DateTime UtcNow => clock.GetUtcNow().UtcDateTime;
 
     public async Task<string?> ValidateAsync(WaitlistRequest request)
@@ -52,27 +52,32 @@ public sealed class WaitlistService(AppDbContext db, FloorPlanService plans, Sea
         if (await db.WaitlistEntries.CountAsync(x => x.Date == request.Date && (x.Status == "waiting" || x.Status == "offered" || x.Status == "paused")) >= 200)
             return ReservationBookingResult.RateLimited(new { code = "WAITLIST_LIMIT" });
         if (await db.WaitlistEntries.CountAsync(x => x.GuestId == guest.Id && (x.Status == "waiting" || x.Status == "offered" || x.Status == "paused")) >= 3) return ReservationBookingResult.RateLimited(new { code = "WAITLIST_LIMIT" });
-        var e = new WaitlistEntry { GuestId = guest.Id, GuestName = guest.DisplayName, Email = guest.Email, Phone = guest.Phone,
+        var entry = new WaitlistEntry { GuestId = guest.Id, GuestName = guest.DisplayName, Email = guest.Email, Phone = guest.Phone,
             Language = guest.PreferredLanguage, Date = request.Date, Guests = request.Guests, Area = request.Area,
             TimesJson = JsonSerializer.Serialize(request.Times.Order()), CreatedAtUtc = UtcNow, QueueAtUtc = UtcNow, UpdatedAtUtc = UtcNow };
-        db.WaitlistEntries.Add(e);
-        await db.SaveChangesAsync(); await tx.CommitAsync();
-        return ReservationBookingResult.Success(Describe(e));
+        db.WaitlistEntries.Add(entry);
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        return ReservationBookingResult.Success(Describe(entry));
     }
 
     public async Task<ReservationBookingResult> ChangeAsync(Guid id, Guid guestId, string action, WaitlistRequest? request = null)
     {
         await using var tx = await RestaurantWriteTransaction.BeginAsync(db);
-        var e = await db.WaitlistEntries.SingleOrDefaultAsync(x => x.Id == id && x.GuestId == guestId);
-        if (e == null) return ReservationBookingResult.NotFound(new { code = "NOT_FOUND" });
-        if (e.Status is "booked" or "expired" or "cancelled") return ReservationBookingResult.Conflict(new { code = "WAITLIST_CLOSED" });
+        var entry = await db.WaitlistEntries.SingleOrDefaultAsync(x => x.Id == id && x.GuestId == guestId);
+        if (entry == null) return ReservationBookingResult.NotFound(new { code = "NOT_FOUND" });
+        if (entry.Status is "booked" or "expired" or "cancelled") return ReservationBookingResult.Conflict(new { code = "WAITLIST_CLOSED" });
         switch (action)
         {
-            case "cancel": e.Status = "cancelled"; break;
-            case "decline": e.Status = "paused"; break;
+            case "cancel":
+                entry.Status = "cancelled";
+                break;
+            case "decline":
+                entry.Status = "paused";
+                break;
             case "resume":
             case "edit":
-                request ??= new(e.Date, e.Guests, e.Area, Times(e));
+                request ??= new(entry.Date, entry.Guests, entry.Area, Times(entry));
                 if (!(await SettingsAsync()).Enabled) return ReservationBookingResult.Conflict(new { code = "WAITLIST_PAUSED" });
                 if (await ValidateAsync(request) is { } error) return ReservationBookingResult.Invalid(new { code = error });
                 if (await db.WaitlistEntries.AnyAsync(x => x.Id != id && x.GuestId == guestId && x.Date == request.Date && (x.Status == "waiting" || x.Status == "offered" || x.Status == "paused")))
@@ -80,13 +85,21 @@ public sealed class WaitlistService(AppDbContext db, FloorPlanService plans, Sea
                 if (await db.WaitlistEntries.CountAsync(x => x.Id != id && x.Date == request.Date && (x.Status == "waiting" || x.Status == "offered" || x.Status == "paused")) >= 200 ||
                     await db.WaitlistEntries.CountAsync(x => x.Id != id && x.GuestId == guestId && (x.Status == "waiting" || x.Status == "offered" || x.Status == "paused")) >= 3)
                     return ReservationBookingResult.RateLimited(new { code = "WAITLIST_LIMIT" });
-                e.Date = request.Date; e.Guests = request.Guests; e.Area = request.Area;
-                e.TimesJson = JsonSerializer.Serialize(request.Times.Order()); e.Status = "waiting"; e.QueueAtUtc = UtcNow;
+                entry.Date = request.Date;
+                entry.Guests = request.Guests;
+                entry.Area = request.Area;
+                entry.TimesJson = JsonSerializer.Serialize(request.Times.Order());
+                entry.Status = "waiting";
+                entry.QueueAtUtc = UtcNow;
                 break;
             default: return ReservationBookingResult.Invalid(new { code = "INVALID_ACTION" });
         }
-        e.ExpiresAtUtc = null; e.OfferId = null; e.UpdatedAtUtc = UtcNow;
-        await db.SaveChangesAsync(); await tx.CommitAsync(); return ReservationBookingResult.Success(Describe(e));
+        entry.ExpiresAtUtc = null;
+        entry.OfferId = null;
+        entry.UpdatedAtUtc = UtcNow;
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        return ReservationBookingResult.Success(Describe(entry));
     }
 
     // The same per-restaurant advisory lock protects regular bookings and staff edits.
@@ -101,44 +114,44 @@ public sealed class WaitlistService(AppDbContext db, FloorPlanService plans, Sea
         var entries = await db.WaitlistEntries.Where(x => x.Status == "waiting" || x.Status == "offered" || x.Status == "paused").OrderBy(x => x.QueueAtUtc).ThenBy(x => x.Id).ToListAsync();
         var closed = await closures.GetAsync();
         var closedAreas = await zones.GetClosedAreasAsync();
-        foreach (var e in entries)
+        foreach (var entry in entries)
         {
-            if (e.Date < DateOnly.FromDateTime(local) || Times(e).All(t => ReservationTimeRules.IsPast(e.Date, t, local) || ReservationTimeRules.IsTooSoon(e.Date, t, local, brand.PublicLeadMinutes)))
-                e.Status = "expired";
-            else if (e.Status == "offered" && e.ExpiresAtUtc <= now) e.Status = "paused";
+            if (entry.Date < DateOnly.FromDateTime(local) || Times(entry).All(t => ReservationTimeRules.IsPast(entry.Date, t, local) || ReservationTimeRules.IsTooSoon(entry.Date, t, local, brand.PublicLeadMinutes)))
+                entry.Status = "expired";
+            else if (entry.Status == "offered" && entry.ExpiresAtUtc <= now) entry.Status = "paused";
             // A closure or map edit can invalidate an offer. Do not keep a misleading countdown.
-            else if (e.Status == "offered" && (RestaurantClosureService.Contains(closed, e.Date) || closedAreas.Contains(e.Area) ||
-                (await plans.SelectAsync(JsonSerializer.Deserialize<List<string>>(e.TableIdsJson), e.Area, e.Guests, publicBooking: true)).Error != null ||
-                await IsHeldAsync(e.Date, JsonSerializer.Deserialize<List<string>>(e.TableIdsJson) ?? []))) e.Status = "paused";
-            if (e.Status != "offered") e.ExpiresAtUtc = null;
+            else if (entry.Status == "offered" && (RestaurantClosureService.Contains(closed, entry.Date) || closedAreas.Contains(entry.Area) ||
+                (await plans.SelectAsync(JsonSerializer.Deserialize<List<string>>(entry.TableIdsJson), entry.Area, entry.Guests, publicBooking: true)).Error != null ||
+                await IsHeldAsync(entry.Date, JsonSerializer.Deserialize<List<string>>(entry.TableIdsJson) ?? []))) entry.Status = "paused";
+            if (entry.Status != "offered") entry.ExpiresAtUtc = null;
         }
         await db.SaveChangesAsync();
         if (settings.Enabled)
         {
             var plan = await plans.GetAsync();
-            foreach (var e in entries.Where(x => x.Status == "waiting"))
+            foreach (var entry in entries.Where(x => x.Status == "waiting"))
             {
-                if (RestaurantClosureService.Contains(closed, e.Date) || closedAreas.Contains(e.Area)) continue;
+                if (RestaurantClosureService.Contains(closed, entry.Date) || closedAreas.Contains(entry.Area)) continue;
                 var choices = plan.Tables.Select(t => new List<string> { t.Id }).Concat(plan.Combinations)
                     .OrderBy(ids => plan.Tables.Where(t => ids.Contains(t.Id)).Sum(t => t.Seats)).ToList();
-                foreach (var slot in Times(e).Order())
+                foreach (var slot in Times(entry).Order())
                 {
-                    if (ReservationTimeRules.IsPast(e.Date, slot, local) || ReservationTimeRules.IsTooSoon(e.Date, slot, local, brand.PublicLeadMinutes + settings.OfferMinutes)) continue;
+                    if (ReservationTimeRules.IsPast(entry.Date, slot, local) || ReservationTimeRules.IsTooSoon(entry.Date, slot, local, brand.PublicLeadMinutes + settings.OfferMinutes)) continue;
                     foreach (var ids in choices)
                     {
-                        if ((await plans.SelectAsync(ids, e.Area, e.Guests, publicBooking: true)).Error != null || await IsHeldAsync(e.Date, ids)) continue;
-                        if (await conflicts.FindTableConflictAsync(e.Date, slot, ids) != null) continue;
-                        e.Status = "offered"; e.OfferId = Guid.NewGuid(); e.TableIdsJson = JsonSerializer.Serialize(ids); e.OfferTime = slot;
-                        e.ExpiresAtUtc = now.AddMinutes(settings.OfferMinutes); e.UpdatedAtUtc = now;
-                        e.NotificationAttempts = 0; e.EmailSentAtUtc = null; e.PushSentAtUtc = null; e.NotificationLeaseUntilUtc = null;
+                        if ((await plans.SelectAsync(ids, entry.Area, entry.Guests, publicBooking: true)).Error != null || await IsHeldAsync(entry.Date, ids)) continue;
+                        if (await conflicts.FindTableConflictAsync(entry.Date, slot, ids) != null) continue;
+                        entry.OfferTables(ids, slot, now, settings.OfferMinutes);
                         // Save before evaluating the next candidate so it sees this hold.
-                        await db.SaveChangesAsync(); break;
+                        await db.SaveChangesAsync();
+                        break;
                     }
-                    if (e.Status == "offered") break;
+                    if (entry.Status == "offered") break;
                 }
             }
         }
-        await db.SaveChangesAsync(); await tx.CommitAsync();
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
     }
     private async Task<bool> IsHeldAsync(DateOnly date, List<string> ids)
     {

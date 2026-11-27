@@ -5,7 +5,7 @@ import { projectCofeinTable } from '../../domain/floorPlans/cofeinGeometry.js';
 
 /** A static crop of the same plan as the interactive map. Its parent supplies
  * the button label and dimensions; this thumbnail has no separate controls. */
-export default function CofeinMapPreview({ geometry, view, tables, language = 'bg' }) {
+export default function CofeinMapPreview({ geometry, view, tables, language = 'bg', showTableNumbers = true }) {
   const clipId = `cofein-preview-${useId().replace(/:/g, '')}`;
   const decor = useMemo(() => ({ ...geometry,
     zones: geometry.zones.filter(zone => zone.id === view?.zoneId),
@@ -26,7 +26,7 @@ export default function CofeinMapPreview({ geometry, view, tables, language = 'b
         const placement = projectCofeinTable(table, geometry);
         if (!placement) return null;
         return <g key={table.id} transform={`translate(${placement.x} ${placement.y})`}>
-          <CofeinTableVisual table={table} placement={placement} svgGroup />
+          <CofeinTableVisual showTableNumber={showTableNumbers} table={table} placement={placement} svgGroup />
         </g>;
       })}
     </g>

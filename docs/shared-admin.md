@@ -18,7 +18,7 @@ screenshots or visual approval. Notifications stay disabled for Cofein.
 
 ## One existing interface
 
-The shared application renders the existing `frontend/src/pages/AdminPage.jsx`
+The shared application renders the existing `frontend/src/apps/admin/AdminPage.jsx`
 with the existing Casa styles, navigation, sections and controls. It is not a
 second Cofein dashboard or a redesign. The restaurant name and restaurant-owned
 data change; role and product-tier permissions continue to determine available
@@ -26,7 +26,7 @@ actions. Floor-plan geometry, table capacities, zones, menu categories and media
 come from the selected restaurant rather than Casa constants.
 
 The standalone entry is `frontend/admin.html` with
-`frontend/src/admin/main.jsx`. The regular Casa application and the standalone
+`frontend/src/apps/admin/main.jsx`. The regular Casa application and the standalone
 application reuse the same admin component. The standalone build does not
 include either restaurant's public landing page as an administration interface.
 
@@ -117,7 +117,7 @@ and returns only:
 {
   "tenantId": "cofein",
   "name": "Cofein",
-  "frontendUrl": "https://cofein.vercel.app",
+  "frontendUrl": "https://www.cofeinclub.com",
   "notificationsEnabled": false
 }
 ```

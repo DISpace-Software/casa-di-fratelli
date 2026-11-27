@@ -41,6 +41,9 @@ builder.Services
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<TenantResolutionOptions>, TenantOptionsValidator>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<SeatMap.Api.Application.Waitlist.ConfirmWaitlistOffer>();
+builder.Services.AddScoped<SeatMap.Api.Application.Waitlist.AdministerWaitlist>();
+builder.Services.AddScoped<SeatMap.Api.Application.Waitlist.GetGuestWaitlistInbox>();
 builder.Services.AddScoped<CurrentTenant>();
 builder.Services.AddScoped<ICurrentTenant>(provider => provider.GetRequiredService<CurrentTenant>());
 builder.Services.AddScoped<TenantDatabaseConnectionResolver>();

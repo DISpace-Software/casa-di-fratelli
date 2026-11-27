@@ -1,28 +1,18 @@
-import '../l10n/data_messages.dart';
-
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:timezone/data/latest.dart' as tzdata;
-import 'package:timezone/timezone.dart' as tz;
 
-import '../domain/models.dart';
 import '../domain/menu.dart';
+import '../domain/models.dart';
+import '../domain/reservation_policy.dart';
+import '../l10n/data_messages.dart';
+import 'booking_response_mapper.dart';
 import 'demo_data.dart';
+import 'seatmap_exception.dart';
 
-class SeatMapException implements Exception {
-  const SeatMapException(
-    this.message, {
-    this.uncertain = false,
-    this.code = '',
-  });
-  final String code;
-  final String message;
-  final bool uncertain;
-  @override
-  String toString() => message;
-}
+export 'seatmap_exception.dart';
 
 class SeatMapRepository {
   SeatMapRepository({
@@ -408,26 +398,15 @@ class SeatMapRepository {
     String target, {
     bool isHallBlock = false,
   }) {
-    final minute = _minutes(target);
-    for (final part in value.split(',')) {
-      final range = part.trim().split(' - '),
-          start = _minutes(part.trim().split(' - ').first);
-      final end = range.length > 1 ? _minutes(range[1]) : start;
-      if (isHallBlock) {
-        if (start <= end
-            ? minute >= start && minute <= end
-            : minute >= start || minute <= end) {
-          return true;
-        }
-      } else {
-        final last = end < start ? end + 1440 : end;
-        for (var point = start; point <= last; point += 60) {
-          final distance = ((point % 1440) - minute).abs();
-          if (distance < 180 || 1440 - distance < 180) return true;
-        }
-      }
+    try {
+      return ReservationPolicy.blockedAt(
+        value,
+        target,
+        isHallBlock: isHallBlock,
+      );
+    } on FormatException {
+      throw SeatMapException(appStrings.msgInvalidRestaurantOpeningTimes);
     }
-    return false;
   }
 
   static int _minutes(String value) {
@@ -439,38 +418,23 @@ class SeatMapRepository {
   }
 
   DateTime _restaurantNow(Restaurant restaurant) =>
-      tz.TZDateTime.from(_now().toUtc(), tz.getLocation(restaurant.timeZone));
+      ReservationPolicy.restaurantNow(restaurant, _now());
+
   List<String> timesFor(
     Restaurant restaurant,
     DateTime date, {
     int extraLeadMinutes = 0,
   }) {
-    final now = _restaurantNow(restaurant);
-    final day = DateTime(date.year, date.month, date.day),
-        today = DateTime(now.year, now.month, now.day);
-    if (day.isBefore(today) ||
-        day.isAfter(today.add(Duration(days: restaurant.maxDaysAhead)))) {
-      return [];
-    }
-    final times = <String>[];
-    for (
-      var minute = _minutes(restaurant.opensAt);
-      minute <= _minutes(restaurant.closesAt);
-      minute += 15
-    ) {
-      if (day == today &&
-          minute <
-              now.hour * 60 +
-                  now.minute +
-                  restaurant.leadMinutes +
-                  extraLeadMinutes) {
-        continue;
-      }
-      times.add(
-        '${(minute ~/ 60).toString().padLeft(2, '0')}:${(minute % 60).toString().padLeft(2, '0')}',
+    try {
+      return ReservationPolicy.timesFor(
+        restaurant,
+        date,
+        now: _now(),
+        extraLeadMinutes: extraLeadMinutes,
       );
+    } on FormatException {
+      throw SeatMapException(appStrings.msgInvalidRestaurantOpeningTimes);
     }
-    return times;
   }
 
   Future<Booking> createBooking({
@@ -581,61 +545,17 @@ class SeatMapRepository {
         : withGuestStatus(booking, guestStatus);
   }
 
-  DateTime bookingStartsAt(Booking booking) {
-    if (booking.startsAtUtc != null) return booking.startsAtUtc!;
-    final parts = booking.time.split(':');
-    return tz.TZDateTime(
-      tz.getLocation(booking.timeZone),
-      booking.date.year,
-      booking.date.month,
-      booking.date.day,
-      int.parse(parts[0]),
-      int.parse(parts[1]),
-    ).toUtc();
-  }
+  DateTime bookingStartsAt(Booking booking) =>
+      ReservationPolicy.bookingStartsAt(booking);
 
   DateTime cancellationDeadline(Booking booking) =>
-      booking.cancellationDeadlineUtc ??
-      bookingStartsAt(booking)
-          .subtract(Duration(minutes: booking.cancellationLeadMinutes));
+      ReservationPolicy.cancellationDeadline(booking);
 
   bool canCancelBooking(Booking booking) =>
-      (booking.demo || booking.managementToken.isNotEmpty) &&
-      booking.serverCanCancel &&
-      ['confirmed', 'pending'].contains(booking.status) &&
-      !_now().toUtc().isAfter(cancellationDeadline(booking));
+      ReservationPolicy.canCancelBooking(booking, _now());
 
-  Booking withGuestStatus(Booking booking, Map<String, dynamic> value) {
-    if ('${booking.restaurantId}:${value['id']}' != booking.id ||
-        value['status'] is! String) {
-      throw SeatMapException(appStrings.bookingUpdateFailed);
-    }
-    final status = switch (value['status']) {
-      'Approved' => 'confirmed',
-      'AwaitingEmailConfirmation' || 'Pending' => 'pending',
-      'Cancelled' => 'cancelled',
-      _ => 'completed',
-    };
-    return booking.copyWith(
-      status: status,
-      serverCanCancel: value['canCancel'] == true,
-      date: DateTime.tryParse(value['reservedDate']?.toString() ?? ''),
-      time: value['reservedTime'] as String?,
-      startsAtUtc: DateTime.tryParse(value['startsAtUtc']?.toString() ?? ''),
-      cancellationDeadlineUtc: DateTime.tryParse(
-        value['cancellationDeadlineUtc']?.toString() ?? '',
-      ),
-      cancellationLeadMinutes: value['cancellationLeadMinutes'] as int? ?? 180,
-      restaurantPhone: value['restaurantPhone'] as String?,
-      guests: value['guestCount'] as int?,
-      tableIds: value['tableIds'] is List
-          ? List<String>.from(value['tableIds'] as List)
-          : null,
-      tableLabel: value['tableIds'] is List
-          ? (value['tableIds'] as List).join(' + ')
-          : null,
-    );
-  }
+  Booking withGuestStatus(Booking booking, Map<String, dynamic> value) =>
+      BookingResponseMapper.withGuestStatus(booking, value);
 
   String _bookingPath(Booking booking) =>
       '/api/v1/restaurants/${Uri.encodeComponent(booking.restaurantId)}/reservations/${Uri.encodeComponent(booking.id.split(':').last)}';
@@ -670,22 +590,8 @@ class SeatMapRepository {
     return withGuestStatus(booking, _object(data));
   }
 
-  static bool canSelect(FloorPlan plan, List<SeatTable> tables, int guests) {
-    if (tables.isEmpty ||
-        tables.any((table) => table.occupied) ||
-        tables.length > plan.publicMaxTables ||
-        guests < 1 ||
-        guests > plan.publicMaxGuests ||
-        tables.map((table) => table.zoneId).toSet().length != 1 ||
-        tables.fold(0, (sum, table) => sum + table.capacity) < guests) {
-      return false;
-    }
-    final ids = tables.map((table) => table.id).toSet();
-    return tables.length == 1 ||
-        plan.combinations.any(
-          (group) => group.length == ids.length && ids.containsAll(group),
-        );
-  }
+  static bool canSelect(FloorPlan plan, List<SeatTable> tables, int guests) =>
+      ReservationPolicy.canSelect(plan, tables, guests);
 
   Future<List<MenuDish>> loadMenu(Restaurant restaurant) async {
     if (demoMode) {

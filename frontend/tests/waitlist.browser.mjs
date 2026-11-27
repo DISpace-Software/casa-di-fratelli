@@ -10,7 +10,7 @@ const root = fileURLToPath(new URL('../', import.meta.url));
 const fixture = `${root}.local/waitlist-browser-test`;
 await mkdir(fixture, { recursive: true });
 await writeFile(`${fixture}/index.html`, '<div id="root"></div><script type="module" src="./main.jsx"></script>');
-await writeFile(`${fixture}/main.jsx`, `import '../../src/index.css'; import React from 'react'; import {createRoot} from 'react-dom/client'; import Panel from '../../src/components/admin/WaitlistPanel.jsx'; const request=(url,options)=>fetch('/fixture'+new URL(url).pathname+new URL(url).search,options);createRoot(document.getElementById('root')).render(<main style={{background:"#121018",color:"white",padding:24,minHeight:"100vh"}}><Panel adminFetch={request} language="en"/></main>);`);
+await writeFile(`${fixture}/main.jsx`, `import '../../src/index.css'; import React from 'react'; import {createRoot} from 'react-dom/client'; import Panel from '../../src/components/admin/WaitlistPanel.jsx'; import AdminPage from '../../src/apps/admin/AdminPage.jsx'; if (typeof AdminPage !== 'function') throw new Error('Admin page did not initialize'); const request=(url,options)=>fetch('/fixture'+new URL(url).pathname+new URL(url).search,options);createRoot(document.getElementById('root')).render(<main style={{background:"#121018",color:"white",padding:24,minHeight:"100vh"}}><Panel adminFetch={request} language="en"/></main>);`);
 const server = await createServer({root, server:{host:'127.0.0.1',port:0}});
 let browser;
 try {

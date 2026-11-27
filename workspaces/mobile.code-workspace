@@ -1,0 +1,56 @@
+{
+  "folders": [
+    {
+      "name": "mobile",
+      "path": "../mobile"
+    },
+    {
+      "name": "docs",
+      "path": "../docs"
+    },
+    {
+      "name": "Инструменты",
+      "path": "../tools"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/bin": true,
+      "**/obj": true,
+      "**/dist*": true
+    },
+    "search.exclude": {
+      "**/output/**": true
+    }
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Flutter analyze",
+        "type": "shell",
+        "command": "flutter",
+        "args": [
+          "analyze"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:mobile}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "SeatMap: панель разработки",
+        "type": "shell",
+        "command": "python3",
+        "args": [
+          "dev-hub/server.py"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:Инструменты}"
+        },
+        "problemMatcher": []
+      }
+    ]
+  }
+}
