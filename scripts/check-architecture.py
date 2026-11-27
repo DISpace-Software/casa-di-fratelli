@@ -94,6 +94,26 @@ for path in web.rglob('*'):
             dependencies.append(resolved)
     graph[path] = dependencies
 
+# Applications own their presentation. Shared modules cannot depend on an app,
+# and restaurant sites cannot import each other's implementation. Casa retains
+# one explicit legacy lazy admin route until that compatibility route is retired.
+apps = web / 'apps'
+for path in graph:
+    pattern = r"(?:\bfrom\s*|\bimport\s*\(\s*|^\s*import\s*)['\"](\.[^'\"]+)['\"]"
+    for dependency in re.findall(pattern, path.read_text(), re.MULTILINE):
+        base = (path.parent / dependency).resolve()
+        target = next((p for p in (base, Path(str(base) + '.js'), Path(str(base) + '.jsx')) if p.is_file()), None)
+        if target is None or not inside(target, apps):
+            continue
+        if not inside(path, apps):
+            violation(path, f'shared code imports an application: {dependency}')
+            continue
+        owner = path.relative_to(apps).parts[0]
+        target_owner = target.relative_to(apps).parts[0]
+        legacy_admin = path == apps / 'casa/App.jsx' and target == apps / 'admin/AdminPage.jsx'
+        if owner != target_owner and not legacy_admin:
+            violation(path, f'application imports another application: {dependency}')
+
 visited, active = set(), []
 
 

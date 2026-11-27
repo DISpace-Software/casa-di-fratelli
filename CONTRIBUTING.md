@@ -4,6 +4,8 @@ Start with [the architecture map](docs/architecture.md), then the guide for the
 application you are changing: [server](backend/ARCHITECTURE.md),
 [mobile](mobile/ARCHITECTURE.md), or [web](frontend/ARCHITECTURE.md).
 
+For focused work, use [component workspaces and the local hub](docs/development-workspaces.md).
+
 ## Where new code belongs
 
 1. Identify the feature and its business rule before choosing a folder.

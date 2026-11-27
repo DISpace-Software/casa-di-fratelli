@@ -1,0 +1,57 @@
+{
+  "folders": [
+    {
+      "name": "backend",
+      "path": "../backend"
+    },
+    {
+      "name": "docs",
+      "path": "../docs"
+    },
+    {
+      "name": "Инструменты",
+      "path": "../tools"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/bin": true,
+      "**/obj": true,
+      "**/dist*": true
+    },
+    "search.exclude": {
+      "**/output/**": true
+    }
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Собрать API",
+        "type": "shell",
+        "command": "dotnet",
+        "args": [
+          "build",
+          "backend.sln"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:backend}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "SeatMap: панель разработки",
+        "type": "shell",
+        "command": "python3",
+        "args": [
+          "dev-hub/server.py"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:Инструменты}"
+        },
+        "problemMatcher": []
+      }
+    ]
+  }
+}

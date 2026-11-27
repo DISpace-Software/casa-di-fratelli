@@ -1,24 +1,24 @@
-import { useSeasonalZones } from "../context/SeasonalZonesContext";
-import { tenantReservationTimes } from "../config/tenantBranding";
-import { useTenantBranding } from "../context/TenantBrandingContext";
+import { useSeasonalZones } from "../../../context/SeasonalZonesContext";
+import { tenantReservationTimes } from "../../../config/tenantBranding";
+import { useTenantBranding } from "../../../context/TenantBrandingContext";
 import React from "react";
-import ThemeToggleIcon from "../components/layout/ThemeToggleIcon";
-import { API_BASE_URL } from "../config/api";
+import ThemeToggleIcon from "../../../components/layout/ThemeToggleIcon";
+import { API_BASE_URL } from "../../../config/api";
 import {
   defaultGardenTables,
   defaultIndoorTables,
   defaultOpenTerraceTables,
-} from "../domain/reservations/tableConfig";
+} from "../../../domain/reservations/tableConfig";
 import {
   getAvailableReservationTimesForDate,
   getDateInputValueAfterDays,
   getTodayInputValue,
   isDateBeyondReservationWindow,
   isPastTimeForDate,
-} from "../domain/reservations/dateTimeRules";
-import { getActiveLayoutTables } from "../domain/reservations/layoutTables";
-import { isBlockedSlotForSelection } from "../domain/reservations/availability";
-import { getPublicMapTablePoints } from "../domain/reservations/publicMapLayout";
+} from "../../../domain/reservations/dateTimeRules";
+import { getActiveLayoutTables } from "../../../domain/reservations/layoutTables";
+import { isBlockedSlotForSelection } from "../../../domain/reservations/availability";
+import { getPublicMapTablePoints } from "../../../domain/reservations/publicMapLayout";
 
 const birthdayDays = Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(2, "0"));
 const birthdayMonths = {

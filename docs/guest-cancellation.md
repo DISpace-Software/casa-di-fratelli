@@ -23,7 +23,7 @@ Restaurant phones are read from live branding: Casa `+359888218318`, Cofein `089
 
 Schema version 1 gains optional `landmarks`: `id`, `zoneId`, `kind`, `x`, `y`, `width`, `height`, optional translated `names`. Coordinates are percentages of the room; dimensions must be positive and remain within 0–100. Supported kinds are `window`, `entrance`, `terraceEntrance`, `restaurantEntrance`, `tv`, `wall`, `bar`.
 
-Absent/null landmarks retain Casa's original presentation presets from the website. An explicit empty list removes them. Casa indoor windows, side entrance, partition and terrace entrance; covered terrace windows, TV and entrance; and open-terrace restaurant entrance mirror `frontend/src/pages/ReservationPage.jsx`. Other restaurants never inherit Casa furniture. Cofein currently has no authoritative landmark coordinates; its plan returns an empty list until the restaurant supplies them. The mobile renderer supports its future markers without another app change.
+Absent/null landmarks retain Casa's original presentation presets from the website. An explicit empty list removes them. Casa indoor windows, side entrance, partition and terrace entrance; covered terrace windows, TV and entrance; and open-terrace restaurant entrance mirror `frontend/src/apps/casa/pages/ReservationPage.jsx`. Other restaurants never inherit Casa furniture. Cofein currently has no authoritative landmark coordinates; its plan returns an empty list until the restaurant supplies them. The mobile renderer supports its future markers without another app change.
 
 ## Rollout
 

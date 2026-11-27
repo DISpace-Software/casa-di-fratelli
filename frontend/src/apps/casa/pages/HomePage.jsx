@@ -1,16 +1,16 @@
-import { useTenantBranding } from "../context/TenantBrandingContext";
-import Header from "../components/layout/Header";
-import HeroSection from "../components/home/HeroSection";
-import Footer from "../components/layout/Footer";
-import AboutSection from "../components/home/AboutSection";
-import MenuSection from "../components/home/MenuSection";
-import GallerySection from "../components/home/GallerySection";
-import ReservationPreviewSection from "../components/home/ReservationPreviewSection";
-import ReviewsSection from "../components/home/ReviewsSection";
-import AwardsSection from "../components/home/AwardsSection";
-import EventsSection from "../components/home/EventsSection";
-import ContactSection from "../components/home/ContactSection";
-import DeliverySection from "../components/home/DeliverySection";
+import { useTenantBranding } from "../../../context/TenantBrandingContext";
+import Header from "../../../components/layout/Header";
+import HeroSection from "../../../components/home/HeroSection";
+import Footer from "../../../components/layout/Footer";
+import AboutSection from "../../../components/home/AboutSection";
+import MenuSection from "../../../components/home/MenuSection";
+import GallerySection from "../../../components/home/GallerySection";
+import ReservationPreviewSection from "../../../components/home/ReservationPreviewSection";
+import ReviewsSection from "../../../components/home/ReviewsSection";
+import AwardsSection from "../../../components/home/AwardsSection";
+import EventsSection from "../../../components/home/EventsSection";
+import ContactSection from "../../../components/home/ContactSection";
+import DeliverySection from "../../../components/home/DeliverySection";
 
 export default function HomePage({
   t,

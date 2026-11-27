@@ -1,15 +1,15 @@
-import AdminLogin from "./components/admin/AdminLogin";
-import { useTenantBranding } from "./context/TenantBrandingContext";
-import { brandTranslations } from "./config/tenantBranding";
+import AdminLogin from "../../components/admin/AdminLogin";
+import { useTenantBranding } from "../../context/TenantBrandingContext";
+import { brandTranslations } from "../../config/tenantBranding";
 import React from "react";
-import translations from "./i18n/translations";
-import { tables } from "./data/tablesData";
-import { galleryImages } from "./data/restaurantData";
+import translations from "../../i18n/translations";
+import { tables } from "../../data/tablesData";
+import { galleryImages } from "../../data/restaurantData";
 import HomePage from "./pages/HomePage";
-import { API_BASE_URL } from "./config/api";
-import BackToTopButton from "./components/layout/BackToTopButton";
+import { API_BASE_URL } from "../../config/api";
+import BackToTopButton from "../../components/layout/BackToTopButton";
 
-const AdminPage = React.lazy(() => import("./pages/AdminPage"));
+const AdminPage = React.lazy(() => import("../admin/AdminPage"));
 const ReservationPage = React.lazy(() => import("./pages/ReservationPage"));
 const MenuPage = React.lazy(() => import("./pages/MenuPage"));
 const PrivacyPage = React.lazy(() => import("./pages/PrivacyPage"));

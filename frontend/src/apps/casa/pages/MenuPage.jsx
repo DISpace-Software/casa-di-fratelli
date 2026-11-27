@@ -1,13 +1,13 @@
-import { useTenantBranding } from "../context/TenantBrandingContext";
+import { useTenantBranding } from "../../../context/TenantBrandingContext";
 import React from "react";
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
-import MenuHero from "../components/menu/MenuHero";
-import ChefHighlight from "../components/menu/ChefHighlight";
-import MenuCategorySection from "../components/menu/MenuCategorySection";
-import menuPageData from "../data/menuPageData";
-import { buildMenuDataFromCms } from "../utils/menuUtils";
-import { API_BASE_URL } from "../config/api";
+import Header from "../../../components/layout/Header";
+import Footer from "../../../components/layout/Footer";
+import MenuHero from "../../../components/menu/MenuHero";
+import ChefHighlight from "../../../components/menu/ChefHighlight";
+import MenuCategorySection from "../../../components/menu/MenuCategorySection";
+import menuPageData from "../../../data/menuPageData";
+import { buildMenuDataFromCms } from "../../../utils/menuUtils";
+import { API_BASE_URL } from "../../../config/api";
 
 function readOrderLinkParams() {
   if (typeof window === "undefined") {

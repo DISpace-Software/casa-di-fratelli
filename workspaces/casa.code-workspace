@@ -1,0 +1,88 @@
+{
+  "folders": [
+    {
+      "name": "Сайт Casa",
+      "path": "../frontend/src/apps/casa"
+    },
+    {
+      "name": "Ресурсы сайтов",
+      "path": "../frontend/public"
+    },
+    {
+      "name": "Общие компоненты",
+      "path": "../frontend/src/components"
+    },
+    {
+      "name": "Общие правила",
+      "path": "../frontend/src/domain"
+    },
+    {
+      "name": "Инструменты",
+      "path": "../tools"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/bin": true,
+      "**/obj": true,
+      "**/dist*": true
+    },
+    "search.exclude": {
+      "**/output/**": true
+    }
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Запустить локально",
+        "type": "shell",
+        "command": "npm",
+        "args": [
+          "run",
+          "dev:casa"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:Инструменты}/../frontend",
+          "env": {
+            "VITE_API_BASE_URL": "http://localhost:5183",
+            "VITE_COFEIN_API_BASE_URL": "http://localhost:5183",
+            "VITE_COFEIN_BOOKINGS_ENABLED": "true"
+          }
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Собрать",
+        "type": "shell",
+        "command": "npm",
+        "args": [
+          "run",
+          "build"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:Инструменты}/../frontend",
+          "env": {
+            "VITE_API_BASE_URL": "http://localhost:5183",
+            "VITE_COFEIN_API_BASE_URL": "http://localhost:5183",
+            "VITE_COFEIN_BOOKINGS_ENABLED": "true"
+          }
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "SeatMap: панель разработки",
+        "type": "shell",
+        "command": "python3",
+        "args": [
+          "dev-hub/server.py"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:Инструменты}"
+        },
+        "problemMatcher": []
+      }
+    ]
+  }
+}

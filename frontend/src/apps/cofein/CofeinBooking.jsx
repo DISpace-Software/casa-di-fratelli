@@ -5,10 +5,10 @@ import { CONTACT_LIMITS, validateBookingContact } from './bookingForm.js';
 import { cofeinContact } from './contact.js';
 import { getAttempt, startAttempt, clearAttempt, isDefinitiveBookingFailure } from './bookingAttempt.js';
 import { getMapSelectionOptions, getMapSelectionOption } from './bookingMapSelection.js';
-import CofeinMapExplorer from '../components/floorplan/CofeinMapExplorer.jsx';
-import CofeinMapPreview from '../components/floorplan/CofeinMapPreview.jsx';
+import CofeinMapExplorer from '../../components/floorplan/CofeinMapExplorer.jsx';
+import CofeinMapPreview from '../../components/floorplan/CofeinMapPreview.jsx';
 import CofeinVisitControls from './CofeinVisitControls.jsx';
-import { getCofeinMapGeometry, getCofeinBookingViews, cofeinViewLabel } from '../domain/floorPlans/cofeinGeometry.js';
+import { getCofeinMapGeometry, getCofeinBookingViews, cofeinViewLabel } from '../../domain/floorPlans/cofeinGeometry.js';
 import './cofein-booking.css';
 
 const choiceLabel = option => option.tableIds.length === 1 ? 'Избрана маса' : `${option.tableIds.length} маси заедно`;

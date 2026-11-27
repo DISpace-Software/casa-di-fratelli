@@ -1,6 +1,6 @@
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
-import privacyPolicy from "../data/privacyPolicy";
+import Header from "../../../components/layout/Header";
+import Footer from "../../../components/layout/Footer";
+import privacyPolicy from "../../../data/privacyPolicy";
 
 function PolicySection({ section }) {
   return (

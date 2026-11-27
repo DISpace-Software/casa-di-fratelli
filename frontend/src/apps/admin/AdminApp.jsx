@@ -1,12 +1,12 @@
 import React from "react";
-import AdminLogin from "../components/admin/AdminLogin";
-import BackToTopButton from "../components/layout/BackToTopButton";
-import TenantBrandLogo from "../components/admin/TenantBrandLogo";
-import { useTenantBranding } from "../context/TenantBrandingContext";
-import { API_BASE_URL, apiFetch } from "../config/api";
-import { tenantContext, tenantStorageKey } from "../config/tenantRuntime.js";
+import AdminLogin from "../../components/admin/AdminLogin";
+import BackToTopButton from "../../components/layout/BackToTopButton";
+import TenantBrandLogo from "../../components/admin/TenantBrandLogo";
+import { useTenantBranding } from "../../context/TenantBrandingContext";
+import { API_BASE_URL, apiFetch } from "../../config/api";
+import { tenantContext, tenantStorageKey } from "../../config/tenantRuntime.js";
 
-const AdminPage = React.lazy(() => import("../pages/AdminPage"));
+const AdminPage = React.lazy(() => import("./AdminPage"));
 const unchanged = () => {};
 
 function AdminStatus({ error = "" }) {

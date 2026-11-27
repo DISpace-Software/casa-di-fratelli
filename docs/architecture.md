@@ -1,10 +1,12 @@
 # SeatMap architecture
 
-Updated 26 November 2026. This is a map of the implemented system and its
+Updated 27 November 2026. This is a map of the implemented system and its
 incremental refactoring boundaries, not a claim that every legacy class is already
 Clean Architecture. See [contribution rules](../CONTRIBUTING.md) and the detailed
 [server](../backend/ARCHITECTURE.md), [mobile](../mobile/ARCHITECTURE.md) and
 [web](../frontend/ARCHITECTURE.md) guides.
+
+Web application ownership and local tooling: [workspaces and developer hub](development-workspaces.md).
 
 ## Shape of the system
 

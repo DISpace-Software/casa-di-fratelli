@@ -21,7 +21,7 @@ const apiBase = "https://api.example.test";
 let scenario = 0;
 
 await build({
-  stdin: { contents: `export {default as AdminApp} from './src/admin/AdminApp.jsx';
+  stdin: { contents: `export {default as AdminApp} from './src/apps/admin/AdminApp.jsx';
     export {default as TenantBrandingProvider} from './src/context/TenantBrandingProvider.jsx';
     export {apiFetch} from './src/config/api.js';
     export {act, StrictMode, createElement} from 'react';

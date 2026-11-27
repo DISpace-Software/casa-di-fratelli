@@ -14,6 +14,14 @@ The current product includes a public restaurant website, online reservations, a
 
 The application is intentionally being evolved from a single-restaurant product into a SaaS-ready platform without rewriting the project from scratch.
 
+## Open one component
+
+Open `workspaces/casa.code-workspace`, `cofein.code-workspace`,
+`admin.code-workspace`, `backend.code-workspace` or `mobile.code-workspace`.
+For a visual launcher, double-click `SeatMap.command` or run
+`python3 tools/dev-hub/server.py`, then open http://127.0.0.1:4310.
+See [workspace architecture and workflow](docs/development-workspaces.md).
+
 ## Run Locally
 
 Backend:

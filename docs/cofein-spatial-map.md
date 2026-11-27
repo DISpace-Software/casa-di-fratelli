@@ -20,7 +20,7 @@ The architecture traces the owner's supplied `20260907_162344.jpg` plan. It is a
 
 ## Verification
 
-Run public unit tests with `node --test src/cofein/*.test.js` from `frontend`, then build with `npm run build:cofein`. Browser checks under `scripts/check-cofein-*` require an explicitly configured local origin or disposable fixture. The scenarios that create bookings or edit maps verify `localOnly` and localhost before writing. Never point those fixture checks at production.
+Run public unit tests with `node --test src/apps/cofein/*.test.js` from `frontend`, then build with `npm run build:cofein`. Browser checks under `scripts/check-cofein-*` require an explicitly configured local origin or disposable fixture. The scenarios that create bookings or edit maps verify `localOnly` and localhost before writing. Never point those fixture checks at production.
 
 The 38 public unit checks cover API isolation, policy/time windows, availability, combinations, closures, current additive metadata, request/result validation, duplicate-attempt protection, contact validation and map selection. Current integration-wide verification and release evidence are recorded separately; historical branch test totals are not release evidence for a new build.
 

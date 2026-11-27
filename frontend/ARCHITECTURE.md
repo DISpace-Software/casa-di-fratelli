@@ -5,11 +5,13 @@ restaurant administration app. Their Vite entry points and published URLs remain
 unchanged. This refactor creates explicit boundaries around existing behavior;
 it does not move authoritative restaurant rules into the browser.
 
+See [separate workspaces and launcher](../docs/development-workspaces.md) for local startup and release boundaries.
+
 ## Code map
 
 | Location | Responsibility |
 | --- | --- |
-| `src/pages/` | Route composition and remaining legacy screen orchestration |
+| `src/apps/casa/`, `src/apps/cofein/`, `src/apps/admin/` | Explicit application entry points and owned presentation |
 | `src/components/admin/` | Admin feature views: inventory, maintenance, marketing, waitlist and shared visual primitives |
 | `src/components/admin/map/` | Layout editor, operational reservation map and decorative map layers |
 | `src/admin/api/` | Legacy API response conversion and response/error decoding |
@@ -20,7 +22,7 @@ it does not move authoritative restaurant rules into the browser.
 | `src/context/` | React providers for tenant branding, plans and seasonal state |
 | `src/config/` | Runtime tenant resolution, endpoints and existing shared fetch configuration |
 | `src/i18n/` | Locale catalogs; admin translations initialize together in `adminText.js` |
-| `src/cofein/` | Cofein-specific public booking experience and its adapters |
+| `src/apps/cofein/` | Cofein-specific public booking experience and its adapters |
 
 Components must not import `AdminPage` to reuse helpers. Shared feature behavior
 lives below the page and is imported explicitly. Visual primitives do not own
