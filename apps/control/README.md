@@ -3,6 +3,8 @@
 Internal navigation portal for DISpace Software. This app belongs to the SeatMap
 monorepo; it is not a restaurant website or a replacement for the staff admin.
 
+Published panel: https://seatmap-control.vercel.app (Vercel sign-in required).
+
 ## Access
 
 Vercel project: `seatmap-control`, team: `stepan2215s-projects`.
@@ -50,6 +52,11 @@ Other, no build/install command, no environment secrets. Git source:
 the release source is `refactor/architecture-2026-11-26`; do not merge all backend
 changes just to publish this static app. Restaurant sites and API deploy separately.
 
+The initial production release was explicitly deployed from commit `e9d178a`.
+Git integration is connected; its default production branch remains `main`.
+Until merge, publish subsequent reviewed commits explicitly rather than assuming
+that a push to the architecture branch updates production.
+
 Before each release verify All Deployments protection. After release an anonymous
 request to `/`, `/catalog.json` and `/app.js` must be denied or redirected to login;
 an authenticated request must serve the expected content. Check search, category
@@ -68,3 +75,14 @@ git remote set-url origin https://github.com/DISpace-Software/seatmap.git
 Keep Casa restaurant branding, tenant IDs and existing API hostname unchanged.
 GitHub redirects old repository links; do not create a new repository with the
 old name, which would take over those redirects.
+
+## Release verification — 2026-11-27
+
+- Production deployment `dpl_3Xqq1hb9MMvbE4mGkTNFWqJdUCGA` reached Ready.
+- Anonymous requests for HTML, catalog and JavaScript redirect to Vercel login.
+- Authenticated HTML and catalog responses match the committed source byte-for-byte.
+- Browser checks passed: eight components, category filters, search, empty state,
+  no JavaScript errors and no horizontal overflow at 390px width.
+- All source/workspace paths exist. Repository architecture checks passed.
+- Render and the existing Casa Vercel project recognize `DISpace-Software/seatmap`
+  with the same GitHub repository ID; the Casa preview build reached Ready.
