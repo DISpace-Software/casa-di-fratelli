@@ -110,6 +110,7 @@ unrequested production releases in this reorganization.
 - Three Vite production builds pass after relocation.
 - 156 web domain/contract tests and 38 Cofein checks pass.
 - Architecture guard checks domain boundaries, module cycles and application imports.
+- 38 isolated backend tenancy checks pass without connecting to restaurant databases.
 - Six local hub HTTP/process tests cover foreign origins/hosts, command allowlisting,
   workspace targets, local API override, occupied ports and duplicate starts.
 - Real Chrome exercises local startup, preview and stop for each web entry, filters
