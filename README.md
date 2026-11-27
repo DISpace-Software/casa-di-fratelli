@@ -1,4 +1,4 @@
-# SeatMap / Casa di Fratelli
+# SeatMap
 
 SeatMap is a restaurant platform serving Casa di Fratelli and Cofein through a shared API and isolated restaurant databases.
 
@@ -15,6 +15,11 @@ The current product includes a public restaurant website, online reservations, a
 The application is intentionally being evolved from a single-restaurant product into a SaaS-ready platform without rewriting the project from scratch.
 
 ## Open one component
+
+The online navigation portal lives in [`apps/control`](apps/control/README.md).
+It links each restaurant and shared component to its source, admin and hosting.
+Access is protected by Vercel Authentication; restaurant admin access is separate.
+Canonical repository: https://github.com/DISpace-Software/seatmap.
 
 Open `workspaces/casa.code-workspace`, `cofein.code-workspace`,
 `admin.code-workspace`, `backend.code-workspace` or `mobile.code-workspace`.
