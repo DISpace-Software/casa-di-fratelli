@@ -1,0 +1,54 @@
+name: Verify
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm --prefix frontend ci
+      - run: npm --prefix frontend test
+      - run: npm --prefix frontend run test:cofein
+      - run: python3 scripts/build-web-release.py casa
+      - run: python3 scripts/build-web-release.py cofein
+      - run: python3 scripts/build-web-release.py admin
+      - name: Control syntax and content
+        run: |
+          node --check apps/control/app.js
+          python3 -m json.tool apps/control/catalog.json > /dev/null
+          test -s apps/control/index.html
+  backend:
+    name: backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: '8.0.x'
+      - run: dotnet build backend/SeatMap.Api/SeatMap.Api.csproj --configuration Release
+      - name: Isolated checks (SQLite and local test hosts; no production secrets)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for project in backend/*Checks/*.csproj; do
+            dotnet run --project "$project" --configuration Release
+          done

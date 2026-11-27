@@ -1,0 +1,99 @@
+{
+  "repository": "https://github.com/DISpace-Software/seatmap",
+  "branch": "refactor/architecture-2026-11-26",
+  "components": [
+    {
+      "id": "casa",
+      "name": "Casa di Fratelli",
+      "kind": "Сайт ресторана",
+      "source": "frontend/src/apps/casa",
+      "workspace": "casa",
+      "production": "https://casadifratelli.bg",
+      "admin": "https://seatmap-admin-eight.vercel.app/r/casa-di-fratelli/admin",
+      "hosting": "https://vercel.com/stepan2215s-projects/casa-di-fratelli",
+      "dependsOn": [
+        "api",
+        "shared-web"
+      ]
+    },
+    {
+      "id": "cofein",
+      "name": "Cofein",
+      "kind": "Сайт ресторана",
+      "source": "frontend/src/apps/cofein",
+      "workspace": "cofein",
+      "production": "https://www.cofeinclub.com",
+      "admin": "https://seatmap-admin-eight.vercel.app/r/cofein/admin",
+      "hosting": "https://vercel.com/stepan2215s-projects/cofein",
+      "dependsOn": [
+        "api",
+        "shared-web"
+      ]
+    },
+    {
+      "id": "admin",
+      "name": "Общая админка",
+      "kind": "Платформа · все рестораны",
+      "source": "frontend/src/apps/admin",
+      "workspace": "admin",
+      "production": "https://seatmap-admin-eight.vercel.app/r/casa-di-fratelli/admin",
+      "hosting": "https://vercel.com/stepan2215s-projects/seatmap-admin",
+      "dependsOn": [
+        "api",
+        "shared-web"
+      ]
+    },
+    {
+      "id": "api",
+      "name": "SeatMap API",
+      "kind": "Общий сервер · .NET 8",
+      "source": "backend",
+      "workspace": "backend",
+      "production": "https://casa-di-fratelli-api.onrender.com",
+      "hosting": "https://dashboard.render.com/web/srv-d7drmgl8nd3s73dvukn0",
+      "note": "Общий API бронирований, заказов и очереди ожидания. Развёртывается отдельно на Render.",
+      "dependsOn": [
+        "restaurant-databases",
+        "platform-database"
+      ]
+    },
+    {
+      "id": "mobile",
+      "name": "SeatMap Mobile",
+      "kind": "Гостевое приложение · Flutter",
+      "source": "mobile",
+      "workspace": "mobile",
+      "note": "Приложение гостей для iOS и Android. Сборка и установка выполняются через Flutter и Xcode.",
+      "dependsOn": [
+        "api"
+      ]
+    },
+    {
+      "id": "shared-web",
+      "name": "Общий веб-код",
+      "kind": "Компоненты · правила · адаптеры",
+      "source": "frontend/src",
+      "workspace": "platform",
+      "note": "Общие изменения требуют проверки Casa, Cofein и админки. Это библиотечный код, а не отдельный сервис.",
+      "dependsOn": []
+    },
+    {
+      "id": "restaurant-databases",
+      "name": "Базы ресторанов",
+      "kind": "Отдельные операционные данные",
+      "source": "backend/SeatMap.Api",
+      "workspace": "backend",
+      "note": "Ресторан определяется до создания DbContext. Подключения и секреты здесь не отображаются.",
+      "dependsOn": []
+    },
+    {
+      "id": "platform-database",
+      "name": "База платформы",
+      "kind": "Общие гостевые аккаунты",
+      "source": "backend/SeatMap.Api/Platform",
+      "workspace": "backend",
+      "note": "Общая идентичность гостей; данные бронирований принадлежат ресторану.",
+      "dependsOn": []
+    }
+  ]
+}
