@@ -1,0 +1,56 @@
+{
+  "folders": [
+    {
+      "name": "frontend",
+      "path": "../frontend"
+    },
+    {
+      "name": "backend",
+      "path": "../backend"
+    },
+    {
+      "name": "mobile",
+      "path": "../mobile"
+    },
+    {
+      "name": "Инструменты",
+      "path": "../tools"
+    },
+    {
+      "name": "docs",
+      "path": "../docs"
+    },
+    {
+      "name": "scripts",
+      "path": "../scripts"
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/bin": true,
+      "**/obj": true,
+      "**/dist*": true
+    },
+    "search.exclude": {
+      "**/output/**": true
+    }
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "SeatMap: панель разработки",
+        "type": "shell",
+        "command": "python3",
+        "args": [
+          "dev-hub/server.py"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder:Инструменты}"
+        },
+        "problemMatcher": []
+      }
+    ]
+  }
+}

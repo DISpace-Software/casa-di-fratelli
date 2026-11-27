@@ -21,7 +21,7 @@ const originalError = console.error;
 const checks = [];
 let baselineHeader;
 async function compile(source, output) { await build({
-  stdin: { contents: `export {default as AdminPage} from './src/pages/AdminPage.jsx';
+  stdin: { contents: `export {default as AdminPage} from './src/apps/admin/AdminPage.jsx';
     export {default as TenantBrandingProvider} from './src/context/TenantBrandingProvider.jsx';
     export {default as SeasonalZonesProvider} from './src/context/SeasonalZonesProvider.jsx';
     export {act, StrictMode, createElement} from 'react';
@@ -132,7 +132,7 @@ async function scenario(tenantId, baseline = false) {
     assert.ok(expected["/api/menu"].length > 0);
     const imageItem = expected["/api/menu"][0];
     if (imageItem.department === "Bar") await click(button("Напитки"));
-    const sourceGroups = tenantId === "cofein" ? JSON.parse(await readFile("/Users/macbookpro/casa-di-fratelli/frontend/src/cofein/data/menu-food.json", "utf8")).concat(JSON.parse(await readFile("/Users/macbookpro/casa-di-fratelli/frontend/src/cofein/data/menu-drinks.json", "utf8"))) : [];
+    const sourceGroups = tenantId === "cofein" ? JSON.parse(await readFile("/Users/macbookpro/casa-di-fratelli/frontend/src/apps/cofein/data/menu-food.json", "utf8")).concat(JSON.parse(await readFile("/Users/macbookpro/casa-di-fratelli/frontend/src/apps/cofein/data/menu-drinks.json", "utf8"))) : [];
     await click(button(sourceGroups.find(group => group.id === imageItem.category)?.label || imageItem.category));
     const preview = [...container.querySelectorAll("img")].find(image => image.getAttribute("src")?.includes("local-dom-preview.jpg"));
     const imageBase = expected["/api/admin/context"].frontendUrl;

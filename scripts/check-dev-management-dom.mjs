@@ -22,7 +22,7 @@ let scenario = 0;
 
 await build({
   stdin: {
-    contents: `export {default as AdminPage} from './src/pages/AdminPage.jsx';
+    contents: `export {default as AdminPage} from './src/apps/admin/AdminPage.jsx';
       export {SeasonalZonesContext} from './src/context/SeasonalZonesContext.js';
       export {TenantBrandingContext} from './src/context/TenantBrandingContext.js';
       export {CASA_BRANDING} from './src/config/tenantBranding.js';

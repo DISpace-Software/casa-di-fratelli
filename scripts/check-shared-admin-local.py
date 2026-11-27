@@ -59,7 +59,7 @@ def main():
     assert len(source_plan['tables']) == 30 and sum(x['seats'] for x in source_plan['tables']) == 150
     menu, skipped = [], []
     for kind, department in [('food', 'Kitchen'), ('drinks', 'Bar')]:
-        for group in json.loads((args.fixtures_root / f'frontend/src/cofein/data/menu-{kind}.json').read_text()):
+        for group in json.loads((args.fixtures_root / f'frontend/src/apps/cofein/data/menu-{kind}.json').read_text()):
             for item in group['items']:
                 if item['priceEur'] is None:
                     skipped.append(f'{kind}:{item["id"]}')

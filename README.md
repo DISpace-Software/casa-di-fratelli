@@ -29,17 +29,16 @@ Restaurant context is resolved by the API's tenancy layer. Domain, route and oth
 
 This repository was renamed from `casa-di-fratelli` to **`seatmap`**. The restaurant's name, tenant identifiers and existing service URLs do not need to change with the repository name.
 
-The default branch is `main`. The component-folder reorganization, focused workspaces, local launcher and Control source are currently in **[PR #2](https://github.com/DISpace-Software/seatmap/pull/2)**, on `refactor/architecture-2026-11-26`. They are not yet merged into `main`.
+The default branch is `main`. Changes go through pull requests and the required
+`Verify` web/backend checks. Each application has a separate deployment target;
+a successful web deployment does not imply that the API was deployed too.
+See [release operations and migrations](docs/release-operations.md).
 
-Control has been published separately from that branch. A deployment of one component does not mean every application or the backend has been released from the same commit.
-
-Available in the architecture branch:
-
-- [`frontend/src/apps`](https://github.com/DISpace-Software/seatmap/tree/refactor/architecture-2026-11-26/frontend/src/apps) — separate Casa, Cofein and admin entry points.
-- [`apps/control`](https://github.com/DISpace-Software/seatmap/tree/refactor/architecture-2026-11-26/apps/control) — hosted navigation portal and access instructions.
-- [`workspaces`](https://github.com/DISpace-Software/seatmap/tree/refactor/architecture-2026-11-26/workspaces) — focused editor workspaces.
-- [`tools/dev-hub`](https://github.com/DISpace-Software/seatmap/tree/refactor/architecture-2026-11-26/tools/dev-hub) — local-only launcher, opened with `SeatMap.command`.
-- [Development workflow](https://github.com/DISpace-Software/seatmap/blob/refactor/architecture-2026-11-26/docs/development-workspaces.md) — ownership, commands and release boundaries.
+- [`frontend/src/apps`](frontend/src/apps) — separate Casa, Cofein and admin entry points.
+- [`apps/control`](apps/control) — protected hosted navigation portal.
+- [`workspaces`](workspaces) — focused editor workspaces.
+- [`tools/dev-hub`](tools/dev-hub) — local-only launcher, opened with `SeatMap.command`.
+- [Development workflow](docs/development-workspaces.md) — ownership and commands.
 
 ## Features and configuration boundaries
 

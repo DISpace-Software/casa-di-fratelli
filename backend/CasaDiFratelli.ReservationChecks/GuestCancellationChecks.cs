@@ -54,7 +54,8 @@ internal static class GuestCancellationChecks
         Check((await guests.GetAsync(reservation.Id, null)).Kind == ReservationBookingResultKind.NotFound, "ID alone must not disclose booking");
         Check((await guests.CancelAsync(reservation.Id, new string('0', 64))).Kind == ReservationBookingResultKind.NotFound, "Wrong key must not cancel");
         Check((await guests.CancelAsync(reservation.Id + 1, token)).Kind == ReservationBookingResultKind.NotFound, "Key must not authorize another ID");
-        var status = (GuestReservationStatus)(await guests.GetAsync(reservation.Id, token)).Value;
+        var status = (await guests.GetAsync(reservation.Id, token)).Value as GuestReservationStatus
+            ?? throw new InvalidOperationException("Authorized booking must return guest status");
         Check(status.CancellationDeadlineUtc == new DateTime(2026, 11, 20, 14, 0, 0, DateTimeKind.Utc), "Three-hour deadline must use Sofia time in winter");
         Check(status.CanCancel && status.RestaurantPhone == settings.Phone, "Guest status needs policy and restaurant phone");
         clock.Now = new DateTimeOffset(status.CancellationDeadlineUtc!.Value).AddTicks(1);
@@ -65,7 +66,7 @@ internal static class GuestCancellationChecks
         reservation.IsArrived = false;
         var order = new DiningOrder { ReservationId = reservation.Id, GuestName = "Synthetic guest", TableLabel = "1", Status = "New" };
         db.DiningOrders.Add(order); await db.SaveChangesAsync();
-        Check(!((GuestReservationStatus)(await guests.GetAsync(reservation.Id, token)).Value).CanCancel, "Active dining orders must prevent self cancellation");
+        Check((await guests.GetAsync(reservation.Id, token)).Value is GuestReservationStatus { CanCancel: false }, "Active dining orders must prevent self cancellation");
         Check((await guests.CancelAsync(reservation.Id, token)).Kind == ReservationBookingResultKind.Conflict, "Cancellation must respect dining orders");
         order.Status = "Cancelled"; reservation.EmailConfirmationTokenHash = "old-confirmation"; reservation.OrderAccessToken = "old-order";
         await db.SaveChangesAsync();

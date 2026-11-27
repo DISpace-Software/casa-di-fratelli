@@ -12,12 +12,13 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "node --test src/domain/__tests__/*.test.js",
-    "dev:admin": "vite --config vite.admin.config.js",
+    "dev:admin": "vite --config vite.admin.config.js --host 127.0.0.1 --port 5176 --strictPort",
     "build:admin": "vite build --config vite.admin.config.js",
     "dev:cofein": "vite --config vite.cofein.config.js --host 127.0.0.1 --port 5175 --strictPort",
     "build:cofein": "vite build --config vite.cofein.config.js",
-    "test:cofein": "node --test src/cofein/*.test.js",
-    "test:waitlist-browser": "node tests/waitlist.browser.mjs"
+    "test:cofein": "node --test src/apps/cofein/*.test.js",
+    "test:waitlist-browser": "node tests/waitlist.browser.mjs",
+    "dev:casa": "vite --host 127.0.0.1 --port 5173 --strictPort"
   },
   "dependencies": {
     "react": "^19.2.4",

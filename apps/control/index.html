@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>SeatMap Control — платформа</title><link rel="stylesheet" href="style.css"><script src="app.js" defer></script></head>
+<body>
+<header><a class="brand" href="/">SeatMap <small>CONTROL</small></a><span class="local">DISpace Software · рабочее пространство</span></header>
+<main>
+<p class="eyebrow">Одна платформа. Каждый ресторан — отдельно.</p>
+<h1>Всё на своём месте.</h1>
+<p class="intro">Сайты ресторанов, общие сервисы и инструменты разработки.<br>Выберите компонент, чтобы открыть его сайт, код или управление.</p>
+<div class="overview"><div><strong>02</strong><span>ресторана</span></div><div><strong>01</strong><span>общая админка</span></div><div><strong>01</strong><span>API платформы</span></div><div><strong>iOS / Android</strong><span>гостевое приложение</span></div></div>
+<nav aria-label="Компоненты платформы"><button data-filter="all" aria-pressed="true">Вся платформа</button><button data-filter="sites" aria-pressed="false">Рестораны</button><button data-filter="platform" aria-pressed="false">Общие компоненты</button></nav>
+<label class="search-label" for="search">Найти компонент</label><input id="search" type="search" placeholder="Название, технология или папка…">
+<p id="error" role="alert"></p><p id="count" aria-live="polite"></p><section id="cards" aria-label="Каталог компонентов"></section>
+<section class="guide"><p class="eyebrow">Как работать</p><h2>От задачи — к нужному месту</h2><div class="steps"><article><h3>01 · Изменить сайт</h3><p>Откройте код нужного ресторана и его рабочее пространство. Общие компоненты подключаются из одного места.</p></article><article><h3>02 · Управлять рестораном</h3><p>Откройте его админку. Войдите с учётной записью ресторана: доступ к Control не даёт прав на бронирования.</p></article><article><h3>03 · Проверить публикацию</h3><p>Перейдите в «Хостинг и логи». Там находятся актуальные сборки, ошибки и состояние сервиса.</p></article></div></section>
+<div class="notice"><strong>Доступ и безопасность</strong><br>Онлайн-панель закрывается Vercel Authentication на всех адресах, включая production. Управление доступом — в настройках проекта. Ключи и данные гостей в каталоге не хранятся. Это навигационная панель: она не запускает процессы на вашем Mac и не показывает непроверенный статус сервисов.</div>
+<footer><div id="resources" class="links"></div><p id="revision"></p><p>Для локальной разработки запустите SeatMap.command из репозитория. Для публикации каждого компонента используйте его отдельный проект хостинга.</p></footer>
+</main></body></html>
