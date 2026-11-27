@@ -1,0 +1,17 @@
+# Stepan2215 is the final reviewer for all areas.
+# His personal PR bypass is configured in main branch protection.
+* @Stepan2215
+/frontend/src/apps/casa/ @Stepan2215
+/frontend/src/apps/cofein/ @Stepan2215
+/frontend/src/apps/admin/ @Stepan2215
+/frontend/src/admin/ @Stepan2215
+/frontend/src/components/ @Stepan2215
+/frontend/src/domain/ @Stepan2215
+/backend/ @Stepan2215
+/mobile/ @Stepan2215
+/apps/control/ @Stepan2215
+/tools/ @Stepan2215
+/workspaces/ @Stepan2215
+/scripts/ @Stepan2215
+/.github/ @Stepan2215
+/docs/ @Stepan2215
