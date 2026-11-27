@@ -9,7 +9,7 @@
       "source": "frontend/src/apps/casa",
       "workspace": "casa",
       "production": "https://casadifratelli.bg",
-      "admin": "https://seatmap-admin-eight.vercel.app/r/casa-di-fratelli/admin",
+      "admin": "https://seatmap.bg/r/casa-di-fratelli/admin",
       "hosting": "https://vercel.com/stepan2215s-projects/casa-di-fratelli",
       "dependsOn": [
         "api",
@@ -24,7 +24,7 @@
       "source": "frontend/src/apps/cofein",
       "workspace": "cofein",
       "production": "https://www.cofeinclub.com",
-      "admin": "https://seatmap-admin-eight.vercel.app/r/cofein/admin",
+      "admin": "https://seatmap.bg/r/cofein/admin",
       "hosting": "https://vercel.com/stepan2215s-projects/cofein",
       "dependsOn": [
         "api",
@@ -38,7 +38,7 @@
       "kind": "Платформа · все рестораны",
       "source": "frontend/src/apps/admin",
       "workspace": "admin",
-      "production": "https://seatmap-admin-eight.vercel.app/r/casa-di-fratelli/admin",
+      "production": "https://seatmap.bg/r/casa-di-fratelli/admin",
       "hosting": "https://vercel.com/stepan2215s-projects/seatmap-admin",
       "dependsOn": [
         "api",

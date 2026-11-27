@@ -25,7 +25,33 @@ public sealed class ReservationBookingNotifications(
     {
         if (!_branding.NotificationsEnabled) return;
         await SendAdminReservationEmailAsync(reservation);
+        // Casa retains its established email workflow. Automatically confirmed
+        // platform restaurants also need a guest receipt, without a confirmation link.
+        if (!_branding.IsCasa && _branding.ReservationConfirmationMode == ReservationConfirmationMode.Automatic)
+            await SendGuestReceiptAsync(reservation);
         await push.NotifyNewReservationAsync(reservation);
+    }
+
+    private async Task SendGuestReceiptAsync(Reservation reservation)
+    {
+        if (string.IsNullOrWhiteSpace(reservation.Email)) return;
+        var brand = await _branding.GetAsync();
+        var name = WebUtility.HtmlEncode(brand.Name);
+        var guest = WebUtility.HtmlEncode(reservation.GuestName);
+        var time = WebUtility.HtmlEncode(reservation.ReservedTime);
+        var phone = WebUtility.HtmlEncode(brand.Phone);
+        await _emailService.TrySendTransactionalAsync(reservation.Email,
+            $"Потвърдена резервация · {brand.Name}",
+            $"""
+            <div style="font-family:Arial,sans-serif;line-height:1.6;padding:24px;color:#252132">
+              <h2>{name}</h2>
+              <p>Здравейте, {guest}, Вашата резервация е потвърдена.</p>
+              <p><strong>Дата:</strong> {reservation.ReservedDate:dd.MM.yyyy}<br>
+              <strong>Час:</strong> {time}<br><strong>Гости:</strong> {reservation.GuestCount}</p>
+              <p>При въпроси или промени се свържете с ресторанта: {phone}</p>
+              <p>SeatMap · Резервации</p>
+            </div>
+            """, $"booking-receipt-{_branding.TenantId}-{reservation.Id}");
     }
 
     public async Task SendConfirmationAsync(Reservation reservation, string token)

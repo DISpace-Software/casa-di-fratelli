@@ -20,6 +20,7 @@ using SeatMap.Api.Services.Tenancy;
 
 static void Check(bool condition, string label)
 { if (!condition) throw new Exception(label); Console.WriteLine($"PASS {label}"); }
+await EmailTransportChecks.RunAsync();
 var runId = Guid.NewGuid().ToString("N")[..10];
 var clock = new TestClock();
 await using var sqlite = new SqliteConnection("Data Source=:memory:");

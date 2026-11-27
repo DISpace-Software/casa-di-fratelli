@@ -30,6 +30,7 @@ public sealed class GuestEmailSender(HttpClient http, IConfiguration configurati
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
         request.Headers.Add("Idempotency-Key", $"guest-email-{challengeId:N}");
         request.Content = JsonContent.Create(new { from, to = new[] { email }, subject = $"{title} · SeatMap",
+            reply_to = configuration["Platform:Email:ReplyTo"],
             html = $"<div style='background:#10101f;color:#f5f1ff;padding:32px;font-family:Arial,sans-serif;border-radius:20px'><h2>SeatMap</h2><h3>{title}</h3><p style='font-size:34px;letter-spacing:10px;color:#c6afff'>{code}</p><p>{help}</p></div>",
             text = $"SeatMap\n{title}\n{code}\n{help}" });
         try {
